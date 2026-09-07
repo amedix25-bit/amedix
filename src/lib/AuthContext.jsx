@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 
@@ -15,17 +15,42 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const checkAppState = async () => {
+  const checkUserAuth = useCallback(async () => {
+    try {
+      setIsLoadingAuth(true);
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+    } catch (error) {
+      console.error('User auth check failed:', error);
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+
+      // If user auth fails, it might be an expired token
+      if (error.status === 401 || error.status === 403) {
+        setAuthError({
+          type: 'auth_required',
+          message: 'Authentication required'
+        });
+      }
+    }
+  }, []);
+
+  const checkAppState = useCallback(async () => {
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
-      
+
       try {
         const publicSettings = await base44.app.getPublicSettings();
         setAppPublicSettings(publicSettings);
-        
+
         // If we got the app public settings successfully, check if user is authenticated
         if (appParams.token) {
           await checkUserAuth();
@@ -37,7 +62,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
-        
+
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
@@ -75,37 +100,12 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
     }
-  };
+  }, [checkUserAuth]);
 
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
-    }
-  };
-
-  const logout = (shouldRedirect = true) => {
+  const logout = useCallback((shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    
+
     if (shouldRedirect) {
       // Use the SDK's logout method which handles token cleanup and redirect
       base44.auth.logout(window.location.href);
@@ -113,17 +113,17 @@ export const AuthProvider = ({ children }) => {
       // Just remove the token without redirect
       base44.auth.logout();
     }
-  };
+  }, []);
 
-  const navigateToLogin = () => {
+  const navigateToLogin = useCallback(() => {
     // Use the SDK's redirectToLogin method
     base44.auth.redirectToLogin(window.location.href);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
@@ -133,7 +133,24 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       checkUserAuth,
       checkAppState
-    }}>
+    }),
+    [
+      user,
+      isAuthenticated,
+      isLoadingAuth,
+      isLoadingPublicSettings,
+      authError,
+      appPublicSettings,
+      authChecked,
+      logout,
+      navigateToLogin,
+      checkUserAuth,
+      checkAppState
+    ]
+  );
+
+  return (
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
