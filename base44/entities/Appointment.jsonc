@@ -24,8 +24,16 @@
     "time": {
       "type": "string"
     },
+    "location": {
+      "type": "string",
+      "description": "Location / type of appointment"
+    },
     "reason": {
       "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Relevant appointment details"
     },
     "status": {
       "type": "string",
@@ -36,8 +44,17 @@
       ],
       "default": "scheduled"
     },
-    "notes": {
-      "type": "string"
+    "patient_response": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "declined"
+      ],
+      "description": "The patient's ACCEPT / DECLINE response to the appointment"
+    },
+    "response_date": {
+      "type": "string",
+      "description": "Date and time the patient responded (ISO datetime)"
     }
   },
   "required": [

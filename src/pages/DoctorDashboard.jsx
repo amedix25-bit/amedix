@@ -57,7 +57,7 @@ export default function DoctorDashboard() {
         {activeTab === "overview" && <DoctorOverview profile={profile} stats={stats} loading={loading} />}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} />}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
-        {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} />}
+        {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={setActiveTab} />}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} />}
         {activeTab === "imaging" && profile && <DoctorImagingRequests doctorProfile={profile} />}
       </div>

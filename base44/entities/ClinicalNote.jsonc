@@ -21,14 +21,54 @@
       "type": "string",
       "format": "date"
     },
+    "history": {
+      "type": "string",
+      "description": "History section of the clinical note"
+    },
+    "vital_signs": {
+      "type": "string",
+      "description": "Vital Signs section of the clinical note"
+    },
+    "physical_examination": {
+      "type": "string",
+      "description": "Physical Examination section of the clinical note"
+    },
     "diagnosis": {
-      "type": "string"
+      "type": "string",
+      "description": "Final Diagnosis"
     },
     "notes": {
       "type": "string"
     },
     "prescription": {
-      "type": "string"
+      "type": "string",
+      "description": "Prescriptions \u2014 part of Management"
+    },
+    "interventions": {
+      "type": "string",
+      "description": "Interventions \u2014 part of Management"
+    },
+    "biopsy": {
+      "type": "string",
+      "description": "Biopsy, if required \u2014 part of Management"
+    },
+    "lab_request_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Linked consolidated LabRequest ids"
+    },
+    "imaging_request_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Linked ImagingRequest ids"
+    },
+    "recommendations": {
+      "type": "string",
+      "description": "Doctor's Recommendations \u2014 follow-up instructions, lifestyle advice, referrals"
     }
   },
   "required": [

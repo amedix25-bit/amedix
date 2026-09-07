@@ -17,6 +17,10 @@
     "doctor_name": {
       "type": "string"
     },
+    "request_id": {
+      "type": "string",
+      "description": "Unique imaging request reference, e.g. IR-20260907-8F3K"
+    },
     "scan_type": {
       "type": "string",
       "enum": [
@@ -43,6 +47,10 @@
     },
     "report_file_url": {
       "type": "string"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "Generated PDF Imaging Request Form"
     },
     "date_requested": {
       "type": "string",

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Calendar, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, CheckCircle2, XCircle, MapPin, Loader2 } from "lucide-react";
 
 export default function PatientAppointments({ patientId }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     load();
@@ -18,6 +20,21 @@ export default function PatientAppointments({ patientId }) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const respond = async (apt, response) => {
+    setBusyId(apt.id);
+    try {
+      await base44.entities.Appointment.update(apt.id, {
+        patient_response: response,
+        response_date: new Date().toISOString(),
+      });
+      load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -42,14 +59,41 @@ export default function PatientAppointments({ patientId }) {
                 <p className="font-medium truncate">{apt.doctor_name}</p>
                 <StatusBadge status={apt.status} />
               </div>
-              <p className="text-sm text-muted-foreground mt-1">{apt.reason}</p>
-              <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {apt.time}
-                </span>
-                {apt.notes && <span className="truncate">{apt.notes}</span>}
+              {apt.reason && <p className="text-sm text-muted-foreground mt-1">{apt.reason}</p>}
+              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{apt.time}</span>
+                {apt.location && (
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{apt.location}</span>
+                )}
               </div>
+              {apt.notes && <p className="text-xs text-muted-foreground mt-2">{apt.notes}</p>}
+
+              {apt.status === "scheduled" && (
+                apt.patient_response ? (
+                  <div className="mt-3">
+                    {apt.patient_response === "accepted" ? (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        You accepted{apt.response_date ? ` · ${apt.response_date.slice(0, 10)}` : ""}
+                      </span>
+                    ) : (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                        You declined{apt.response_date ? ` · ${apt.response_date.slice(0, 10)}` : ""}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-3 flex gap-2">
+                    <Button size="sm" onClick={() => respond(apt, "accepted")} disabled={busyId === apt.id}>
+                      {busyId === apt.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
+                      Accept
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => respond(apt, "declined")} disabled={busyId === apt.id}>
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                  </div>
+                )
+              )}
             </div>
           </div>
         ))

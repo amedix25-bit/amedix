@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
-import { capitalize } from "@/lib/patientUtils";
 
 export default function MedicationsSection({ number, patient }) {
   const [items, setItems] = useState([]);
@@ -36,17 +35,8 @@ export default function MedicationsSection({ number, patient }) {
       ) : (
         <div className="space-y-3">
           {items.map((m) => (
-            <div key={m.id} className="rounded-lg border border-border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold text-sm">{m.name}</p>
-                {m.start_date && <span className="text-xs text-muted-foreground shrink-0">{m.start_date}</span>}
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {m.dose && <span className="px-2 py-0.5 rounded-full bg-muted text-xs">{m.dose}</span>}
-                {m.frequency && <span className="px-2 py-0.5 rounded-full bg-muted text-xs">{m.frequency}</span>}
-                {m.route && <span className="px-2 py-0.5 rounded-full bg-muted text-xs">{capitalize(m.route)}</span>}
-              </div>
-              {m.reason && <p className="text-xs text-muted-foreground mt-2">Reason: {m.reason}</p>}
+            <div key={m.id} className="rounded-lg border border-border px-4 py-2.5">
+              <p className="font-semibold text-sm">{m.name}</p>
             </div>
           ))}
         </div>

@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Image, Plus, X, Upload, CheckCircle2 } from "lucide-react";
+import { makeImagingRequestId, generateImagingRequestPdf } from "@/lib/imagingRequestPdf";
+import { Image, Plus, X, Upload, CheckCircle2, FileText } from "lucide-react";
 
 export default function DoctorImagingRequests({ doctorProfile }) {
   const [items, setItems] = useState([]);
@@ -30,12 +31,23 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
       if (patients.length === 0) { alert("Patient not found"); return; }
       const p = patients[0];
-      await base44.entities.ImagingRequest.create({
+      const today = new Date().toISOString().slice(0, 10);
+      const payload = {
         patient_id: p.id, doctor_id: doctorProfile.id,
         patient_cin: p.cin, patient_name: p.full_name, doctor_name: doctorProfile.full_name,
         scan_type: form.scan_type, body_part: form.body_part,
-        status: "requested", date_requested: new Date().toISOString().slice(0, 10),
+        request_id: makeImagingRequestId(),
+        status: "requested", date_requested: today,
+      };
+      const doc = generateImagingRequestPdf({
+        ...payload,
+        patient_dob: p.date_of_birth, patient_gender: p.gender, patient_blood_type: p.blood_type,
+        doctor_specialization: doctorProfile.specialization, doctor_hospital: doctorProfile.hospital,
+        doctor_license: doctorProfile.license_number,
       });
+      const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      await base44.entities.ImagingRequest.create({ ...payload, pdf_url: file_url });
       setForm({ patient_cin: "", scan_type: "", body_part: "" });
       setShowForm(false);
       load();
@@ -112,10 +124,17 @@ export default function DoctorImagingRequests({ doctorProfile }) {
                   <p className="text-sm text-muted-foreground mt-0.5">{img.patient_name} · CIN: {img.patient_cin}</p>
                   <p className="text-xs text-muted-foreground mt-1">Requested: {img.date_requested}</p>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                  {img.status}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                    {img.status}
+                  </span>
+                </div>
               </div>
+              {img.pdf_url && (
+                <a href={img.pdf_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary underline">
+                  <FileText className="w-3.5 h-3.5" /> Request PDF
+                </a>
+              )}
               {img.status === "requested" && (
                 <div className="mt-3 pt-3 border-t border-border">
                   {uploadingId === img.id ? (

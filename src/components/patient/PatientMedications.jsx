@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Pill, Loader2 } from "lucide-react";
-import { capitalize } from "@/lib/patientUtils";
 
 export default function PatientMedications({ patient }) {
   const [medications, setMedications] = useState([]);
@@ -46,16 +45,9 @@ export default function PatientMedications({ patient }) {
                 </div>
                 <div>
                   <p className="font-semibold">{m.name}</p>
-                  <div className="flex flex-wrap gap-2 mt-1.5">
-                    {m.dose && <span className="px-2 py-0.5 rounded-full bg-muted text-xs">{m.dose}</span>}
-                    {m.frequency && <span className="px-2 py-0.5 rounded-full bg-muted text-xs">{m.frequency}</span>}
-                    {m.route && <span className="px-2 py-0.5 rounded-full bg-muted text-xs">{capitalize(m.route)}</span>}
-                  </div>
                 </div>
               </div>
-              {m.start_date && <span className="text-xs text-muted-foreground shrink-0">Started {m.start_date}</span>}
             </div>
-            {m.reason && <p className="text-xs text-muted-foreground mt-3">Reason: {m.reason}</p>}
           </div>
         ))
       )}
