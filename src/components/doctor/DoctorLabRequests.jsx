@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
-import LabRequestCard from "@/components/doctor/lab/LabRequestCard";
+import LabRequestListRow from "@/components/doctor/lab/LabRequestListRow";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf } from "@/lib/labRequestPdf";
 import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send } from "lucide-react";
@@ -279,9 +279,9 @@ export default function DoctorLabRequests({ doctorProfile }) {
           <p>No lab requests yet</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
           {items.map((lab) => (
-            <LabRequestCard key={lab.id} lab={lab} onUpdate={load} />
+            <LabRequestListRow key={lab.id} lab={lab} />
           ))}
         </div>
       )}

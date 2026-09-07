@@ -15,6 +15,7 @@ import Home from '@/pages/Home';
 import Landing from '@/pages/Landing';
 import PatientDashboard from '@/pages/PatientDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
+import LabRequestDetail from '@/pages/LabRequestDetail';
 import AdminDashboard from '@/pages/AdminDashboard';
 
 const AuthenticatedApp = () => {
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
+        <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
