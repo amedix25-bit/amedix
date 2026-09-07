@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, UserCheck, Clock, X, AlertCircle } from "lucide-react";
+import { Search, UserCheck, Clock, X, AlertCircle, Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
+import MyPatientsList from "@/components/doctor/MyPatientsList";
+import DoctorPatientRecordView from "@/components/doctor/DoctorPatientRecordView";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
+import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
 
 export default function DoctorPatientSearch({ doctorProfile }) {
+  const [tab, setTab] = useState("mypatients");
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [cin, setCin] = useState("");
   const [patient, setPatient] = useState(null);
   const [accessStatus, setAccessStatus] = useState(null);
@@ -62,91 +66,129 @@ export default function DoctorPatientSearch({ doctorProfile }) {
     }
   };
 
+  if (selectedPatient) {
+    return <DoctorPatientRecordView patient={selectedPatient} onBack={() => setSelectedPatient(null)} />;
+  }
+
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSearch} className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Enter patient CIN (e.g. CIN-XXXXXX)"
-            value={cin}
-            onChange={(e) => setCin(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button type="submit" disabled={loading || !cin.trim()}>
-          {loading ? "Searching..." : "Search"}
-        </Button>
-      </form>
+      <div className="flex rounded-xl border border-border bg-card p-1 gap-1">
+        <button
+          onClick={() => setTab("mypatients")}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            tab === "mypatients" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          My Patients
+        </button>
+        <button
+          onClick={() => setTab("new")}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            tab === "new" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+          }`}
+        >
+          <UserPlus className="w-4 h-4" />
+          New Patient
+        </button>
+      </div>
 
-      {searched && !patient && !loading && (
-        <div className="text-center py-12 text-muted-foreground">
-          <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No patient found with that CIN</p>
-        </div>
-      )}
-
-      {patient && (
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <p className="text-lg font-bold">{patient.full_name}</p>
-              <p className="text-sm text-muted-foreground mt-1">CIN: {patient.cin}</p>
-              <div className="flex gap-4 mt-3 text-sm">
-                {patient.date_of_birth && <span className="text-muted-foreground">DOB: {patient.date_of_birth}</span>}
-                {patient.gender && <span className="text-muted-foreground">Gender: {patient.gender}</span>}
-                {patient.blood_type && <span className="text-muted-foreground">Blood: {patient.blood_type}</span>}
-              </div>
+      {tab === "mypatients" ? (
+        <MyPatientsList doctorProfile={doctorProfile} onSelect={setSelectedPatient} />
+      ) : (
+        <>
+          <form onSubmit={handleSearch} className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Enter patient CIN (e.g. CIN-XXXXXX)"
+                value={cin}
+                onChange={(e) => setCin(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <div>
-              {accessStatus === "approved" && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-sm font-medium">
-                  <UserCheck className="w-4 h-4" />
-                  Access Granted
-                </div>
-              )}
-              {accessStatus === "pending" && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
-                  <Clock className="w-4 h-4" />
-                  Access Pending
-                </div>
-              )}
-              {accessStatus === "declined" && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 text-red-700 text-sm font-medium">
-                  <X className="w-4 h-4" />
-                  Access Declined
-                </div>
-              )}
-              {accessStatus === "none" && (
-                <Button onClick={handleRequestAccess} disabled={requesting}>
-                  {requesting ? "Requesting..." : "Request Access"}
-                </Button>
-              )}
-              {accessStatus === "revoked" && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 text-red-700 text-sm font-medium">
-                  <X className="w-4 h-4" />
-                  Access Revoked
-                </div>
-              )}
-            </div>
-          </div>
+            <Button type="submit" disabled={loading || !cin.trim()}>
+              {loading ? "Searching..." : "Search"}
+            </Button>
+          </form>
 
-          {accessStatus === "approved" && (
-            <>
-              <div className="mt-6 pt-6 border-t border-border">
-                <h4 className="font-semibold text-sm mb-3">Medical Information</h4>
-                <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                  <InfoRow label="Allergies" value={patient.allergies} />
-                  <InfoRow label="Phone" value={patient.phone} />
-                  <InfoRow label="Address" value={patient.address} />
-                  <InfoRow label="Emergency Contact" value={patient.emergency_contact_name} />
-                </div>
-              </div>
-              <DoctorPatientClinicalNotesView patientId={patient.id} />
-              <DoctorPatientLabResultsView patientId={patient.id} />
-            </>
+          {searched && !patient && !loading && (
+            <div className="text-center py-12 text-muted-foreground">
+              <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No patient found with that CIN</p>
+            </div>
           )}
-        </div>
+
+          {patient && (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <div className="flex items-start justify-between flex-wrap gap-4">
+                <div>
+                  <p className="text-lg font-bold">{patient.full_name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">CIN: {patient.cin}</p>
+                  <div className="flex gap-4 mt-3 text-sm">
+                    {patient.date_of_birth && <span className="text-muted-foreground">DOB: {patient.date_of_birth}</span>}
+                    {patient.gender && <span className="text-muted-foreground">Gender: {patient.gender}</span>}
+                    {patient.blood_type && <span className="text-muted-foreground">Blood: {patient.blood_type}</span>}
+                  </div>
+                </div>
+                <div>
+                  {accessStatus === "approved" && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-sm font-medium">
+                      <UserCheck className="w-4 h-4" />
+                      Access Granted
+                    </div>
+                  )}
+                  {accessStatus === "pending" && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
+                      <Clock className="w-4 h-4" />
+                      Access Pending
+                    </div>
+                  )}
+                  {accessStatus === "declined" && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 text-red-700 text-sm font-medium">
+                      <X className="w-4 h-4" />
+                      Access Declined
+                    </div>
+                  )}
+                  {accessStatus === "none" && (
+                    <Button onClick={handleRequestAccess} disabled={requesting}>
+                      {requesting ? "Requesting..." : "Request Access"}
+                    </Button>
+                  )}
+                  {accessStatus === "revoked" && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 text-red-700 text-sm font-medium">
+                      <X className="w-4 h-4" />
+                      Access Revoked
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {accessStatus === "approved" && (
+                <>
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <h4 className="font-semibold text-sm mb-3">Medical Information</h4>
+                    <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                      <InfoRow label="Allergies" value={patient.allergies} />
+                      <InfoRow label="Phone" value={patient.phone} />
+                      <InfoRow label="Address" value={patient.address} />
+                      <InfoRow label="Emergency Contact" value={patient.emergency_contact_name} />
+                    </div>
+                  </div>
+
+                  <DoctorPatientClinicalNotesView patientId={patient.id} />
+                  <DoctorPatientLabResultsView patientId={patient.id} />
+
+                  {tab === "new" && (
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => setSelectedPatient(patient)}>
+                      Open Full Medical Record
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

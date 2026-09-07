@@ -10,16 +10,18 @@ import LifestyleSection from "@/components/patient/medical/LifestyleSection";
 import { calcAgeLabel, capitalize } from "@/lib/patientUtils";
 import { Lock } from "lucide-react";
 
-export default function PatientHealth({ profile, onGoToProfile }) {
+export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground">
-        <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-        <span>
-          Your medical history was recorded at registration and is locked. Contact your doctor or an administrator
-          for any corrections or updates.
-        </span>
-      </div>
+      {!doctorView && (
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground">
+          <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>
+            Your medical history was recorded at registration and is locked. Contact your doctor or an administrator
+            for any corrections or updates.
+          </span>
+        </div>
+      )}
       <SectionCard number="1" title="Demographics">
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow label="Name" value={profile?.full_name} />
