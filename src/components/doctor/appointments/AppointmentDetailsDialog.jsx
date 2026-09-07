@@ -1,10 +1,10 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, CalendarClock, CheckCircle } from "lucide-react";
 import { getAppointmentStatus, STATUS_BADGE, formatLongDate, formatDateTime } from "./appointmentStatus";
 
-export default function AppointmentDetailsDialog({ apt, onClose, onOpenRecord, recordError }) {
+export default function AppointmentDetailsDialog({ apt, onClose, onOpenRecord, recordError, onReschedule, onPatientSeen }) {
   const status = apt ? getAppointmentStatus(apt) : "";
 
   return (
@@ -35,6 +35,16 @@ export default function AppointmentDetailsDialog({ apt, onClose, onOpenRecord, r
               )}
               {apt.response_date && (
                 <Row label="Patient Responded" value={formatDateTime(apt.response_date)} />
+              )}
+              {(status === "Pending" || status === "Confirmed") && (
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => onReschedule(apt)}>
+                    <CalendarClock className="w-4 h-4 mr-2" /> Reschedule
+                  </Button>
+                  <Button className="flex-1" onClick={() => onPatientSeen(apt)}>
+                    <CheckCircle className="w-4 h-4 mr-2" /> Patient Seen
+                  </Button>
+                </div>
               )}
               {recordError && <p className="text-sm text-destructive">{recordError}</p>}
               <Button className="w-full" variant="outline" onClick={() => onOpenRecord(apt)}>

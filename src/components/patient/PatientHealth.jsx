@@ -7,6 +7,7 @@ import SurgicalSection from "@/components/patient/medical/SurgicalSection";
 import MedicationsSection from "@/components/patient/medical/MedicationsSection";
 import AllergiesSection from "@/components/patient/medical/AllergiesSection";
 import LifestyleSection from "@/components/patient/medical/LifestyleSection";
+import MedicalHistorySection from "@/components/patient/medical/MedicalHistorySection";
 import { calcAgeLabel, capitalize } from "@/lib/patientUtils";
 import { Lock } from "lucide-react";
 
@@ -22,6 +23,7 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
           </span>
         </div>
       )}
+      <MedicalHistorySection patientId={profile?.id} />
       <SectionCard number="1" title="Demographics">
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow label="Name" value={profile?.full_name} />

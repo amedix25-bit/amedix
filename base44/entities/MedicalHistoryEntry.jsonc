@@ -1,0 +1,56 @@
+{
+  "name": "MedicalHistoryEntry",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "patient_seen"
+      ],
+      "default": "patient_seen",
+      "description": "Type of medical history entry"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the patient was seen"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time the patient was seen"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Doctor who saw the patient"
+    },
+    "location": {
+      "type": "string",
+      "description": "Location of the encounter (ER / Clinic / Ward / etc.)"
+    },
+    "appointment_reason": {
+      "type": "string",
+      "description": "Type / reason of the appointment"
+    },
+    "status": {
+      "type": "string",
+      "description": "Final appointment status, e.g. Completed / Patient Seen"
+    }
+  },
+  "required": [
+    "patient_id",
+    "date",
+    "doctor_name"
+  ]
+}

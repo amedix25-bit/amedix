@@ -5,6 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, CalendarDays, Users, Ban } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import UpcomingAppointments from "./appointments/UpcomingAppointments";
 import AppointmentsCalendar from "./appointments/AppointmentsCalendar";
 import DeclinedAppointments from "./appointments/DeclinedAppointments";
@@ -26,6 +31,9 @@ export default function DoctorAppointments({ doctorProfile }) {
   const [detail, setDetail] = useState(null);
   const [recordError, setRecordError] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [reschedule, setReschedule] = useState(null);
+  const [rescheduleForm, setRescheduleForm] = useState({ date: "", time: "" });
+  const [seenConfirm, setSeenConfirm] = useState(null);
 
   useEffect(() => {
     load();
@@ -140,6 +148,81 @@ export default function DoctorAppointments({ doctorProfile }) {
     }
   };
 
+  const openReschedule = (apt) => {
+    setDetail(null);
+    setReschedule(apt);
+    setRescheduleForm({ date: apt.date || "", time: apt.time || "" });
+  };
+
+  const confirmReschedule = async () => {
+    const apt = reschedule;
+    try {
+      const patch = {
+        date: rescheduleForm.date,
+        time: rescheduleForm.time,
+        rescheduled: true,
+        reschedule_datetime: new Date().toISOString(),
+      };
+      if (!apt.original_date) patch.original_date = apt.date;
+      if (!apt.original_time) patch.original_time = apt.time;
+      await base44.entities.Appointment.update(apt.id, patch);
+      setReschedule(null);
+      load();
+      base44.functions.invoke("notifyPatientReschedule", {
+        patient_id: apt.patient_id,
+        patient_name: apt.patient_name,
+        doctor_name: doctorProfile.full_name,
+        original_date: apt.date,
+        original_time: apt.time,
+        new_date: rescheduleForm.date,
+        new_time: rescheduleForm.time,
+        location: apt.location,
+        reason: apt.reason,
+      }).catch(console.error);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const requestPatientSeen = (apt) => {
+    setDetail(null);
+    setSeenConfirm(apt);
+  };
+
+  const confirmPatientSeen = async (apt) => {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    try {
+      const patch = {
+        status: "completed",
+        seen_by_doctor_id: doctorProfile.id,
+        seen_by_doctor_name: doctorProfile.full_name,
+        seen_datetime: nowIso,
+      };
+      if (!apt.original_date) patch.original_date = apt.date;
+      if (!apt.original_time) patch.original_time = apt.time;
+      await base44.entities.Appointment.update(apt.id, patch);
+      await base44.entities.MedicalHistoryEntry.create({
+        patient_id: apt.patient_id,
+        patient_cin: apt.patient_cin,
+        patient_name: apt.patient_name,
+        entry_type: "patient_seen",
+        date: nowIso.slice(0, 10),
+        time: now.toTimeString().slice(0, 5),
+        doctor_id: doctorProfile.id,
+        doctor_name: doctorProfile.full_name,
+        location: apt.location,
+        appointment_reason: apt.reason,
+        status: "Completed / Patient Seen",
+      });
+      setSeenConfirm(null);
+      setDetail(null);
+      load();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const closeDetail = () => {
     setDetail(null);
     setRecordError("");
@@ -245,14 +328,63 @@ export default function DoctorAppointments({ doctorProfile }) {
       {loading ? (
         <div className="text-muted-foreground text-sm">Loading...</div>
       ) : view === "upcoming" ? (
-        <UpcomingAppointments items={upcoming} onOpen={setDetail} onEdit={openEdit} />
+        <UpcomingAppointments items={upcoming} onOpen={setDetail} onEdit={openEdit} onReschedule={openReschedule} onPatientSeen={requestPatientSeen} />
       ) : view === "calendar" ? (
         <AppointmentsCalendar items={active} onOpen={setDetail} />
       ) : (
         <DeclinedAppointments items={declined} onDelete={handleDelete} />
       )}
 
-      <AppointmentDetailsDialog apt={detail} onClose={closeDetail} onOpenRecord={openRecord} recordError={recordError} />
+      <Dialog open={!!reschedule} onOpenChange={(open) => { if (!open) setReschedule(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reschedule Appointment</DialogTitle>
+            <DialogDescription>{reschedule?.patient_name}</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>New Date</Label>
+              <Input type="date" value={rescheduleForm.date} onChange={(e) => setRescheduleForm({ ...rescheduleForm, date: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>New Time</Label>
+              <Input type="time" value={rescheduleForm.time} onChange={(e) => setRescheduleForm({ ...rescheduleForm, time: e.target.value })} />
+            </div>
+          </div>
+          <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
+            <p><span className="text-muted-foreground">Current: </span><span className="font-medium">{reschedule?.date} at {reschedule?.time}</span></p>
+            <p><span className="text-muted-foreground">New: </span><span className="font-medium">{rescheduleForm.date} at {rescheduleForm.time}</span></p>
+          </div>
+          <Button
+            className="w-full"
+            disabled={
+              !rescheduleForm.date ||
+              !rescheduleForm.time ||
+              (rescheduleForm.date === reschedule?.date && rescheduleForm.time === reschedule?.time)
+            }
+            onClick={confirmReschedule}
+          >
+            Confirm Reschedule
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!seenConfirm} onOpenChange={(open) => { if (!open) setSeenConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you have seen this patient?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {seenConfirm?.patient_name} — {seenConfirm?.date} at {seenConfirm?.time}. The encounter will be recorded in the patient's medical history and removed from your upcoming appointments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmPatientSeen(seenConfirm)}>Yes, Patient Seen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AppointmentDetailsDialog apt={detail} onClose={closeDetail} onOpenRecord={openRecord} recordError={recordError} onReschedule={openReschedule} onPatientSeen={requestPatientSeen} />
     </div>
   );
 }

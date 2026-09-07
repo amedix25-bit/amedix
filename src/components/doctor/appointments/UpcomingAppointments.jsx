@@ -1,8 +1,9 @@
 import React from "react";
-import { Clock, MapPin, CalendarX, Pencil } from "lucide-react";
+import { Clock, MapPin, CalendarX, Pencil, CalendarClock, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getAppointmentStatus, sortByDateTime, STATUS_BADGE } from "./appointmentStatus";
 
-export default function UpcomingAppointments({ items, onOpen, onEdit }) {
+export default function UpcomingAppointments({ items, onOpen, onEdit, onReschedule, onPatientSeen }) {
   const sorted = sortByDateTime(items);
 
   if (sorted.length === 0) {
@@ -47,6 +48,14 @@ export default function UpcomingAppointments({ items, onOpen, onEdit }) {
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{apt.time}</span>
                 <span>CIN: {apt.patient_cin}</span>
                 {apt.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{apt.location}</span>}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onReschedule(apt); }}>
+                  <CalendarClock className="w-3.5 h-3.5 mr-1.5" /> Reschedule
+                </Button>
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onPatientSeen(apt); }}>
+                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Patient Seen
+                </Button>
               </div>
             </div>
           </div>

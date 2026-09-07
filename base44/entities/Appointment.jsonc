@@ -55,6 +55,36 @@
     "response_date": {
       "type": "string",
       "description": "Date and time the patient responded (ISO datetime)"
+    },
+    "original_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Original appointment date (kept when rescheduled)"
+    },
+    "original_time": {
+      "type": "string",
+      "description": "Original appointment time (kept when rescheduled)"
+    },
+    "rescheduled": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this appointment has been rescheduled"
+    },
+    "reschedule_datetime": {
+      "type": "string",
+      "description": "Date and time the appointment was rescheduled (ISO datetime)"
+    },
+    "seen_by_doctor_id": {
+      "type": "string",
+      "description": "Doctor who marked the patient as seen"
+    },
+    "seen_by_doctor_name": {
+      "type": "string",
+      "description": "Name of the doctor who marked the patient as seen"
+    },
+    "seen_datetime": {
+      "type": "string",
+      "description": "Date and time the patient was seen (ISO datetime)"
     }
   },
   "required": [
