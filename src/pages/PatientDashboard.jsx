@@ -6,19 +6,21 @@ import DashboardLayout from "@/components/DashboardLayout";
 import PatientOverview from "@/components/patient/PatientOverview";
 import PatientAppointments from "@/components/patient/PatientAppointments";
 import PatientLabs from "@/components/patient/PatientLabs";
+import PatientLabResults from "@/components/patient/PatientLabResults";
 import PatientImaging from "@/components/patient/PatientImaging";
 import PatientDocuments from "@/components/patient/PatientDocuments";
 import PatientAccessControl from "@/components/patient/PatientAccessControl";
 import PatientHealth from "@/components/patient/PatientHealth";
 import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Home", icon: HomeIcon },
   { key: "health", label: "My Health", icon: HeartPulse },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "labs", label: "Laboratory", icon: FlaskConical },
+  { key: "mylabresults", label: "My Lab Results", icon: ClipboardList },
   { key: "imaging", label: "Imaging", icon: ImageIcon },
   { key: "documents", label: "Documents", icon: FileText },
   { key: "medications", label: "Medications", icon: Pill },
@@ -86,6 +88,7 @@ export default function PatientDashboard() {
         {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
         {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
         {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
+        {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
         {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
         {activeTab === "documents" && <PatientDocuments patientId={profile?.id} />}
         {activeTab === "access" && <PatientAccessControl patientId={profile?.id} />}

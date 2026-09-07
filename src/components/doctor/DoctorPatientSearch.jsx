@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Search, UserCheck, Clock, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
 
 export default function DoctorPatientSearch({ doctorProfile }) {
   const [cin, setCin] = useState("");
@@ -130,15 +131,18 @@ export default function DoctorPatientSearch({ doctorProfile }) {
           </div>
 
           {accessStatus === "approved" && (
-            <div className="mt-6 pt-6 border-t border-border">
-              <h4 className="font-semibold text-sm mb-3">Medical Information</h4>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                <InfoRow label="Allergies" value={patient.allergies} />
-                <InfoRow label="Phone" value={patient.phone} />
-                <InfoRow label="Address" value={patient.address} />
-                <InfoRow label="Emergency Contact" value={patient.emergency_contact_name} />
+            <>
+              <div className="mt-6 pt-6 border-t border-border">
+                <h4 className="font-semibold text-sm mb-3">Medical Information</h4>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <InfoRow label="Allergies" value={patient.allergies} />
+                  <InfoRow label="Phone" value={patient.phone} />
+                  <InfoRow label="Address" value={patient.address} />
+                  <InfoRow label="Emergency Contact" value={patient.emergency_contact_name} />
+                </div>
               </div>
-            </div>
+              <DoctorPatientLabResultsView patientId={patient.id} />
+            </>
           )}
         </div>
       )}

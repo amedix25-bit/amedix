@@ -1,0 +1,49 @@
+{
+  "name": "PatientLabResult",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "test_type": {
+      "type": "string",
+      "description": "Type of laboratory test performed"
+    },
+    "test_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the test was performed"
+    },
+    "lab_name": {
+      "type": "string",
+      "description": "Name of the laboratory that performed the test"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded laboratory report (PDF or image)"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "submitted_date": {
+      "type": "string",
+      "description": "ISO datetime when the patient submitted the result"
+    },
+    "submitted_by_name": {
+      "type": "string",
+      "description": "The patient who submitted the result"
+    }
+  },
+  "required": [
+    "patient_id",
+    "test_type",
+    "test_date",
+    "file_url"
+  ]
+}
