@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
 import LabRequestListRow from "@/components/doctor/lab/LabRequestListRow";
+import LabRequestFilters from "@/components/doctor/lab/LabRequestFilters";
+import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf } from "@/lib/labRequestPdf";
 import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send } from "lucide-react";
@@ -25,6 +27,9 @@ export default function DoctorLabRequests({ doctorProfile }) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
     load();
@@ -65,6 +70,16 @@ export default function DoctorLabRequests({ doctorProfile }) {
     });
     return [...map.entries()];
   }, [selectedEntries]);
+
+  const filteredItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items.filter((lab) => {
+      if (q && !`${lab.patient_name || ""}`.toLowerCase().includes(q) && !`${lab.patient_cin || ""}`.toLowerCase().includes(q)) return false;
+      if (statusFilter !== "all" && normalizeLabStatus(lab.status) !== statusFilter) return false;
+      if (dateFilter && lab.date_requested !== dateFilter) return false;
+      return true;
+    });
+  }, [items, query, statusFilter, dateFilter]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -279,10 +294,24 @@ export default function DoctorLabRequests({ doctorProfile }) {
           <p>No lab requests yet</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-          {items.map((lab) => (
-            <LabRequestListRow key={lab.id} lab={lab} />
-          ))}
+        <div className="space-y-3">
+          <LabRequestFilters
+            query={query}
+            onQueryChange={setQuery}
+            status={statusFilter}
+            onStatusChange={setStatusFilter}
+            date={dateFilter}
+            onDateChange={setDateFilter}
+          />
+          {filteredItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No lab requests match your filters.</p>
+          ) : (
+            <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+              {filteredItems.map((lab) => (
+                <LabRequestListRow key={lab.id} lab={lab} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

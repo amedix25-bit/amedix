@@ -10,7 +10,7 @@ export const LAB_STATUS = {
     className: "bg-sky-50 text-sky-700 border-sky-200",
   },
   results: {
-    label: "RESULTS",
+    label: "RESULTS AVAILABLE",
     description: "Results are available",
     className: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },

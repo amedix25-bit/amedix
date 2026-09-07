@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
+import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { getTests, groupTestsByCategory, normalizeLabStatus } from "@/lib/labRequestUtils";
-import { ArrowLeft, FileText, CheckCircle2, Upload, Loader2, FlaskConical, Building2 } from "lucide-react";
+import { ArrowLeft, FileText, CheckCircle2, Upload, Loader2, FlaskConical, Building2, Clock } from "lucide-react";
 
 export default function LabRequestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [lab, setLab] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -17,6 +20,7 @@ export default function LabRequestDetail() {
   const [resultOpen, setResultOpen] = useState(false);
   const [resultText, setResultText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState([]);
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -26,7 +30,17 @@ export default function LabRequestDetail() {
   const load = async () => {
     try {
       const data = await base44.entities.LabRequest.get(id);
+      const myProfiles = await base44.entities.DoctorProfile.filter({ user_id: user.id });
+      if (myProfiles.length === 0 || myProfiles[0].id !== data.doctor_id) {
+        setNotFound(true);
+        return;
+      }
       setLab(data);
+      const hist = await base44.entities.LabRequest.filter(
+        { patient_id: data.patient_id, doctor_id: data.doctor_id },
+        "-date_requested"
+      );
+      setHistory(hist);
     } catch (err) {
       console.error(err);
       setNotFound(true);
@@ -236,6 +250,16 @@ export default function LabRequestDetail() {
             </div>
           )}
         </div>
+
+        {history.length > 1 && (
+          <div className="mt-4">
+            <h2 className="font-semibold mb-2 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              Lab Request History — {lab.patient_name}
+            </h2>
+            <LabHistoryList requests={history} currentId={lab.id} />
+          </div>
+        )}
       </div>
     </div>
   );
