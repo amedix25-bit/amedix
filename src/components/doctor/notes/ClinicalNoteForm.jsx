@@ -5,12 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
 const EMPTY = {
   patient_cin: "",
+  encounter_datetime: "",
+  location: "",
   history: "",
   vital_signs: "",
   physical_examination: "",
@@ -86,6 +89,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       setError("Find the patient first.");
       return;
     }
+    if (!form.location) {
+      setError("Select the location of the encounter.");
+      return;
+    }
     if (!form.diagnosis.trim()) {
       setError("Final diagnosis is required.");
       return;
@@ -99,6 +106,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         patient_name: patient.full_name,
         doctor_name: doctorProfile.full_name,
         date: new Date().toISOString().slice(0, 10),
+        encounter_datetime: form.encounter_datetime ? new Date(form.encounter_datetime).toISOString() : "",
+        location: form.location,
         history: form.history,
         vital_signs: form.vital_signs,
         physical_examination: form.physical_examination,
@@ -144,6 +153,29 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
           </p>
         )}
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Date/Time Patient Was Seen *</Label>
+          <Input
+            type="datetime-local"
+            value={form.encounter_datetime}
+            onChange={(e) => setForm({ ...form, encounter_datetime: e.target.value })}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Location of Encounter *</Label>
+          <Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}>
+            <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+            <SelectContent>
+              {["ER", "Clinic", "Ward", "ICU", "Other"].map((l) => (
+                <SelectItem key={l} value={l}>{l}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-2">

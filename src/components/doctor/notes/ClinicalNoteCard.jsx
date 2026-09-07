@@ -12,6 +12,12 @@ function Field({ label, value }) {
   );
 }
 
+function formatSeen(dt) {
+  if (!dt) return "—";
+  const d = new Date(dt);
+  return `${d.toLocaleDateString()} — ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
 export default function ClinicalNoteCard({ note, imagingMap }) {
   const navigate = useNavigate();
   const labIds = note.lab_request_ids || [];
@@ -23,6 +29,20 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
       <div className="flex items-center justify-between gap-2 mb-3">
         <p className="font-medium">{note.patient_name}</p>
         <span className="text-xs text-muted-foreground">{note.date}</span>
+      </div>
+      <div className="rounded-lg bg-muted/60 border border-border p-3 mb-3 text-sm grid sm:grid-cols-3 gap-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Doctor</p>
+          <p className="font-medium">{note.doctor_name || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Date/Time Seen</p>
+          <p className="font-medium">{formatSeen(note.encounter_datetime)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Location</p>
+          <p className="font-medium">{note.location || "—"}</p>
+        </div>
       </div>
       <div className="space-y-3">
         <Field label="History" value={note.history} />

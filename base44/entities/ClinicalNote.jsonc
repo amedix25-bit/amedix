@@ -21,6 +21,21 @@
       "type": "string",
       "format": "date"
     },
+    "encounter_datetime": {
+      "type": "string",
+      "description": "Date and time the doctor saw the patient (ISO datetime)"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "ER",
+        "Clinic",
+        "Ward",
+        "ICU",
+        "Other"
+      ],
+      "description": "Location of the encounter"
+    },
     "history": {
       "type": "string",
       "description": "History section of the clinical note"

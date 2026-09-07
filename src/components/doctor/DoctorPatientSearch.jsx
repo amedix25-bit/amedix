@@ -4,6 +4,7 @@ import { Search, UserCheck, Clock, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
+import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
 
 export default function DoctorPatientSearch({ doctorProfile }) {
   const [cin, setCin] = useState("");
@@ -141,6 +142,7 @@ export default function DoctorPatientSearch({ doctorProfile }) {
                   <InfoRow label="Emergency Contact" value={patient.emergency_contact_name} />
                 </div>
               </div>
+              <DoctorPatientClinicalNotesView patientId={patient.id} />
               <DoctorPatientLabResultsView patientId={patient.id} />
             </>
           )}
