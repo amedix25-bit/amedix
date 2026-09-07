@@ -1,0 +1,40 @@
+{
+  "name": "ClinicalNote",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "diagnosis": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "prescription": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "date",
+    "diagnosis"
+  ]
+}

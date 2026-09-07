@@ -1,0 +1,55 @@
+{
+  "name": "LabRequest",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "test_name": {
+      "type": "string"
+    },
+    "test_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "completed"
+      ],
+      "default": "requested"
+    },
+    "result": {
+      "type": "string"
+    },
+    "result_file_url": {
+      "type": "string"
+    },
+    "date_requested": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_completed": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "test_name",
+    "date_requested"
+  ]
+}

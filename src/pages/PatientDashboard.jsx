@@ -1,0 +1,75 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import DashboardLayout from "@/components/DashboardLayout";
+import PatientOverview from "@/components/patient/PatientOverview";
+import PatientAppointments from "@/components/patient/PatientAppointments";
+import PatientLabs from "@/components/patient/PatientLabs";
+import PatientImaging from "@/components/patient/PatientImaging";
+import PatientDocuments from "@/components/patient/PatientDocuments";
+import PatientAccessControl from "@/components/patient/PatientAccessControl";
+import { LayoutDashboard, Calendar, FlaskConical, Image, FileText, Shield } from "lucide-react";
+
+const navItems = [
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "appointments", label: "Appointments", icon: Calendar },
+  { key: "labs", label: "Laboratory", icon: FlaskConical },
+  { key: "imaging", label: "Imaging", icon: Image },
+  { key: "documents", label: "Documents", icon: FileText },
+  { key: "access", label: "Access Control", icon: Shield },
+];
+
+export default function PatientDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ appointments: 0, labs: 0, imaging: 0, documents: 0 });
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const profiles = await base44.entities.PatientProfile.filter({ user_id: user.id });
+      if (profiles.length === 0) {
+        navigate("/");
+        return;
+      }
+      const p = profiles[0];
+      setProfile(p);
+      const [apts, labs, imaging, docs] = await Promise.all([
+        base44.entities.Appointment.filter({ patient_id: p.id }),
+        base44.entities.LabRequest.filter({ patient_id: p.id }),
+        base44.entities.ImagingRequest.filter({ patient_id: p.id }),
+        base44.entities.MedicalDocument.filter({ patient_id: p.id }),
+      ]);
+      setStats({ appointments: apts.length, labs: labs.length, imaging: imaging.length, documents: docs.length });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Patient">
+      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
+        </div>
+
+        {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
+        {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
+        {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
+        {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
+        {activeTab === "documents" && <PatientDocuments patientId={profile?.id} />}
+        {activeTab === "access" && <PatientAccessControl patientId={profile?.id} />}
+      </div>
+    </DashboardLayout>
+  );
+}

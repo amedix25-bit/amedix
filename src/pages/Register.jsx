@@ -128,8 +128,8 @@ export default function Register() {
   return (
     <AuthLayout
       icon={UserPlus}
-      title="Create your account"
-      subtitle="Sign up to get started"
+      title="Join A&M Healthcare"
+      subtitle="Connected Care. Better Health."
       footer={
         <>
           Already have an account?{" "}

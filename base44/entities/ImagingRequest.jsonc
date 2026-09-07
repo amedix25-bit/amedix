@@ -1,0 +1,63 @@
+{
+  "name": "ImagingRequest",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "scan_type": {
+      "type": "string",
+      "enum": [
+        "X-Ray",
+        "MRI",
+        "CT Scan",
+        "Ultrasound",
+        "Mammogram"
+      ]
+    },
+    "body_part": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "completed"
+      ],
+      "default": "requested"
+    },
+    "report": {
+      "type": "string"
+    },
+    "report_file_url": {
+      "type": "string"
+    },
+    "date_requested": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_completed": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "scan_type",
+    "body_part",
+    "date_requested"
+  ]
+}

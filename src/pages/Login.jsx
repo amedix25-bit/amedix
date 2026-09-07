@@ -39,8 +39,8 @@ export default function Login() {
   return (
     <AuthLayout
       icon={LogIn}
-      title="Welcome back"
-      subtitle="Log in to your account"
+      title="Welcome Back"
+      subtitle="Log in to your A&M Healthcare account"
       footer={
         <>
           Don't have an account?{" "}

@@ -1,0 +1,51 @@
+{
+  "name": "AccessRequest",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_specialization": {
+      "type": "string"
+    },
+    "doctor_hospital": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "declined",
+        "revoked"
+      ],
+      "default": "pending"
+    },
+    "date_requested": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_responded": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "status",
+    "date_requested"
+  ]
+}
