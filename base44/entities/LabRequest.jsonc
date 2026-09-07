@@ -2,10 +2,11 @@
   "name": "LabRequest",
   "type": "object",
   "properties": {
-    "patient_id": {
-      "type": "string"
+    "request_id": {
+      "type": "string",
+      "description": "Unique lab request reference, e.g. LR-20260907-8F3K"
     },
-    "doctor_id": {
+    "patient_id": {
       "type": "string"
     },
     "patient_cin": {
@@ -14,26 +15,59 @@
     "patient_name": {
       "type": "string"
     },
+    "patient_dob": {
+      "type": "string",
+      "format": "date"
+    },
+    "patient_gender": {
+      "type": "string"
+    },
+    "patient_blood_type": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
     "doctor_name": {
       "type": "string"
     },
-    "test_name": {
+    "doctor_specialization": {
       "type": "string"
     },
-    "test_code": {
+    "doctor_hospital": {
       "type": "string"
     },
-    "category": {
-      "type": "string",
-      "description": "Lab test category, e.g. Hematology, Biochemistry"
+    "doctor_license": {
+      "type": "string"
     },
-    "request_group_id": {
-      "type": "string",
-      "description": "Groups all tests submitted together in one electronic request"
+    "tests": {
+      "type": "array",
+      "description": "All laboratory investigations included in this consolidated request",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "panel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
     },
     "indication": {
       "type": "string",
       "description": "Clinical indication / reason for testing"
+    },
+    "clinical_info": {
+      "type": "string",
+      "description": "Relevant clinical information for the laboratory"
     },
     "instructions": {
       "type": "string",
@@ -47,15 +81,21 @@
       "type": "string",
       "enum": [
         "requested",
-        "completed"
+        "pending",
+        "results"
       ],
-      "default": "requested"
+      "default": "requested",
+      "description": "REQUESTED: sent to laboratory. PENDING: received by laboratory, results not yet available. RESULTS: results available."
     },
     "result": {
       "type": "string"
     },
     "result_file_url": {
       "type": "string"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "Generated PDF Lab Request Form"
     },
     "date_requested": {
       "type": "string",
@@ -69,7 +109,7 @@
   "required": [
     "patient_id",
     "doctor_id",
-    "test_name",
+    "tests",
     "date_requested"
   ]
 }
