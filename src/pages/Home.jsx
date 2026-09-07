@@ -45,6 +45,12 @@ export default function Home() {
         navigate("/patient");
         return;
       }
+      const selectedRole = localStorage.getItem("amh_selected_role");
+      if (selectedRole === "patient") {
+        setShowPatientForm(true);
+      } else if (selectedRole === "doctor") {
+        setShowDoctorForm(true);
+      }
       setLoading(false);
     } catch (err) {
       setLoading(false);
@@ -66,6 +72,7 @@ export default function Home() {
         phone: doctorForm.phone,
         is_verified: false,
       });
+      localStorage.removeItem("amh_selected_role");
       navigate("/doctor");
     } catch (err) {
       console.error(err);
@@ -190,7 +197,10 @@ export default function Home() {
       {showPatientForm && (
         <PatientOnboardingForm
           user={user}
-          onComplete={() => navigate("/patient")}
+          onComplete={() => {
+            localStorage.removeItem("amh_selected_role");
+            navigate("/patient");
+          }}
           onClose={() => setShowPatientForm(false)}
         />
       )}
