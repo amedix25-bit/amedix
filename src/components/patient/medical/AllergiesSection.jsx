@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
-import AddAllergyModal from "./AddAllergyModal";
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { capitalize } from "@/lib/patientUtils";
 
 const severityClass = (s) =>
@@ -16,7 +14,6 @@ const severityClass = (s) =>
 export default function AllergiesSection({ number, patient }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
 
   const load = useCallback(async () => {
     if (!patient?.id) return;
@@ -35,25 +32,14 @@ export default function AllergiesSection({ number, patient }) {
   }, [load]);
 
   return (
-    <SectionCard
-      number={number}
-      title="Allergies"
-      action={
-        <Button variant="outline" size="sm" onClick={() => setShowAdd(true)}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
-      }
-    >
+    <SectionCard number={number} title="Allergies">
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           Loading...
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No allergies recorded. Add each allergen with its type, reaction, and severity.
-        </p>
+        <p className="text-sm text-muted-foreground">No allergies were recorded.</p>
       ) : (
         <div className="space-y-3">
           {items.map((a) => (
@@ -68,16 +54,6 @@ export default function AllergiesSection({ number, patient }) {
             </div>
           ))}
         </div>
-      )}
-      {showAdd && (
-        <AddAllergyModal
-          patient={patient}
-          onClose={() => setShowAdd(false)}
-          onAdded={() => {
-            setShowAdd(false);
-            load();
-          }}
-        />
       )}
     </SectionCard>
   );

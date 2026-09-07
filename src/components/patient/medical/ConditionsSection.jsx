@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
-import AddConditionModal from "./AddConditionModal";
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function ConditionsSection({ number, title, category, patient, emptyText }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
 
   const load = useCallback(async () => {
     if (!patient?.id) return;
@@ -30,16 +27,7 @@ export default function ConditionsSection({ number, title, category, patient, em
   }, [load]);
 
   return (
-    <SectionCard
-      number={number}
-      title={title}
-      action={
-        <Button variant="outline" size="sm" onClick={() => setShowAdd(true)}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
-      }
-    >
+    <SectionCard number={number} title={title}>
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -59,17 +47,6 @@ export default function ConditionsSection({ number, title, category, patient, em
             </div>
           ))}
         </div>
-      )}
-      {showAdd && (
-        <AddConditionModal
-          patient={patient}
-          category={category}
-          onClose={() => setShowAdd(false)}
-          onAdded={() => {
-            setShowAdd(false);
-            load();
-          }}
-        />
       )}
     </SectionCard>
   );

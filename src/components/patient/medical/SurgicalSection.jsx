@@ -2,14 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import InfoRow from "./InfoRow";
-import AddSurgeryModal from "./AddSurgeryModal";
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function SurgicalSection({ number, patient }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
 
   const load = useCallback(async () => {
     if (!patient?.id) return;
@@ -28,25 +25,14 @@ export default function SurgicalSection({ number, patient }) {
   }, [load]);
 
   return (
-    <SectionCard
-      number={number}
-      title="Past Surgical History"
-      action={
-        <Button variant="outline" size="sm" onClick={() => setShowAdd(true)}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add
-        </Button>
-      }
-    >
+    <SectionCard number={number} title="Past Surgical History">
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           Loading...
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No previous surgeries recorded. Add every previous surgery with its full details.
-        </p>
+        <p className="text-sm text-muted-foreground">No previous surgeries were recorded.</p>
       ) : (
         <div className="space-y-4">
           {items.map((s) => {
@@ -100,16 +86,6 @@ export default function SurgicalSection({ number, patient }) {
             );
           })}
         </div>
-      )}
-      {showAdd && (
-        <AddSurgeryModal
-          patient={patient}
-          onClose={() => setShowAdd(false)}
-          onAdded={() => {
-            setShowAdd(false);
-            load();
-          }}
-        />
       )}
     </SectionCard>
   );
