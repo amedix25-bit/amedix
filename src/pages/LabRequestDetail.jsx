@@ -257,7 +257,7 @@ export default function LabRequestDetail() {
               <Clock className="w-4 h-4 text-muted-foreground" />
               Lab Request History — {lab.patient_name}
             </h2>
-            <LabHistoryList requests={history} currentId={lab.id} />
+            <LabHistoryList requests={history} currentId={lab.id} showPdf />
           </div>
         )}
       </div>

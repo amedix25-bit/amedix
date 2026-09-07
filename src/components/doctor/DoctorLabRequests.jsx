@@ -5,16 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
-import LabRequestListRow from "@/components/doctor/lab/LabRequestListRow";
-import LabRequestFilters from "@/components/doctor/lab/LabRequestFilters";
-import { normalizeLabStatus } from "@/lib/labRequestUtils";
+import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
+import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf } from "@/lib/labRequestPdf";
-import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send } from "lucide-react";
+import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send, ArrowLeft, Search } from "lucide-react";
 
 export default function DoctorLabRequests({ doctorProfile }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [form, setForm] = useState({
@@ -27,9 +28,6 @@ export default function DoctorLabRequests({ doctorProfile }) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
     load();
@@ -71,15 +69,43 @@ export default function DoctorLabRequests({ doctorProfile }) {
     return [...map.entries()];
   }, [selectedEntries]);
 
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return items.filter((lab) => {
-      if (q && !`${lab.patient_name || ""}`.toLowerCase().includes(q) && !`${lab.patient_cin || ""}`.toLowerCase().includes(q)) return false;
-      if (statusFilter !== "all" && normalizeLabStatus(lab.status) !== statusFilter) return false;
-      if (dateFilter && lab.date_requested !== dateFilter) return false;
-      return true;
+  // One row per patient — never one row per test.
+  const patients = useMemo(() => {
+    const map = new Map();
+    items.forEach((lab) => {
+      if (!map.has(lab.patient_id)) {
+        map.set(lab.patient_id, {
+          patient_id: lab.patient_id,
+          patient_name: lab.patient_name,
+          patient_cin: lab.patient_cin,
+        });
+      }
     });
-  }, [items, query, statusFilter, dateFilter]);
+    return [...map.values()];
+  }, [items]);
+
+  const filteredPatients = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return patients;
+    return patients.filter(
+      (p) =>
+        `${p.patient_name || ""}`.toLowerCase().includes(q) ||
+        `${p.patient_cin || ""}`.toLowerCase().includes(q)
+    );
+  }, [patients, query]);
+
+  // The selected patient's consolidated request history, newest first.
+  const patientRequests = useMemo(() => {
+    if (!selectedPatient) return [];
+    const map = new Map();
+    items
+      .filter((lab) => lab.patient_id === selectedPatient.patient_id)
+      .forEach((lab) => {
+        const key = Array.isArray(lab.tests) && lab.tests.length > 0 ? lab.id : (lab.request_group_id || lab.id);
+        if (!map.has(key)) map.set(key, lab);
+      });
+    return [...map.values()];
+  }, [items, selectedPatient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -147,6 +173,126 @@ export default function DoctorLabRequests({ doctorProfile }) {
     }
   };
 
+  const formSection = showForm && (
+    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-5">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="font-semibold">Request Lab Investigations</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Select whole panels or individual tests — all selections are combined into one consolidated request with a single Request ID and PDF form.
+          </p>
+        </div>
+        <button type="button" onClick={() => setShowForm(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="lab_cin">Patient CIN *</Label>
+          <Input
+            id="lab_cin"
+            value={form.patient_cin}
+            onChange={(e) => setForm({ ...form, patient_cin: e.target.value })}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lab_name">Laboratory *</Label>
+          <Input
+            id="lab_name"
+            placeholder="Laboratory to receive this request"
+            value={form.lab_name}
+            onChange={(e) => setForm({ ...form, lab_name: e.target.value })}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Investigations *</Label>
+        <LabTestPicker selected={selected} onToggle={toggleTest} onSetMany={setMany} />
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="lab_indication">Clinical indication / reason for testing *</Label>
+          <Textarea
+            id="lab_indication"
+            rows={3}
+            placeholder="e.g. Suspected iron deficiency anemia"
+            value={form.indication}
+            onChange={(e) => setForm({ ...form, indication: e.target.value })}
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lab_clinical">Relevant clinical information</Label>
+          <Textarea
+            id="lab_clinical"
+            rows={3}
+            placeholder="e.g. Known hypertension, on metformin, recent fatigue"
+            value={form.clinical_info}
+            onChange={(e) => setForm({ ...form, clinical_info: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="lab_instructions">Laboratory instructions</Label>
+        <Textarea
+          id="lab_instructions"
+          rows={2}
+          placeholder="e.g. Fasting sample, morning draw"
+          value={form.instructions}
+          onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+        />
+      </div>
+
+      {selectedEntries.length > 0 && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm font-semibold mb-1">Review Consolidated Request ({selectedEntries.length} tests)</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Patient CIN: {form.patient_cin || "—"} · Laboratory: {form.lab_name || "—"} · One submission = one consolidated request and one PDF form.
+          </p>
+          {groupedSelection.map(([category, entries]) => (
+            <div key={category} className="mb-3 last:mb-0">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">{category}</p>
+              <div className="flex flex-wrap gap-2">
+                {entries.map((e) => (
+                  <span key={e.id} className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2.5 py-1 text-xs">
+                    {e.name}
+                    <button
+                      type="button"
+                      onClick={() => toggleTest(e.id)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {formError && <p className="text-sm text-destructive">{formError}</p>}
+
+      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
+        {submitting ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Submitting request...
+          </>
+        ) : (
+          <>
+            <Send className="w-4 h-4 mr-2" />
+            Submit Consolidated Lab Request
+          </>
+        )}
+      </Button>
+    </form>
+  );
+
   return (
     <div className="space-y-4">
       {successMsg && (
@@ -159,158 +305,69 @@ export default function DoctorLabRequests({ doctorProfile }) {
         </div>
       )}
 
-      <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Lab Request
-        </Button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-5">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="font-semibold">Request Lab Investigations</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Select whole panels or individual tests — all selections are combined into one consolidated request with a single PDF form.
-              </p>
-            </div>
-            <button type="button" onClick={() => setShowForm(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
+      {selectedPatient ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSelectedPatient(null)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4" /> All patients
+            </button>
+            <Button size="sm" onClick={() => { setSelectedPatient(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Lab Request
+            </Button>
           </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="lab_cin">Patient CIN *</Label>
-              <Input
-                id="lab_cin"
-                value={form.patient_cin}
-                onChange={(e) => setForm({ ...form, patient_cin: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="lab_name">Laboratory *</Label>
-              <Input
-                id="lab_name"
-                placeholder="Laboratory to receive this request"
-                value={form.lab_name}
-                onChange={(e) => setForm({ ...form, lab_name: e.target.value })}
-                required
-              />
-            </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="font-medium">{selectedPatient.patient_name}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">CIN: {selectedPatient.patient_cin}</p>
           </div>
-
-          <div className="space-y-2">
-            <Label>Investigations *</Label>
-            <LabTestPicker selected={selected} onToggle={toggleTest} onSetMany={setMany} />
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="lab_indication">Clinical indication / reason for testing *</Label>
-              <Textarea
-                id="lab_indication"
-                rows={3}
-                placeholder="e.g. Suspected iron deficiency anemia"
-                value={form.indication}
-                onChange={(e) => setForm({ ...form, indication: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="lab_clinical">Relevant clinical information</Label>
-              <Textarea
-                id="lab_clinical"
-                rows={3}
-                placeholder="e.g. Known hypertension, on metformin, recent fatigue"
-                value={form.clinical_info}
-                onChange={(e) => setForm({ ...form, clinical_info: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="lab_instructions">Laboratory instructions</Label>
-            <Textarea
-              id="lab_instructions"
-              rows={2}
-              placeholder="e.g. Fasting sample, morning draw"
-              value={form.instructions}
-              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-            />
-          </div>
-
-          {selectedEntries.length > 0 && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <p className="text-sm font-semibold mb-1">Review Consolidated Request ({selectedEntries.length} tests)</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Patient CIN: {form.patient_cin || "—"} · Laboratory: {form.lab_name || "—"} · One submission = one consolidated request and one PDF form.
-              </p>
-              {groupedSelection.map(([category, entries]) => (
-                <div key={category} className="mb-3 last:mb-0">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">{category}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {entries.map((e) => (
-                      <span key={e.id} className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2.5 py-1 text-xs">
-                        {e.name}
-                        <button
-                          type="button"
-                          onClick={() => toggleTest(e.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {patientRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No lab requests for this patient.</p>
+          ) : (
+            <LabHistoryList requests={patientRequests} showPdf />
           )}
-
-          {formError && <p className="text-sm text-destructive">{formError}</p>}
-
-          <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Submitting request...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                Submit Consolidated Lab Request
-              </>
-            )}
-          </Button>
-        </form>
-      )}
-
-      {loading ? (
-        <div className="text-muted-foreground text-sm">Loading...</div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <FlaskConical className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No lab requests yet</p>
         </div>
       ) : (
         <div className="space-y-3">
-          <LabRequestFilters
-            query={query}
-            onQueryChange={setQuery}
-            status={statusFilter}
-            onStatusChange={setStatusFilter}
-            date={dateFilter}
-            onDateChange={setDateFilter}
-          />
-          {filteredItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No lab requests match your filters.</p>
-          ) : (
-            <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-              {filteredItems.map((lab) => (
-                <LabRequestListRow key={lab.id} lab={lab} />
-              ))}
+          <div className="flex justify-end">
+            <Button onClick={() => setShowForm(!showForm)}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Lab Request
+            </Button>
+          </div>
+
+          {formSection}
+
+          {loading ? (
+            <div className="text-muted-foreground text-sm">Loading...</div>
+          ) : patients.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <FlaskConical className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No patients with lab requests yet</p>
             </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search patient by name or CIN..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {filteredPatients.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No patients match your search.</p>
+              ) : (
+                <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+                  {filteredPatients.map((p) => (
+                    <PatientLabListRow key={p.patient_id} patient={p} onClick={() => setSelectedPatient(p)} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

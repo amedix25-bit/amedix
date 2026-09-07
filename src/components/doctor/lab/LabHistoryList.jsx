@@ -2,9 +2,9 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { getTests } from "@/lib/labRequestUtils";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 
-export default function LabHistoryList({ requests, currentId }) {
+export default function LabHistoryList({ requests, currentId, showPdf = false }) {
   const navigate = useNavigate();
   return (
     <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
@@ -31,6 +31,15 @@ export default function LabHistoryList({ requests, currentId }) {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {isCurrent && <span className="text-xs text-primary font-medium">Viewing</span>}
+              {showPdf && r.pdf_url && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); window.open(r.pdf_url, "_blank"); }}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-accent"
+                  title="Open Laboratory Request PDF"
+                >
+                  <FileText className="w-3.5 h-3.5" /> PDF
+                </button>
+              )}
               <LabStatusBadge status={r.status} />
               {!isCurrent && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
             </div>
