@@ -6,12 +6,14 @@ import { HeartPulse, Stethoscope, User, ArrowRight, Loader2, X } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
 
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [showDoctorForm, setShowDoctorForm] = useState(false);
+  const [showPatientForm, setShowPatientForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [doctorForm, setDoctorForm] = useState({
     specialization: "",
@@ -49,28 +51,7 @@ export default function Home() {
     }
   };
 
-  const generateCIN = () => {
-    const ts = Date.now().toString(36).toUpperCase().slice(-6);
-    const rand = Math.random().toString(36).toUpperCase().slice(2, 5);
-    return `CIN-${ts}${rand}`;
-  };
-
-  const handlePatientSelect = async () => {
-    setCreating(true);
-    try {
-      const cin = generateCIN();
-      await base44.entities.PatientProfile.create({
-        user_id: user.id,
-        cin,
-        full_name: user.full_name || user.email,
-      });
-      navigate("/patient");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCreating(false);
-    }
-  };
+  const handlePatientSelect = () => setShowPatientForm(true);
 
   const handleDoctorSubmit = async (e) => {
     e.preventDefault();
@@ -128,7 +109,6 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-6">
             <button
               onClick={handlePatientSelect}
-              disabled={creating}
               className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30 disabled:opacity-50"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -205,6 +185,14 @@ export default function Home() {
             </form>
           </div>
         </div>
+      )}
+
+      {showPatientForm && (
+        <PatientOnboardingForm
+          user={user}
+          onComplete={() => navigate("/patient")}
+          onClose={() => setShowPatientForm(false)}
+        />
       )}
     </div>
   );

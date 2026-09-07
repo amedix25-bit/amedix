@@ -7,9 +7,18 @@
     },
     "cin": {
       "type": "string",
-      "description": "Clinical Identification Number - unique patient identifier"
+      "description": "Clinical Identification Number - unique permanent patient identifier"
     },
     "full_name": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "middle_name": {
+      "type": "string"
+    },
+    "last_name": {
       "type": "string"
     },
     "date_of_birth": {
@@ -42,15 +51,23 @@
         "O+",
         "O-",
         "Unknown"
-      ]
+      ],
+      "default": "Unknown"
     },
     "allergies": {
       "type": "string"
+    },
+    "identification_number": {
+      "type": "string",
+      "description": "National ID, passport, or other required identification number"
     },
     "emergency_contact_name": {
       "type": "string"
     },
     "emergency_contact_phone": {
+      "type": "string"
+    },
+    "emergency_contact_relationship": {
       "type": "string"
     }
   },

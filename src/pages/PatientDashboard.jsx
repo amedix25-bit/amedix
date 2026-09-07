@@ -9,15 +9,21 @@ import PatientLabs from "@/components/patient/PatientLabs";
 import PatientImaging from "@/components/patient/PatientImaging";
 import PatientDocuments from "@/components/patient/PatientDocuments";
 import PatientAccessControl from "@/components/patient/PatientAccessControl";
-import { LayoutDashboard, Calendar, FlaskConical, Image, FileText, Shield } from "lucide-react";
+import PatientHealth from "@/components/patient/PatientHealth";
+import PatientMedications from "@/components/patient/PatientMedications";
+import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
 
 const navItems = [
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "overview", label: "Home", icon: HomeIcon },
+  { key: "health", label: "My Health", icon: HeartPulse },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "labs", label: "Laboratory", icon: FlaskConical },
-  { key: "imaging", label: "Imaging", icon: Image },
+  { key: "imaging", label: "Imaging", icon: ImageIcon },
   { key: "documents", label: "Documents", icon: FileText },
-  { key: "access", label: "Access Control", icon: Shield },
+  { key: "medications", label: "Medications", icon: Pill },
+  { key: "access", label: "Access & Privacy", icon: Shield },
+  { key: "profile", label: "Profile", icon: User },
 ];
 
 export default function PatientDashboard() {
@@ -26,7 +32,7 @@ export default function PatientDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ appointments: 0, labs: 0, imaging: 0, documents: 0 });
+  const [stats, setStats] = useState({ appointments: 0, labs: 0, imaging: 0, documents: 0, medications: 0 });
 
   useEffect(() => {
     loadProfile();
@@ -41,13 +47,20 @@ export default function PatientDashboard() {
       }
       const p = profiles[0];
       setProfile(p);
-      const [apts, labs, imaging, docs] = await Promise.all([
+      const [apts, labs, imaging, docs, notes] = await Promise.all([
         base44.entities.Appointment.filter({ patient_id: p.id }),
         base44.entities.LabRequest.filter({ patient_id: p.id }),
         base44.entities.ImagingRequest.filter({ patient_id: p.id }),
         base44.entities.MedicalDocument.filter({ patient_id: p.id }),
+        base44.entities.ClinicalNote.filter({ patient_id: p.id }),
       ]);
-      setStats({ appointments: apts.length, labs: labs.length, imaging: imaging.length, documents: docs.length });
+      setStats({
+        appointments: apts.length,
+        labs: labs.length,
+        imaging: imaging.length,
+        documents: docs.length,
+        medications: notes.filter((n) => n.prescription).length,
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -59,11 +72,18 @@ export default function PatientDashboard() {
     <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Patient">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+          <h1 className="text-2xl font-bold">
+            {activeTab === "overview"
+              ? `Welcome, ${profile?.full_name?.split(" ")[0] || ""}`
+              : navItems.find((n) => n.key === activeTab)?.label}
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
         </div>
 
         {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
+        {activeTab === "health" && <PatientHealth patientId={profile?.id} profile={profile} />}
+        {activeTab === "medications" && <PatientMedications patientId={profile?.id} />}
+        {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
         {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
         {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
         {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}

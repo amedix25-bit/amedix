@@ -12,12 +12,13 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
+import Landing from '@/pages/Landing';
 import PatientDashboard from '@/pages/PatientDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -42,8 +43,8 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/" element={isAuthenticated ? <Home /> : <Landing />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/" element={<Home />} />
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
