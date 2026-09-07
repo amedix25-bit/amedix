@@ -23,6 +23,26 @@
     "test_code": {
       "type": "string"
     },
+    "category": {
+      "type": "string",
+      "description": "Lab test category, e.g. Hematology, Biochemistry"
+    },
+    "request_group_id": {
+      "type": "string",
+      "description": "Groups all tests submitted together in one electronic request"
+    },
+    "indication": {
+      "type": "string",
+      "description": "Clinical indication / reason for testing"
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Laboratory instructions"
+    },
+    "lab_name": {
+      "type": "string",
+      "description": "Laboratory the request is sent to"
+    },
     "status": {
       "type": "string",
       "enum": [
