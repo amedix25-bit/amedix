@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { makeImagingRequestId, generateImagingRequestPdf } from "@/lib/imagingRequestPdf";
-import { Image, Plus, X, Upload, CheckCircle2, FileText } from "lucide-react";
+import { Image, Plus } from "lucide-react";
+import ImagingRequestForm from "./imaging/ImagingRequestForm";
+import ImagingRequestCard from "./imaging/ImagingRequestCard";
+import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
 
 export default function DoctorImagingRequests({ doctorProfile }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ patient_cin: "", scan_type: "", body_part: "" });
-  const [uploadingId, setUploadingId] = useState(null);
-  const [reportText, setReportText] = useState("");
 
   useEffect(() => { load(); }, [doctorProfile]);
 
@@ -25,42 +21,73 @@ export default function DoctorImagingRequests({ doctorProfile }) {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (form) => {
     try {
       const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
       if (patients.length === 0) { alert("Patient not found"); return; }
       const p = patients[0];
-      const today = new Date().toISOString().slice(0, 10);
+      const now = new Date();
+      const examination = form.examination === "Other" ? form.examination_other.trim() : form.examination;
+      const showContrast = CONTRAST_APPLICABLE.includes(form.scan_type);
+      const contrastSelected = showContrast && ["With contrast", "With and without contrast"].includes(form.contrast);
+      const isMri = form.scan_type === "MRI";
+
       const payload = {
-        patient_id: p.id, doctor_id: doctorProfile.id,
-        patient_cin: p.cin, patient_name: p.full_name, doctor_name: doctorProfile.full_name,
-        scan_type: form.scan_type, body_part: form.body_part,
+        patient_id: p.id,
+        doctor_id: doctorProfile.id,
+        patient_cin: p.cin,
+        patient_name: p.full_name,
+        doctor_name: doctorProfile.full_name,
+        doctor_specialization: doctorProfile.specialization,
+        doctor_hospital: doctorProfile.hospital,
         request_id: makeImagingRequestId(),
-        status: "requested", date_requested: today,
+        scan_type: form.scan_type,
+        examination,
+        body_part: examination,
+        clinical_indication: form.clinical_indication.trim(),
+        working_diagnosis: form.working_diagnosis.trim(),
+        priority: form.priority,
+        contrast: showContrast ? form.contrast : "Not applicable",
+        ...(contrastSelected ? {
+          contrast_allergy: form.contrast_allergy,
+          previous_contrast_reaction: form.previous_contrast_reaction,
+        } : {}),
+        ...(isMri ? {
+          mri_metal_implant: form.mri_metal_implant,
+          mri_pacemaker: form.mri_pacemaker,
+          mri_other_device: form.mri_other_device,
+          mri_metallic_foreign_body: form.mri_metallic_foreign_body,
+          mri_other_concern: form.mri_other_concern.trim(),
+        } : {}),
+        status: "requested",
+        date_requested: now.toISOString().slice(0, 10),
+        request_datetime: now.toISOString(),
+        request_time: now.toTimeString().slice(0, 5),
       };
+
       const doc = generateImagingRequestPdf({
         ...payload,
-        patient_dob: p.date_of_birth, patient_gender: p.gender, patient_blood_type: p.blood_type,
-        doctor_specialization: doctorProfile.specialization, doctor_hospital: doctorProfile.hospital,
+        patient_dob: p.date_of_birth,
+        patient_gender: p.gender,
+        patient_blood_type: p.blood_type,
         doctor_license: doctorProfile.license_number,
       });
-      const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
+      const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${payload.date_requested}.pdf`, { type: "application/pdf" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
       await base44.entities.ImagingRequest.create({ ...payload, pdf_url: file_url });
-      setForm({ patient_cin: "", scan_type: "", body_part: "" });
       setShowForm(false);
       load();
     } catch (err) { console.error(err); }
   };
 
-  const handleUploadReport = async (id) => {
+  const handleUploadReport = async (id, text) => {
     try {
       await base44.entities.ImagingRequest.update(id, {
-        status: "completed", report: reportText,
+        status: "completed",
+        report: text,
         date_completed: new Date().toISOString().slice(0, 10),
       });
-      setUploadingId(null); setReportText(""); load();
+      load();
     } catch (err) { console.error(err); }
   };
 
@@ -79,34 +106,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-semibold">Request Imaging</h3>
-            <button onClick={() => setShowForm(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
-          </div>
-          <div className="space-y-2">
-            <Label>Patient CIN *</Label>
-            <Input value={form.patient_cin} onChange={(e) => setForm({ ...form, patient_cin: e.target.value })} required />
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Scan Type *</Label>
-              <Select value={form.scan_type} onValueChange={(v) => setForm({ ...form, scan_type: v })}>
-                <SelectTrigger><SelectValue placeholder="Select scan type" /></SelectTrigger>
-                <SelectContent>
-                  {["X-Ray", "MRI", "CT Scan", "Ultrasound", "Mammogram"].map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Body Part *</Label>
-              <Input value={form.body_part} onChange={(e) => setForm({ ...form, body_part: e.target.value })} placeholder="e.g. Chest, Knee" required />
-            </div>
-          </div>
-          <Button type="submit">Create Request</Button>
-        </form>
+        <ImagingRequestForm doctorProfile={doctorProfile} onSubmit={handleSubmit} onCancel={() => setShowForm(false)} />
       )}
 
       {loading ? <div className="text-muted-foreground text-sm">Loading...</div> : items.length === 0 ? (
@@ -117,54 +117,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       ) : (
         <div className="space-y-3">
           {items.map((img) => (
-            <div key={img.id} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <p className="font-medium">{img.scan_type} — {img.body_part}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{img.patient_name} · CIN: {img.patient_cin}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Requested: {img.date_requested}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                    {img.status}
-                  </span>
-                </div>
-              </div>
-              {img.pdf_url && (
-                <a href={img.pdf_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary underline">
-                  <FileText className="w-3.5 h-3.5" /> Request PDF
-                </a>
-              )}
-              {img.status === "requested" && (
-                <div className="mt-3 pt-3 border-t border-border">
-                  {uploadingId === img.id ? (
-                    <div className="space-y-2">
-                      <Textarea placeholder="Enter report..." value={reportText} onChange={(e) => setReportText(e.target.value)} rows={2} />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleUploadReport(img.id)}><CheckCircle2 className="w-4 h-4 mr-1" />Save Report</Button>
-                        <Button size="sm" variant="outline" onClick={() => setUploadingId(null)}>Cancel</Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setUploadingId(img.id)}><Upload className="w-4 h-4 mr-1" />Upload Report</Button>
-                      <label className="cursor-pointer">
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-md text-sm border border-border hover:bg-accent">
-                          <Upload className="w-4 h-4 mr-1" />Attach File
-                        </span>
-                        <input type="file" className="hidden" onChange={(e) => e.target.files[0] && handleFileUpload(img.id, e.target.files[0])} />
-                      </label>
-                    </div>
-                  )}
-                </div>
-              )}
-              {img.status === "completed" && img.report && (
-                <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                  <p className="text-sm text-emerald-800">{img.report}</p>
-                  {img.report_file_url && <a href={img.report_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline mt-2 inline-block">View file</a>}
-                </div>
-              )}
-            </div>
+            <ImagingRequestCard key={img.id} img={img} onUploadReport={handleUploadReport} onAttachFile={handleFileUpload} />
           ))}
         </div>
       )}

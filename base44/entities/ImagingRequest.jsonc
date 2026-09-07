@@ -17,6 +17,14 @@
     "doctor_name": {
       "type": "string"
     },
+    "doctor_specialization": {
+      "type": "string",
+      "description": "Specialty of the requesting doctor"
+    },
+    "doctor_hospital": {
+      "type": "string",
+      "description": "Hospital / clinic of the requesting doctor"
+    },
     "request_id": {
       "type": "string",
       "description": "Unique imaging request reference, e.g. IR-20260907-8F3K"
@@ -25,14 +33,115 @@
       "type": "string",
       "enum": [
         "X-Ray",
+        "CT",
         "MRI",
-        "CT Scan",
         "Ultrasound",
-        "Mammogram"
-      ]
+        "Mammography",
+        "Other"
+      ],
+      "description": "Type of imaging (modality)"
+    },
+    "examination": {
+      "type": "string",
+      "description": "Examination / view requested for the selected modality"
     },
     "body_part": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy field \u2014 kept in sync with the examination"
+    },
+    "clinical_indication": {
+      "type": "string",
+      "description": "Why the imaging is being requested \u2014 relevant clinical information"
+    },
+    "working_diagnosis": {
+      "type": "string",
+      "description": "Working diagnosis / clinical question for the radiologist"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "Routine",
+        "Urgent",
+        "Emergency"
+      ],
+      "default": "Routine",
+      "description": "Priority of the request"
+    },
+    "contrast": {
+      "type": "string",
+      "enum": [
+        "No contrast",
+        "With contrast",
+        "With and without contrast",
+        "Not applicable"
+      ],
+      "description": "Contrast use for the examination"
+    },
+    "contrast_allergy": {
+      "type": "string",
+      "enum": [
+        "No known allergy",
+        "Known allergy",
+        "Unknown"
+      ],
+      "description": "Contrast allergy status"
+    },
+    "previous_contrast_reaction": {
+      "type": "string",
+      "enum": [
+        "Yes",
+        "No",
+        "Unknown"
+      ],
+      "description": "Previous contrast reaction"
+    },
+    "mri_metal_implant": {
+      "type": "string",
+      "enum": [
+        "Yes",
+        "No",
+        "Unknown"
+      ],
+      "description": "MRI safety \u2014 metal or metallic implant in the body"
+    },
+    "mri_pacemaker": {
+      "type": "string",
+      "enum": [
+        "Yes",
+        "No",
+        "Unknown"
+      ],
+      "description": "MRI safety \u2014 pacemaker or implanted cardiac device"
+    },
+    "mri_other_device": {
+      "type": "string",
+      "enum": [
+        "Yes",
+        "No",
+        "Unknown"
+      ],
+      "description": "MRI safety \u2014 other implanted medical device"
+    },
+    "mri_metallic_foreign_body": {
+      "type": "string",
+      "enum": [
+        "Yes",
+        "No",
+        "Unknown"
+      ],
+      "description": "MRI safety \u2014 possible metallic foreign body, especially in the eye"
+    },
+    "mri_other_concern": {
+      "type": "string",
+      "description": "MRI safety \u2014 other concern (free text)"
+    },
+    "request_datetime": {
+      "type": "string",
+      "description": "Date and time the request was created (ISO datetime)"
+    },
+    "request_time": {
+      "type": "string",
+      "description": "Time the request was created (HH:MM)"
     },
     "status": {
       "type": "string",
@@ -65,7 +174,10 @@
     "patient_id",
     "doctor_id",
     "scan_type",
-    "body_part",
+    "examination",
+    "clinical_indication",
+    "working_diagnosis",
+    "priority",
     "date_requested"
   ]
 }
