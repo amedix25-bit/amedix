@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Plus, X, Pencil, MapPin } from "lucide-react";
+import { Plus, X, CalendarDays, Users, Ban } from "lucide-react";
+import UpcomingAppointments from "./appointments/UpcomingAppointments";
+import AppointmentsCalendar from "./appointments/AppointmentsCalendar";
+import DeclinedAppointments from "./appointments/DeclinedAppointments";
+import AppointmentDetailsDialog from "./appointments/AppointmentDetailsDialog";
+import DoctorPatientRecordView from "./DoctorPatientRecordView";
+import { getAppointmentStatus } from "./appointments/appointmentStatus";
 
 const EMPTY = { patient_cin: "", date: "", time: "", location: "", reason: "", notes: "" };
+const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function DoctorAppointments({ doctorProfile }) {
   const [items, setItems] = useState([]);
@@ -15,6 +22,10 @@ export default function DoctorAppointments({ doctorProfile }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState("");
+  const [view, setView] = useState("calendar");
+  const [detail, setDetail] = useState(null);
+  const [recordError, setRecordError] = useState("");
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   useEffect(() => {
     load();
@@ -39,6 +50,7 @@ export default function DoctorAppointments({ doctorProfile }) {
   };
 
   const openEdit = (apt) => {
+    setDetail(null);
     setEditing(apt);
     setForm({
       patient_cin: apt.patient_cin || "",
@@ -99,6 +111,65 @@ export default function DoctorAppointments({ doctorProfile }) {
     }
   };
 
+  const handleDelete = async (apt) => {
+    try {
+      await base44.entities.Appointment.delete(apt.id);
+      load();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openRecord = async (apt) => {
+    setRecordError("");
+    try {
+      const accessReqs = await base44.entities.AccessRequest.filter({ patient_id: apt.patient_id, doctor_id: doctorProfile.id, status: "approved" });
+      if (accessReqs.length === 0) {
+        setRecordError("You don't have approved access to this patient's record.");
+        return;
+      }
+      const profiles = await base44.entities.PatientProfile.filter({ id: apt.patient_id });
+      if (profiles.length === 0) {
+        setRecordError("Patient profile not found.");
+        return;
+      }
+      setDetail(null);
+      setSelectedPatient(profiles[0]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetail(null);
+    setRecordError("");
+  };
+
+  if (selectedPatient) {
+    return (
+      <div className="space-y-4">
+        <DoctorPatientRecordView patient={selectedPatient} onBack={() => setSelectedPatient(null)} />
+      </div>
+    );
+  }
+
+  const today = todayStr();
+  const upcoming = items.filter((a) => {
+    const s = getAppointmentStatus(a);
+    return (s === "Pending" || s === "Confirmed") && a.date >= today;
+  });
+  const active = items.filter((a) => {
+    const s = getAppointmentStatus(a);
+    return s === "Pending" || s === "Confirmed";
+  });
+  const declined = items.filter((a) => a.patient_response === "declined" || a.status === "cancelled");
+
+  const tabs = [
+    { key: "upcoming", label: "Upcoming", icon: Users, count: upcoming.length },
+    { key: "calendar", label: "Calendar", icon: CalendarDays },
+    { key: "declined", label: "Declined", icon: Ban, count: declined.length },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -155,67 +226,33 @@ export default function DoctorAppointments({ doctorProfile }) {
         </form>
       )}
 
+      <div className="flex rounded-xl border border-border bg-card p-1 gap-1">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setView(t.key)}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              view === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            <t.icon className="w-4 h-4" />
+            {t.label}
+            {t.count !== undefined && t.count > 0 && <span className="text-xs opacity-80">({t.count})</span>}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="text-muted-foreground text-sm">Loading...</div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No appointments yet</p>
-        </div>
+      ) : view === "upcoming" ? (
+        <UpcomingAppointments items={upcoming} onOpen={setDetail} onEdit={openEdit} />
+      ) : view === "calendar" ? (
+        <AppointmentsCalendar items={active} onOpen={setDetail} />
       ) : (
-        <div className="space-y-3">
-          {items.map((apt) => (
-            <div key={apt.id} className="rounded-xl border border-border bg-card p-4 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex flex-col items-center justify-center flex-shrink-0">
-                <span className="text-xs font-medium text-primary">{apt.date?.slice(5, 7) || ""}</span>
-                <span className="text-lg font-bold text-primary leading-none">{apt.date?.slice(8, 10) || ""}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium truncate">{apt.patient_name}</p>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${apt.status === "scheduled" ? "bg-blue-50 text-blue-700" : apt.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-                      {apt.status}
-                    </span>
-                    {apt.status === "scheduled" && (
-                      <button onClick={() => openEdit(apt)} className="text-muted-foreground hover:text-foreground" title="Edit appointment">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {apt.reason && <p className="text-sm text-muted-foreground mt-1">{apt.reason}</p>}
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{apt.time}</span>
-                  <span>CIN: {apt.patient_cin}</span>
-                  {apt.location && (
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{apt.location}</span>
-                  )}
-                </div>
-                {apt.status === "scheduled" && (
-                  <div className="mt-2">
-                    {apt.patient_response === "accepted" && (
-                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Patient accepted{apt.response_date ? ` · ${apt.response_date.slice(0, 10)}` : ""}
-                      </span>
-                    )}
-                    {apt.patient_response === "declined" && (
-                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
-                        Patient declined{apt.response_date ? ` · ${apt.response_date.slice(0, 10)}` : ""}
-                      </span>
-                    )}
-                    {!apt.patient_response && (
-                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                        Awaiting patient response
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <DeclinedAppointments items={declined} onDelete={handleDelete} />
       )}
+
+      <AppointmentDetailsDialog apt={detail} onClose={closeDetail} onOpenRecord={openRecord} recordError={recordError} />
     </div>
   );
 }
