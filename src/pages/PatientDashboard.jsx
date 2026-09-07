@@ -47,19 +47,19 @@ export default function PatientDashboard() {
       }
       const p = profiles[0];
       setProfile(p);
-      const [apts, labs, imaging, docs, notes] = await Promise.all([
+      const [apts, labs, imaging, docs, meds] = await Promise.all([
         base44.entities.Appointment.filter({ patient_id: p.id }),
         base44.entities.LabRequest.filter({ patient_id: p.id }),
         base44.entities.ImagingRequest.filter({ patient_id: p.id }),
         base44.entities.MedicalDocument.filter({ patient_id: p.id }),
-        base44.entities.ClinicalNote.filter({ patient_id: p.id }),
+        base44.entities.Medication.filter({ patient_id: p.id }),
       ]);
       setStats({
         appointments: apts.length,
         labs: labs.length,
         imaging: imaging.length,
         documents: docs.length,
-        medications: notes.filter((n) => n.prescription).length,
+        medications: meds.length,
       });
     } catch (err) {
       console.error(err);
@@ -81,8 +81,8 @@ export default function PatientDashboard() {
         </div>
 
         {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
-        {activeTab === "health" && <PatientHealth patientId={profile?.id} profile={profile} />}
-        {activeTab === "medications" && <PatientMedications patientId={profile?.id} />}
+        {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
+        {activeTab === "medications" && <PatientMedications patient={profile} />}
         {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
         {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
         {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}

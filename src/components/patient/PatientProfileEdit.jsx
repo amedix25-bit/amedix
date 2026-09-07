@@ -15,6 +15,13 @@ export default function PatientProfileEdit({ profile, onSaved }) {
     emergency_contact_name: "",
     emergency_contact_phone: "",
     emergency_contact_relationship: "",
+    smoking_status: "never",
+    alcohol_use: "none",
+    substance_use: "",
+    pregnancy_status: "not_applicable",
+    gestational_age: "",
+    estimated_due_date: "",
+    pregnancy_history: "",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -29,6 +36,13 @@ export default function PatientProfileEdit({ profile, onSaved }) {
         emergency_contact_name: profile.emergency_contact_name || "",
         emergency_contact_phone: profile.emergency_contact_phone || "",
         emergency_contact_relationship: profile.emergency_contact_relationship || "",
+        smoking_status: profile.smoking_status || "never",
+        alcohol_use: profile.alcohol_use || "none",
+        substance_use: profile.substance_use || "",
+        pregnancy_status: profile.pregnancy_status || "not_applicable",
+        gestational_age: profile.gestational_age || "",
+        estimated_due_date: profile.estimated_due_date || "",
+        pregnancy_history: profile.pregnancy_history || "",
       });
     }
   }, [profile]);
@@ -99,10 +113,9 @@ export default function PatientProfileEdit({ profile, onSaved }) {
             <Label htmlFor="p_address">Address</Label>
             <Input id="p_address" value={form.address} onChange={set("address")} />
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="p_allergies">Known allergies</Label>
-            <Input id="p_allergies" value={form.allergies} onChange={set("allergies")} />
-          </div>
+          <p className="sm:col-span-2 text-xs text-muted-foreground">
+            Allergies are managed in My Health → Allergies.
+          </p>
         </div>
       </div>
 
@@ -123,6 +136,74 @@ export default function PatientProfileEdit({ profile, onSaved }) {
           </div>
         </div>
       </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4">Lifestyle</h3>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label>Smoking status</Label>
+            <Select value={form.smoking_status} onValueChange={(v) => { setForm((f) => ({ ...f, smoking_status: v })); setSaved(false); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="never">Never smoked</SelectItem>
+                <SelectItem value="former">Former smoker</SelectItem>
+                <SelectItem value="current">Current smoker</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Alcohol use</Label>
+            <Select value={form.alcohol_use} onValueChange={(v) => { setForm((f) => ({ ...f, alcohol_use: v })); setSaved(false); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="occasional">Occasional</SelectItem>
+                <SelectItem value="regular">Regular</SelectItem>
+                <SelectItem value="former">Former drinker</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="p_substance">Other substance use</Label>
+            <Input id="p_substance" value={form.substance_use} onChange={set("substance_use")} />
+          </div>
+        </div>
+      </div>
+
+      {profile?.gender === "female" && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="font-semibold text-sm mb-4">Pregnancy</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Pregnancy status</Label>
+              <Select value={form.pregnancy_status} onValueChange={(v) => { setForm((f) => ({ ...f, pregnancy_status: v })); setSaved(false); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not_applicable">Not applicable</SelectItem>
+                  <SelectItem value="not_pregnant">Not pregnant</SelectItem>
+                  <SelectItem value="pregnant">Pregnant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.pregnancy_status === "pregnant" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="p_gest">Gestational age</Label>
+                  <Input id="p_gest" placeholder="e.g. 18 weeks" value={form.gestational_age} onChange={set("gestational_age")} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="p_edd">Estimated due date</Label>
+                  <Input id="p_edd" type="date" value={form.estimated_due_date} onChange={set("estimated_due_date")} />
+                </div>
+              </>
+            )}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="p_preg_hist">Pregnancy history</Label>
+              <Input id="p_preg_hist" value={form.pregnancy_history} onChange={set("pregnancy_history")} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={saving}>
