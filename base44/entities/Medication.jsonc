@@ -1,0 +1,48 @@
+{
+  "name": "Medication",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "dose": {
+      "type": "string"
+    },
+    "frequency": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string",
+      "enum": [
+        "oral",
+        "intravenous",
+        "intramuscular",
+        "subcutaneous",
+        "topical",
+        "inhalation",
+        "rectal",
+        "other"
+      ]
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "name"
+  ]
+}

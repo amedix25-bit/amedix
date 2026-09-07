@@ -1,95 +1,49 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { Activity, Loader2, Stethoscope } from "lucide-react";
+import React from "react";
+import SectionCard from "@/components/patient/medical/SectionCard";
+import InfoRow from "@/components/patient/medical/InfoRow";
+import ConditionsSection from "@/components/patient/medical/ConditionsSection";
+import CurrentDiagnosisSection from "@/components/patient/medical/CurrentDiagnosisSection";
+import SurgicalSection from "@/components/patient/medical/SurgicalSection";
+import MedicationsSection from "@/components/patient/medical/MedicationsSection";
+import AllergiesSection from "@/components/patient/medical/AllergiesSection";
+import LifestyleSection from "@/components/patient/medical/LifestyleSection";
+import { calcAgeLabel, capitalize } from "@/lib/patientUtils";
 
-export default function PatientHealth({ patientId, profile }) {
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const results = await base44.entities.ClinicalNote.filter({ patient_id: patientId }, "-date");
-        setNotes(results);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (patientId) load();
-  }, [patientId]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-        <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading your health summary...
-      </div>
-    );
-  }
-
+export default function PatientHealth({ profile, onGoToProfile }) {
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-card p-5">
-        <h3 className="font-semibold text-sm mb-4">Medical Summary</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div className="p-3 rounded-lg bg-muted">
-            <p className="text-xs text-muted-foreground">Blood Type</p>
-            <p className="font-semibold mt-1">{profile?.blood_type || "Unknown"}</p>
-          </div>
-          <div className="p-3 rounded-lg bg-muted">
-            <p className="text-xs text-muted-foreground">Allergies</p>
-            <p className="font-semibold mt-1">{profile?.allergies || "None recorded"}</p>
-          </div>
-          <div className="p-3 rounded-lg bg-muted">
-            <p className="text-xs text-muted-foreground">Emergency Contact</p>
-            <p className="font-semibold mt-1">
-              {profile?.emergency_contact_name || "—"}
-              {profile?.emergency_contact_phone ? ` · ${profile.emergency_contact_phone}` : ""}
-            </p>
-          </div>
-          <div className="p-3 rounded-lg bg-muted">
-            <p className="text-xs text-muted-foreground">Date of Birth</p>
-            <p className="font-semibold mt-1">{profile?.date_of_birth || "—"}</p>
-          </div>
+    <div className="space-y-4">
+      <SectionCard number="1" title="Demographics">
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+          <InfoRow label="Name" value={profile?.full_name} />
+          <InfoRow label="CIN" value={profile?.cin} />
+          <InfoRow label="Age" value={calcAgeLabel(profile?.date_of_birth)} />
+          <InfoRow label="Sex" value={profile?.gender ? capitalize(profile.gender) : null} />
+          <InfoRow label="Date of Birth" value={profile?.date_of_birth} />
         </div>
-      </div>
+      </SectionCard>
 
-      <div>
-        <h3 className="font-semibold text-sm mb-3">Clinical History</h3>
-        {notes.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-            <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No clinical notes yet. Notes added by your authorized doctors will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {notes.map((note) => (
-              <div key={note.id} className="rounded-xl border border-border bg-card p-5">
-                <div className="flex items-start justify-between flex-wrap gap-2">
-                  <div>
-                    <p className="font-semibold">{note.diagnosis}</p>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                      <Stethoscope className="w-3.5 h-3.5" />
-                      {note.doctor_name || "Doctor"}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{note.date}</span>
-                </div>
-                {note.notes && <p className="text-sm text-muted-foreground mt-3">{note.notes}</p>}
-                {note.prescription && (
-                  <div className="mt-3 p-3 rounded-lg bg-accent text-sm">
-                    <span className="font-medium">Prescription: </span>
-                    {note.prescription}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ConditionsSection
+        number="2"
+        title="Known Case Of"
+        category="known_case"
+        patient={profile}
+        emptyText="No established conditions recorded. Add chronic or previous medical conditions here."
+      />
+
+      <CurrentDiagnosisSection number="3" patient={profile} />
+
+      <ConditionsSection
+        number="4"
+        title="Past Medical History"
+        category="past_history"
+        patient={profile}
+        emptyText="No past medical history recorded. Add previous diseases and important hospitalizations here."
+      />
+
+      <SurgicalSection number="5" patient={profile} />
+      <MedicationsSection number="6" patient={profile} />
+      <AllergiesSection number="7" patient={profile} />
+      <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} />
     </div>
   );
 }

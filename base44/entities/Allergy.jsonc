@@ -1,0 +1,42 @@
+{
+  "name": "Allergy",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "allergen": {
+      "type": "string"
+    },
+    "allergy_type": {
+      "type": "string",
+      "enum": [
+        "drug",
+        "food",
+        "environmental",
+        "other"
+      ]
+    },
+    "reaction": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "mild",
+        "moderate",
+        "severe"
+      ]
+    }
+  },
+  "required": [
+    "patient_id",
+    "allergen"
+  ]
+}

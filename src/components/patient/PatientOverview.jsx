@@ -1,10 +1,31 @@
-import React, { useState } from "react";
-import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, Activity, QrCode, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrCode, X } from "lucide-react";
 import QrCodeCard from "@/components/QrCodeCard";
+import InfoRow from "@/components/patient/medical/InfoRow";
 import { Button } from "@/components/ui/button";
+import { calcAgeLabel, capitalize, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
 
 export default function PatientOverview({ profile, stats, loading }) {
   const [showQr, setShowQr] = useState(false);
+  const [med, setMed] = useState({ conditions: [], medications: [], allergies: [] });
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    const load = async () => {
+      try {
+        const [conditions, medications, allergies] = await Promise.all([
+          base44.entities.MedicalCondition.filter({ patient_id: profile.id, category: "known_case" }),
+          base44.entities.Medication.filter({ patient_id: profile.id }),
+          base44.entities.Allergy.filter({ patient_id: profile.id }),
+        ]);
+        setMed({ conditions, medications, allergies });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+  }, [profile?.id]);
 
   if (loading) {
     return <div className="text-muted-foreground text-sm">Loading...</div>;
@@ -17,6 +38,18 @@ export default function PatientOverview({ profile, stats, loading }) {
     { label: "Documents", value: stats.documents, icon: FileText, color: "text-amber-500" },
     { label: "Medications", value: stats.medications, icon: Pill, color: "text-emerald-500" },
   ];
+
+  const knownCaseText = med.conditions.map((c) => c.name).join(", ");
+  const allergyText = med.allergies
+    .map((a) => `${a.allergen}${a.severity ? ` (${a.severity})` : ""}`)
+    .join(", ");
+  const isFemale = profile?.gender === "female";
+  const isPregnant = isFemale && profile?.pregnancy_status === "pregnant";
+  const pregnancyText = isFemale
+    ? isPregnant
+      ? `Pregnant${profile?.gestational_age ? ` · ${profile.gestational_age}` : ""}${profile?.estimated_due_date ? ` · EDD ${profile.estimated_due_date}` : ""}`
+      : PREGNANCY_LABELS[profile?.pregnancy_status] || "Not pregnant"
+    : null;
 
   return (
     <div className="space-y-6">
@@ -64,27 +97,35 @@ export default function PatientOverview({ profile, stats, loading }) {
           <div className="space-y-3">
             <InfoRow label="Full Name" value={profile?.full_name} />
             <InfoRow label="Date of Birth" value={profile?.date_of_birth} />
-            <InfoRow label="Gender" value={profile?.gender} />
-            <InfoRow label="Blood Type" value={profile?.blood_type} />
-            <InfoRow label="Phone" value={profile?.phone} />
-            <InfoRow label="Address" value={profile?.address} />
+            <InfoRow label="Age" value={calcAgeLabel(profile?.date_of_birth)} />
+            <InfoRow label="Sex" value={profile?.gender ? capitalize(profile.gender) : null} />
+            <InfoRow label="Emergency Contact Name" value={profile?.emergency_contact_name} />
+            <InfoRow label="Emergency Contact Phone" value={profile?.emergency_contact_phone} />
           </div>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="font-semibold text-sm mb-4">Medical Information</h3>
           <div className="space-y-3">
-            <InfoRow label="Allergies" value={profile?.allergies} />
-            <InfoRow label="Emergency Contact" value={profile?.emergency_contact_name} />
-            <InfoRow label="Emergency Phone" value={profile?.emergency_contact_phone} />
-          </div>
-          <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
-            <div className="flex items-start gap-2">
-              <Activity className="w-4 h-4 text-amber-600 mt-0.5" />
-              <p className="text-xs text-amber-700">
-                Your medical record is private. Doctors can only access it with your approval.
-              </p>
+            <InfoRow label="Known Case Of" value={knownCaseText || null} />
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="text-muted-foreground shrink-0">Current Medications</span>
+              <span className="font-medium text-right">
+                {med.medications.length === 0
+                  ? "—"
+                  : med.medications.map((m) => (
+                      <span key={m.id} className="block">
+                        {m.name}
+                        {m.dose ? ` · ${m.dose}` : ""}
+                        {m.frequency ? ` · ${m.frequency}` : ""}
+                      </span>
+                    ))}
+              </span>
             </div>
+            <InfoRow label="Allergies" value={allergyText || profile?.allergies || null} />
+            <InfoRow label="Smoking Status" value={SMOKING_LABELS[profile?.smoking_status] || "Not specified"} />
+            <InfoRow label="Alcohol Use" value={ALCOHOL_LABELS[profile?.alcohol_use] || "Not specified"} />
+            {pregnancyText && <InfoRow label="Pregnancy Status" value={pregnancyText} />}
           </div>
         </div>
       </div>
@@ -106,15 +147,6 @@ export default function PatientOverview({ profile, stats, loading }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right">{value || "—"}</span>
     </div>
   );
 }

@@ -69,6 +69,47 @@
     },
     "emergency_contact_relationship": {
       "type": "string"
+    },
+    "smoking_status": {
+      "type": "string",
+      "enum": [
+        "never",
+        "former",
+        "current"
+      ],
+      "default": "never"
+    },
+    "alcohol_use": {
+      "type": "string",
+      "enum": [
+        "none",
+        "occasional",
+        "regular",
+        "former"
+      ],
+      "default": "none"
+    },
+    "substance_use": {
+      "type": "string"
+    },
+    "pregnancy_status": {
+      "type": "string",
+      "enum": [
+        "not_applicable",
+        "not_pregnant",
+        "pregnant"
+      ],
+      "default": "not_applicable"
+    },
+    "gestational_age": {
+      "type": "string"
+    },
+    "estimated_due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "pregnancy_history": {
+      "type": "string"
     }
   },
   "required": [

@@ -1,0 +1,38 @@
+{
+  "name": "MedicalCondition",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "known_case",
+        "past_history"
+      ],
+      "default": "known_case"
+    },
+    "details": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "patient_id",
+    "name",
+    "category"
+  ]
+}

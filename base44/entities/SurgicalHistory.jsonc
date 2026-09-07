@@ -1,0 +1,68 @@
+{
+  "name": "SurgicalHistory",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "surgery_type": {
+      "type": "string"
+    },
+    "surgery_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "complications": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "hospitalization_duration": {
+      "type": "string"
+    },
+    "anesthesia_history": {
+      "type": "string"
+    },
+    "anesthesia_complications": {
+      "type": "string"
+    },
+    "other_procedures": {
+      "type": "string"
+    },
+    "transfusion_count": {
+      "type": "string"
+    },
+    "transfusion_type": {
+      "type": "string"
+    },
+    "transfusion_amount": {
+      "type": "string"
+    },
+    "transfusion_reason": {
+      "type": "string"
+    },
+    "transfusion_timing": {
+      "type": "string"
+    },
+    "transfusion_reactions": {
+      "type": "string"
+    },
+    "implants_devices": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id",
+    "surgery_type"
+  ]
+}
