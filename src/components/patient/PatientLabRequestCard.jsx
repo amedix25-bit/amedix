@@ -1,10 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
+import LabAuthorizationSection from "@/components/patient/lab/LabAuthorizationSection";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
-import { Building2, FileText } from "lucide-react";
+import { Building2, FileText, ShieldCheck } from "lucide-react";
 
-export default function PatientLabRequestCard({ group }) {
+export default function PatientLabRequestCard({ group, onRequestUpdated }) {
   const first = group[0];
+  const [auth, setAuth] = useState(
+    first.authorized_by_patient
+      ? {
+          lab_name: first.lab_name,
+          lab_number: first.lab_number,
+          authorization_datetime: first.authorization_datetime,
+        }
+      : null
+  );
+
+  const handleAuthorized = (data) => {
+    setAuth(data);
+    onRequestUpdated?.();
+  };
   const consolidated = Array.isArray(first.tests) && first.tests.length > 0;
 
   const tests = consolidated
@@ -62,6 +77,24 @@ export default function PatientLabRequestCard({ group }) {
           <p className="text-xs text-muted-foreground">Instructions: {first.instructions}</p>
         )}
       </div>
+
+      {consolidated && status === "requested" && !auth && (
+        <LabAuthorizationSection request={first} onAuthorized={handleAuthorized} />
+      )}
+
+      {auth && (
+        <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+          <p className="text-sm font-semibold text-emerald-800 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4" /> Access Granted
+          </p>
+          <p className="text-sm text-emerald-800 mt-1">Laboratory: {auth.lab_name}</p>
+          <p className="text-sm text-emerald-800">Lab ID: {auth.lab_number || "—"}</p>
+          <p className="text-xs text-emerald-700 mt-0.5">
+            Date Authorized:{" "}
+            {auth.authorization_datetime ? new Date(auth.authorization_datetime).toLocaleString() : "—"}
+          </p>
+        </div>
+      )}
 
       {status === "results" && (result || resultFile) && (
         <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">

@@ -19,11 +19,11 @@ export default async function(req: Request): Promise<Response> {
     const patient = profiles[0];
 
     const requests = await base44.asServiceRole.entities.LabRequest.filter({ patient_id: patient.id });
-    const labName = (tech.laboratory_name || "").trim().toLowerCase();
     const labRequests = requests.filter(
       (r) =>
-        (r.lab_name || "").trim().toLowerCase() === labName &&
-        ["requested", "pending"].includes(r.status)
+        r.authorized_by_patient === true &&
+        r.lab_id === tech.laboratory_id &&
+        ["authorized", "pending"].includes(r.status)
     );
 
     await writeAudit(base44, {

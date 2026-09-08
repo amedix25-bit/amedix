@@ -10,14 +10,14 @@ export default function LabRequestsSection({ profile }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const requests = await base44.entities.LabRequest.filter({ lab_name: profile.lab_name }, "-date_requested");
+        const requests = await base44.entities.LabRequest.filter({ lab_id: profile.id }, "-date_requested");
         setItems(requests);
       } catch (err) {
         console.error(err);
       }
     };
     load();
-  }, [profile.lab_name]);
+  }, [profile.id]);
 
   if (items === null) {
     return (

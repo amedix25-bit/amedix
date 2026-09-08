@@ -73,19 +73,41 @@
       "type": "string",
       "description": "Laboratory instructions"
     },
+    "lab_id": {
+      "type": "string",
+      "description": "Id of the LaboratoryProfile the patient authorized to view this request \u2014 the laboratory only sees the request once this is set"
+    },
     "lab_name": {
       "type": "string",
-      "description": "Laboratory the request is sent to"
+      "description": "Laboratory the request is authorized to and sent to (set when the patient grants access)"
+    },
+    "lab_number": {
+      "type": "string",
+      "description": "A&M Lab Number / ID of the authorized laboratory"
+    },
+    "lab_location": {
+      "type": "string",
+      "description": "Location / address of the authorized laboratory"
+    },
+    "authorized_by_patient": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the patient explicitly confirmed access for the selected laboratory"
+    },
+    "authorization_datetime": {
+      "type": "string",
+      "description": "Exact date and time the patient authorized the laboratory (ISO datetime)"
     },
     "status": {
       "type": "string",
       "enum": [
         "requested",
+        "authorized",
         "pending",
         "results"
       ],
       "default": "requested",
-      "description": "REQUESTED: sent to laboratory. PENDING: received by laboratory, results not yet available. RESULTS: results available."
+      "description": "REQUESTED: created by the doctor, awaiting patient authorization. AUTHORIZED: the patient allowed a laboratory to view the request \u2014 sent to laboratory. PENDING: received by laboratory, results not yet available. RESULTS: results available."
     },
     "result": {
       "type": "string"

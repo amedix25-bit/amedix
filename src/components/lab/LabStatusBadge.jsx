@@ -3,9 +3,12 @@ import { LAB_STATUS, normalizeLabStatus } from "@/lib/labRequestUtils";
 
 export default function LabStatusBadge({ status }) {
   const cfg = LAB_STATUS[normalizeLabStatus(status)];
-  return null;
-
-
-
-
+  if (!cfg) return null;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide whitespace-nowrap ${cfg.className}`}
+    >
+      {cfg.label}
+    </span>
+  );
 }

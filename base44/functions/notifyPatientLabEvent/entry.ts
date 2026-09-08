@@ -36,15 +36,16 @@ export default async function(req) {
         related_id: lab.id,
       });
     } else {
-      const testCount = Array.isArray(lab.tests) ? lab.tests.length : 0;
+      const testNames = (Array.isArray(lab.tests) ? lab.tests : []).map((t) => t.name).join(', ');
       await createPatientNotification(base44.asServiceRole, {
         patient_id: lab.patient_id,
         type: 'lab_request',
-        title: 'New Laboratory Request',
+        title: `New Laboratory Request from Dr. ${lab.doctor_name || 'Your Doctor'}`,
         message:
-          `Dr. ${lab.doctor_name || 'your doctor'} has sent you a laboratory request` +
-          `${testCount ? ` with ${testCount} test(s)` : ''}` +
-          `${lab.lab_name ? ` to ${lab.lab_name}` : ''}. Please visit the requested laboratory to complete your tests.`,
+          `Dr. ${lab.doctor_name || 'your doctor'} requested the following laboratory test(s): ${testNames || 'laboratory investigations'}.` +
+          ` Date of request: ${lab.date_requested || 'recently'}.` +
+          `${lab.indication ? ` Indication: ${lab.indication}.` : ''}` +
+          ' Select a laboratory and allow it to view the request.',
         target: 'labs',
         related_id: lab.id,
       });

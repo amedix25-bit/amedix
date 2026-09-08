@@ -1,8 +1,13 @@
 export const LAB_STATUS = {
   requested: {
     label: "REQUESTED",
-    description: "Sent to the laboratory",
+    description: "Awaiting your laboratory selection",
     className: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  authorized: {
+    label: "AUTHORIZED / SENT TO LABORATORY",
+    description: "Authorized by you and sent to the laboratory",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
   },
   pending: {
     label: "PENDING",

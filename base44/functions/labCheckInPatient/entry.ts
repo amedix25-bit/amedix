@@ -16,10 +16,10 @@ export default async function(req: Request): Promise<Response> {
     if (reqs.length === 0) return Response.json({ error: "Laboratory request not found." }, { status: 404 });
     const labReq = reqs[0];
 
-    if ((labReq.lab_name || "").trim().toLowerCase() !== (tech.laboratory_name || "").trim().toLowerCase()) {
-      return Response.json({ error: "This request is not for your laboratory." }, { status: 403 });
+    if (!labReq.authorized_by_patient || labReq.lab_id !== tech.laboratory_id) {
+      return Response.json({ error: "The patient has not authorized your laboratory to access this request." }, { status: 403 });
     }
-    if (!["requested", "pending"].includes(labReq.status)) {
+    if (labReq.status !== "authorized") {
       return Response.json({ error: "This request is already being processed." }, { status: 400 });
     }
 

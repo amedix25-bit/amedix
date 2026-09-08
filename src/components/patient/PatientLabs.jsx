@@ -47,7 +47,7 @@ export default function PatientLabs({ patientId }) {
   return (
     <div className="space-y-4">
       {groups.map((group) => (
-        <PatientLabRequestCard key={group[0].id} group={group} />
+        <PatientLabRequestCard key={group[0].id} group={group} onRequestUpdated={load} />
       ))}
     </div>
   );
