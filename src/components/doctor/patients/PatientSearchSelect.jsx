@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
 
-export default function PatientSearchSelect({ selected, onSelect }) {
+export default function PatientSearchSelect({ selected, onSelect, patients, label = "Patient Name *" }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -24,6 +24,13 @@ export default function PatientSearchSelect({ selected, onSelect }) {
   useEffect(() => {
     if (!open || query.trim().length < 2) {
       setResults([]);
+      return;
+    }
+    const q = query.trim().toLowerCase();
+    if (patients) {
+      setResults(
+        patients.filter((p) => (p.full_name || "").toLowerCase().includes(q)).slice(0, 8)
+      );
       return;
     }
     let cancelled = false;
@@ -48,7 +55,7 @@ export default function PatientSearchSelect({ selected, onSelect }) {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [query, open]);
+  }, [query, open, patients]);
 
   const choose = (p) => {
     onSelect(p);
@@ -62,7 +69,7 @@ export default function PatientSearchSelect({ selected, onSelect }) {
       <div className="rounded-lg border border-border bg-muted p-3">
         <div className="flex justify-between items-start gap-2">
           <div className="space-y-1">
-            <Label>Patient *</Label>
+            <Label>{label.replace(" *", "")}</Label>
             <p className="font-medium">{selected.full_name}</p>
             <p className="text-xs text-muted-foreground">
               CIN: {selected.cin}
@@ -80,7 +87,7 @@ export default function PatientSearchSelect({ selected, onSelect }) {
 
   return (
     <div ref={boxRef} className="relative space-y-2">
-      <Label>Patient Name *</Label>
+      <Label>{label}</Label>
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -100,7 +107,7 @@ export default function PatientSearchSelect({ selected, onSelect }) {
           {loading ? (
             <p className="p-3 text-sm text-muted-foreground">Searching…</p>
           ) : results.length === 0 ? (
-            <p className="p-3 text-sm text-muted-foreground">No registered patients found.</p>
+            <p className="p-3 text-sm text-muted-foreground">{patients ? "No matching patients found." : "No registered patients found."}</p>
           ) : (
             results.map((p) => (
               <button
