@@ -219,7 +219,7 @@ export default function PatientLabResults({ patient }) {
               </p>
               <Button size="sm" variant="outline" className="mt-3" onClick={() => window.open(r.file_url, "_blank")}>
                 <FileText className="w-4 h-4 mr-1" />
-                View Report
+                View Lab Result
               </Button>
             </div>
           ))}
