@@ -107,6 +107,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         gestational_age: isFemale ? lifestyle.gestational_age : "",
         estimated_due_date: isFemale ? lifestyle.estimated_due_date : "",
         pregnancy_history: isFemale ? lifestyle.pregnancy_history : "",
+        medication_info_completed: true,
       });
       const meta = { patient_id: profile.id, patient_cin: newCin, patient_name: fullName };
       const conditions = [
@@ -119,7 +120,11 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         creates.push(base44.entities.Allergy.bulkCreate(medical.allergies.map((a) => ({ ...meta, ...a }))));
       }
       if (medical.medications.length) {
-        creates.push(base44.entities.Medication.bulkCreate(medical.medications.map((m) => ({ ...meta, ...m }))));
+        creates.push(
+          base44.entities.Medication.bulkCreate(
+            medical.medications.map((m) => ({ ...meta, ...m, source: "patient_reported" }))
+          )
+        );
       }
       if (medical.surgeries.length) {
         creates.push(base44.entities.SurgicalHistory.bulkCreate(medical.surgeries.map((s) => ({ ...meta, ...s }))));

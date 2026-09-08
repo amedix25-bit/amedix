@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Bell, Calendar, RefreshCw, FlaskConical, Microscope, Info } from "lucide-react";
+import { Bell, Calendar, RefreshCw, FlaskConical, Microscope, Info, Pill } from "lucide-react";
 
 const TYPE_ICONS = {
   appointment: Calendar,
   rescheduled: RefreshCw,
   lab_request: FlaskConical,
   lab_results: Microscope,
+  medication_update: Pill,
   other: Info,
 };
 
@@ -16,6 +17,7 @@ const TYPE_COLORS = {
   rescheduled: "text-amber-600",
   lab_request: "text-primary",
   lab_results: "text-emerald-600",
+  medication_update: "text-primary",
   other: "text-muted-foreground",
 };
 
@@ -114,7 +116,11 @@ export default function NotificationsBar({ patientId, onNavigate }) {
                         <span className="block text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{n.message}</span>
                         {n.target && (
                           <span className="block text-xs font-medium text-primary mt-1">
-                            {n.target === "appointments" ? "View Appointment" : "View"}
+                            {n.target === "appointments"
+                              ? "View Appointment"
+                              : n.target === "medications"
+                                ? "Add Medication Information"
+                                : "View"}
                           </span>
                         )}
                       </span>

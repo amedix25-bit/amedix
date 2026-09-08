@@ -41,6 +41,25 @@ export default function PatientDashboard() {
     loadProfile();
   }, []);
 
+  const ensureMedicationInfoNotification = async (profile) => {
+    try {
+      const existing = await base44.entities.PatientNotification.filter({
+        patient_id: profile.id,
+        type: "medication_update",
+      });
+      if (existing.length > 0) return;
+      await base44.entities.PatientNotification.create({
+        patient_id: profile.id,
+        type: "medication_update",
+        title: "Update Your Medication Information",
+        message: "Please add your current medication information to keep your medical record up to date.",
+        target: "medications",
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const loadProfile = async () => {
     try {
       const profiles = await base44.entities.PatientProfile.filter({ user_id: user.id });
@@ -50,6 +69,7 @@ export default function PatientDashboard() {
       }
       const p = profiles[0];
       setProfile(p);
+      if (p && !p.medication_info_completed) ensureMedicationInfoNotification(p);
       const [apts, labs, imaging, docs, meds] = await Promise.all([
         base44.entities.Appointment.filter({ patient_id: p.id }),
         base44.entities.LabRequest.filter({ patient_id: p.id }),

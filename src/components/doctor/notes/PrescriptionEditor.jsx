@@ -2,11 +2,12 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
+import { MED_ROUTES, MEAL_OPTIONS } from "@/lib/medicationUtils";
 
-const ROUTES = ["oral", "intravenous", "intramuscular", "subcutaneous", "topical", "inhalation", "rectal", "other"];
-const EMPTY_MED = { name: "", dose: "", route: "", duration: "" };
+const EMPTY_MED = { name: "", dose: "", route: "", frequency: "", meal: "", duration: "", notes: "" };
 
 export default function PrescriptionEditor({ medications, onChange }) {
   const update = (i, field, value) =>
@@ -27,7 +28,7 @@ export default function PrescriptionEditor({ medications, onChange }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Drug Name *</Label>
               <Input
@@ -51,9 +52,32 @@ export default function PrescriptionEditor({ medications, onChange }) {
                   <SelectValue placeholder="Select route" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROUTES.map((r) => (
+                  {MED_ROUTES.map((r) => (
                     <SelectItem key={r} value={r}>
                       {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Frequency</Label>
+              <Input
+                value={med.frequency}
+                onChange={(e) => update(i, "frequency", e.target.value)}
+                placeholder="e.g. 3 times daily"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Before / After Meal</Label>
+              <Select value={med.meal} onValueChange={(v) => update(i, "meal", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEAL_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -67,6 +91,15 @@ export default function PrescriptionEditor({ medications, onChange }) {
                 value={med.duration}
                 onChange={(e) => update(i, "duration", e.target.value)}
                 placeholder="e.g. 14"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-3">
+              <Label className="text-xs">Doctor's Notes</Label>
+              <Textarea
+                value={med.notes}
+                onChange={(e) => update(i, "notes", e.target.value)}
+                rows={2}
+                placeholder="e.g. Take with plenty of water."
               />
             </div>
           </div>

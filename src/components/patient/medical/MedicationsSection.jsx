@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus, X, Ban, RotateCcw } from "lucide-react";
+import { medicationStatus, mealLabel, routeLabel, todayStr } from "@/lib/medicationUtils";
 
 export default function MedicationsSection({ number, patient, editable }) {
   const [items, setItems] = useState([]);
@@ -126,10 +127,36 @@ export default function MedicationsSection({ number, patient, editable }) {
               }`}
             >
               <div>
-                <p className="font-semibold text-sm">{m.name}</p>
-                {m.is_active === false && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-sm">{m.name}</p>
+                  {m.source === "doctor_prescribed" ? (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                      Doctor-Prescribed
+                    </span>
+                  ) : m.source === "patient_reported" ? (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      Patient-Reported
+                    </span>
+                  ) : null}
+                </div>
+                {(m.dose || m.route || m.frequency || m.meal_timing || m.duration) && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {[
+                      m.dose,
+                      m.route && routeLabel(m.route),
+                      m.frequency,
+                      m.meal_timing && mealLabel(m.meal_timing),
+                      m.duration,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
+                {medicationStatus(m, todayStr()) !== "active" && (
                   <p className="text-xs text-muted-foreground">
-                    Stopped{m.stopped_date ? ` — ${m.stopped_date}` : ""}
+                    {m.stopped_date === m.end_date && m.end_date
+                      ? `Completed${m.stopped_date ? ` — ${m.stopped_date}` : ""}`
+                      : `Stopped${m.stopped_date ? ` — ${m.stopped_date}` : ""}`}
                   </p>
                 )}
               </div>

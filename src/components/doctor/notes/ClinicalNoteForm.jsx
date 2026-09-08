@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
+import { mealLabel } from "@/lib/medicationUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
 const EMPTY = {
@@ -123,7 +124,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         `${m.name.trim()}` +
         `${m.dose.trim() ? ` — Dose: ${m.dose.trim()}` : ""}` +
         `${m.route ? ` — Route: ${m.route}` : ""}` +
-        `${m.duration ? ` — Duration: ${m.duration} days` : ""}`
+        `${m.frequency.trim() ? ` — Frequency: ${m.frequency.trim()}` : ""}` +
+        `${m.meal ? ` — ${mealLabel(m.meal)}` : ""}` +
+        `${m.duration ? ` — Duration: ${m.duration} days` : ""}` +
+        `${m.notes.trim() ? ` — Notes: ${m.notes.trim()}` : ""}`
       )
       .join("\n");
     setSaving(true);
@@ -160,10 +164,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               name: m.name.trim(),
               dose: m.dose.trim(),
               route: m.route,
+              frequency: m.frequency.trim(),
+              meal_timing: m.meal,
               duration: m.duration ? `${m.duration} days` : "",
+              doctor_notes: m.notes.trim(),
               start_date: startDate,
               reason: form.diagnosis,
               is_active: true,
+              source: "doctor_prescribed",
             };
             if (m.duration && !isNaN(days) && days > 0) {
               rec.end_date = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);

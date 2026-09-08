@@ -33,9 +33,37 @@
         "other"
       ]
     },
+    "meal_timing": {
+      "type": "string",
+      "enum": [
+        "before_meal",
+        "after_meal",
+        "with_meal",
+        "anytime",
+        "unknown"
+      ],
+      "description": "Whether the medication is taken before or after meals"
+    },
     "duration": {
       "type": "string",
       "description": "Prescribed duration, e.g. '14 days'"
+    },
+    "doctor_notes": {
+      "type": "string",
+      "description": "Notes / instructions from the prescribing doctor"
+    },
+    "patient_notes": {
+      "type": "string",
+      "description": "Additional notes entered by the patient (patient-reported medications)"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "doctor_prescribed",
+        "patient_reported"
+      ],
+      "default": "patient_reported",
+      "description": "Whether the medication was prescribed by a doctor or reported by the patient"
     },
     "start_date": {
       "type": "string",

@@ -110,6 +110,11 @@
     },
     "pregnancy_history": {
       "type": "string"
+    },
+    "medication_info_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the patient has completed their medication information. When true, the 'Update Your Medication Information' notification is not recreated. An administrator can reset this flag to show the notification again."
     }
   },
   "required": [

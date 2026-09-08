@@ -12,6 +12,7 @@
         "rescheduled",
         "lab_request",
         "lab_results",
+        "medication_update",
         "other"
       ],
       "default": "other",
@@ -32,7 +33,7 @@
     },
     "target": {
       "type": "string",
-      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults)"
+      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications)"
     },
     "related_id": {
       "type": "string",

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
+import { MED_ROUTES, MEAL_OPTIONS } from "@/lib/medicationUtils";
 
 export function MedicalListSection({
   id, title, description, entries, entryLabel, onRemove, noneChecked, onNoneChange, noneLabel, children,
@@ -58,27 +59,37 @@ export function ConditionEntryForm({ onAdd }) {
 }
 
 export function MedicationEntryForm({ onAdd }) {
-  const [form, setForm] = useState({ name: "", dose: "", frequency: "", route: "oral", start_date: "", reason: "" });
+  const EMPTY = { name: "", dose: "", frequency: "", route: "oral", meal_timing: "", duration: "", patient_notes: "", start_date: "" };
+  const [form, setForm] = useState(EMPTY);
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
   const add = () => {
     onAdd(form);
-    setForm({ name: "", dose: "", frequency: "", route: "oral", start_date: "", reason: "" });
+    setForm(EMPTY);
   };
   return (
     <div className="grid sm:grid-cols-3 gap-2">
       <Input placeholder="Medication name *" value={form.name} onChange={set("name")} />
       <Input placeholder="Dose, e.g. 500 mg" value={form.dose} onChange={set("dose")} />
-      <Input placeholder="Frequency, e.g. Twice daily" value={form.frequency} onChange={set("frequency")} />
       <Select value={form.route} onValueChange={(v) => setForm((s) => ({ ...s, route: v }))}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
-          {["oral", "intravenous", "intramuscular", "subcutaneous", "topical", "inhalation", "rectal", "other"].map((r) => (
+          {MED_ROUTES.map((r) => (
             <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
           ))}
         </SelectContent>
       </Select>
+      <Input placeholder="Frequency, e.g. Twice daily" value={form.frequency} onChange={set("frequency")} />
+      <Select value={form.meal_timing} onValueChange={(v) => setForm((s) => ({ ...s, meal_timing: v }))}>
+        <SelectTrigger><SelectValue placeholder="Before / after meals" /></SelectTrigger>
+        <SelectContent>
+          {MEAL_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input placeholder="Duration, e.g. 14 days" value={form.duration} onChange={set("duration")} />
+      <Input placeholder="Additional notes" value={form.patient_notes} onChange={set("patient_notes")} />
       <Input type="date" value={form.start_date} onChange={set("start_date")} />
-      <Input placeholder="Reason for use" value={form.reason} onChange={set("reason")} />
       <Button type="button" variant="outline" onClick={add} disabled={!form.name}>
         <Plus className="w-4 h-4 mr-1" />
         Add
