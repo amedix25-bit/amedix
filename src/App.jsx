@@ -17,6 +17,10 @@ import PatientDashboard from '@/pages/PatientDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
 import LabRequestDetail from '@/pages/LabRequestDetail';
 import AdminDashboard from '@/pages/AdminDashboard';
+import LabLogin from '@/pages/LabLogin';
+import LabRegister from '@/pages/LabRegister';
+import LabPortal from '@/pages/LabPortal';
+import LabTechnician from '@/pages/LabTechnician';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -44,12 +48,16 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/lab" element={<LabLogin />} />
+      <Route path="/lab/register" element={<LabRegister />} />
+      <Route path="/lab-technician" element={<LabTechnician />} />
       <Route path="/" element={isAuthenticated ? <Home /> : <Landing />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/lab-portal" element={<LabPortal />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

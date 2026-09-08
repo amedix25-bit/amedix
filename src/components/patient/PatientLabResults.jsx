@@ -210,7 +210,7 @@ export default function PatientLabResults({ patient }) {
                   <p className="text-xs text-muted-foreground mt-0.5">Test date: {r.test_date}</p>
                 </div>
                 <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                  Patient-submitted
+                  {r.submitted_by_name === patient.full_name ? "Patient-submitted" : "Laboratory"}
                 </span>
               </div>
               {r.lab_name && <p className="text-sm text-muted-foreground mt-1">{r.lab_name}</p>}

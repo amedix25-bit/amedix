@@ -1,0 +1,69 @@
+{
+  "name": "LabAuditLog",
+  "type": "object",
+  "properties": {
+    "laboratory_id": {
+      "type": "string"
+    },
+    "lab_user_id": {
+      "type": "string",
+      "description": "User id of the laboratory owner account \u2014 set server-side, used for access control"
+    },
+    "technician_id": {
+      "type": "string"
+    },
+    "technician_name": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "technician_login",
+        "patient_identified",
+        "patient_checked_in",
+        "tests_completed",
+        "results_uploaded",
+        "results_ready",
+        "patient_notified"
+      ]
+    },
+    "details": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "visit_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "laboratory_id",
+    "lab_user_id",
+    "action"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.lab_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

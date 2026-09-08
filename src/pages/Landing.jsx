@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HeartPulse, User, Stethoscope, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock } from "lucide-react";
+import { HeartPulse, User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ROLE_CONTENT = {
@@ -15,6 +15,12 @@ const ROLE_CONTENT = {
     title: "I am a Doctor",
     description:
       "Log in to manage your patients, appointments, and clinical records — or register your professional account to get started.",
+  },
+  lab: {
+    icon: FlaskConical,
+    title: "I am a Lab",
+    description:
+      "Register your laboratory, manage technicians, and process laboratory requests — or sign in to your Lab Portal.",
   },
 };
 
@@ -68,7 +74,7 @@ export default function Landing() {
             <>
               <p className="text-sm text-muted-foreground mt-6 font-medium">Choose how you use the platform</p>
 
-              <div className="grid sm:grid-cols-2 gap-6 mt-8">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                 <button
                   onClick={() => selectRole("patient")}
                   className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
@@ -108,6 +114,26 @@ export default function Landing() {
                     </div>
                   </div>
                 </button>
+
+                <button
+                  onClick={() => selectRole("lab")}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                      <FlaskConical className="w-7 h-7 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold">I am a Lab</h3>
+                    <p className="text-muted-foreground text-sm mt-2">
+                      Register your laboratory, manage technicians, and process laboratory requests.
+                    </p>
+                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
+                      Continue
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </button>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4 mt-14 text-left">
@@ -138,11 +164,11 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mt-2">{roleContent.description}</p>
 
                 <div className="flex flex-col gap-3 mt-6">
-                  <Button size="lg" variant="outline" onClick={() => navigate("/login")}>
+                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : "/login")}>
                     <LogIn className="w-4 h-4 mr-2" />
                     Log In
                   </Button>
-                  <Button size="lg" onClick={() => navigate("/register")}>
+                  <Button size="lg" onClick={() => navigate(role === "lab" ? "/lab/register" : "/register")}>
                     Create Account
                   </Button>
                 </div>
