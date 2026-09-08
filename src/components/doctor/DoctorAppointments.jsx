@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, CalendarDays, Users, Ban } from "lucide-react";
+import { Plus, X, CalendarDays, Users, Ban, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -16,6 +16,7 @@ import DeclinedAppointments from "./appointments/DeclinedAppointments";
 import AppointmentDetailsDialog from "./appointments/AppointmentDetailsDialog";
 import DoctorPatientRecordView from "./DoctorPatientRecordView";
 import { getAppointmentStatus } from "./appointments/appointmentStatus";
+import { useToast } from "@/components/ui/use-toast";
 
 const EMPTY = { patient_cin: "", date: "", time: "", location: "", reason: "", notes: "" };
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -34,6 +35,9 @@ export default function DoctorAppointments({ doctorProfile }) {
   const [reschedule, setReschedule] = useState(null);
   const [rescheduleForm, setRescheduleForm] = useState({ date: "", time: "" });
   const [seenConfirm, setSeenConfirm] = useState(null);
+  const [createConfirm, setCreateConfirm] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     load();
@@ -77,8 +81,8 @@ export default function DoctorAppointments({ doctorProfile }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    try {
-      if (editing) {
+    if (editing) {
+      try {
         await base44.entities.Appointment.update(editing.id, {
           date: form.date,
           time: form.time,
@@ -88,38 +92,57 @@ export default function DoctorAppointments({ doctorProfile }) {
           patient_response: "",
           response_date: "",
         });
-      } else {
-        const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
-        if (patients.length === 0) {
-          setError("Patient not found. Please check the CIN.");
-          return;
-        }
-        const p = patients[0];
-        const accessReqs = await base44.entities.AccessRequest.filter({ patient_id: p.id, doctor_id: doctorProfile.id, status: "approved" });
-        if (accessReqs.length === 0) {
-          setError("You need approved access to this patient's record");
-          return;
-        }
-        await base44.entities.Appointment.create({
-          patient_id: p.id,
-          doctor_id: doctorProfile.id,
-          patient_cin: p.cin,
-          patient_name: p.full_name,
-          doctor_name: doctorProfile.full_name,
-          date: form.date,
-          time: form.time,
-          location: form.location,
-          reason: form.reason,
-          notes: form.notes,
-          status: "scheduled",
-        });
+        setForm(EMPTY);
+        setEditing(null);
+        setShowForm(false);
+        load();
+      } catch (err) {
+        console.error(err);
       }
+      return;
+    }
+    if (slotConflict) return;
+    setCreateConfirm({
+      ...form,
+      submission_id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    });
+  };
+
+  const confirmCreate = async () => {
+    if (creating) return;
+    setCreating(true);
+    try {
+      const res = await base44.functions.invoke("createDoctorAppointment", {
+        doctor_id: doctorProfile.id,
+        doctor_name: doctorProfile.full_name,
+        patient_cin: createConfirm.patient_cin,
+        date: createConfirm.date,
+        time: createConfirm.time,
+        location: createConfirm.location,
+        reason: createConfirm.reason,
+        notes: createConfirm.notes,
+        submission_id: createConfirm.submission_id,
+      });
+      const data = res.data || {};
+      if (data.error) {
+        setError(data.error);
+        setCreateConfirm(null);
+        return;
+      }
+      toast({
+        title: "Appointment created successfully.",
+        description: `${data.appointment?.patient_name} — ${data.appointment?.date} at ${data.appointment?.time}`,
+      });
+      setCreateConfirm(null);
       setForm(EMPTY);
-      setEditing(null);
       setShowForm(false);
       load();
     } catch (err) {
       console.error(err);
+      setError(err?.response?.data?.error || "Could not create the appointment. Please try again.");
+      setCreateConfirm(null);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -244,6 +267,11 @@ export default function DoctorAppointments({ doctorProfile }) {
   }
 
   const today = todayStr();
+  const slotConflict =
+    !editing &&
+    !!form.date &&
+    !!form.time &&
+    items.some((a) => a.date === form.date && a.time === form.time && a.status === "scheduled");
   const upcoming = items.filter((a) => {
     const s = getAppointmentStatus(a);
     return (s === "Pending" || s === "Confirmed") && a.date >= today;
@@ -311,8 +339,21 @@ export default function DoctorAppointments({ doctorProfile }) {
             <Label>Details</Label>
             <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Any relevant details for the patient" />
           </div>
+          {form.date && form.time && !editing && (
+            <div className="rounded-lg bg-muted p-3 text-sm">
+              <p>
+                <span className="text-muted-foreground">Selected date &amp; time: </span>
+                <span className="font-medium">{form.date} at {form.time}</span>
+              </p>
+            </div>
+          )}
+          {slotConflict && (
+            <p className="text-sm text-destructive">
+              This date and time is already booked for another appointment. Please choose a different time.
+            </p>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit">{editing ? "Save Changes" : "Create Appointment"}</Button>
+          <Button type="submit" disabled={slotConflict}>{editing ? "Save Changes" : "Confirm Appointment"}</Button>
         </form>
       )}
 
@@ -341,6 +382,25 @@ export default function DoctorAppointments({ doctorProfile }) {
       ) : (
         <DeclinedAppointments items={declined} onDelete={handleDelete} />
       )}
+
+      <AlertDialog open={!!createConfirm} onOpenChange={(open) => { if (!open && !creating) setCreateConfirm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to create this appointment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {createConfirm?.patient_cin} — {createConfirm?.date} at {createConfirm?.time}
+              {createConfirm?.location ? ` · ${createConfirm.location}` : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={creating}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCreate} disabled={creating}>
+              {creating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+              {creating ? "Creating appointment…" : "Yes, Create Appointment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!reschedule} onOpenChange={(open) => { if (!open) setReschedule(null); }}>
         <DialogContent className="sm:max-w-md">

@@ -85,6 +85,10 @@
     "seen_datetime": {
       "type": "string",
       "description": "Date and time the patient was seen (ISO datetime)"
+    },
+    "submission_id": {
+      "type": "string",
+      "description": "Unique client-generated appointment submission ID \u2014 the backend processes each submission only once to prevent duplicate appointments"
     }
   },
   "required": [
