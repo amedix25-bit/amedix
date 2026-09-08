@@ -39,6 +39,16 @@
     },
     "reason": {
       "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the medication is currently active. Set to false when a doctor stops the medication."
+    },
+    "stopped_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the medication was stopped"
     }
   },
   "required": [

@@ -25,6 +25,8 @@ export default function PatientOverview({ profile, stats, loading }) {
       }
     };
     load();
+    const unsubscribe = base44.entities.Medication.subscribe(() => load());
+    return unsubscribe;
   }, [profile?.id]);
 
   if (loading) {
@@ -109,17 +111,17 @@ export default function PatientOverview({ profile, stats, loading }) {
           <div className="space-y-3">
             <InfoRow label="Known Case Of" value={knownCaseText || null} />
             <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground shrink-0">Current Medications</span>
+              <span className="text-muted-foreground shrink-0">Current Medication</span>
               <span className="font-medium text-right">
-                {med.medications.length === 0
+                {med.medications.filter((m) => m.is_active !== false).length === 0
                   ? "—"
-                  : med.medications.map((m) => (
-                      <span key={m.id} className="block">
-                        {m.name}
-                        {m.dose ? ` · ${m.dose}` : ""}
-                        {m.frequency ? ` · ${m.frequency}` : ""}
-                      </span>
-                    ))}
+                  : med.medications
+                      .filter((m) => m.is_active !== false)
+                      .map((m) => (
+                        <span key={m.id} className="block">
+                          {m.name}
+                        </span>
+                      ))}
               </span>
             </div>
             <InfoRow label="Allergies" value={allergyText || profile?.allergies || null} />

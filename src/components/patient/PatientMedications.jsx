@@ -10,7 +10,7 @@ export default function PatientMedications({ patient }) {
     if (!patient?.id) return;
     try {
       const results = await base44.entities.Medication.filter({ patient_id: patient.id }, "-start_date");
-      setMedications(results);
+      setMedications(results.filter((m) => m.is_active !== false));
     } catch (err) {
       console.error(err);
     } finally {

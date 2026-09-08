@@ -53,7 +53,7 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
       />
 
       <SurgicalSection number="5" patient={profile} />
-      <MedicationsSection number="6" patient={profile} />
+      <MedicationsSection number="6" patient={profile} editable={doctorView} />
       <AllergiesSection number="7" patient={profile} />
       <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} />
     </div>
