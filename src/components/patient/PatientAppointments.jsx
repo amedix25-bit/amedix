@@ -10,6 +10,8 @@ export default function PatientAppointments({ patientId }) {
 
   useEffect(() => {
     load();
+    const unsubscribe = base44.entities.Appointment.subscribe(() => load());
+    return unsubscribe;
   }, [patientId]);
 
   const load = async () => {
@@ -73,7 +75,7 @@ export default function PatientAppointments({ patientId }) {
                   <div className="mt-3">
                     {apt.patient_response === "accepted" ? (
                       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        You accepted{apt.response_date ? ` · ${apt.response_date.slice(0, 10)}` : ""}
+                        You confirmed{apt.response_date ? ` · ${apt.response_date.slice(0, 10)}` : ""}
                       </span>
                     ) : (
                       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
@@ -85,7 +87,7 @@ export default function PatientAppointments({ patientId }) {
                   <div className="mt-3 flex gap-2">
                     <Button size="sm" onClick={() => respond(apt, "accepted")} disabled={busyId === apt.id}>
                       {busyId === apt.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
-                      Accept
+                      Confirm
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => respond(apt, "declined")} disabled={busyId === apt.id}>
                       <XCircle className="w-4 h-4 mr-1" />

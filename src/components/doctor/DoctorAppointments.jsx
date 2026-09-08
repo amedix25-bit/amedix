@@ -37,6 +37,8 @@ export default function DoctorAppointments({ doctorProfile }) {
 
   useEffect(() => {
     load();
+    const unsubscribe = base44.entities.Appointment.subscribe(() => load());
+    return unsubscribe;
   }, [doctorProfile]);
 
   const load = async () => {
@@ -83,6 +85,8 @@ export default function DoctorAppointments({ doctorProfile }) {
           location: form.location,
           reason: form.reason,
           notes: form.notes,
+          patient_response: "",
+          response_date: "",
         });
       } else {
         const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
@@ -162,6 +166,8 @@ export default function DoctorAppointments({ doctorProfile }) {
         time: rescheduleForm.time,
         rescheduled: true,
         reschedule_datetime: new Date().toISOString(),
+        patient_response: "",
+        response_date: "",
       };
       if (!apt.original_date) patch.original_date = apt.date;
       if (!apt.original_time) patch.original_time = apt.time;
