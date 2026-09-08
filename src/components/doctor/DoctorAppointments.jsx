@@ -17,8 +17,9 @@ import AppointmentDetailsDialog from "./appointments/AppointmentDetailsDialog";
 import DoctorPatientRecordView from "./DoctorPatientRecordView";
 import { getAppointmentStatus } from "./appointments/appointmentStatus";
 import { useToast } from "@/components/ui/use-toast";
+import PatientSearchSelect from "./patients/PatientSearchSelect";
 
-const EMPTY = { patient_cin: "", date: "", time: "", location: "", reason: "", notes: "" };
+const EMPTY = { patient: null, date: "", time: "", location: "", reason: "", notes: "" };
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 export default function DoctorAppointments({ doctorProfile }) {
@@ -67,7 +68,6 @@ export default function DoctorAppointments({ doctorProfile }) {
     setDetail(null);
     setEditing(apt);
     setForm({
-      patient_cin: apt.patient_cin || "",
       date: apt.date || "",
       time: apt.time || "",
       location: apt.location || "",
@@ -101,6 +101,10 @@ export default function DoctorAppointments({ doctorProfile }) {
       }
       return;
     }
+    if (!form.patient) {
+      setError("Please select a patient from the list.");
+      return;
+    }
     if (slotConflict) return;
     setCreateConfirm({
       ...form,
@@ -115,7 +119,7 @@ export default function DoctorAppointments({ doctorProfile }) {
       const res = await base44.functions.invoke("createDoctorAppointment", {
         doctor_id: doctorProfile.id,
         doctor_name: doctorProfile.full_name,
-        patient_cin: createConfirm.patient_cin,
+        patient_cin: createConfirm.patient.cin,
         date: createConfirm.date,
         time: createConfirm.time,
         location: createConfirm.location,
@@ -304,15 +308,21 @@ export default function DoctorAppointments({ doctorProfile }) {
             <button type="button" onClick={() => setShowForm(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Patient CIN *</Label>
-              <Input
-                value={editing ? editing.patient_cin : form.patient_cin}
-                onChange={(e) => setForm({ ...form, patient_cin: e.target.value })}
-                placeholder="CIN-XXXXXX"
-                disabled={!!editing}
-                required={!editing}
-              />
+            <div className="space-y-2 sm:col-span-2">
+              {editing ? (
+                <>
+                  <Label>Patient</Label>
+                  <div className="rounded-lg bg-muted p-3 text-sm">
+                    <p className="font-medium">{editing.patient_name}</p>
+                    <p className="text-muted-foreground">CIN: {editing.patient_cin}</p>
+                  </div>
+                </>
+              ) : (
+                <PatientSearchSelect
+                  selected={form.patient}
+                  onSelect={(p) => setForm({ ...form, patient: p })}
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Location / Type of Appointment</Label>
@@ -388,7 +398,7 @@ export default function DoctorAppointments({ doctorProfile }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to create this appointment?</AlertDialogTitle>
             <AlertDialogDescription>
-              {createConfirm?.patient_cin} — {createConfirm?.date} at {createConfirm?.time}
+              {createConfirm?.patient?.full_name} (CIN: {createConfirm?.patient?.cin}) — {createConfirm?.date} at {createConfirm?.time}
               {createConfirm?.location ? ` · ${createConfirm.location}` : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
