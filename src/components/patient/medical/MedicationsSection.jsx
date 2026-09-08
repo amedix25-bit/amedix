@@ -68,8 +68,9 @@ export default function MedicationsSection({ number, patient, editable }) {
     }
   };
 
-  const active = items.filter((m) => m.is_active !== false);
-  const stopped = items.filter((m) => m.is_active === false);
+  const today = new Date().toISOString().slice(0, 10);
+  const active = items.filter((m) => m.is_active !== false && (!m.end_date || m.end_date >= today));
+  const stopped = items.filter((m) => !(m.is_active !== false && (!m.end_date || m.end_date >= today)));
 
   return (
     <SectionCard

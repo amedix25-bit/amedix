@@ -1,0 +1,44 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "10 0 * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Tripoli",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Marks prescribed medications as inactive once their prescribed duration has ended",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "medication_duration_sync",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "deactivate_expired": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "deactivateExpiredMedications"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Deactivate expired medications",
+            "description": "Marks finished courses inactive"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Medication Duration Sync"
+}

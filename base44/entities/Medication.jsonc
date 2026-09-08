@@ -33,9 +33,18 @@
         "other"
       ]
     },
+    "duration": {
+      "type": "string",
+      "description": "Prescribed duration, e.g. '14 days'"
+    },
     "start_date": {
       "type": "string",
       "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Automatically calculated from start date + duration. The medication becomes inactive once this date passes."
     },
     "reason": {
       "type": "string"
@@ -43,7 +52,7 @@
     "is_active": {
       "type": "boolean",
       "default": true,
-      "description": "Whether the medication is currently active. Set to false when a doctor stops the medication."
+      "description": "Whether the medication is currently active. Set to false when a doctor stops the medication or when the prescribed duration ends."
     },
     "stopped_date": {
       "type": "string",

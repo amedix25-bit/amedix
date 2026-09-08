@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
+import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
 const EMPTY = {
@@ -31,6 +32,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [imagingRequests, setImagingRequests] = useState([]);
   const [selectedLabs, setSelectedLabs] = useState(new Set());
   const [selectedImaging, setSelectedImaging] = useState(new Set());
+  const [medications, setMedications] = useState([]);
   const [finding, setFinding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -115,6 +117,15 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       setError("Final diagnosis is required.");
       return;
     }
+    const meds = medications.filter((m) => m.name.trim());
+    const prescriptionSummary = meds
+      .map((m) =>
+        `${m.name.trim()}` +
+        `${m.dose.trim() ? ` — Dose: ${m.dose.trim()}` : ""}` +
+        `${m.route ? ` — Route: ${m.route}` : ""}` +
+        `${m.duration ? ` — Duration: ${m.duration} days` : ""}`
+      )
+      .join("\n");
     setSaving(true);
     try {
       await base44.entities.ClinicalNote.create({
@@ -130,13 +141,37 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         vital_signs: form.vital_signs,
         physical_examination: form.physical_examination,
         diagnosis: form.diagnosis,
-        prescription: form.prescription,
+        prescription: prescriptionSummary,
         interventions: form.interventions,
         biopsy: form.biopsy,
         lab_request_ids: [...selectedLabs],
         imaging_request_ids: [...selectedImaging],
         recommendations: form.recommendations,
       });
+      if (meds.length > 0) {
+        const startDate = new Date().toISOString().slice(0, 10);
+        await base44.entities.Medication.bulkCreate(
+          meds.map((m) => {
+            const days = parseInt(m.duration, 10);
+            const rec = {
+              patient_id: patient.id,
+              patient_cin: patient.cin,
+              patient_name: patient.full_name,
+              name: m.name.trim(),
+              dose: m.dose.trim(),
+              route: m.route,
+              duration: m.duration ? `${m.duration} days` : "",
+              start_date: startDate,
+              reason: form.diagnosis,
+              is_active: true,
+            };
+            if (m.duration && !isNaN(days) && days > 0) {
+              rec.end_date = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+            }
+            return rec;
+          })
+        );
+      }
       onSaved();
     } catch (err) {
       console.error(err);
@@ -245,11 +280,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
 
         <div className="space-y-2">
           <Label>Prescriptions</Label>
-          <Textarea
-            value={form.prescription}
-            onChange={(e) => setForm({ ...form, prescription: e.target.value })}
-            rows={2}
-          />
+          <p className="text-xs text-muted-foreground">
+            Prescribed medications are automatically added to the patient's Medication History as active medications.
+          </p>
+          <PrescriptionEditor medications={medications} onChange={setMedications} />
         </div>
 
         <div className="space-y-2">
