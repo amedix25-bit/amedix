@@ -169,6 +169,7 @@ export default function DoctorAppointments({ doctorProfile }) {
       setReschedule(null);
       load();
       base44.functions.invoke("notifyPatientReschedule", {
+        appointment_id: apt.id,
         patient_id: apt.patient_id,
         patient_name: apt.patient_name,
         doctor_name: doctorProfile.full_name,

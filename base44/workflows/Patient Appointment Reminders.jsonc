@@ -1,0 +1,44 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "patient_appointment_reminders",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "create_reminders": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "createPatientAppointmentReminders"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Create appointment reminders",
+            "description": "One day before each appointment"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Sends patients a portal notification one day before a confirmed upcoming appointment",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 8 * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Tripoli",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "name": "Patient Appointment Reminders"
+}

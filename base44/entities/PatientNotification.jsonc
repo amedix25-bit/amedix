@@ -1,0 +1,51 @@
+{
+  "name": "PatientNotification",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "appointment",
+        "rescheduled",
+        "lab_request",
+        "lab_results",
+        "other"
+      ],
+      "default": "other",
+      "description": "Category of the notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification heading"
+    },
+    "message": {
+      "type": "string",
+      "description": "Minimal, non-sensitive summary shown to the patient"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Read state of the notification"
+    },
+    "target": {
+      "type": "string",
+      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults)"
+    },
+    "related_id": {
+      "type": "string",
+      "description": "Related appointment / lab request id"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the related event (used to avoid duplicate appointment reminders)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "title"
+  ]
+}

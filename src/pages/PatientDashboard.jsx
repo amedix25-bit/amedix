@@ -13,6 +13,7 @@ import PatientAccessControl from "@/components/patient/PatientAccessControl";
 import PatientHealth from "@/components/patient/PatientHealth";
 import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
+import NotificationsBar from "@/components/patient/NotificationsBar";
 import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
 
 const navItems = [
@@ -73,13 +74,16 @@ export default function PatientDashboard() {
   return (
     <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Patient">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">
-            {activeTab === "overview"
-              ? `Welcome, ${profile?.full_name?.split(" ")[0] || ""}`
-              : navItems.find((n) => n.key === activeTab)?.label}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">
+              {activeTab === "overview"
+                ? `Welcome, ${profile?.full_name?.split(" ")[0] || ""}`
+                : navItems.find((n) => n.key === activeTab)?.label}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
+          </div>
+          {profile && <NotificationsBar patientId={profile.id} onNavigate={setActiveTab} />}
         </div>
 
         {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}

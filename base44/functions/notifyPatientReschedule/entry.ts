@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createPatientNotification } from '../../shared/patientNotifications.ts';
 
 export default async function(req) {
   try {
@@ -7,7 +8,7 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { patient_id, patient_name, doctor_name, original_date, original_time, new_date, new_time, location, reason } = body || {};
+    const { appointment_id, patient_id, patient_name, doctor_name, original_date, original_time, new_date, new_time, location, reason } = body || {};
     if (!patient_id || !new_date || !new_time) {
       return Response.json({ error: 'Missing appointment details' }, { status: 400 });
     }
@@ -18,6 +19,20 @@ export default async function(req) {
     } catch (e) {
       return Response.json({ notified: false, reason: 'Patient not found' }, { status: 404 });
     }
+
+    // In-portal notification — always created, even if no email is on file
+    await createPatientNotification(base44, {
+      patient_id,
+      type: 'rescheduled',
+      title: 'Appointment Rescheduled',
+      message:
+        `Dr. ${doctor_name || 'your doctor'} has rescheduled your appointment.\n` +
+        `New date: ${new_date} at ${new_time}` +
+        `${original_date ? `\nPrevious: ${original_date} at ${original_time}` : ''}` +
+        `${location ? `\nLocation: ${location}` : ''}`,
+      target: 'appointments',
+      related_id: appointment_id || '',
+    });
 
     let email = null;
     if (profiles[0].user_id) {
