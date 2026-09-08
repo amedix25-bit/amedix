@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createPatientNotification } from '../../shared/patientNotifications.ts';
 
 export default async function(req) {
   try {
@@ -64,6 +65,23 @@ export default async function(req) {
       status: 'scheduled',
       submission_id,
     });
+
+    // In-portal notification for the patient — created only after the appointment
+    // is successfully created, and only once (duplicate submissions return above).
+    try {
+      await createPatientNotification(base44, {
+        patient_id: patient.id,
+        type: 'appointment',
+        title: 'New Appointment',
+        message:
+          `Dr. ${doctor_name || 'your doctor'} has scheduled an appointment for you.\n` +
+          `Doctor: Dr. ${doctor_name || ''}\nDate: ${date}\nTime: ${time}`,
+        target: 'appointments',
+        related_id: appointment.id,
+      });
+    } catch (notifErr) {
+      // The appointment exists; don't fail the request if the notification fails.
+    }
 
     return Response.json({ appointment, created: true });
   } catch (error) {

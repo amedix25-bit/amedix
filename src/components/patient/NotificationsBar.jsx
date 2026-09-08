@@ -112,6 +112,11 @@ export default function NotificationsBar({ patientId, onNavigate }) {
                       <span className="flex-1 min-w-0">
                         <span className={`block text-sm ${n.is_read ? "text-foreground" : "font-semibold"}`}>{n.title}</span>
                         <span className="block text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{n.message}</span>
+                        {n.target && (
+                          <span className="block text-xs font-medium text-primary mt-1">
+                            {n.target === "appointments" ? "View Appointment" : "View"}
+                          </span>
+                        )}
                       </span>
                       {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary shrink-0" />}
                     </button>
