@@ -17,7 +17,7 @@ const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "requests", label: "Lab Requests", icon: FlaskConical },
   { key: "pending", label: "Pending Tests", icon: TestTube },
-  { key: "completed", label: "Completed Results", icon: CheckCircle2 },
+  { key: "completed", label: "Completed Payments/Results", icon: CheckCircle2 },
   { key: "staff", label: "Technicians/Staff", icon: Users },
   { key: "profile", label: "Profile", icon: Building2 },
 ];

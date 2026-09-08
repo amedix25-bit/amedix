@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { FileText, CheckCircle2, Loader2, Banknote } from "lucide-react";
 
 export default function LabCompletedSection({ profile }) {
   const [items, setItems] = useState(null);
@@ -9,8 +9,11 @@ export default function LabCompletedSection({ profile }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const visits = await base44.entities.LabPatientVisit.filter({ laboratory_id: profile.id }, "-created_date");
-        setItems(visits.filter((v) => v.status === "patient_notified"));
+        const requests = await base44.entities.LabRequest.filter(
+          { lab_id: profile.id, status: "results" },
+          "-date_completed"
+        );
+        setItems(requests);
       } catch (err) {
         console.error(err);
       }
@@ -34,24 +37,30 @@ export default function LabCompletedSection({ profile }) {
           <p className="text-sm">No completed results yet.</p>
         </div>
       ) : (
-        items.map((v) => (
-          <div key={v.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
+        items.map((r) => (
+          <div key={r.id} className="rounded-xl border border-border bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-medium truncate">{v.patient_name}</p>
+                <p className="font-medium truncate">{r.patient_name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {v.patient_cin} · {v.request_ref}
+                  {r.patient_cin} · {r.request_id}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Technician: {v.technician_name}</p>
-                {v.results_ready_at && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Results ready {new Date(v.results_ready_at).toLocaleString()}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Test completed: {r.date_completed || "—"}
+                  {r.result_submitted_by_name ? ` · Technician: ${r.result_submitted_by_name}` : ""}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-medium">
+                    <Banknote className="w-3.5 h-3.5" /> Amount paid: {r.payment_amount || "—"}
+                  </span>
+                  <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium">
+                    Payment method: {r.payment_method || "—"}
+                  </span>
+                </div>
               </div>
-              {v.result_file_url && (
-                <Button size="sm" variant="outline" onClick={() => window.open(v.result_file_url, "_blank")}>
-                  <FileText className="w-4 h-4 mr-1" /> View Report
+              {r.result_file_url && (
+                <Button size="sm" variant="outline" onClick={() => window.open(r.result_file_url, "_blank")}>
+                  <FileText className="w-4 h-4 mr-1" /> Results PDF
                 </Button>
               )}
             </div>

@@ -119,6 +119,26 @@
     "result_file_url": {
       "type": "string"
     },
+    "result_file_name": {
+      "type": "string",
+      "description": "Name of the uploaded laboratory results file"
+    },
+    "result_submitted_by_name": {
+      "type": "string",
+      "description": "Laboratory technician who submitted the results"
+    },
+    "payment_amount": {
+      "type": "string",
+      "description": "Payment amount collected from the patient for this laboratory request"
+    },
+    "payment_method": {
+      "type": "string",
+      "description": "How the patient paid \u2014 e.g. Cash, Card, Bank Transfer, Insurance, Mobile Wallet, Other"
+    },
+    "payment_datetime": {
+      "type": "string",
+      "description": "Date and time the payment was recorded (ISO datetime)"
+    },
     "pdf_url": {
       "type": "string",
       "description": "Generated PDF Lab Request Form"

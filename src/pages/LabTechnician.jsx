@@ -1,13 +1,22 @@
 import React, { useState } from "react";
-import { HeartPulse, LogOut } from "lucide-react";
+import { HeartPulse, LogOut, FlaskConical, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLabSession, clearLabSession } from "@/lib/labSession";
 import TechnicianLogin from "@/components/lab/technician/TechnicianLogin";
 import TechnicianWorkspace from "@/components/lab/technician/TechnicianWorkspace";
 import TechnicianNotificationsBar from "@/components/lab/technician/TechnicianNotificationsBar";
+import TechnicianLabRequestsSection from "@/components/lab/technician/TechnicianLabRequestsSection";
+import UploadResultsFlow from "@/components/lab/technician/UploadResultsFlow";
+
+const TABS = [
+  { key: "requests", label: "Lab Requests", icon: FlaskConical },
+  { key: "upload", label: "Upload Results", icon: Upload },
+  { key: "queue", label: "My Work Queue", icon: Users },
+];
 
 export default function LabTechnician() {
   const [session, setSession] = useState(getLabSession());
+  const [tab, setTab] = useState("requests");
 
   if (!session) {
     return (
@@ -53,7 +62,27 @@ export default function LabTechnician() {
       </header>
       <main className="max-w-6xl mx-auto px-4 py-6">
         <TechnicianNotificationsBar session={session} />
-        <TechnicianWorkspace session={session} />
+
+        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
+                tab === t.key
+                  ? "border-primary text-primary font-semibold"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <t.icon className="w-4 h-4" /> {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "requests" && <TechnicianLabRequestsSection session={session} />}
+        {tab === "upload" && <UploadResultsFlow session={session} onSubmitted={() => setTab("requests")} />}
+        {tab === "queue" && <TechnicianWorkspace session={session} />}
       </main>
     </div>
   );

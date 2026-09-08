@@ -27,18 +27,22 @@ export default async function(req: Request): Promise<Response> {
       100
     );
 
-    const notifications = requests
-      .filter((r) => r.status === "authorized" && r.authorized_by_patient === true)
-      .map((r) => ({
-        id: r.id,
-        request_ref: r.request_id,
-        patient_name: r.patient_name || null,
-        patient_cin: r.patient_cin || null,
-        date_requested: r.date_requested,
-        tests: (r.tests || []).map((t) => t.name),
-        pdf_url: r.pdf_url || null,
-        opened: Boolean(r.lab_opened_at),
-      }));
+    const authorized = requests.filter((r) => r.authorized_by_patient === true);
+    // all_statuses: full Lab Requests list; otherwise only new (not yet processed) requests
+    const visible = body.all_statuses === true ? authorized : authorized.filter((r) => r.status === "authorized");
+
+    const notifications = visible.map((r) => ({
+      id: r.id,
+      request_ref: r.request_id,
+      patient_name: r.patient_name || null,
+      patient_cin: r.patient_cin || null,
+      date_requested: r.date_requested,
+      created_date: r.created_date || null,
+      status: r.status,
+      tests: (r.tests || []).map((t) => t.name),
+      pdf_url: r.pdf_url || null,
+      opened: Boolean(r.lab_opened_at),
+    }));
 
     return Response.json({ notifications });
   } catch (error) {
