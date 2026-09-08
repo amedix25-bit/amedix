@@ -9,6 +9,7 @@ import LabPendingTestsSection from "@/components/lab/portal/LabPendingTestsSecti
 import LabCompletedSection from "@/components/lab/portal/LabCompletedSection";
 import LabTechniciansSection from "@/components/lab/portal/LabTechniciansSection";
 import LabProfileSection from "@/components/lab/portal/LabProfileSection";
+import LabNotificationsBar from "@/components/lab/portal/LabNotificationsBar";
 import { Loader2 } from "lucide-react";
 import { LayoutDashboard, FlaskConical, TestTube, CheckCircle2, Users, Building2 } from "lucide-react";
 
@@ -64,6 +65,8 @@ export default function LabPortal() {
             {profile.lab_name} · A&M Lab No. {profile.lab_number}
           </p>
         </div>
+
+        <LabNotificationsBar profile={profile} />
 
         {activeTab === "dashboard" && <LabDashboardSection profile={profile} />}
         {activeTab === "requests" && <LabRequestsSection profile={profile} />}

@@ -72,7 +72,7 @@ export default function QrScanner({ onScan }) {
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        The QR code contains only the patient's secure CIN identifier — no medical information.
+        The QR code contains only a secure identifier (patient CIN or request reference) — no medical information.
       </p>
     </div>
   );

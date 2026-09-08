@@ -8,7 +8,7 @@ import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
 import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
 import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { entryById } from "@/lib/labTestCatalog";
-import { makeRequestId, generateLabRequestPdf } from "@/lib/labRequestPdf";
+import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send, ArrowLeft, Search } from "lucide-react";
 
 export default function DoctorLabRequests({ doctorProfile }) {
@@ -155,6 +155,7 @@ export default function DoctorLabRequests({ doctorProfile }) {
         date_requested: today,
       };
       const doc = generateLabRequestPdf(payload);
+      await addRequestBarcode(doc, payload.request_id);
       const pdfFile = new File([doc.output("blob")], `LabRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
       await base44.entities.LabRequest.create({ ...payload, pdf_url: file_url });

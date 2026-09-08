@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getLabSession, clearLabSession } from "@/lib/labSession";
 import TechnicianLogin from "@/components/lab/technician/TechnicianLogin";
 import TechnicianWorkspace from "@/components/lab/technician/TechnicianWorkspace";
+import TechnicianNotificationsBar from "@/components/lab/technician/TechnicianNotificationsBar";
 
 export default function LabTechnician() {
   const [session, setSession] = useState(getLabSession());
@@ -51,6 +52,7 @@ export default function LabTechnician() {
         </div>
       </header>
       <main className="max-w-6xl mx-auto px-4 py-6">
+        <TechnicianNotificationsBar session={session} />
         <TechnicianWorkspace session={session} />
       </main>
     </div>

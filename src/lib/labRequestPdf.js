@@ -222,3 +222,39 @@ export function generateLabRequestPdf(req) {
 
   return doc;
 }
+
+// ===== Request barcode (the only added element) =====
+// Unique scannable barcode linked to this specific request: encodes the Request ID,
+// so the laboratory/technician can scan it to instantly identify the request in the system.
+const loadBarcodeImage = (url) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+
+export async function addRequestBarcode(doc, requestId) {
+  if (!requestId) return;
+  try {
+    const img = await loadBarcodeImage(
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(requestId)}`
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext("2d").drawImage(img, 0, 0);
+
+    // Bottom-right corner of the form — content and design otherwise untouched
+    const size = 20;
+    doc.setPage(1);
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", 195 - size, 264, size, size);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(...GRAY);
+    doc.text("SCAN TO IDENTIFY REQUEST", 195, 287.5, { align: "right" });
+  } catch (err) {
+    console.warn("Request barcode could not be added:", err);
+  }
+}

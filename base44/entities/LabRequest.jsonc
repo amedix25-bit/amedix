@@ -98,6 +98,10 @@
       "type": "string",
       "description": "Exact date and time the patient authorized the laboratory (ISO datetime)"
     },
+    "lab_opened_at": {
+      "type": "string",
+      "description": "Date and time the laboratory/technician first opened this request from the notification bar (ISO datetime) \u2014 used to tell new/unread requests from opened ones"
+    },
     "status": {
       "type": "string",
       "enum": [

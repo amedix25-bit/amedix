@@ -12,11 +12,29 @@ export default async function(req: Request): Promise<Response> {
     const method = body.method === "qr" ? "qr" : "cin";
     if (!cin) return Response.json({ found: false, message: "Enter the patient's CIN." }, { status: 400 });
 
-    const profiles = await base44.asServiceRole.entities.PatientProfile.filter({ cin });
-    if (profiles.length === 0) {
-      return Response.json({ found: false, message: "No patient found with that CIN." });
+    let patient = null;
+    if (cin.startsWith("LR-")) {
+      // Scanned/entered request barcode — resolve the patient through the authorized lab request
+      const requests = await base44.asServiceRole.entities.LabRequest.filter({ request_id: cin });
+      const req = requests.find((r) => r.authorized_by_patient === true && r.lab_id === tech.laboratory_id);
+      if (!req) {
+        return Response.json({
+          found: false,
+          message: "No authorized request found for your laboratory with that reference.",
+        });
+      }
+      const profiles = await base44.asServiceRole.entities.PatientProfile.filter({ id: req.patient_id });
+      if (profiles.length === 0) {
+        return Response.json({ found: false, message: "No patient found for that request." });
+      }
+      patient = profiles[0];
+    } else {
+      const profiles = await base44.asServiceRole.entities.PatientProfile.filter({ cin });
+      if (profiles.length === 0) {
+        return Response.json({ found: false, message: "No patient found with that CIN." });
+      }
+      patient = profiles[0];
     }
-    const patient = profiles[0];
 
     const requests = await base44.asServiceRole.entities.LabRequest.filter({ patient_id: patient.id });
     const labRequests = requests.filter(
