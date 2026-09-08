@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
 import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
-import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
+import ClinicalNoteCard from "@/components/doctor/notes/ClinicalNoteCard";
 import PatientSearchSelect from "@/components/doctor/patients/PatientSearchSelect";
-import { Plus, FileText, ArrowLeft } from "lucide-react";
+import { Plus, FileText, ArrowLeft, Search, Loader2 } from "lucide-react";
 
 export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
   const [myPatients, setMyPatients] = useState([]);
   const [mode, setMode] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
+
+  const [prevNotes, setPrevNotes] = useState([]);
+  const [prevImagingMap, setPrevImagingMap] = useState({});
+  const [prevLoading, setPrevLoading] = useState(false);
+  const [prevQuery, setPrevQuery] = useState("");
+  const [openedNote, setOpenedNote] = useState(null);
 
   useEffect(() => {
     const loadPatients = async () => {
@@ -33,6 +41,32 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
     loadPatients();
   }, [doctorProfile]);
 
+  useEffect(() => {
+    if (mode !== "previous") return;
+    setOpenedNote(null);
+    setPrevQuery("");
+    const load = async () => {
+      setPrevLoading(true);
+      try {
+        const [notes, imaging] = await Promise.all([
+          base44.entities.ClinicalNote.filter({ doctor_id: doctorProfile.id }, "-date"),
+          base44.entities.ImagingRequest.filter({ doctor_id: doctorProfile.id }),
+        ]);
+        setPrevNotes(notes);
+        const map = {};
+        imaging.forEach((img) => {
+          map[img.id] = img;
+        });
+        setPrevImagingMap(map);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setPrevLoading(false);
+      }
+    };
+    load();
+  }, [mode, doctorProfile]);
+
   const openMode = (m) => {
     setMode(m);
     setSelectedPatient(null);
@@ -41,7 +75,14 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
   const backToOptions = () => {
     setMode(null);
     setSelectedPatient(null);
+    setOpenedNote(null);
   };
+
+  const filtered = prevQuery.trim()
+    ? prevNotes.filter((n) =>
+        (n.patient_name || "").toLowerCase().includes(prevQuery.trim().toLowerCase())
+      )
+    : prevNotes;
 
   return (
     <div className="space-y-4">
@@ -65,19 +106,19 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
               <FileText className="w-6 h-6" />
             </div>
             <h3 className="font-semibold text-lg">Previous Notes</h3>
-            <p className="text-sm text-muted-foreground mt-1">Search and select a patient to view their previous clinical notes.</p>
+            <p className="text-sm text-muted-foreground mt-1">Browse and search your previously written clinical notes.</p>
           </button>
         </div>
       )}
 
-      {mode && !selectedPatient && (
+      {mode === "create" && !selectedPatient && (
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={backToOptions}>
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
-            <h3 className="font-semibold">{mode === "create" ? "Create New Note" : "Previous Notes"} — Select a Patient</h3>
+            <h3 className="font-semibold">Create New Note — Select a Patient</h3>
           </div>
           <PatientSearchSelect
             label="Find My Patient"
@@ -93,14 +134,72 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
           doctorProfile={doctorProfile}
           onNavigateTab={onNavigateTab}
           preselectedPatient={selectedPatient}
-          onSaved={() => setMode("previous")}
+          onSaved={() => {
+            setSelectedPatient(null);
+            setMode("previous");
+          }}
           onCancel={backToOptions}
         />
       )}
 
-      {mode === "previous" && selectedPatient && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <DoctorPatientClinicalNotesView patientId={selectedPatient.id} />
+      {mode === "previous" && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={backToOptions}>
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back
+              </Button>
+              <h3 className="font-semibold">Previous Notes</h3>
+            </div>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={prevQuery}
+                onChange={(e) => {
+                  setPrevQuery(e.target.value);
+                  setOpenedNote(null);
+                }}
+                placeholder="Search by patient name..."
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {openedNote ? (
+            <div className="space-y-4">
+              <Button variant="outline" size="sm" onClick={() => setOpenedNote(null)}>
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Back to Notes
+              </Button>
+              <ClinicalNoteCard note={openedNote} imagingMap={prevImagingMap} />
+            </div>
+          ) : prevLoading ? (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Loading...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No previous notes found</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+              {filtered.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => setOpenedNote(n)}
+                  className="w-full flex items-center justify-between gap-4 p-4 text-left hover:bg-accent/50 transition-colors"
+                >
+                  <p className="font-medium truncate">{n.patient_name || "Unknown patient"}</p>
+                  <p className="text-sm text-muted-foreground shrink-0">
+                    {n.date ? format(new Date(n.date), "MMMM d, yyyy") : ""}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
