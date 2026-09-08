@@ -22,6 +22,12 @@ export function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+export function computeEndDate(startDate, durationDays) {
+  const days = parseInt(durationDays, 10);
+  if (!startDate || !durationDays || isNaN(days) || days <= 0) return "";
+  return new Date(new Date(startDate).getTime() + days * 86400000).toISOString().slice(0, 10);
+}
+
 export function medicationStatus(med, today) {
   const day = today || todayStr();
   if (med.is_active !== false && (!med.end_date || med.end_date >= day)) return "active";

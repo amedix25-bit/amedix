@@ -144,7 +144,7 @@ export default function MedicationsSection({ number, patient, editable }) {
                     {[
                       m.dose,
                       m.route && routeLabel(m.route),
-                      m.frequency,
+                      m.prn ? "PRN — as needed" : m.frequency,
                       m.meal_timing && mealLabel(m.meal_timing),
                       m.duration,
                     ]

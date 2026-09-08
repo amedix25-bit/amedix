@@ -16,10 +16,14 @@ export default function MedicationCard({ med, today, onEdit }) {
   const rows = [
     { label: "Dose", value: med.dose },
     { label: "Route of Administration", value: med.route ? routeLabel(med.route) : "" },
-    { label: "Frequency", value: med.frequency },
+    { label: "Frequency", value: med.prn ? "PRN — as needed" : med.frequency },
+    { label: "Max Frequency", value: med.prn ? med.max_frequency : "" },
     { label: "Meal", value: med.meal_timing ? mealLabel(med.meal_timing) : "" },
     { label: "Duration", value: med.duration },
+    { label: "End Date", value: med.end_date },
+    { label: "Indication", value: med.reason },
     { label: isDoctor ? "Doctor's Notes" : "Notes", value: isDoctor ? med.doctor_notes : med.patient_notes },
+    { label: "Special Instructions", value: med.special_instructions },
   ].filter((r) => r.value);
 
   return (

@@ -48,9 +48,22 @@
       "type": "string",
       "description": "Prescribed duration, e.g. '14 days'"
     },
+    "prn": {
+      "type": "boolean",
+      "default": false,
+      "description": "PRN \u2014 take as needed rather than on a fixed schedule"
+    },
+    "max_frequency": {
+      "type": "string",
+      "description": "Maximum frequency for PRN medications, e.g. 'Max 3 times daily'"
+    },
     "doctor_notes": {
       "type": "string",
       "description": "Notes / instructions from the prescribing doctor"
+    },
+    "special_instructions": {
+      "type": "string",
+      "description": "Special instructions from the doctor for the patient to follow"
     },
     "patient_notes": {
       "type": "string",
@@ -75,7 +88,8 @@
       "description": "Automatically calculated from start date + duration. The medication becomes inactive once this date passes."
     },
     "reason": {
-      "type": "string"
+      "type": "string",
+      "description": "Indication / reason for the medication"
     },
     "is_active": {
       "type": "boolean",

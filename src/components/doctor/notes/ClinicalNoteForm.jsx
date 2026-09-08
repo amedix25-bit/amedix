@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
-import { mealLabel } from "@/lib/medicationUtils";
+import { mealLabel, computeEndDate } from "@/lib/medicationUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
 const EMPTY = {
@@ -124,10 +124,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         `${m.name.trim()}` +
         `${m.dose.trim() ? ` — Dose: ${m.dose.trim()}` : ""}` +
         `${m.route ? ` — Route: ${m.route}` : ""}` +
-        `${m.frequency.trim() ? ` — Frequency: ${m.frequency.trim()}` : ""}` +
+        `${m.prn
+          ? ` — PRN (as needed)${(m.max_frequency || "").trim() ? ` · Max: ${(m.max_frequency || "").trim()}` : ""}`
+          : `${(m.frequency || "").trim() ? ` — Frequency: ${(m.frequency || "").trim()}` : ""}`}` +
         `${m.meal ? ` — ${mealLabel(m.meal)}` : ""}` +
         `${m.duration ? ` — Duration: ${m.duration} days` : ""}` +
-        `${m.notes.trim() ? ` — Notes: ${m.notes.trim()}` : ""}`
+        `${(m.reason || "").trim() ? ` — Indication: ${(m.reason || "").trim()}` : ""}` +
+        `${m.notes.trim() ? ` — Notes: ${m.notes.trim()}` : ""}` +
+        `${(m.special_instructions || "").trim() ? ` — Special instructions: ${(m.special_instructions || "").trim()}` : ""}`
       )
       .join("\n");
     setSaving(true);
@@ -157,6 +161,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         await base44.entities.Medication.bulkCreate(
           meds.map((m) => {
             const days = parseInt(m.duration, 10);
+            const start = m.start_date || startDate;
             const rec = {
               patient_id: patient.id,
               patient_cin: patient.cin,
@@ -167,14 +172,25 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               frequency: m.frequency.trim(),
               meal_timing: m.meal,
               duration: m.duration ? `${m.duration} days` : "",
+              prn: !!m.prn,
+              max_frequency: m.prn ? (m.max_frequency || "").trim() : "",
               doctor_notes: m.notes.trim(),
-              start_date: startDate,
-              reason: form.diagnosis,
-              is_active: true,
+              special_instructions: (m.special_instructions || "").trim(),
+              start_date: start,
+              reason: (m.reason || "").trim() || form.diagnosis,
               source: "doctor_prescribed",
             };
             if (m.duration && !isNaN(days) && days > 0) {
-              rec.end_date = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+              rec.end_date = computeEndDate(start, m.duration);
+            }
+            if (m.status === "completed") {
+              rec.is_active = false;
+              rec.stopped_date = rec.end_date || start;
+            } else if (m.status === "discontinued") {
+              rec.is_active = false;
+              rec.stopped_date = start;
+            } else {
+              rec.is_active = true;
             }
             return rec;
           })

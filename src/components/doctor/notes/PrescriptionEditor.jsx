@@ -3,11 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
-import { MED_ROUTES, MEAL_OPTIONS } from "@/lib/medicationUtils";
+import { MED_ROUTES, MEAL_OPTIONS, todayStr, computeEndDate } from "@/lib/medicationUtils";
 
-const EMPTY_MED = { name: "", dose: "", route: "", frequency: "", meal: "", duration: "", notes: "" };
+const EMPTY_MED = {
+  name: "",
+  dose: "",
+  route: "",
+  frequency: "",
+  meal: "",
+  duration: "",
+  notes: "",
+  start_date: todayStr(),
+  reason: "",
+  prn: false,
+  max_frequency: "",
+  special_instructions: "",
+  status: "active",
+};
 
 export default function PrescriptionEditor({ medications, onChange }) {
   const update = (i, field, value) =>
@@ -21,7 +36,7 @@ export default function PrescriptionEditor({ medications, onChange }) {
         <p className="text-xs text-muted-foreground">No medications prescribed yet.</p>
       )}
       {medications.map((med, i) => (
-        <div key={i} className="rounded-lg border border-border bg-card p-3 space-y-2">
+        <div key={i} className="rounded-lg border border-border bg-card p-3 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground">Medication {i + 1}</p>
             <button type="button" onClick={() => remove(i)} className="text-muted-foreground hover:text-destructive">
@@ -46,7 +61,7 @@ export default function PrescriptionEditor({ medications, onChange }) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Route</Label>
+              <Label className="text-xs">Route of Administration</Label>
               <Select value={med.route} onValueChange={(v) => update(i, "route", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select route" />
@@ -60,16 +75,24 @@ export default function PrescriptionEditor({ medications, onChange }) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">Frequency</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs">{med.prn ? "Max Frequency" : "Frequency"}</Label>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground font-normal cursor-pointer">
+                  <Checkbox checked={med.prn} onCheckedChange={(v) => update(i, "prn", v === true)} />
+                  PRN (as needed)
+                </label>
+              </div>
               <Input
-                value={med.frequency}
-                onChange={(e) => update(i, "frequency", e.target.value)}
-                placeholder="e.g. 3 times daily"
+                value={med.prn ? med.max_frequency : med.frequency}
+                onChange={(e) => update(i, med.prn ? "max_frequency" : "frequency", e.target.value)}
+                placeholder={med.prn ? "e.g. Max 3 times daily" : "e.g. 3 times daily"}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Before / After Meal</Label>
+              <Label className="text-xs">Before / After Food</Label>
               <Select value={med.meal} onValueChange={(v) => update(i, "meal", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
@@ -84,24 +107,68 @@ export default function PrescriptionEditor({ medications, onChange }) {
               </Select>
             </div>
             <div className="space-y-1">
+              <Label className="text-xs">Medication Status</Label>
+              <Select value={med.status} onValueChange={(v) => update(i, "status", v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="discontinued">Discontinued</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="space-y-1">
               <Label className="text-xs">Duration (days)</Label>
               <Input
                 type="number"
                 min="1"
                 value={med.duration}
                 onChange={(e) => update(i, "duration", e.target.value)}
-                placeholder="e.g. 14"
+                placeholder="e.g. 7"
               />
             </div>
-            <div className="space-y-1 sm:col-span-3">
-              <Label className="text-xs">Doctor's Notes</Label>
-              <Textarea
-                value={med.notes}
-                onChange={(e) => update(i, "notes", e.target.value)}
-                rows={2}
-                placeholder="e.g. Take with plenty of water."
+            <div className="space-y-1">
+              <Label className="text-xs">Start Date</Label>
+              <Input
+                type="date"
+                value={med.start_date}
+                onChange={(e) => update(i, "start_date", e.target.value)}
               />
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">End Date (auto)</Label>
+              <Input value={computeEndDate(med.start_date, med.duration)} readOnly disabled placeholder="—" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Indication / Reason</Label>
+            <Input
+              value={med.reason}
+              onChange={(e) => update(i, "reason", e.target.value)}
+              placeholder="e.g. Chest infection"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Doctor's Instructions / Notes</Label>
+            <Textarea
+              value={med.notes}
+              onChange={(e) => update(i, "notes", e.target.value)}
+              rows={2}
+              placeholder="e.g. Complete the full course and take with water."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Special Instructions</Label>
+            <Textarea
+              value={med.special_instructions}
+              onChange={(e) => update(i, "special_instructions", e.target.value)}
+              rows={2}
+              placeholder="Any special instructions for the patient to follow"
+            />
           </div>
         </div>
       ))}
