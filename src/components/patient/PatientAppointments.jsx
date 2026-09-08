@@ -2,11 +2,16 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, CheckCircle2, XCircle, MapPin, Loader2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 export default function PatientAppointments({ patientId }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   useEffect(() => {
     load();
@@ -25,7 +30,10 @@ export default function PatientAppointments({ patientId }) {
     }
   };
 
-  const respond = async (apt, response) => {
+  const askConfirm = (apt, response) => setConfirmAction({ apt, response });
+
+  const respond = async ({ apt, response }) => {
+    setConfirmAction(null);
     setBusyId(apt.id);
     try {
       await base44.entities.Appointment.update(apt.id, {
@@ -85,11 +93,11 @@ export default function PatientAppointments({ patientId }) {
                   </div>
                 ) : (
                   <div className="mt-3 flex gap-2">
-                    <Button size="sm" onClick={() => respond(apt, "accepted")} disabled={busyId === apt.id}>
+                    <Button size="sm" onClick={() => askConfirm(apt, "accepted")} disabled={busyId === apt.id}>
                       {busyId === apt.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
                       Confirm
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => respond(apt, "declined")} disabled={busyId === apt.id}>
+                    <Button size="sm" variant="outline" onClick={() => askConfirm(apt, "declined")} disabled={busyId === apt.id}>
                       <XCircle className="w-4 h-4 mr-1" />
                       Decline
                     </Button>
@@ -100,6 +108,30 @@ export default function PatientAppointments({ patientId }) {
           </div>
         ))
       )}
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => { if (!open) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.response === "accepted"
+                ? "Are you sure you want to confirm this appointment?"
+                : "Are you sure you want to decline this appointment?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.apt?.doctor_name} — {confirmAction?.apt?.date} at {confirmAction?.apt?.time}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmAction?.response === "declined" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+              onClick={() => confirmAction && respond(confirmAction)}
+            >
+              {confirmAction?.response === "accepted" ? "Yes, Confirm" : "Yes, Decline"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
