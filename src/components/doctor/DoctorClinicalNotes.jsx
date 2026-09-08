@@ -6,12 +6,15 @@ import { format } from "date-fns";
 import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
 import ClinicalNoteCard from "@/components/doctor/notes/ClinicalNoteCard";
 import PatientSearchSelect from "@/components/doctor/patients/PatientSearchSelect";
-import { Plus, FileText, ArrowLeft, Search, Loader2 } from "lucide-react";
+import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
+import DoctorMedicationForm from "@/components/doctor/medications/DoctorMedicationForm";
+import { Plus, FileText, ArrowLeft, Search, Loader2, Pill } from "lucide-react";
 
 export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
   const [myPatients, setMyPatients] = useState([]);
   const [mode, setMode] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [createView, setCreateView] = useState("summary");
 
   const [prevNotes, setPrevNotes] = useState([]);
   const [prevImagingMap, setPrevImagingMap] = useState({});
@@ -70,11 +73,13 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
   const openMode = (m) => {
     setMode(m);
     setSelectedPatient(null);
+    setCreateView("summary");
   };
 
   const backToOptions = () => {
     setMode(null);
     setSelectedPatient(null);
+    setCreateView("summary");
     setOpenedNote(null);
   };
 
@@ -124,12 +129,35 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
             label="Find My Patient"
             patients={myPatients}
             selected={null}
-            onSelect={(p) => setSelectedPatient(p)}
+            onSelect={(p) => {
+              setSelectedPatient(p);
+              setCreateView("summary");
+            }}
           />
         </div>
       )}
 
-      {mode === "create" && selectedPatient && (
+      {mode === "create" && selectedPatient && createView === "summary" && (
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={backToOptions}>
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </Button>
+          <DoctorPatientSummary patient={selectedPatient} />
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setCreateView("note")}>
+              <FileText className="w-4 h-4 mr-1" />
+              Write Clinical Note
+            </Button>
+            <Button variant="outline" onClick={() => setCreateView("medication")}>
+              <Pill className="w-4 h-4 mr-1" />
+              Add Medication
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {mode === "create" && selectedPatient && createView === "note" && (
         <ClinicalNoteForm
           doctorProfile={doctorProfile}
           onNavigateTab={onNavigateTab}
@@ -140,6 +168,20 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
           }}
           onCancel={backToOptions}
         />
+      )}
+
+      {mode === "create" && selectedPatient && createView === "medication" && (
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => setCreateView("summary")}>
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back
+          </Button>
+          <DoctorMedicationForm
+            patient={selectedPatient}
+            onSaved={() => setCreateView("summary")}
+            onCancel={() => setCreateView("summary")}
+          />
+        </div>
       )}
 
       {mode === "previous" && (

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
-import { mealLabel, computeEndDate } from "@/lib/medicationUtils";
+import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
 const EMPTY = {
@@ -157,43 +157,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         recommendations: form.recommendations,
       });
       if (meds.length > 0) {
-        const startDate = new Date().toISOString().slice(0, 10);
         await base44.entities.Medication.bulkCreate(
-          meds.map((m) => {
-            const days = parseInt(m.duration, 10);
-            const start = m.start_date || startDate;
-            const rec = {
-              patient_id: patient.id,
-              patient_cin: patient.cin,
-              patient_name: patient.full_name,
-              name: m.name.trim(),
-              dose: m.dose.trim(),
-              route: m.route,
-              frequency: m.frequency.trim(),
-              meal_timing: m.meal,
-              duration: m.duration ? `${m.duration} days` : "",
-              prn: !!m.prn,
-              max_frequency: m.prn ? (m.max_frequency || "").trim() : "",
-              doctor_notes: m.notes.trim(),
-              special_instructions: (m.special_instructions || "").trim(),
-              start_date: start,
-              reason: (m.reason || "").trim() || form.diagnosis,
-              source: "doctor_prescribed",
-            };
-            if (m.duration && !isNaN(days) && days > 0) {
-              rec.end_date = computeEndDate(start, m.duration);
-            }
-            if (m.status === "completed") {
-              rec.is_active = false;
-              rec.stopped_date = rec.end_date || start;
-            } else if (m.status === "discontinued") {
-              rec.is_active = false;
-              rec.stopped_date = start;
-            } else {
-              rec.is_active = true;
-            }
-            return rec;
-          })
+          meds.map((m) => medicationRecordFromForm(m, { patient, fallbackReason: form.diagnosis }))
         );
       }
       onSaved();
