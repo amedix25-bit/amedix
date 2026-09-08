@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { HeartPulse, LogOut, FlaskConical, Upload, Users } from "lucide-react";
+import { HeartPulse, LogOut, FlaskConical, Upload, Users, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLabSession, clearLabSession } from "@/lib/labSession";
 import TechnicianLogin from "@/components/lab/technician/TechnicianLogin";
@@ -7,16 +7,20 @@ import TechnicianWorkspace from "@/components/lab/technician/TechnicianWorkspace
 import TechnicianNotificationsBar from "@/components/lab/technician/TechnicianNotificationsBar";
 import TechnicianLabRequestsSection from "@/components/lab/technician/TechnicianLabRequestsSection";
 import UploadResultsFlow from "@/components/lab/technician/UploadResultsFlow";
+import TechnicianPatientsSection from "@/components/lab/technician/TechnicianPatientsSection";
+import NotificationsBell from "@/components/lab/notifications/NotificationsBell";
 
 const TABS = [
   { key: "requests", label: "Lab Requests", icon: FlaskConical },
+  { key: "patients", label: "Patients", icon: Users },
   { key: "upload", label: "Upload Results", icon: Upload },
-  { key: "queue", label: "My Work Queue", icon: Users },
+  { key: "queue", label: "My Work Queue", icon: ClipboardList },
 ];
 
 export default function LabTechnician() {
   const [session, setSession] = useState(getLabSession());
   const [tab, setTab] = useState("requests");
+  const [notifPatientId, setNotifPatientId] = useState(null);
 
   if (!session) {
     return (
@@ -27,6 +31,15 @@ export default function LabTechnician() {
       </div>
     );
   }
+
+  const handleOpenNotification = (n) => {
+    if (n.target === "result" && n.result_file_url) {
+      window.open(n.result_file_url, "_blank");
+      return;
+    }
+    setTab("patients");
+    setNotifPatientId(n.patient_id);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,7 +56,8 @@ export default function LabTechnician() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <NotificationsBell session={session} onOpenNotification={handleOpenNotification} />
             <span className="text-sm text-muted-foreground hidden sm:inline">
               {session.full_name} — {session.job_title}
             </span>
@@ -81,6 +95,9 @@ export default function LabTechnician() {
         </div>
 
         {tab === "requests" && <TechnicianLabRequestsSection session={session} />}
+        {tab === "patients" && (
+          <TechnicianPatientsSection session={session} selectedPatientId={notifPatientId} />
+        )}
         {tab === "upload" && <UploadResultsFlow session={session} onSubmitted={() => setTab("requests")} />}
         {tab === "queue" && <TechnicianWorkspace session={session} />}
       </main>

@@ -52,6 +52,22 @@ export default async function(req: Request): Promise<Response> {
       event_date: today,
     });
 
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: tech.laboratory_id,
+      lab_user_id: tech.created_by_id,
+      type: 'request_completed',
+      title: 'Laboratory Request Completed',
+      message: `Results for ${visit.request_ref || "a lab request"} (${visit.patient_name}) are ready — the patient has been notified.`,
+      patient_id: visit.patient_id,
+      patient_name: visit.patient_name,
+      patient_cin: visit.patient_cin,
+      lab_request_id: visit.lab_request_id,
+      request_ref: visit.request_ref || null,
+      result_file_url: visit.result_file_url,
+      target: 'result',
+      is_read: false,
+    });
+
     await writeAudit(base44, {
       laboratory_id: tech.laboratory_id,
       lab_user_id: tech.created_by_id,

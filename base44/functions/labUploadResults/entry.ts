@@ -46,6 +46,22 @@ export default async function(req: Request): Promise<Response> {
       results_uploaded_at: nowIso,
     });
 
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: tech.laboratory_id,
+      lab_user_id: tech.created_by_id,
+      type: 'results_uploaded',
+      title: 'Laboratory Results Uploaded',
+      message: `Results report uploaded for ${visit.request_ref || "a lab request"} (${visit.patient_name}).`,
+      patient_id: visit.patient_id,
+      patient_name: visit.patient_name,
+      patient_cin: visit.patient_cin,
+      lab_request_id: visit.lab_request_id,
+      request_ref: visit.request_ref || null,
+      result_file_url: fileUrl,
+      target: 'result',
+      is_read: false,
+    });
+
     await writeAudit(base44, {
       laboratory_id: tech.laboratory_id,
       lab_user_id: tech.created_by_id,

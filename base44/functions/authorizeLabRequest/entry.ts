@@ -52,6 +52,22 @@ export default async function(req) {
       status: 'authorized',
     });
 
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: lab.id,
+      lab_user_id: lab.user_id,
+      type: 'new_request',
+      title: 'New Laboratory Request',
+      message: `Patient ${labReq.patient_name} with CIN ${labReq.patient_cin} has a new laboratory request${labReq.request_id ? ` (${labReq.request_id})` : ''}.`,
+      patient_id: labReq.patient_id,
+      patient_name: labReq.patient_name,
+      patient_cin: labReq.patient_cin,
+      lab_request_id: labReq.id,
+      request_ref: labReq.request_id || null,
+      pdf_url: labReq.pdf_url || null,
+      target: 'patient_profile',
+      is_read: false,
+    });
+
     return Response.json({
       lab_name: lab.lab_name,
       lab_number: lab.lab_number || '',

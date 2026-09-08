@@ -9,16 +9,19 @@ import LabPendingTestsSection from "@/components/lab/portal/LabPendingTestsSecti
 import LabCompletedSection from "@/components/lab/portal/LabCompletedSection";
 import LabTechniciansSection from "@/components/lab/portal/LabTechniciansSection";
 import LabProfileSection from "@/components/lab/portal/LabProfileSection";
+import LabPatientsSection from "@/components/lab/portal/LabPatientsSection";
 import LabNotificationsBar from "@/components/lab/portal/LabNotificationsBar";
+import NotificationsBell from "@/components/lab/notifications/NotificationsBell";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, FlaskConical, TestTube, CheckCircle2, Users, Building2 } from "lucide-react";
+import { LayoutDashboard, FlaskConical, TestTube, CheckCircle2, Users, UserCog, Building2 } from "lucide-react";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "requests", label: "Lab Requests", icon: FlaskConical },
   { key: "pending", label: "Pending Tests", icon: TestTube },
   { key: "completed", label: "Completed Payments/Results", icon: CheckCircle2 },
-  { key: "staff", label: "Technicians/Staff", icon: Users },
+  { key: "patients", label: "Patients", icon: Users },
+  { key: "staff", label: "Technicians/Staff", icon: UserCog },
   { key: "profile", label: "Profile", icon: Building2 },
 ];
 
@@ -26,6 +29,7 @@ export default function LabPortal() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [notifPatientId, setNotifPatientId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,17 +63,36 @@ export default function LabPortal() {
   return (
     <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Lab Portal">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {profile.lab_name} · A&M Lab No. {profile.lab_number}
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              {profile.lab_name} · A&M Lab No. {profile.lab_number}
+            </p>
+          </div>
+          <NotificationsBell
+            onOpenNotification={(n) => {
+              if (n.target === "result" && n.result_file_url) {
+                window.open(n.result_file_url, "_blank");
+                return;
+              }
+              setActiveTab("patients");
+              setNotifPatientId(n.patient_id);
+            }}
+          />
         </div>
 
-        <LabNotificationsBar profile={profile} />
+        <LabNotificationsBar />
 
         {activeTab === "dashboard" && <LabDashboardSection profile={profile} />}
         {activeTab === "requests" && <LabRequestsSection profile={profile} />}
+        {activeTab === "patients" && (
+          <LabPatientsSection
+            profile={profile}
+            selectedPatientId={notifPatientId}
+            onSelectPatient={setNotifPatientId}
+          />
+        )}
         {activeTab === "pending" && <LabPendingTestsSection profile={profile} />}
         {activeTab === "completed" && <LabCompletedSection profile={profile} />}
         {activeTab === "staff" && <LabTechniciansSection profile={profile} />}

@@ -1,0 +1,115 @@
+{
+  "name": "LabNotification",
+  "type": "object",
+  "properties": {
+    "laboratory_id": {
+      "type": "string"
+    },
+    "lab_user_id": {
+      "type": "string",
+      "description": "User id of the laboratory owner account \u2014 set server-side, used for access control"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "new_request",
+        "results_uploaded",
+        "request_completed",
+        "request_updated",
+        "other"
+      ],
+      "default": "other",
+      "description": "Category of the laboratory notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification heading"
+    },
+    "message": {
+      "type": "string",
+      "description": "Summary shown to the laboratory / technician"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "lab_request_id": {
+      "type": "string"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Lab request reference, e.g. LR-20260907-8F3K"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "Doctor's lab request PDF (with barcode)"
+    },
+    "result_file_url": {
+      "type": "string",
+      "description": "Uploaded laboratory results PDF"
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "patient_profile",
+        "lab_request",
+        "result"
+      ],
+      "default": "patient_profile",
+      "description": "Where clicking the notification takes the user"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Read state of the notification"
+    },
+    "read_at": {
+      "type": "string",
+      "description": "ISO datetime when the notification was read"
+    }
+  },
+  "required": [
+    "laboratory_id",
+    "lab_user_id",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.lab_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.lab_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.lab_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -59,6 +59,37 @@ export default async function(req: Request): Promise<Response> {
       result_submitted_by_name: tech.full_name,
     });
 
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: tech.laboratory_id,
+      lab_user_id: tech.created_by_id,
+      type: 'results_uploaded',
+      title: 'Laboratory Results Uploaded',
+      message: `Results for ${labRequest.request_id} (${labRequest.patient_name}) were uploaded by ${tech.full_name}.`,
+      patient_id: labRequest.patient_id,
+      patient_name: labRequest.patient_name,
+      patient_cin: labRequest.patient_cin,
+      lab_request_id: labRequest.id,
+      request_ref: labRequest.request_id,
+      result_file_url: up.file_url,
+      target: 'result',
+      is_read: false,
+    });
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: tech.laboratory_id,
+      lab_user_id: tech.created_by_id,
+      type: 'request_completed',
+      title: 'Laboratory Request Completed',
+      message: `Request ${labRequest.request_id} for ${labRequest.patient_name} is completed — payment ${paymentAmount} via ${paymentMethod}.`,
+      patient_id: labRequest.patient_id,
+      patient_name: labRequest.patient_name,
+      patient_cin: labRequest.patient_cin,
+      lab_request_id: labRequest.id,
+      request_ref: labRequest.request_id,
+      result_file_url: up.file_url,
+      target: 'patient_profile',
+      is_read: false,
+    });
+
     // Keep any in-progress visit for this request in sync
     const visits = await base44.asServiceRole.entities.LabPatientVisit.filter({ lab_request_id: labRequest.id });
     for (const v of visits) {

@@ -21,6 +21,21 @@ export default async function(req: Request): Promise<Response> {
 
     await base44.asServiceRole.entities.LabPatientVisit.update(visit.id, { status: "tests_completed" });
 
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: tech.laboratory_id,
+      lab_user_id: tech.created_by_id,
+      type: 'request_updated',
+      title: 'Request Update',
+      message: `Tests for ${visit.request_ref || "a lab request"} (${visit.patient_name}) were completed by ${tech.full_name}.`,
+      patient_id: visit.patient_id,
+      patient_name: visit.patient_name,
+      patient_cin: visit.patient_cin,
+      lab_request_id: visit.lab_request_id,
+      request_ref: visit.request_ref || null,
+      target: 'patient_profile',
+      is_read: false,
+    });
+
     await writeAudit(base44, {
       laboratory_id: tech.laboratory_id,
       lab_user_id: tech.created_by_id,

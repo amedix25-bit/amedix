@@ -1,44 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Bell, FileText } from "lucide-react";
+import { useLabNotifications } from "@/hooks/useLabNotifications";
 
-export default function LabNotificationsBar({ profile }) {
-  const [items, setItems] = useState(null);
+// Top notification bar — new authorized laboratory requests.
+// Lab Portal: <LabNotificationsBar /> · Technician Portal: <LabNotificationsBar session={session} />
+export default function LabNotificationsBar({ session }) {
+  const { notifications, markRead } = useLabNotifications({ session });
 
-  const load = useCallback(async () => {
-    try {
-      const reqs = await base44.entities.LabRequest.filter(
-        { lab_id: profile.id, status: "authorized" },
-        "-authorization_datetime",
-        50
-      );
-      setItems(reqs);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [profile.id]);
+  if (!notifications) return null;
+  const items = notifications.filter((n) => n.type === "new_request" && !n.is_read);
+  if (items.length === 0) return null;
 
-  // Live updates: reload whenever a lab request for this laboratory changes
-  useEffect(() => {
-    load();
-    const unsubscribe = base44.entities.LabRequest.subscribe((event) => {
-      if (event?.data?.lab_id === profile.id) load();
-    });
-    return unsubscribe;
-  }, [load]);
-
-  if (items === null || items.length === 0) return null;
-
-  const unreadCount = items.filter((r) => !r.lab_opened_at).length;
-
-  const openRequest = (r) => {
-    if (!r.lab_opened_at) {
-      const now = new Date().toISOString();
-      base44.entities.LabRequest.update(r.id, { lab_opened_at: now }).catch(console.error);
-      setItems((prev) => prev.map((it) => (it.id === r.id ? { ...it, lab_opened_at: now } : it)));
-    }
-    if (r.pdf_url) window.open(r.pdf_url, "_blank");
+  const openRequest = (n) => {
+    markRead(n.id);
+    if (n.pdf_url) window.open(n.pdf_url, "_blank");
   };
 
   return (
@@ -46,40 +22,34 @@ export default function LabNotificationsBar({ profile }) {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/10">
         <Bell className="w-4 h-4 text-primary shrink-0" />
         <p className="text-sm font-semibold">New Laboratory Requests</p>
-        {unreadCount > 0 && (
-          <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-            {unreadCount} new
-          </span>
-        )}
+        <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+          {items.length} new
+        </span>
       </div>
       <div className="divide-y divide-border">
-        {items.map((r) => (
-          <div
-            key={r.id}
-            className={`px-4 py-3 flex items-start justify-between gap-3 ${r.lab_opened_at ? "opacity-60" : "bg-primary/5"}`}
-          >
+        {items.map((n) => (
+          <div key={n.id} className="px-4 py-3 flex items-start justify-between gap-3 bg-primary/5">
             <div className="min-w-0">
               <p className="text-sm">
-                Patient <span className="font-semibold">{r.patient_name}</span> with CIN{" "}
-                <span className="font-semibold">{r.patient_cin}</span> has a new laboratory request.
-                {!r.lab_opened_at && (
-                  <span className="ml-2 inline-block rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-bold uppercase align-middle">
-                    New
-                  </span>
+                {n.patient_name ? (
+                  <>
+                    Patient <span className="font-semibold">{n.patient_name}</span> with CIN{" "}
+                    <span className="font-semibold">{n.patient_cin}</span> has a new laboratory request.
+                  </>
+                ) : (
+                  "A new laboratory request is available for your laboratory."
                 )}
+                <span className="ml-2 inline-block rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-bold uppercase align-middle">
+                  New
+                </span>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {r.request_id} · Requested {r.date_requested}
-                {r.lab_opened_at ? " · Opened" : ""}
+                {n.request_ref} · Requested{" "}
+                {n.created_date ? new Date(n.created_date).toLocaleString() : ""}
               </p>
             </div>
-            {r.pdf_url && (
-              <Button
-                size="sm"
-                variant={r.lab_opened_at ? "outline" : "default"}
-                className="shrink-0"
-                onClick={() => openRequest(r)}
-              >
+            {n.pdf_url && (
+              <Button size="sm" className="shrink-0" onClick={() => openRequest(n)}>
                 <FileText className="w-4 h-4" /> View PDF
               </Button>
             )}

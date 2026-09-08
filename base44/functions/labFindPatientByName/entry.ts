@@ -20,14 +20,18 @@ export default async function(req: Request): Promise<Response> {
     );
 
     // Only patients who explicitly authorized this laboratory are ever visible to the technician.
-    const open = requests.filter(
-      (r) => r.authorized_by_patient === true && ["authorized", "pending"].includes(r.status)
-    );
+    const authorized = requests.filter((r) => r.authorized_by_patient === true);
+    const visible = body.include_completed === true
+      ? authorized
+      : authorized.filter((r) => ["authorized", "pending"].includes(r.status));
 
     const needle = name.toLowerCase();
+    const cinNeedle = name.replace(/\s+/g, "").toLowerCase();
     const byPatient = new Map();
-    open.forEach((r) => {
-      if (!(r.patient_name || "").toLowerCase().includes(needle)) return;
+    visible.forEach((r) => {
+      const matchesName = (r.patient_name || "").toLowerCase().includes(needle);
+      const matchesCin = (r.patient_cin || "").toLowerCase().includes(cinNeedle);
+      if (!matchesName && !matchesCin) return;
       if (!byPatient.has(r.patient_id)) {
         byPatient.set(r.patient_id, {
           patient_id: r.patient_id,

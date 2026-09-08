@@ -50,6 +50,22 @@ export default async function(req: Request): Promise<Response> {
 
     await base44.asServiceRole.entities.LabRequest.update(labReq.id, { status: "pending" });
 
+    await base44.asServiceRole.entities.LabNotification.create({
+      laboratory_id: tech.laboratory_id,
+      lab_user_id: tech.created_by_id,
+      type: 'request_updated',
+      title: 'Request Update',
+      message: `${labReq.patient_name} checked in — request ${labReq.request_id || ""} is now being processed.`,
+      patient_id: labReq.patient_id,
+      patient_name: labReq.patient_name,
+      patient_cin: labReq.patient_cin || patient.cin || "",
+      lab_request_id: labReq.id,
+      request_ref: labReq.request_id || null,
+      pdf_url: labReq.pdf_url || null,
+      target: 'patient_profile',
+      is_read: false,
+    });
+
     await writeAudit(base44, {
       laboratory_id: tech.laboratory_id,
       lab_user_id: tech.created_by_id,
