@@ -1,22 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, UserPlus } from "lucide-react";
+import { Hourglass, Loader2, RefreshCw, UserPlus } from "lucide-react";
 import QrScanner from "./QrScanner";
+
+const POLL_MS = 10000;
 
 export default function AddPatientFlow({ session, mode, onAdded, onCancel }) {
   const { toast } = useToast();
   const [method, setMethod] = useState(mode === "qr" ? "qr" : "cin");
   const [cin, setCin] = useState("");
   const [result, setResult] = useState(null);
+  const [lastQuery, setLastQuery] = useState(null);
   const [busy, setBusy] = useState(false);
 
   const identify = async (value, m) => {
     setBusy(true);
-    setResult(null);
     try {
       const res = await base44.functions.invoke("labFindPatientByCin", {
         technician_id: session.technician_id,
@@ -26,6 +28,7 @@ export default function AddPatientFlow({ session, mode, onAdded, onCancel }) {
       });
       setMethod(m);
       setResult(res.data);
+      setLastQuery({ value, method: m });
     } catch (err) {
       toast({
         title: "Could not identify patient",
@@ -36,6 +39,19 @@ export default function AddPatientFlow({ session, mode, onAdded, onCancel }) {
       setBusy(false);
     }
   };
+
+  // While requests are waiting for the patient's authorization, keep checking —
+  // the request appears here automatically once the patient allows this laboratory.
+  const waiting = result?.found && (result.awaiting || []).length > 0;
+
+  useEffect(() => {
+    if (!waiting || !lastQuery) return;
+    const timer = setInterval(() => {
+      identify(lastQuery.value, lastQuery.method);
+    }, POLL_MS);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waiting, lastQuery && lastQuery.value]);
 
   const checkIn = async (request) => {
     setBusy(true);
@@ -103,7 +119,35 @@ export default function AddPatientFlow({ session, mode, onAdded, onCancel }) {
 
       {result && !result.found && <p className="text-sm text-destructive">{result.message}</p>}
 
-      {result?.found && (
+      {waiting && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <p className="text-sm font-medium text-amber-800 flex items-center gap-1.5">
+            <Hourglass className="w-4 h-4" /> Waiting for patient authorization
+          </p>
+          <p className="text-xs text-amber-700">{result.message}</p>
+          {(result.awaiting || []).map((r) => (
+            <p key={r.request_ref} className="text-xs text-amber-700">
+              {r.request_ref} · Requested {r.date_requested}
+            </p>
+          ))}
+          <p className="text-xs text-amber-700">
+            Ask the patient to open their Patient Portal → Lab Requests and allow{" "}
+            <span className="font-semibold">{session.laboratory_name}</span>. The request appears here
+            automatically once they allow it.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy || !lastQuery}
+            onClick={() => identify(lastQuery.value, lastQuery.method)}
+          >
+            {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+            Check Again
+          </Button>
+        </div>
+      )}
+
+      {result?.found && result.patient && (
         <div className="space-y-3 border-t border-border pt-3">
           <p className="text-sm">
             <span className="text-muted-foreground">Patient: </span>

@@ -18,6 +18,24 @@ export default async function(req: Request): Promise<Response> {
       const requests = await base44.asServiceRole.entities.LabRequest.filter({ request_id: cin });
       const req = requests.find((r) => r.authorized_by_patient === true && r.lab_id === tech.laboratory_id);
       if (!req) {
+        const any = requests[0];
+        if (any && any.authorized_by_patient === true) {
+          return Response.json({
+            found: false,
+            message: "This request was authorized to a different laboratory.",
+          });
+        }
+        // The request exists but the patient has not allowed this laboratory yet —
+        // tell the technician without revealing any patient identity.
+        if (any) {
+          return Response.json({
+            found: true,
+            patient: null,
+            requests: [],
+            awaiting: [{ request_ref: any.request_id, date_requested: any.date_requested }],
+            message: "This request is waiting for the patient to authorize your laboratory.",
+          });
+        }
         return Response.json({
           found: false,
           message: "No authorized request found for your laboratory with that reference.",
@@ -37,12 +55,29 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const requests = await base44.asServiceRole.entities.LabRequest.filter({ patient_id: patient.id });
-    const labRequests = requests.filter(
-      (r) =>
-        r.authorized_by_patient === true &&
-        r.lab_id === tech.laboratory_id &&
-        ["authorized", "pending"].includes(r.status)
+    const authorizedAny = requests.filter(
+      (r) => r.authorized_by_patient === true && r.lab_id === tech.laboratory_id
     );
+    const labRequests = authorizedAny.filter((r) => ["authorized", "pending"].includes(r.status));
+    // Requests the patient has not yet authorized to any laboratory — shown WITHOUT
+    // any patient identity until the patient allows this laboratory.
+    const awaiting = requests
+      .filter((r) => r.authorized_by_patient !== true && r.status === "requested")
+      .map((r) => ({ request_ref: r.request_id, date_requested: r.date_requested }));
+
+    // Privacy: the patient's name is only revealed once they have authorized this laboratory.
+    if (authorizedAny.length === 0) {
+      return Response.json({
+        found: true,
+        patient: null,
+        requests: [],
+        awaiting,
+        message:
+          awaiting.length > 0
+            ? "The patient has a laboratory request but has not authorized your laboratory yet. Ask them to allow your laboratory from their Patient Portal (Lab Requests)."
+            : "This patient has not authorized your laboratory. Ask them to allow your laboratory from their Patient Portal (Lab Requests).",
+      });
+    }
 
     await writeAudit(base44, {
       laboratory_id: tech.laboratory_id,
@@ -64,6 +99,7 @@ export default async function(req: Request): Promise<Response> {
         status: r.status,
         tests: (r.tests || []).map((t) => t.name),
       })),
+      awaiting,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
