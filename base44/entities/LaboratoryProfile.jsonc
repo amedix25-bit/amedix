@@ -7,17 +7,30 @@
     },
     "lab_name": {
       "type": "string",
-      "description": "Name of the laboratory"
+      "description": "Company / Laboratory Name"
     },
     "lab_number": {
       "type": "string",
-      "description": "Company / laboratory registration number"
+      "description": "A&M Lab Number / ID \u2014 unique system-generated laboratory identification number, e.g. AML-2026-8F3K"
+    },
+    "address": {
+      "type": "string",
+      "description": "Laboratory location / address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Laboratory phone number"
+    },
+    "whatsapp_number": {
+      "type": "string",
+      "description": "Laboratory WhatsApp number"
     },
     "email": {
       "type": "string"
     },
-    "phone": {
-      "type": "string"
+    "logo_url": {
+      "type": "string",
+      "description": "Laboratory profile picture / logo"
     }
   },
   "required": [

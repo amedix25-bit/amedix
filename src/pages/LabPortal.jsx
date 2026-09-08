@@ -61,7 +61,7 @@ export default function LabPortal() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {profile.lab_name} · Lab No. {profile.lab_number}
+            {profile.lab_name} · A&M Lab No. {profile.lab_number}
           </p>
         </div>
 
@@ -70,7 +70,7 @@ export default function LabPortal() {
         {activeTab === "pending" && <LabPendingTestsSection profile={profile} />}
         {activeTab === "completed" && <LabCompletedSection profile={profile} />}
         {activeTab === "staff" && <LabTechniciansSection profile={profile} />}
-        {activeTab === "profile" && <LabProfileSection profile={profile} />}
+        {activeTab === "profile" && <LabProfileSection profile={profile} onUpdate={setProfile} />}
       </div>
     </DashboardLayout>
   );
