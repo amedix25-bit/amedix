@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,9 @@ const EMPTY = {
   recommendations: "",
 };
 
-export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onNavigateTab }) {
+export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onNavigateTab, preselectedPatient }) {
   const [form, setForm] = useState(EMPTY);
-  const [patient, setPatient] = useState(null);
+  const [patient, setPatient] = useState(preselectedPatient || null);
   const [labRequests, setLabRequests] = useState([]);
   const [imagingRequests, setImagingRequests] = useState([]);
   const [selectedLabs, setSelectedLabs] = useState(new Set());
@@ -34,6 +34,24 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [finding, setFinding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!preselectedPatient) return;
+    setPatient(preselectedPatient);
+    const loadRequests = async () => {
+      try {
+        const [labs, imaging] = await Promise.all([
+          base44.entities.LabRequest.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }, "-date_requested"),
+          base44.entities.ImagingRequest.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }, "-date_requested"),
+        ]);
+        setLabRequests(labs);
+        setImagingRequests(imaging);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadRequests();
+  }, [preselectedPatient, doctorProfile]);
 
   const findPatient = async () => {
     setError("");
@@ -135,25 +153,31 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         <button type="button" onClick={onCancel} className="text-muted-foreground"><X className="w-5 h-5" /></button>
       </div>
 
-      <div className="space-y-2">
-        <Label>Patient CIN *</Label>
-        <div className="flex gap-2">
-          <Input
-            value={form.patient_cin}
-            onChange={(e) => setForm({ ...form, patient_cin: e.target.value })}
-            placeholder="CIN-XXXXXX"
-          />
-          <Button type="button" variant="outline" onClick={findPatient} disabled={finding}>
-            {finding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
-            Find Patient
-          </Button>
+      {!preselectedPatient ? (
+        <div className="space-y-2">
+          <Label>Patient CIN *</Label>
+          <div className="flex gap-2">
+            <Input
+              value={form.patient_cin}
+              onChange={(e) => setForm({ ...form, patient_cin: e.target.value })}
+              placeholder="CIN-XXXXXX"
+            />
+            <Button type="button" variant="outline" onClick={findPatient} disabled={finding}>
+              {finding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+              Find Patient
+            </Button>
+          </div>
+          {patient && (
+            <p className="text-sm text-muted-foreground">
+              Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
+            </p>
+          )}
         </div>
-        {patient && (
-          <p className="text-sm text-muted-foreground">
-            Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
-          </p>
-        )}
-      </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
+        </p>
+      )}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-2">
