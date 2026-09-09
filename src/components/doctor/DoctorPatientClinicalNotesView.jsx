@@ -27,7 +27,7 @@ const entryTime = (e) =>
 // split by the authoring physician's unique DoctorID: entries authored by the
 // currently logged-in doctor appear under "My Clinical Notes", everything else
 // under "Other Physicians' Clinical Notes". Both lists are newest first.
-export default function DoctorPatientClinicalNotesView({ patientId, doctorId }) {
+export default function DoctorPatientClinicalNotesView({ patientId, doctorId, embedded }) {
   const [items, setItems] = useState(null);
   const [imagingMap, setImagingMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -75,8 +75,8 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId }) 
     );
 
   return (
-    <div className="mt-6 pt-6 border-t border-border">
-      <h4 className="font-semibold text-sm mb-3">Clinical Notes</h4>
+    <div className={embedded ? "" : "mt-6 pt-6 border-t border-border"}>
+      {!embedded && <h4 className="font-semibold text-sm mb-3">Clinical Notes</h4>}
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -86,10 +86,10 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId }) 
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <TabButton active={activeTab === "mine"} count={mine.length} onClick={() => setActiveTab("mine")}>
-              My Clinical Notes
+              My Notes
             </TabButton>
             <TabButton active={activeTab === "others"} count={others.length} onClick={() => setActiveTab("others")}>
-              Other Physicians' Clinical Notes
+              Other Physicians
             </TabButton>
           </div>
 

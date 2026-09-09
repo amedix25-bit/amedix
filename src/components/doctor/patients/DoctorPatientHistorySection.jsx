@@ -1,0 +1,118 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import PatientHealth from "@/components/patient/PatientHealth";
+import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
+import { Stethoscope, Image as ImageIcon, FlaskConical, CalendarDays, ExternalLink, Loader2 } from "lucide-react";
+
+const ICONS = {
+  seen: <Stethoscope className="w-4 h-4" />,
+  imaging: <ImageIcon className="w-4 h-4" />,
+  lab: <FlaskConical className="w-4 h-4" />,
+  appointment: <CalendarDays className="w-4 h-4" />,
+};
+
+// Patient History column of the patient profile. Shows the full medical history
+// (diagnoses, medications, allergies, surgeries, lifestyle), then a single
+// chronological timeline of encounters, imaging, laboratory results and
+// previous appointments — newest first — followed by the patient-submitted
+// laboratory results.
+export default function DoctorPatientHistorySection({ patient }) {
+  const [events, setEvents] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!patient?.id) return;
+      try {
+        const [history, imaging, labs, appts] = await Promise.all([
+          base44.entities.MedicalHistoryEntry.filter({ patient_id: patient.id }),
+          base44.entities.ImagingRequest.filter({ patient_id: patient.id }),
+          base44.entities.PatientLabResult.filter({ patient_id: patient.id }),
+          base44.entities.Appointment.filter({ patient_id: patient.id }),
+        ]);
+        setEvents(
+          [
+            ...history.map((h) => ({
+              id: `h-${h.id}`,
+              kind: "seen",
+              date: h.date,
+              title: `Seen by ${h.doctor_name}${h.location ? ` — ${h.location}` : ""}`,
+              detail: h.appointment_reason || h.status || "",
+            })),
+            ...imaging.map((r) => ({
+              id: `i-${r.id}`,
+              kind: "imaging",
+              date: r.date_requested,
+              title: `Imaging: ${r.scan_type}${r.examination ? ` — ${r.examination}` : ""}`,
+              detail: `Requested by ${r.doctor_name || "—"}${r.status ? ` · ${r.status}` : ""}`,
+              url: r.pdf_url,
+            })),
+            ...labs.map((l) => ({
+              id: `l-${l.id}`,
+              kind: "lab",
+              date: l.test_date,
+              title: `Laboratory Result: ${l.test_type}`,
+              detail: l.lab_name ? `Performed at ${l.lab_name}` : "",
+              url: l.file_url,
+            })),
+            ...appts.map((a) => ({
+              id: `a-${a.id}`,
+              kind: "appointment",
+              date: a.date,
+              title: `Appointment with ${a.doctor_name || "doctor"}`,
+              detail: [a.time, a.status, a.patient_response].filter(Boolean).join(" · "),
+            })),
+          ].sort((x, y) => (y.date || "").localeCompare(x.date || ""))
+        );
+      } catch (err) {
+        console.error(err);
+        setEvents([]);
+      }
+    };
+    load();
+  }, [patient?.id]);
+
+  return (
+    <div className="space-y-6">
+      <PatientHealth profile={patient} doctorView />
+
+      <div>
+        <h4 className="font-semibold text-sm mb-3">Chronological History</h4>
+        {events === null ? (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+          </div>
+        ) : events.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No recorded history yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {events.map((e) => (
+              <div key={e.id} className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  {ICONS[e.kind]}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium flex flex-wrap items-center gap-2">
+                    {e.title}
+                    <span className="text-xs font-normal text-muted-foreground">{e.date || "—"}</span>
+                  </p>
+                  {e.detail && <p className="text-xs text-muted-foreground mt-0.5">{e.detail}</p>}
+                  {e.url && (
+                    <button
+                      type="button"
+                      onClick={() => window.open(e.url, "_blank")}
+                      className="text-xs text-primary underline inline-flex items-center gap-0.5 mt-1"
+                    >
+                      Open <ExternalLink className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <DoctorPatientLabResultsView patientId={patient.id} />
+    </div>
+  );
+}
