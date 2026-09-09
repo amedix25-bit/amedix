@@ -4,6 +4,22 @@ import ClinicalNoteCard from "@/components/doctor/notes/ClinicalNoteCard";
 import DiagnosisCard from "@/components/doctor/notes/DiagnosisCard";
 import { Loader2 } from "lucide-react";
 
+function TabButton({ active, count, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-card text-muted-foreground border-border hover:bg-accent/60 hover:text-foreground"
+      }`}
+    >
+      {children} ({count})
+    </button>
+  );
+}
+
 const entryTime = (e) =>
   new Date(e.encounter_datetime || e.created_datetime || e.date || e.created_date || 0).getTime();
 
@@ -15,6 +31,7 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId }) 
   const [items, setItems] = useState(null);
   const [imagingMap, setImagingMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("mine");
 
   useEffect(() => {
     const load = async () => {
@@ -66,27 +83,31 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId }) 
           Loading...
         </div>
       ) : (
-        <div className="space-y-5">
-          <section>
-            <h5 className="text-sm font-semibold mb-2">My Clinical Notes</h5>
-            {mine.length === 0 ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <TabButton active={activeTab === "mine"} count={mine.length} onClick={() => setActiveTab("mine")}>
+              My Clinical Notes
+            </TabButton>
+            <TabButton active={activeTab === "others"} count={others.length} onClick={() => setActiveTab("others")}>
+              Other Physicians' Clinical Notes
+            </TabButton>
+          </div>
+
+          {activeTab === "mine" ? (
+            mine.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No clinical notes or diagnoses created by you for this patient.
               </p>
             ) : (
               <div className="space-y-3">{mine.map(renderEntry)}</div>
-            )}
-          </section>
-          <section>
-            <h5 className="text-sm font-semibold mb-2">Other Physicians' Clinical Notes</h5>
-            {others.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No clinical notes or diagnoses from other physicians for this patient.
-              </p>
-            ) : (
-              <div className="space-y-3">{others.map(renderEntry)}</div>
-            )}
-          </section>
+            )
+          ) : others.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No clinical notes or diagnoses from other physicians for this patient.
+            </p>
+          ) : (
+            <div className="space-y-3">{others.map(renderEntry)}</div>
+          )}
         </div>
       )}
     </div>
