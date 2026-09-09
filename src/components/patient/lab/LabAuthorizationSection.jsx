@@ -11,7 +11,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Building2, Loader2, MapPin, Search, ShieldCheck } from "lucide-react";
+import LabCard from "@/components/patient/lab/LabCard";
+import SelectedLabCard from "@/components/patient/lab/SelectedLabCard";
+import { Building2, Loader2, Search, ShieldCheck } from "lucide-react";
 
 export default function LabAuthorizationSection({ request, onAuthorized }) {
   const [query, setQuery] = useState("");
@@ -22,6 +24,8 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
   const [error, setError] = useState("");
   const debounceRef = useRef(null);
 
+  // Real-time search — results update automatically as the patient types,
+  // matching by laboratory name or A&M Lab Number. No search button needed.
   useEffect(() => {
     const q = query.trim();
     if (q.length < 1) {
@@ -75,7 +79,7 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
           <div className="relative mt-3">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Type a laboratory name..."
+              placeholder="Search by laboratory name or A&M Lab Number..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-9"
@@ -87,39 +91,22 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
             </p>
           )}
           {!searching && results.length > 0 && (
-            <div className="mt-2 rounded-lg border border-border divide-y divide-border overflow-hidden">
+            <div className="mt-3 space-y-2">
               {results.map((lab) => (
-                <div key={lab.id} className="flex items-center justify-between gap-3 p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{lab.lab_name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Lab ID: {lab.lab_number || "—"}</p>
-                    {lab.address && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 shrink-0" /> {lab.address}
-                      </p>
-                    )}
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => setSelectedLab(lab)}>
-                    Select
-                  </Button>
-                </div>
+                <LabCard key={lab.id} lab={lab} onSelect={setSelectedLab} />
               ))}
             </div>
           )}
           {!searching && query.trim().length >= 1 && results.length === 0 && (
-            <p className="text-xs text-muted-foreground mt-2">No laboratories match "{query.trim()}".</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              No registered laboratories match "{query.trim()}".
+            </p>
           )}
         </>
       ) : (
-        <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <p className="text-sm font-medium">Selected Laboratory: {selectedLab.lab_name}</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Lab ID: {selectedLab.lab_number || "—"}</p>
-          {selectedLab.address && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3" /> {selectedLab.address}
-            </p>
-          )}
-          <div className="flex items-center gap-2 mt-3">
+        <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <SelectedLabCard lab={selectedLab} />
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button disabled={submitting} className="gap-1.5">
@@ -131,8 +118,9 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Allow Laboratory Access?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    You are giving {selectedLab.lab_name} permission to view this laboratory request and the
-                    information required to perform the requested tests.
+                    You are giving {selectedLab.lab_name} (A&M Lab Number {selectedLab.lab_number || "—"})
+                    permission to view this laboratory request and the information required to perform the
+                    requested tests.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="flex justify-end gap-2">

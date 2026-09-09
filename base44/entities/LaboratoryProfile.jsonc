@@ -31,6 +31,16 @@
     "logo_url": {
       "type": "string",
       "description": "Laboratory profile picture / logo"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "pending_approval"
+      ],
+      "default": "active",
+      "description": "Laboratory account status \u2014 only 'active' laboratories are shown to patients. An administrator can suspend a laboratory to hide it from patient search."
     }
   },
   "required": [
