@@ -5,12 +5,15 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
 import ClinicalNoteCard from "@/components/doctor/notes/ClinicalNoteCard";
+import DiagnosisForm from "@/components/doctor/notes/DiagnosisForm";
 import PatientSearchSelect from "@/components/doctor/patients/PatientSearchSelect";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorMedicationForm from "@/components/doctor/medications/DoctorMedicationForm";
-import { Plus, FileText, ArrowLeft, Search, Loader2, Pill } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { Plus, FileText, ArrowLeft, Search, Loader2, Pill, Stethoscope } from "lucide-react";
 
 export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
+  const { toast } = useToast();
   const [myPatients, setMyPatients] = useState([]);
   const [mode, setMode] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -92,7 +95,7 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
   return (
     <div className="space-y-4">
       {!mode && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <button
             onClick={() => openMode("create")}
             className="rounded-xl border border-border bg-card p-8 text-left hover:border-primary/50 hover:bg-accent/50 transition-colors"
@@ -112,6 +115,16 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
             </div>
             <h3 className="font-semibold text-lg">Previous Notes</h3>
             <p className="text-sm text-muted-foreground mt-1">Browse and search your previously written clinical notes.</p>
+          </button>
+          <button
+            onClick={() => openMode("diagnosis")}
+            className="rounded-xl border border-border bg-card p-8 text-left hover:border-primary/50 hover:bg-accent/50 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+              <Stethoscope className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold text-lg">Add Diagnosis</h3>
+            <p className="text-sm text-muted-foreground mt-1">Search and select a patient, then record and save a diagnosis.</p>
           </button>
         </div>
       )}
@@ -182,6 +195,39 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab }) {
             onCancel={() => setCreateView("summary")}
           />
         </div>
+      )}
+
+      {mode === "diagnosis" && !selectedPatient && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={backToOptions}>
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back
+            </Button>
+            <h3 className="font-semibold">Add Diagnosis — Select a Patient</h3>
+          </div>
+          <PatientSearchSelect
+            label="Find My Patient"
+            patients={myPatients}
+            selected={null}
+            onSelect={(p) => setSelectedPatient(p)}
+          />
+        </div>
+      )}
+
+      {mode === "diagnosis" && selectedPatient && (
+        <DiagnosisForm
+          doctorProfile={doctorProfile}
+          patient={selectedPatient}
+          onSaved={() => {
+            toast({
+              title: "Diagnosis saved",
+              description: "It now appears in the patient's Previous History under Clinical Notes.",
+            });
+            backToOptions();
+          }}
+          onCancel={() => setSelectedPatient(null)}
+        />
       )}
 
       {mode === "previous" && (

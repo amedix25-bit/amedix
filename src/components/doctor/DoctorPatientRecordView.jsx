@@ -4,7 +4,7 @@ import PatientHealth from "@/components/patient/PatientHealth";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
 
-export default function DoctorPatientRecordView({ patient, onBack }) {
+export default function DoctorPatientRecordView({ patient, onBack, doctorProfile }) {
   return (
     <div className="space-y-6">
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
@@ -38,7 +38,7 @@ export default function DoctorPatientRecordView({ patient, onBack }) {
           </div>
         </div>
 
-        <DoctorPatientClinicalNotesView patientId={patient.id} />
+        <DoctorPatientClinicalNotesView patientId={patient.id} doctorId={doctorProfile?.id} />
         <DoctorPatientLabResultsView patientId={patient.id} />
       </div>
 

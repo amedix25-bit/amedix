@@ -67,7 +67,13 @@ export default function DoctorPatientSearch({ doctorProfile }) {
   };
 
   if (selectedPatient) {
-    return <DoctorPatientRecordView patient={selectedPatient} onBack={() => setSelectedPatient(null)} />;
+    return (
+      <DoctorPatientRecordView
+        patient={selectedPatient}
+        doctorProfile={doctorProfile}
+        onBack={() => setSelectedPatient(null)}
+      />
+    );
   }
 
   return (
@@ -176,7 +182,7 @@ export default function DoctorPatientSearch({ doctorProfile }) {
                     </div>
                   </div>
 
-                  <DoctorPatientClinicalNotesView patientId={patient.id} />
+                  <DoctorPatientClinicalNotesView patientId={patient.id} doctorId={doctorProfile.id} />
                   <DoctorPatientLabResultsView patientId={patient.id} />
 
                   {tab === "new" && (

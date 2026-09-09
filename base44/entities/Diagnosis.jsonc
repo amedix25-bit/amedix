@@ -1,0 +1,64 @@
+{
+  "name": "Diagnosis",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the diagnosis is permanently linked to"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "Unique DoctorProfile id of the authoring physician \u2014 used to determine ownership (My Clinical Notes vs Other Physicians' Clinical Notes); never rely on the name alone"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "diagnosis_name": {
+      "type": "string",
+      "description": "Name of the diagnosed condition"
+    },
+    "diagnosis_type": {
+      "type": "string",
+      "enum": [
+        "Primary",
+        "Secondary",
+        "Provisional",
+        "Differential",
+        "Confirmed",
+        "Chronic",
+        "Acute",
+        "Other"
+      ],
+      "description": "Type / classification of the diagnosis"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the diagnosis was recorded (ISO datetime, set automatically on save)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Clinical notes / description of the diagnosis"
+    },
+    "assessment": {
+      "type": "string",
+      "description": "Physician's assessment"
+    },
+    "treatment_plan": {
+      "type": "string",
+      "description": "Treatment / management plan"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "diagnosis_name",
+    "diagnosis_type",
+    "created_datetime"
+  ]
+}
