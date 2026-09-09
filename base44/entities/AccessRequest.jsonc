@@ -29,9 +29,11 @@
         "pending",
         "approved",
         "declined",
-        "revoked"
+        "revoked",
+        "suspended"
       ],
-      "default": "pending"
+      "default": "pending",
+      "description": "PENDING: doctor requested access, awaiting patient decision. APPROVED: patient accepted \u2014 doctor can view the record. DECLINED: patient declined \u2014 stays recorded so the patient can re-accept later. REVOKED: patient removed the doctor from their Doctor Access list. SUSPENDED: patient turned the eye control off \u2014 the doctor remains in the Doctor Access list but cannot view the record until access is restored."
     },
     "date_requested": {
       "type": "string",
@@ -39,7 +41,8 @@
     },
     "date_responded": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "description": "Date the patient granted access (set when the request is accepted or re-accepted)"
     }
   },
   "required": [

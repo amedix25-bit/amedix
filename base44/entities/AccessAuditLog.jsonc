@@ -1,0 +1,38 @@
+{
+  "name": "AccessAuditLog",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the log entry belongs to"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id the access change concerns"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "access_granted",
+        "access_suspended",
+        "access_restored",
+        "access_declined",
+        "access_revoked"
+      ],
+      "description": "ACCESS_GRANTED: patient accepted/re-accepted the doctor's access. ACCESS_SUSPENDED: patient turned the eye control off. ACCESS_RESTORED: patient turned the eye control back on. ACCESS_DECLINED: patient declined the request. ACCESS_REVOKED: patient removed the doctor from their Doctor Access list."
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the access change (ISO datetime)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "action",
+    "datetime"
+  ]
+}

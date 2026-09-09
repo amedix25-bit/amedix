@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, UserCheck, Clock, X, AlertCircle, Users, UserPlus } from "lucide-react";
+import { Search, UserCheck, Clock, X, AlertCircle, Users, UserPlus, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MyPatientsList from "@/components/doctor/MyPatientsList";
@@ -148,6 +148,12 @@ export default function DoctorPatientSearch({ doctorProfile }) {
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
                       <Clock className="w-4 h-4" />
                       Access Pending
+                    </div>
+                  )}
+                  {accessStatus === "suspended" && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
+                      <EyeOff className="w-4 h-4" />
+                      Access Suspended by Patient
                     </div>
                   )}
                   {accessStatus === "declined" && (

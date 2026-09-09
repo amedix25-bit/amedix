@@ -1,40 +1,104 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Shield, Check, X, Clock, UserCog } from "lucide-react";
+import { Shield, Check, X, UserCog, Eye, EyeOff, History, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const nowIso = () => new Date().toISOString();
+const today = () => new Date().toISOString().slice(0, 10);
+const formatDateTime = (dt) => {
+  if (!dt) return "—";
+  const d = new Date(dt);
+  return isNaN(d.getTime()) ? String(dt) : d.toLocaleString();
+};
+
+const ACTION_LABELS = {
+  access_granted: "Access granted",
+  access_suspended: "Access suspended",
+  access_restored: "Access restored",
+  access_declined: "Access declined",
+  access_revoked: "Access removed",
+};
+
+// Patient → Access & Privacy → Doctor Access Requests.
+// Pending doctor requests can be Accepted or Declined. Accepted doctors stay
+// in the Doctor Access list, where the eye icon is the actual access control:
+// eye open = the doctor can view the record, eye crossed = Access Suspended
+// (the doctor stays in the list but cannot view anything). Declined requests
+// stay recorded with a Re-accept option. Every change is written to the
+// patient's access log with the date and time.
 export default function PatientAccessControl({ patientId }) {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState(null);
+  const [logs, setLogs] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!patientId) return;
+    try {
+      const [reqs, logEntries] = await Promise.all([
+        base44.entities.AccessRequest.filter({ patient_id: patientId }, "-date_requested"),
+        base44.entities.AccessAuditLog.filter({ patient_id: patientId }, "-datetime"),
+      ]);
+      setRequests(reqs);
+      setLogs(logEntries);
+    } catch (err) {
+      console.error(err);
+      setRequests([]);
+      setLogs([]);
+    }
+  }, [patientId]);
 
   useEffect(() => {
     load();
-  }, [patientId]);
+  }, [load]);
 
-  const load = async () => {
+  const logAction = async (req, action) => {
     try {
-      const data = await base44.entities.AccessRequest.filter({ patient_id: patientId }, "-date_requested");
-      setRequests(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAction = async (id, status) => {
-    try {
-      await base44.entities.AccessRequest.update(id, { status, date_responded: new Date().toISOString().slice(0, 10) });
-      load();
+      await base44.entities.AccessAuditLog.create({
+        patient_id: patientId,
+        doctor_id: req.doctor_id,
+        doctor_name: req.doctor_name,
+        action,
+        datetime: nowIso(),
+      });
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
+  const updateAccess = async (req, status, action) => {
+    setBusyId(req.id);
+    try {
+      const patch = { status };
+      if (status === "approved") patch.date_responded = today();
+      if (status === "declined") patch.date_responded = today();
+      await base44.entities.AccessRequest.update(req.id, patch);
+      await logAction(req, action);
+    } catch (err) {
+      console.error(err);
+    }
+    await load();
+    setBusyId(null);
+  };
+
+  const toggleEye = (req) =>
+    req.status === "approved"
+      ? updateAccess(req, "suspended", "access_suspended")
+      : updateAccess(req, "approved", "access_restored");
+
+  if (requests === null) {
+    return (
+      <div className="flex items-center text-muted-foreground text-sm">
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+      </div>
+    );
+  }
 
   const pending = requests.filter((r) => r.status === "pending");
-  const active = requests.filter((r) => r.status === "approved");
+  const doctorAccess = requests.filter((r) => r.status === "approved" || r.status === "suspended");
+  const declined = requests.filter((r) => r.status === "declined");
+
+  const doctorSubline = (req) =>
+    [req.doctor_specialization, req.doctor_hospital].filter(Boolean).join(" · ") || null;
 
   return (
     <div className="space-y-6">
@@ -44,7 +108,8 @@ export default function PatientAccessControl({ patientId }) {
           <div>
             <p className="font-medium text-sm">Your medical record is private</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Doctors can only access your records with your approval. You can revoke access at any time.
+              Doctors can only access your records with your approval. Use the eye icon to
+              suspend or restore a doctor's access at any time — the doctor stays in your list.
             </p>
           </div>
         </div>
@@ -56,18 +121,29 @@ export default function PatientAccessControl({ patientId }) {
           <div className="space-y-3">
             {pending.map((req) => (
               <div key={req.id} className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="font-medium">{req.doctor_name}</p>
-                    <p className="text-sm text-muted-foreground">{req.doctor_specialization} {req.doctor_hospital && `· ${req.doctor_hospital}`}</p>
+                    {doctorSubline(req) && (
+                      <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">Requested on {req.date_requested}</p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button size="sm" onClick={() => handleAction(req.id, "approved")}>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => updateAccess(req, "approved", "access_granted")}
+                      disabled={busyId === req.id}
+                    >
                       <Check className="w-4 h-4 mr-1" />
-                      Approve
+                      Accept
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleAction(req.id, "declined")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateAccess(req, "declined", "access_declined")}
+                      disabled={busyId === req.id}
+                    >
                       <X className="w-4 h-4 mr-1" />
                       Decline
                     </Button>
@@ -80,46 +156,127 @@ export default function PatientAccessControl({ patientId }) {
       )}
 
       <div>
-        <h3 className="font-semibold text-sm mb-3">Doctors with Access</h3>
-        {active.length === 0 ? (
+        <h3 className="font-semibold text-sm mb-3">Doctor Access</h3>
+        {doctorAccess.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <UserCog className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p>No doctors currently have access</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {active.map((req) => (
-              <div key={req.id} className="rounded-xl border border-border bg-card p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{req.doctor_name}</p>
-                  <p className="text-sm text-muted-foreground">{req.doctor_specialization} {req.doctor_hospital && `· ${req.doctor_hospital}`}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Approved on {req.date_responded}</p>
+            {doctorAccess.map((req) => {
+              const granted = req.status === "approved";
+              return (
+                <div key={req.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium flex flex-wrap items-center gap-2">
+                        {req.doctor_name}
+                        {granted ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Access Granted
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            Access Suspended
+                          </span>
+                        )}
+                      </p>
+                      {doctorSubline(req) && (
+                        <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">Access granted on {req.date_responded || "—"}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleEye(req)}
+                      disabled={busyId === req.id}
+                      title={granted ? "Turn off this doctor's access" : "Restore this doctor's access"}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border shrink-0 transition-colors disabled:opacity-50 ${
+                        granted
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      {granted ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {granted
+                      ? "This doctor can currently view your medical information."
+                      : "This doctor cannot view your medical information until you turn access back on."}
+                  </p>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateAccess(req, "revoked", "access_revoked")}
+                      disabled={busyId === req.id}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Remove Doctor
+                    </Button>
+                  </div>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => handleAction(req.id, "revoked")}>
-                  Revoke
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {requests.filter((r) => r.status === "declined").length > 0 && (
+      {declined.length > 0 && (
         <div>
           <h3 className="font-semibold text-sm mb-3 text-muted-foreground">Declined Requests</h3>
           <div className="space-y-2">
-            {requests.filter((r) => r.status === "declined").map((req) => (
-              <div key={req.id} className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-between">
-                <div>
+            {declined.map((req) => (
+              <div
+                key={req.id}
+                className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+              >
+                <div className="min-w-0">
                   <p className="text-sm font-medium">{req.doctor_name}</p>
-                  <p className="text-xs text-muted-foreground">Declined on {req.date_responded}</p>
+                  <p className="text-xs text-muted-foreground">Declined on {req.date_responded || req.date_requested}</p>
                 </div>
-                <X className="w-4 h-4 text-muted-foreground" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => updateAccess(req, "approved", "access_granted")}
+                  disabled={busyId === req.id}
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Re-accept Access
+                </Button>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      <div>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <History className="w-4 h-4 text-muted-foreground" />
+          Access Log
+        </h3>
+        {logs === null ? (
+          <div className="flex items-center text-muted-foreground text-sm">
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+          </div>
+        ) : logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No access changes recorded yet.</p>
+        ) : (
+          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+            {logs.map((l) => (
+              <div key={l.id} className="flex items-start justify-between gap-3 p-3 text-sm">
+                <p className="min-w-0">
+                  <span className="font-medium">{l.doctor_name || "Doctor"}</span> —{" "}
+                  {ACTION_LABELS[l.action] || l.action}
+                </p>
+                <span className="text-xs text-muted-foreground shrink-0">{formatDateTime(l.datetime)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
