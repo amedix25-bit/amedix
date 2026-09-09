@@ -98,7 +98,13 @@ export default function AddPatientFlow({ session, mode, onAdded, onCancel }) {
           </div>
         </form>
       ) : (
-        <QrScanner onScan={(code) => identify(code, "qr")} />
+        <QrScanner
+          onScan={(code) => identify(code, "qr")}
+          onManualEntry={() => {
+            setMethod("cin");
+            setResult(null);
+          }}
+        />
       )}
 
       <div className="flex items-center gap-3 text-xs">
