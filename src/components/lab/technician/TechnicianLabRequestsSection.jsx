@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
+import ScanRequestQrFlow from "@/components/lab/technician/ScanRequestQrFlow";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
-import { FileText, FlaskConical, Loader2 } from "lucide-react";
+import { FileText, FlaskConical, Loader2, QrCode } from "lucide-react";
 
 export default function TechnicianLabRequestsSection({ session }) {
   const [items, setItems] = useState(null);
+  const [showScan, setShowScan] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -48,7 +50,18 @@ export default function TechnicianLabRequestsSection({ session }) {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-xs text-muted-foreground">
+          Scanning a request QR code opens the exact existing request your laboratory is authorized to view.
+        </p>
+        <Button size="sm" onClick={() => setShowScan((s) => !s)}>
+          <QrCode className="w-4 h-4 mr-1" />
+          Scan Laboratory Request QR
+        </Button>
+      </div>
+      {showScan && <ScanRequestQrFlow session={session} onClose={() => setShowScan(false)} />}
+      <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
       {items.map((r) => (
         <div key={r.id} className="p-4">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -78,6 +91,7 @@ export default function TechnicianLabRequestsSection({ session }) {
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }

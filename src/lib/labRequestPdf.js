@@ -246,14 +246,16 @@ export async function addRequestBarcode(doc, requestId) {
     canvas.height = img.naturalHeight;
     canvas.getContext("2d").drawImage(img, 0, 0);
 
-    // Bottom-right corner of the form — content and design otherwise untouched
-    const size = 20;
+    // Bottom-right corner of the form — content and design otherwise untouched.
+    // The QR encodes ONLY the unique request reference (LR-...) — no patient data.
+    const size = 24;
     doc.setPage(1);
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", 195 - size, 264, size, size);
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", 195 - size, 260, size, size);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6);
     doc.setTextColor(...GRAY);
-    doc.text("SCAN TO IDENTIFY REQUEST", 195, 287.5, { align: "right" });
+    doc.text("Scan QR Code to View", 195, 288, { align: "right" });
+    doc.text("Laboratory Request", 195, 291.5, { align: "right" });
   } catch (err) {
     console.warn("Request barcode could not be added:", err);
   }

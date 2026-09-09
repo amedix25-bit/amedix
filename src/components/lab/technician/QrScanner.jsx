@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Loader2, ScanLine } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
-export default function QrScanner({ onScan }) {
+export default function QrScanner({ onScan, label }) {
   const videoRef = useRef(null);
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(true);
@@ -52,7 +52,7 @@ export default function QrScanner({ onScan }) {
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">Scan the patient's QR code</Label>
+      <Label className="text-sm font-medium">{label || "Scan the patient's QR code"}</Label>
       {error ? (
         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground text-center">
           {error}
