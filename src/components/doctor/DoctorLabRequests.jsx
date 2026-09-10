@@ -166,7 +166,21 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       await addRequestBarcode(doc, payload.request_id);
       const pdfFile = new File([doc.output("blob")], `LabRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
-      await base44.entities.LabRequest.create({ ...payload, pdf_url: file_url });
+      const created = await base44.entities.LabRequest.create({ ...payload, pdf_url: file_url });
+      if (draftContext?.patient && p.id === draftContext.patient.id) {
+        try {
+          const drafts = await base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id });
+          if (drafts.length > 0) {
+            const d = drafts[0];
+            const ids = Array.isArray(d.selected_lab_request_ids) ? d.selected_lab_request_ids : [];
+            if (!ids.includes(created.id)) {
+              await base44.entities.ClinicalNoteDraft.update(d.id, { selected_lab_request_ids: [...ids, created.id] });
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
       setSelected(new Set());
       setForm({ patient_cin: "", indication: "", clinical_info: "", instructions: "", lab_name: doctorProfile?.hospital || "" });
       setShowForm(false);

@@ -4,10 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import LabStatusBadge from "@/components/lab/LabStatusBadge";
-import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
@@ -29,8 +26,6 @@ const EMPTY = {
 export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onNavigateTab, preselectedPatient }) {
   const [form, setForm] = useState(EMPTY);
   const [patient, setPatient] = useState(preselectedPatient || null);
-  const [labRequests, setLabRequests] = useState([]);
-  const [imagingRequests, setImagingRequests] = useState([]);
   const [selectedLabs, setSelectedLabs] = useState(new Set());
   const [selectedImaging, setSelectedImaging] = useState(new Set());
   const [medications, setMedications] = useState([]);
@@ -52,28 +47,21 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   useEffect(() => {
     if (!preselectedPatient) return;
     setPatient(preselectedPatient);
-    const loadRequests = async () => {
+    const loadDraft = async () => {
       try {
-        const [labs, imaging, drafts] = await Promise.all([
-          base44.entities.LabRequest.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }, "-date_requested"),
-          base44.entities.ImagingRequest.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }, "-date_requested"),
-          base44.entities.ClinicalNoteDraft.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }),
-        ]);
-        setLabRequests(labs);
-        setImagingRequests(imaging);
+        const drafts = await base44.entities.ClinicalNoteDraft.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id });
         if (drafts.length > 0) restoreDraft(drafts[0]);
       } catch (err) {
         console.error(err);
       }
     };
-    loadRequests();
+    loadDraft();
   }, [preselectedPatient, doctorProfile]);
 
   const findPatient = async () => {
     setError("");
     setPatient(null);
-    setLabRequests([]);
-    setImagingRequests([]);
+    setDraftId(null);
     setSelectedLabs(new Set());
     setSelectedImaging(new Set());
     if (!form.patient_cin.trim()) return;
@@ -86,13 +74,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       }
       const p = patients[0];
       setPatient(p);
-      const [labs, imaging, drafts] = await Promise.all([
-        base44.entities.LabRequest.filter({ patient_id: p.id, doctor_id: doctorProfile.id }, "-date_requested"),
-        base44.entities.ImagingRequest.filter({ patient_id: p.id, doctor_id: doctorProfile.id }, "-date_requested"),
-        base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id }),
-      ]);
-      setLabRequests(labs);
-      setImagingRequests(imaging);
+      const drafts = await base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id });
       if (drafts.length > 0) restoreDraft(drafts[0]);
     } catch (err) {
       console.error(err);
@@ -101,22 +83,6 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       setFinding(false);
     }
   };
-
-  const toggleLab = (id) =>
-    setSelectedLabs((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-
-  const toggleImaging = (id) =>
-    setSelectedImaging((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
 
   const saveDraft = async () => {
     const payload = {
@@ -358,31 +324,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               </Button>
             )}
           </div>
-          {!patient ? (
-            <p className="text-xs text-muted-foreground">Find the patient to link their lab requests.</p>
-          ) : labRequests.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No lab requests for this patient yet.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {labRequests.map((r) => (
-                <div
-                  key={r.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleLab(r.id)}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleLab(r.id)}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer hover:bg-accent/50 transition-colors ${
-                    selectedLabs.has(r.id) ? "border-primary/50 bg-primary/5" : "border-border bg-card"
-                  }`}
-                >
-                  <Checkbox checked={selectedLabs.has(r.id)} className="pointer-events-none" tabIndex={-1} />
-                  <span className="flex-1 truncate">
-                    {r.request_id || "Lab request"} · {r.date_requested}
-                  </span>
-                  <LabStatusBadge status={normalizeLabStatus(r.status)} />
-                </div>
-              ))}
-            </div>
+          {selectedLabs.size > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {selectedLabs.size} lab request{selectedLabs.size !== 1 ? "s" : ""} created during this encounter will be linked to this note.
+            </p>
           )}
         </div>
 
@@ -413,39 +358,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               </Button>
             )}
           </div>
-          {!patient ? (
-            <p className="text-xs text-muted-foreground">Find the patient to link their imaging requests.</p>
-          ) : imagingRequests.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No imaging requests for this patient yet.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {imagingRequests.map((r) => (
-                <div
-                  key={r.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleImaging(r.id)}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleImaging(r.id)}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer hover:bg-accent/50 transition-colors ${
-                    selectedImaging.has(r.id) ? "border-primary/50 bg-primary/5" : "border-border bg-card"
-                  }`}
-                >
-                  <Checkbox checked={selectedImaging.has(r.id)} className="pointer-events-none" tabIndex={-1} />
-                  <span className="flex-1 truncate">
-                    {r.request_id || r.scan_type} · {r.date_requested}
-                  </span>
-                  {r.pdf_url && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); window.open(r.pdf_url, "_blank"); }}
-                      className="text-xs text-primary underline"
-                    >
-                      PDF
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+          {selectedImaging.size > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {selectedImaging.size} imaging request{selectedImaging.size !== 1 ? "s" : ""} created during this encounter will be linked to this note.
+            </p>
           )}
         </div>
       </div>
