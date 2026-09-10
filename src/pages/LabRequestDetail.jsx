@@ -3,11 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
-import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { getTests, groupTestsByCategory, normalizeLabStatus } from "@/lib/labRequestUtils";
-import { ArrowLeft, FileText, CheckCircle2, Upload, Loader2, FlaskConical, Building2, Clock } from "lucide-react";
+import { ArrowLeft, FileText, CheckCircle2, Loader2, FlaskConical, Building2 } from "lucide-react";
 
 export default function LabRequestDetail() {
   const { id } = useParams();
@@ -17,11 +15,6 @@ export default function LabRequestDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [resultOpen, setResultOpen] = useState(false);
-  const [resultText, setResultText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [history, setHistory] = useState([]);
-  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     load();
@@ -36,50 +29,11 @@ export default function LabRequestDetail() {
         return;
       }
       setLab(data);
-      const hist = await base44.entities.LabRequest.filter(
-        { patient_id: data.patient_id, doctor_id: data.doctor_id },
-        "-date_requested"
-      );
-      setHistory(hist);
     } catch (err) {
       console.error(err);
       setNotFound(true);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const update = async (data) => {
-    setBusy(true);
-    try {
-      await base44.entities.LabRequest.update(lab.id, data);
-      await load();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveResults = async (fileUrl) => {
-    const data = { status: "results", date_completed: today };
-    if (resultText.trim()) data.result = resultText;
-    if (fileUrl) data.result_file_url = fileUrl;
-    await update(data);
-    setResultOpen(false);
-    setResultText("");
-    setShowResults(true);
-  };
-
-  const attachResultFile = async (file) => {
-    setBusy(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await saveResults(file_url);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -166,47 +120,7 @@ export default function LabRequestDetail() {
               <CheckCircle2 className="w-4 h-4 mr-2" />View Results
             </Button>
           )}
-          {status === "requested" && (
-            <Button variant="outline" onClick={() => update({ status: "pending" })} disabled={busy}>
-              {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-              Confirm Lab Receipt
-            </Button>
-          )}
-          {status !== "results" && (
-            <Button variant="outline" onClick={() => setResultOpen(!resultOpen)} disabled={busy}>
-              <Upload className="w-4 h-4 mr-2" />Enter Results
-            </Button>
-          )}
         </div>
-
-        {resultOpen && (
-          <div className="mt-4 p-4 rounded-xl border border-border bg-card space-y-2">
-            <Textarea
-              placeholder="Enter or paste the laboratory results..."
-              value={resultText}
-              onChange={(e) => setResultText(e.target.value)}
-              rows={3}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => saveResults()} disabled={busy}>
-                {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
-                Save Results
-              </Button>
-              <label className="cursor-pointer">
-                <span className="inline-flex items-center px-3 py-1.5 rounded-md text-sm border border-border hover:bg-accent">
-                  <Upload className="w-4 h-4 mr-1" />
-                  Attach Result File
-                </span>
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => e.target.files[0] && attachResultFile(e.target.files[0])}
-                />
-              </label>
-              <Button size="sm" variant="ghost" onClick={() => setResultOpen(false)}>Cancel</Button>
-            </div>
-          </div>
-        )}
 
         {status === "results" && showResults && (lab.result || lab.result_file_url) && (
           <div className="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
@@ -251,15 +165,6 @@ export default function LabRequestDetail() {
           )}
         </div>
 
-        {history.length > 1 && (
-          <div className="mt-4">
-            <h2 className="font-semibold mb-2 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              Lab Request History — {lab.patient_name}
-            </h2>
-            <LabHistoryList requests={history} currentId={lab.id} showPdf />
-          </div>
-        )}
       </div>
     </div>
   );

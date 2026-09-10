@@ -1,0 +1,49 @@
+{
+  "name": "ClinicalNoteDraft",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the draft belongs to"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the authoring doctor \u2014 one draft per doctor per patient"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "form_data": {
+      "type": "object",
+      "description": "Clinical note form fields exactly as written \u2014 encounter_datetime, location, history, vital_signs, physical_examination, diagnosis, interventions, biopsy, recommendations"
+    },
+    "medications": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Prescription editor medications exactly as entered"
+    },
+    "selected_lab_request_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lab requests the doctor linked to the note draft"
+    },
+    "selected_imaging_request_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Imaging requests the doctor linked to the note draft"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id"
+  ]
+}

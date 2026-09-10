@@ -24,11 +24,19 @@ export default function DoctorDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [labsDraftContext, setLabsDraftContext] = useState(null);
+  const [notesReturnPatient, setNotesReturnPatient] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, labs: 0, imaging: 0 });
 
   useEffect(() => { loadProfile(); }, []);
+
+  const handleNavigateTab = (tab, context) => {
+    setActiveTab(tab);
+    setLabsDraftContext(tab === "labs" && context?.patient ? context : null);
+    setNotesReturnPatient(tab === "notes" && context?.patient ? context.patient : null);
+  };
 
   const loadProfile = async () => {
     try {
@@ -47,7 +55,7 @@ export default function DoctorDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Doctor">
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
@@ -57,8 +65,8 @@ export default function DoctorDashboard() {
         {activeTab === "overview" && <DoctorOverview profile={profile} stats={stats} loading={loading} />}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} />}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
-        {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={setActiveTab} />}
-        {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} />}
+        {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
+        {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
         {activeTab === "imaging" && profile && <DoctorImagingRequests doctorProfile={profile} />}
       </div>
     </DashboardLayout>

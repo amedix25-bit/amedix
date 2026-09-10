@@ -11,7 +11,7 @@ import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send, ArrowLeft, Search } from "lucide-react";
 
-export default function DoctorLabRequests({ doctorProfile }) {
+export default function DoctorLabRequests({ doctorProfile, draftContext, onNavigateTab }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -32,6 +32,14 @@ export default function DoctorLabRequests({ doctorProfile }) {
   useEffect(() => {
     load();
   }, [doctorProfile]);
+
+  useEffect(() => {
+    if (draftContext?.patient) {
+      setSelectedPatient(null);
+      setShowForm(true);
+      setForm((f) => ({ ...f, patient_cin: draftContext.patient.cin || "" }));
+    }
+  }, [draftContext]);
 
   const load = async () => {
     try {
@@ -296,6 +304,23 @@ export default function DoctorLabRequests({ doctorProfile }) {
 
   return (
     <div className="space-y-4">
+      {draftContext?.patient && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <p className="text-sm">
+            <span className="font-semibold">Clinical note draft saved</span>
+            <span className="text-muted-foreground">
+              {" "}— continue the lab request for {draftContext.patient.full_name} (CIN: {draftContext.patient.cin}). Your draft will be restored when you return to Clinical Notes.
+            </span>
+          </p>
+          {onNavigateTab && (
+            <Button size="sm" onClick={() => onNavigateTab("notes", { patient: draftContext.patient })}>
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              Return to Clinical Notes
+            </Button>
+          )}
+        </div>
+      )}
+
       {successMsg && (
         <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <span className="flex items-center gap-2">

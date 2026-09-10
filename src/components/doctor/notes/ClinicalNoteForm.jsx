@@ -37,18 +37,31 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [finding, setFinding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [draftId, setDraftId] = useState(null);
+  const [showDraftConfirm, setShowDraftConfirm] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  const restoreDraft = (d) => {
+    setDraftId(d.id);
+    if (d.form_data) setForm((f) => ({ ...f, ...d.form_data }));
+    if (Array.isArray(d.medications)) setMedications(d.medications);
+    if (Array.isArray(d.selected_lab_request_ids)) setSelectedLabs(new Set(d.selected_lab_request_ids));
+    if (Array.isArray(d.selected_imaging_request_ids)) setSelectedImaging(new Set(d.selected_imaging_request_ids));
+  };
 
   useEffect(() => {
     if (!preselectedPatient) return;
     setPatient(preselectedPatient);
     const loadRequests = async () => {
       try {
-        const [labs, imaging] = await Promise.all([
+        const [labs, imaging, drafts] = await Promise.all([
           base44.entities.LabRequest.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }, "-date_requested"),
           base44.entities.ImagingRequest.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }, "-date_requested"),
+          base44.entities.ClinicalNoteDraft.filter({ patient_id: preselectedPatient.id, doctor_id: doctorProfile.id }),
         ]);
         setLabRequests(labs);
         setImagingRequests(imaging);
+        if (drafts.length > 0) restoreDraft(drafts[0]);
       } catch (err) {
         console.error(err);
       }
@@ -73,12 +86,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       }
       const p = patients[0];
       setPatient(p);
-      const [labs, imaging] = await Promise.all([
+      const [labs, imaging, drafts] = await Promise.all([
         base44.entities.LabRequest.filter({ patient_id: p.id, doctor_id: doctorProfile.id }, "-date_requested"),
         base44.entities.ImagingRequest.filter({ patient_id: p.id, doctor_id: doctorProfile.id }, "-date_requested"),
+        base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id }),
       ]);
       setLabRequests(labs);
       setImagingRequests(imaging);
+      if (drafts.length > 0) restoreDraft(drafts[0]);
     } catch (err) {
       console.error(err);
       setError("Could not load the patient's requests.");
@@ -102,6 +117,44 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       else n.add(id);
       return n;
     });
+
+  const saveDraft = async () => {
+    const payload = {
+      patient_id: patient.id,
+      doctor_id: doctorProfile.id,
+      patient_cin: patient.cin,
+      patient_name: patient.full_name,
+      form_data: { ...form },
+      medications,
+      selected_lab_request_ids: [...selectedLabs],
+      selected_imaging_request_ids: [...selectedImaging],
+    };
+    if (draftId) {
+      await base44.entities.ClinicalNoteDraft.update(draftId, payload);
+    } else {
+      const created = await base44.entities.ClinicalNoteDraft.create(payload);
+      setDraftId(created.id);
+    }
+  };
+
+  const saveDraftAndContinueToLabs = async () => {
+    if (!patient) {
+      setError("Find the patient first.");
+      return;
+    }
+    setSavingDraft(true);
+    setError("");
+    try {
+      await saveDraft();
+      setShowDraftConfirm(false);
+      onNavigateTab("labs", { patient });
+    } catch (err) {
+      console.error(err);
+      setError("Could not save the draft.");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -160,6 +213,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         await base44.entities.Medication.bulkCreate(
           meds.map((m) => medicationRecordFromForm(m, { patient, fallbackReason: form.diagnosis }))
         );
+      }
+      if (draftId) {
+        try { await base44.entities.ClinicalNoteDraft.delete(draftId); } catch (e) { console.error(e); }
       }
       onSaved();
     } catch (err) {
@@ -297,7 +353,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
           <div className="flex items-center justify-between gap-2">
             <Label className="flex items-center gap-1.5"><FlaskConical className="w-4 h-4 text-primary" />Lab Requests</Label>
             {onNavigateTab && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => onNavigateTab("labs")}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowDraftConfirm(true)}>
                 Go to Lab Requests <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             )}
@@ -329,6 +385,24 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             </div>
           )}
         </div>
+
+        {showDraftConfirm && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <p className="text-sm font-semibold">Save Clinical Notes Draft?</p>
+            <p className="text-xs text-muted-foreground">
+              Everything you have written will be saved as a draft linked to this patient and encounter, and restored exactly as it was when you return to Clinical Notes.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" onClick={saveDraftAndContinueToLabs} disabled={savingDraft}>
+                {savingDraft && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                Save Draft & Continue to Labs
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setShowDraftConfirm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
