@@ -65,7 +65,7 @@ export default async function(req) {
       type: "other",
       title: `New Radiology Request from Dr./Radiologist ${rad.full_name}`,
       message: "Please review and authorize access to your imaging request.",
-      target: "radiology",
+      target: "access",
       related_id: access.id,
     });
 

@@ -66,7 +66,7 @@ export default function NotificationsBar({ patientId, onNavigate }) {
 
   const handleClick = async (n) => {
     setOpen(false);
-    if (n.target && onNavigate) onNavigate(n.target);
+    if (n.target && onNavigate) onNavigate(n.target === "radiology" ? "access" : n.target);
     if (!n.is_read) {
       try {
         await base44.entities.PatientNotification.update(n.id, { is_read: true });
@@ -122,7 +122,7 @@ export default function NotificationsBar({ patientId, onNavigate }) {
                                 ? "Add Medication Information"
                                 : n.target === "labs"
                                   ? "View Request"
-                                  : n.target === "radiology"
+                                  : n.target === "radiology" || n.target === "access"
                                     ? "Review & Authorize"
                                     : "View"}
                           </span>

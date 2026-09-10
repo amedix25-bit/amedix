@@ -1,24 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Shield, Check, X, UserCog, Eye, EyeOff, History, Loader2 } from "lucide-react";
+import { Shield, Check, X, UserCog, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const nowIso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
-const formatDateTime = (dt) => {
-  if (!dt) return "—";
-  const d = new Date(dt);
-  return isNaN(d.getTime()) ? String(dt) : d.toLocaleString();
-};
-
-const ACTION_LABELS = {
-  access_granted: "Access granted",
-  access_suspended: "Access suspended",
-  access_restored: "Access restored",
-  access_declined: "Access declined",
-  access_revoked: "Access removed",
-};
-
 // Patient → Access & Privacy → Doctor Access Requests.
 // Pending doctor requests can be Accepted or Declined. Accepted doctors stay
 // in the Doctor Access list, where the eye icon is the actual access control:
@@ -28,22 +14,16 @@ const ACTION_LABELS = {
 // patient's access log with the date and time.
 export default function PatientAccessControl({ patientId }) {
   const [requests, setRequests] = useState(null);
-  const [logs, setLogs] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
     if (!patientId) return;
     try {
-      const [reqs, logEntries] = await Promise.all([
-        base44.entities.AccessRequest.filter({ patient_id: patientId }, "-date_requested"),
-        base44.entities.AccessAuditLog.filter({ patient_id: patientId }, "-datetime"),
-      ]);
+      const reqs = await base44.entities.AccessRequest.filter({ patient_id: patientId }, "-date_requested");
       setRequests(reqs);
-      setLogs(logEntries);
     } catch (err) {
       console.error(err);
       setRequests([]);
-      setLogs([]);
     }
   }, [patientId]);
 
@@ -252,31 +232,6 @@ export default function PatientAccessControl({ patientId }) {
         </div>
       )}
 
-      <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-          <History className="w-4 h-4 text-muted-foreground" />
-          Access Log
-        </h3>
-        {logs === null ? (
-          <div className="flex items-center text-muted-foreground text-sm">
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
-          </div>
-        ) : logs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No access changes recorded yet.</p>
-        ) : (
-          <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
-            {logs.map((l) => (
-              <div key={l.id} className="flex items-start justify-between gap-3 p-3 text-sm">
-                <p className="min-w-0">
-                  <span className="font-medium">{l.doctor_name || "Doctor"}</span> —{" "}
-                  {ACTION_LABELS[l.action] || l.action}
-                </p>
-                <span className="text-xs text-muted-foreground shrink-0">{formatDateTime(l.datetime)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

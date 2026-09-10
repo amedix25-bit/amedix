@@ -40,28 +40,47 @@ export default function PatientRadiologyRequests({ profile }) {
     }
   };
 
+  const header = (
+    <div>
+      <h3 className="font-semibold text-sm mb-1 flex items-center gap-2">
+        <ScanLine className="w-4 h-4 text-primary" />
+        Radiology Requests
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        Per-request authorizations: a radiologist you accept can view only that one imaging request — never the rest of your record.
+      </p>
+    </div>
+  );
+
   if (items === null) {
     return (
-      <div className="flex items-center text-muted-foreground text-sm">
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+      <div className="space-y-3">
+        {header}
+        <div className="flex items-center text-muted-foreground text-sm">
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+        </div>
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-2xl">
-        <ScanLine className="w-12 h-12 mx-auto mb-3 opacity-30" />
-        <p>No radiology requests</p>
-        <p className="text-xs mt-1">
-          You'll be notified when a radiologist requests access to one of your imaging requests.
-        </p>
+      <div className="space-y-3">
+        {header}
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-2xl">
+          <ScanLine className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p>No radiology requests</p>
+          <p className="text-xs mt-1">
+            You'll be notified when a radiologist requests access to one of your imaging requests.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {header}
       {items.map((item) => (
         <div
           key={item.id}

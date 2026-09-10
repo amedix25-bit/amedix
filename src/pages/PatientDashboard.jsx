@@ -11,12 +11,13 @@ import PatientImaging from "@/components/patient/PatientImaging";
 import PatientRadiologyRequests from "@/components/patient/PatientRadiologyRequests";
 import PatientDocuments from "@/components/patient/PatientDocuments";
 import PatientAccessControl from "@/components/patient/PatientAccessControl";
+import PatientAccessLog from "@/components/patient/PatientAccessLog";
 import PatientRadiologistAccessControl from "@/components/patient/PatientRadiologistAccessControl";
 import PatientHealth from "@/components/patient/PatientHealth";
 import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
 import NotificationsBar from "@/components/patient/NotificationsBar";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User, ScanLine } from "lucide-react";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Home", icon: HomeIcon },
@@ -25,7 +26,6 @@ const navItems = [
   { key: "labs", label: "Laboratory", icon: FlaskConical },
   { key: "mylabresults", label: "My Lab Results", icon: ClipboardList },
   { key: "imaging", label: "Imaging", icon: ImageIcon },
-  { key: "radiology", label: "Radiology Requests", icon: ScanLine },
   { key: "documents", label: "Documents", icon: FileText },
   { key: "medications", label: "Medications", icon: Pill },
   { key: "access", label: "Access & Privacy", icon: Shield },
@@ -117,12 +117,13 @@ export default function PatientDashboard() {
         {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
         {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
         {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
-        {activeTab === "radiology" && profile && <PatientRadiologyRequests profile={profile} />}
         {activeTab === "documents" && <PatientDocuments patientId={profile?.id} />}
         {activeTab === "access" && (
           <div className="space-y-10">
             <PatientAccessControl patientId={profile?.id} />
             {profile && <PatientRadiologistAccessControl profile={profile} />}
+            {profile && <PatientRadiologyRequests profile={profile} />}
+            {profile && <PatientAccessLog patientId={profile.id} />}
           </div>
         )}
       </div>
