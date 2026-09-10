@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Keyboard, Loader2, ScanLine } from "lucide-react";
+import { Keyboard, Loader2, RotateCcw, ScanLine } from "lucide-react";
 
 // Live QR scanner that works across modern mobile and desktop browsers
 // (Safari, Chrome, Edge, Firefox). Uses the native BarcodeDetector when the
@@ -14,6 +14,7 @@ export default function QrScanner({ onScan, label, onManualEntry, manualLabel })
   const videoRef = useRef(null);
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(true);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let stream;
@@ -100,7 +101,7 @@ export default function QrScanner({ onScan, label, onManualEntry, manualLabel })
       if (stream) stream.getTracks().forEach((t) => t.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
 
   return (
     <div className="space-y-2">
@@ -108,12 +109,18 @@ export default function QrScanner({ onScan, label, onManualEntry, manualLabel })
       {error ? (
         <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground text-center space-y-3">
           <p>{error}</p>
-          {onManualEntry && (
-            <Button size="sm" variant="outline" onClick={onManualEntry}>
-              <Keyboard className="w-4 h-4 mr-1" />
-              {manualLabel || "Enter CIN Manually"}
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => { setError(""); setStarting(true); setAttempt((a) => a + 1); }}>
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Try Again
             </Button>
-          )}
+            {onManualEntry && (
+              <Button size="sm" variant="outline" onClick={onManualEntry}>
+                <Keyboard className="w-4 h-4 mr-1" />
+                {manualLabel || "Enter CIN Manually"}
+              </Button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="relative rounded-lg overflow-hidden border border-border bg-black aspect-video flex items-center justify-center">

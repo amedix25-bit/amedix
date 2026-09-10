@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, UserCheck, Clock, X, AlertCircle, Users, UserPlus, EyeOff } from "lucide-react";
+import { Search, UserCheck, Clock, X, AlertCircle, Users, UserPlus, EyeOff, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import DoctorScanPatientQr from "@/components/doctor/DoctorScanPatientQr";
 import MyPatientsList from "@/components/doctor/MyPatientsList";
 import DoctorPatientRecordView from "@/components/doctor/DoctorPatientRecordView";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
@@ -17,16 +18,19 @@ export default function DoctorPatientSearch({ doctorProfile }) {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [searchVia, setSearchVia] = useState("cin");
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!cin.trim()) return;
+  // Shared lookup used by both the manual CIN search and the QR scanner —
+  // both resolve to the exact same existing patient account (never create one).
+  const lookupCin = async (cinValue, via = "cin") => {
     setLoading(true);
     setSearched(true);
+    setSearchVia(via);
     setPatient(null);
     setAccessStatus(null);
     try {
-      const results = await base44.entities.PatientProfile.filter({ cin: cin.trim().toUpperCase() });
+      const results = await base44.entities.PatientProfile.filter({ cin: String(cinValue).trim().toUpperCase() });
       if (results.length > 0) {
         const p = results[0];
         setPatient(p);
@@ -42,6 +46,12 @@ export default function DoctorPatientSearch({ doctorProfile }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!cin.trim()) return;
+    lookupCin(cin.trim(), "cin");
   };
 
   const handleRequestAccess = async () => {
@@ -107,7 +117,7 @@ export default function DoctorPatientSearch({ doctorProfile }) {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Enter patient CIN (e.g. CIN-XXXXXX)"
+                placeholder="Enter patient CIN (e.g. 7F3-829-461)"
                 value={cin}
                 onChange={(e) => setCin(e.target.value)}
                 className="pl-10"
@@ -118,10 +128,30 @@ export default function DoctorPatientSearch({ doctorProfile }) {
             </Button>
           </form>
 
+          {scanning ? (
+            <DoctorScanPatientQr
+              onCinDetected={(cinValue) => {
+                setScanning(false);
+                setCin(cinValue);
+                lookupCin(cinValue, "qr");
+              }}
+              onCancel={() => setScanning(false)}
+            />
+          ) : (
+            <Button variant="outline" onClick={() => setScanning(true)}>
+              <QrCode className="w-4 h-4 mr-2" />
+              Scan Patient QR Code
+            </Button>
+          )}
+
           {searched && !patient && !loading && (
             <div className="text-center py-12 text-muted-foreground">
               <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No patient found with that CIN</p>
+              <p>
+                {searchVia === "qr"
+                  ? "No patient account is linked to this QR code."
+                  : "No patient found with that CIN"}
+              </p>
             </div>
           )}
 
