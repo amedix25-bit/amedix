@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { makeImagingRequestId, generateImagingRequestPdf } from "@/lib/imagingRequestPdf";
-import { Image, Plus } from "lucide-react";
+import { Image, Plus, Eye } from "lucide-react";
 import ImagingRequestForm from "./imaging/ImagingRequestForm";
 import ImagingRequestCard from "./imaging/ImagingRequestCard";
 import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
@@ -10,7 +10,7 @@ import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
 export default function DoctorImagingRequests({ doctorProfile }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [view, setView] = useState(null); // "form" | "list"
 
   useEffect(() => { load(); }, [doctorProfile]);
 
@@ -76,7 +76,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${payload.date_requested}.pdf`, { type: "application/pdf" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
       await base44.entities.ImagingRequest.create({ ...payload, pdf_url: file_url });
-      setShowForm(false);
+      setView("list");
       load();
     } catch (err) { console.error(err); }
   };
@@ -102,15 +102,27 @@ export default function DoctorImagingRequests({ doctorProfile }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)}><Plus className="w-4 h-4 mr-2" />New Imaging Request</Button>
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setView((v) => (v === "list" ? null : "list"))}
+        >
+          <Eye className="w-4 h-4 mr-2" />
+          View Imaging Requested
+        </Button>
+        <Button onClick={() => setView((v) => (v === "form" ? null : "form"))}>
+          <Plus className="w-4 h-4 mr-2" />
+          New Imaging Request
+        </Button>
       </div>
 
-      {showForm && (
-        <ImagingRequestForm doctorProfile={doctorProfile} onSubmit={handleSubmit} onCancel={() => setShowForm(false)} />
+      {view === "form" && (
+        <ImagingRequestForm doctorProfile={doctorProfile} onSubmit={handleSubmit} onCancel={() => setView(null)} />
       )}
 
-      {loading ? <div className="text-muted-foreground text-sm">Loading...</div> : items.length === 0 ? (
+      {view === "list" && (loading ? (
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      ) : items.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Image className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p>No imaging requests yet</p>
@@ -121,7 +133,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
             <ImagingRequestCard key={img.id} img={img} onUploadReport={handleUploadReport} onAttachFile={handleFileUpload} />
           ))}
         </div>
-      )}
+      ))}
     </div>
   );
 }
