@@ -5,6 +5,7 @@ import { makeImagingRequestId, generateImagingRequestPdf } from "@/lib/imagingRe
 import { Image, Plus, Eye } from "lucide-react";
 import ImagingRequestForm from "./imaging/ImagingRequestForm";
 import ImagingRequestCard from "./imaging/ImagingRequestCard";
+import DoctorSharedImagingResults from "./DoctorSharedImagingResults";
 import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
 
 export default function DoctorImagingRequests({ doctorProfile }) {
@@ -118,6 +119,14 @@ export default function DoctorImagingRequests({ doctorProfile }) {
 
       {view === "form" && (
         <ImagingRequestForm doctorProfile={doctorProfile} onSubmit={handleSubmit} onCancel={() => setView(null)} />
+      )}
+
+      {view === "list" && (
+        <DoctorSharedImagingResults userId={doctorProfile.user_id} />
+      )}
+
+      {view === "list" && (
+        <h3 className="font-semibold text-sm pt-2 border-t border-border">Imaging Requests</h3>
       )}
 
       {view === "list" && (loading ? (
