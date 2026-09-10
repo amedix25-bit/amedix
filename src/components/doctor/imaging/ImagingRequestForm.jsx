@@ -4,6 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { X, Info } from "lucide-react";
 import {
   IMAGING_TYPES,
@@ -37,6 +47,7 @@ const EMPTY_FORM = {
 export default function ImagingRequestForm({ doctorProfile, onSubmit, onCancel }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
 
   const showContrast = CONTRAST_APPLICABLE.includes(form.scan_type);
@@ -72,10 +83,11 @@ export default function ImagingRequestForm({ doctorProfile, onSubmit, onCancel }
       errs.push("Complete all MRI safety questions before submitting.");
     }
     setErrors(errs);
-    if (errs.length === 0) onSubmit(form);
+    if (errs.length === 0) setConfirmOpen(true);
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Request Imaging</h3>
@@ -247,5 +259,29 @@ export default function ImagingRequestForm({ doctorProfile, onSubmit, onCancel }
 
       <Button type="submit">Create Request</Button>
     </form>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Send this imaging request?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to send this {form.scan_type} request for patient {form.patient_cin.toUpperCase()}?
+            Check the details carefully — the request will be sent only once.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setConfirmOpen(false);
+              onSubmit(form);
+            }}
+          >
+            Yes, Send Request
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
