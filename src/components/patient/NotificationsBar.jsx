@@ -122,7 +122,9 @@ export default function NotificationsBar({ patientId, onNavigate }) {
                                 ? "Add Medication Information"
                                 : n.target === "labs"
                                   ? "View Request"
-                                  : "View"}
+                                  : n.target === "radiology"
+                                    ? "Review & Authorize"
+                                    : "View"}
                           </span>
                         )}
                       </span>

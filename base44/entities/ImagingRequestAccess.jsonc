@@ -1,0 +1,125 @@
+{
+  "name": "ImagingRequestAccess",
+  "type": "object",
+  "properties": {
+    "imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest id this authorization applies to \u2014 ONLY this specific request, never the patient's whole record"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20260907-8F3K"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Ordering physician of the imaging request"
+    },
+    "scan_type": {
+      "type": "string",
+      "description": "Imaging modality of the request"
+    },
+    "examination": {
+      "type": "string",
+      "description": "Examination / view of the request"
+    },
+    "priority": {
+      "type": "string"
+    },
+    "request_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the imaging request was ordered"
+    },
+    "radiologist_id": {
+      "type": "string",
+      "description": "RadiologistProfile id of the requesting radiologist"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist account \u2014 used for Row Level Security"
+    },
+    "radiologist_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ],
+      "default": "pending",
+      "description": "PENDING: radiologist requested access, awaiting patient decision. ACCEPTED: patient authorized the radiologist to view THIS imaging request. DECLINED: patient refused \u2014 no access."
+    },
+    "date_requested": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the radiologist requested access"
+    },
+    "date_responded": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the patient accepted or declined"
+    }
+  },
+  "required": [
+    "imaging_request_id",
+    "patient_id",
+    "patient_user_id",
+    "radiologist_id",
+    "radiologist_user_id",
+    "status",
+    "date_requested"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.radiologist_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

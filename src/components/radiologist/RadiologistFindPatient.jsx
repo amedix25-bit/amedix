@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Users, UserPlus, ArrowRight } from "lucide-react";
-import RadiologistAddPatient from "@/components/radiologist/RadiologistAddPatient";
+import RadiologistImagingRequestSearch from "@/components/radiologist/RadiologistImagingRequestSearch";
 import RadiologistMyPatients from "@/components/radiologist/RadiologistMyPatients";
 import RadiologistPatientView from "@/components/radiologist/RadiologistPatientView";
 
@@ -26,14 +26,7 @@ export default function RadiologistFindPatient({ radiologistProfile, user, pendi
   }
 
   if (mode === "add") {
-    return (
-      <RadiologistAddPatient
-        radiologistProfile={radiologistProfile}
-        user={user}
-        onBack={() => setMode(null)}
-        onOpenPatient={setSelectedPatient}
-      />
-    );
+    return <RadiologistImagingRequestSearch user={user} onBack={() => setMode(null)} />;
   }
 
   if (mode === "my") {
@@ -58,9 +51,10 @@ export default function RadiologistFindPatient({ radiologistProfile, user, pendi
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <UserPlus className="w-7 h-7 text-primary" />
           </div>
-          <h3 className="text-xl font-bold">Add New</h3>
+          <h3 className="text-xl font-bold">Find Imaging Request</h3>
           <p className="text-muted-foreground text-sm mt-2">
-            Find a patient by their CIN or scan their QR code and request access to their record.
+            Enter a patient's CIN to find their imaging request. The request stays inaccessible until the patient
+            authorizes your access to it.
           </p>
           <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
             Continue

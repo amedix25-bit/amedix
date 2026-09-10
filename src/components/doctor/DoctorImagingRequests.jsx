@@ -34,6 +34,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
 
       const payload = {
         patient_id: p.id,
+        patient_user_id: p.user_id,
         doctor_id: doctorProfile.id,
         patient_cin: p.cin,
         patient_name: p.full_name,

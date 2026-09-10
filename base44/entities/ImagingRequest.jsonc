@@ -5,6 +5,10 @@
     "patient_id": {
       "type": "string"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security. Set when the doctor creates the request."
+    },
     "doctor_id": {
       "type": "string"
     },
@@ -143,13 +147,21 @@
       "type": "string",
       "description": "Time the request was created (HH:MM)"
     },
+    "authorized_radiologist_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "User ids of radiologists the PATIENT authorized for THIS SPECIFIC request only. Added server-side when the patient accepts the radiologist's access request \u2014 this is the Row Level Security gate for radiologist reads. Never grants access to the rest of the patient's record."
+    },
     "status": {
       "type": "string",
       "enum": [
         "requested",
         "completed"
       ],
-      "default": "requested"
+      "default": "requested",
+      "description": "Requested: active imaging order. Completed: imaging performed / reported."
     },
     "report": {
       "type": "string"
@@ -179,5 +191,49 @@
     "working_diagnosis",
     "priority",
     "date_requested"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.authorized_radiologist_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }
