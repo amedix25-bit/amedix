@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Search, UserCheck, Clock, X, AlertCircle, Users, UserPlus, EyeOff, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import DoctorPatientRecordView from "@/components/doctor/DoctorPatientRecordView
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
 
-export default function DoctorPatientSearch({ doctorProfile }) {
+export default function DoctorPatientSearch({ doctorProfile, prefill }) {
   const [tab, setTab] = useState("mypatients");
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [cin, setCin] = useState("");
@@ -47,6 +47,15 @@ export default function DoctorPatientSearch({ doctorProfile }) {
       setLoading(false);
     }
   };
+
+  // A shared-result notification opens this view with the patient's CIN
+  // prefilled and looked up immediately.
+  useEffect(() => {
+    if (!prefill?.cin) return;
+    setTab("new");
+    setCin(prefill.cin);
+    lookupCin(prefill.cin, "cin");
+  }, [prefill]);
 
   const handleSearch = (e) => {
     e.preventDefault();

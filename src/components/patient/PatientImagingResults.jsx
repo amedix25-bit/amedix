@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Image as ImageIcon, Loader2, ScanLine } from "lucide-react";
+import { ArrowLeft, FileText, Image as ImageIcon, Loader2, ScanLine, Send } from "lucide-react";
+import SendImagingResultToDoctor from "@/components/patient/SendImagingResultToDoctor";
 
 // Patient Portal → Imaging → View Results.
 // Each completed imaging result is displayed under the radiologist's name:
@@ -9,6 +10,7 @@ import { ArrowLeft, FileText, Image as ImageIcon, Loader2, ScanLine } from "luci
 // actual completed imaging study images associated with that report.
 export default function PatientImagingResults({ request, onBack }) {
   const [items, setItems] = useState(null);
+  const [sendForId, setSendForId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -87,7 +89,18 @@ export default function PatientImagingResults({ request, onBack }) {
                       </Button>
                     </a>
                   ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => setSendForId(sendForId === r.id ? null : r.id)}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Send to Doctor
+                  </Button>
                 </div>
+
+                {sendForId === r.id && (
+                  <SendImagingResultToDoctor patientId={request.patient_id} result={r} />
+                )}
                 <p className="text-xs text-muted-foreground mt-3">
                   Finalized {r.date_completed || ""}
                 </p>

@@ -1,0 +1,122 @@
+{
+  "name": "DoctorNotification",
+  "type": "object",
+  "properties": {
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "imaging_result_shared",
+        "other"
+      ],
+      "default": "other",
+      "description": "IMAGING_RESULT_SHARED: the patient shared a finalized imaging result with this doctor via 'Send to Doctor'. OTHER: general doctor notification."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification heading"
+    },
+    "message": {
+      "type": "string",
+      "description": "Summary shown to the doctor"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Related PatientProfile id"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient full name"
+    },
+    "patient_cin": {
+      "type": "string",
+      "description": "Patient CIN \u2014 lets the doctor open the patient from Find Patient"
+    },
+    "imaging_request_id": {
+      "type": "string",
+      "description": "Related ImagingRequest id"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20260907-8F3K"
+    },
+    "scan_type": {
+      "type": "string",
+      "description": "Imaging modality of the shared result"
+    },
+    "examination": {
+      "type": "string",
+      "description": "Examination / view of the shared result"
+    },
+    "report_pdf_url": {
+      "type": "string",
+      "description": "Finalized imaging report PDF shared by the patient"
+    },
+    "related_id": {
+      "type": "string",
+      "description": "Related record id (the ImagingResult id) \u2014 dedupe key so the same result is not sent twice to the same doctor"
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "find_patient"
+      ],
+      "default": "find_patient",
+      "description": "Doctor Portal view the notification opens"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Date and time of the event (ISO datetime)"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Read state of the notification"
+    }
+  },
+  "required": [
+    "doctor_user_id",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.doctor_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

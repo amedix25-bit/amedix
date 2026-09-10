@@ -9,6 +9,7 @@ import DoctorAppointments from "@/components/doctor/DoctorAppointments";
 import DoctorClinicalNotes from "@/components/doctor/DoctorClinicalNotes";
 import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
+import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell";
 import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image } from "lucide-react";
 
 const navItems = [
@@ -29,6 +30,7 @@ export default function DoctorDashboard() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, labs: 0, imaging: 0 });
+  const [searchPrefill, setSearchPrefill] = useState(null);
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -36,6 +38,13 @@ export default function DoctorDashboard() {
     setActiveTab(tab);
     setLabsDraftContext(tab === "labs" && context?.patient ? context : null);
     setNotesReturnPatient(tab === "notes" && context?.patient ? context.patient : null);
+  };
+
+  // Opening a shared-result notification jumps to Find Patient with the
+  // patient's CIN prefilled and looked up immediately.
+  const openFromNotification = (cin) => {
+    setActiveTab("search");
+    setSearchPrefill({ cin, ts: Date.now() });
   };
 
   const loadProfile = async () => {
@@ -63,13 +72,18 @@ export default function DoctorDashboard() {
   return (
     <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
+          </div>
+          {user && (
+            <DoctorNotificationsBell userId={user.id} onNavigate={openFromNotification} />
+          )}
         </div>
 
         {activeTab === "overview" && <DoctorOverview profile={profile} stats={stats} loading={loading} />}
-        {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} />}
+        {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
