@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, CheckCircle2, FileText } from "lucide-react";
+import { Upload, CheckCircle2, FileText, Send } from "lucide-react";
 
 const PRIORITY_STYLES = {
   Emergency: "bg-red-100 text-red-700 border-red-300",
@@ -9,7 +9,7 @@ const PRIORITY_STYLES = {
   Routine: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-export default function ImagingRequestCard({ img, onUploadReport, onAttachFile }) {
+export default function ImagingRequestCard({ img, sharedResult, onUploadReport, onAttachFile }) {
   const [uploading, setUploading] = useState(false);
   const [reportText, setReportText] = useState("");
 
@@ -68,6 +68,25 @@ export default function ImagingRequestCard({ img, onUploadReport, onAttachFile }
         {img.doctor_hospital ? ` · ${img.doctor_hospital}` : ""}
         {" · "}{img.date_requested}{img.request_time ? ` at ${img.request_time}` : ""}
       </p>
+
+      {sharedResult && (
+        <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+          <p className="text-xs font-semibold text-emerald-700 uppercase flex items-center gap-1.5">
+            <Send className="w-3.5 h-3.5" /> Result Shared by Patient
+          </p>
+          <p className="text-sm text-emerald-800 mt-1">{sharedResult.message || sharedResult.title}</p>
+          {sharedResult.datetime && (
+            <p className="text-xs text-emerald-600 mt-1">Shared {new Date(sharedResult.datetime).toLocaleString()}</p>
+          )}
+          {sharedResult.report_pdf_url && (
+            <a href={sharedResult.report_pdf_url} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                <FileText className="w-4 h-4 mr-1" /> Open Report (PDF)
+              </Button>
+            </a>
+          )}
+        </div>
+      )}
 
       {img.pdf_url && (
         <a href={img.pdf_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary underline">

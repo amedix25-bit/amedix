@@ -10,6 +10,7 @@ import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
 
 export default function DoctorImagingRequests({ doctorProfile }) {
   const [items, setItems] = useState([]);
+  const [sharedByRequest, setSharedByRequest] = useState({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState(null); // "form" | "list"
 
@@ -18,6 +19,13 @@ export default function DoctorImagingRequests({ doctorProfile }) {
   const load = async () => {
     try {
       const data = await base44.entities.ImagingRequest.filter({ doctor_id: doctorProfile.id }, "-date_requested");
+      // Results the patient explicitly shared with this doctor, keyed by
+      // the imaging request they belong to.
+      const shared = await base44.entities.DoctorNotification.filter(
+        { doctor_user_id: doctorProfile.user_id, type: "imaging_result_shared" },
+        "-datetime"
+      );
+      setSharedByRequest(Object.fromEntries(shared.filter((s) => s.imaging_request_id).map((s) => [s.imaging_request_id, s])));
       setItems(data);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
@@ -139,7 +147,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       ) : (
         <div className="space-y-3">
           {items.map((img) => (
-            <ImagingRequestCard key={img.id} img={img} onUploadReport={handleUploadReport} onAttachFile={handleFileUpload} />
+            <ImagingRequestCard key={img.id} img={img} sharedResult={sharedByRequest[img.id]} onUploadReport={handleUploadReport} onAttachFile={handleFileUpload} />
           ))}
         </div>
       ))}
