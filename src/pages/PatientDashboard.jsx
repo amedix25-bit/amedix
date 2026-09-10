@@ -10,6 +10,7 @@ import PatientLabResults from "@/components/patient/PatientLabResults";
 import PatientImaging from "@/components/patient/PatientImaging";
 import PatientDocuments from "@/components/patient/PatientDocuments";
 import PatientAccessControl from "@/components/patient/PatientAccessControl";
+import PatientRadiologistAccessControl from "@/components/patient/PatientRadiologistAccessControl";
 import PatientHealth from "@/components/patient/PatientHealth";
 import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
@@ -115,7 +116,12 @@ export default function PatientDashboard() {
         {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
         {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
         {activeTab === "documents" && <PatientDocuments patientId={profile?.id} />}
-        {activeTab === "access" && <PatientAccessControl patientId={profile?.id} />}
+        {activeTab === "access" && (
+          <div className="space-y-10">
+            <PatientAccessControl patientId={profile?.id} />
+            {profile && <PatientRadiologistAccessControl profile={profile} />}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

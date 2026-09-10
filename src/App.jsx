@@ -21,6 +21,7 @@ import LabLogin from '@/pages/LabLogin';
 import LabRegister from '@/pages/LabRegister';
 import LabPortal from '@/pages/LabPortal';
 import LabTechnician from '@/pages/LabTechnician';
+import RadiologistDashboard from '@/pages/RadiologistDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -55,6 +56,7 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
+        <Route path="/radiologist" element={<RadiologistDashboard />} />
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/lab-portal" element={<LabPortal />} />

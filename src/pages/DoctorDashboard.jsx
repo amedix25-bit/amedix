@@ -41,7 +41,13 @@ export default function DoctorDashboard() {
   const loadProfile = async () => {
     try {
       const profiles = await base44.entities.DoctorProfile.filter({ user_id: user.id });
-      if (profiles.length === 0) { navigate("/"); return; }
+      if (profiles.length === 0) {
+        // Radiologist accounts (unless an admin explicitly granted Doctor Portal
+        // access) belong in the Radiologist Portal, not here.
+        const radProfiles = await base44.entities.RadiologistProfile.filter({ user_id: user.id });
+        navigate(radProfiles.length > 0 ? "/radiologist" : "/");
+        return;
+      }
       const p = profiles[0];
       setProfile(p);
       const [apts, labs, imaging, accessReqs] = await Promise.all([
