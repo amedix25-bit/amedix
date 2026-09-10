@@ -1,0 +1,76 @@
+{
+  "name": "RadiologistProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "specialization": {
+      "type": "string",
+      "description": "Radiology specialty, e.g. Diagnostic Radiology, Interventional Radiology, Neuroradiology"
+    },
+    "hospital": {
+      "type": "string",
+      "description": "Hospital / imaging center"
+    },
+    "license_number": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended"
+      ],
+      "default": "active",
+      "description": "Radiologist account status"
+    },
+    "doctor_portal_access": {
+      "type": "boolean",
+      "default": false,
+      "description": "Administrator-controlled permission. When true, the radiologist may also use the regular Doctor Portal; otherwise the account is limited to the Radiologist Portal."
+    }
+  },
+  "required": [
+    "user_id",
+    "full_name",
+    "specialization"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

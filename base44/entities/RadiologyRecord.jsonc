@@ -1,0 +1,104 @@
+{
+  "name": "RadiologyRecord",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "radiologist_id": {
+      "type": "string",
+      "description": "RadiologistProfile id of the authoring radiologist"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist account \u2014 used for Row Level Security"
+    },
+    "radiologist_name": {
+      "type": "string"
+    },
+    "examination_type": {
+      "type": "string",
+      "description": "Type of radiological examination, e.g. Chest X-Ray, MRI Brain, CT Abdomen, Ultrasound Thyroid"
+    },
+    "examination_datetime": {
+      "type": "string",
+      "description": "Date and time of the examination (ISO datetime)"
+    },
+    "findings": {
+      "type": "string",
+      "description": "Radiology findings / report"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded radiology PDF or medical image"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Name of the uploaded file"
+    },
+    "file_type": {
+      "type": "string",
+      "description": "File extension of the uploaded file (pdf / jpg / jpeg / png / webp)"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the record was created (ISO datetime)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_user_id",
+    "radiologist_id",
+    "radiologist_user_id",
+    "examination_type",
+    "examination_datetime"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.radiologist_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

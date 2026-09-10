@@ -1,0 +1,106 @@
+{
+  "name": "RadiologistAccessRequest",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "radiologist_id": {
+      "type": "string",
+      "description": "RadiologistProfile id of the requesting radiologist"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist account \u2014 used for Row Level Security"
+    },
+    "radiologist_name": {
+      "type": "string"
+    },
+    "radiologist_specialization": {
+      "type": "string"
+    },
+    "radiologist_hospital": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "declined",
+        "revoked",
+        "suspended"
+      ],
+      "default": "pending",
+      "description": "PENDING: radiologist requested access, awaiting patient decision. APPROVED: patient accepted \u2014 the radiologist can view the patient's radiology information. DECLINED: patient declined \u2014 stays recorded so the patient can re-accept later. REVOKED: patient removed the radiologist from their Radiologist Access list. SUSPENDED: patient turned the eye control off \u2014 the radiologist stays in the list but cannot view the record until access is restored."
+    },
+    "date_requested": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_responded": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the patient granted access"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_user_id",
+    "radiologist_id",
+    "radiologist_user_id",
+    "status",
+    "date_requested"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.radiologist_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

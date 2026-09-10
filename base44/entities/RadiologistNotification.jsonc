@@ -1,0 +1,93 @@
+{
+  "name": "RadiologistNotification",
+  "type": "object",
+  "properties": {
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist account the notification belongs to \u2014 used for Row Level Security"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "patient_authorization",
+        "access_request",
+        "radiology_record",
+        "other"
+      ],
+      "default": "other",
+      "description": "Category of the radiologist notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification heading"
+    },
+    "message": {
+      "type": "string",
+      "description": "Summary shown to the radiologist"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Related PatientProfile id"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "find_patient",
+        "my_patients"
+      ],
+      "default": "my_patients",
+      "description": "Radiologist Portal view the notification opens"
+    },
+    "related_id": {
+      "type": "string",
+      "description": "Related access request / record id"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Date and time of the event (ISO datetime)"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Read state of the notification"
+    }
+  },
+  "required": [
+    "radiologist_user_id",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
