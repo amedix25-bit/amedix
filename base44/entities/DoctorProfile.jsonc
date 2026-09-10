@@ -20,6 +20,10 @@
     "phone": {
       "type": "string"
     },
+    "photo_url": {
+      "type": "string",
+      "description": "Doctor profile picture \u2014 uploaded by the doctor, shown wherever the doctor appears to other users"
+    },
     "is_verified": {
       "type": "boolean",
       "default": false

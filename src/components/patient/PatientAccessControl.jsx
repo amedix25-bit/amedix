@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Shield, Check, X, UserCog, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DoctorAvatar from "@/components/DoctorAvatar";
 
 const nowIso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -14,6 +15,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 // patient's access log with the date and time.
 export default function PatientAccessControl({ patientId }) {
   const [requests, setRequests] = useState(null);
+  const [doctorPhotos, setDoctorPhotos] = useState({});
   const [busyId, setBusyId] = useState(null);
 
   const load = useCallback(async () => {
@@ -21,6 +23,13 @@ export default function PatientAccessControl({ patientId }) {
     try {
       const reqs = await base44.entities.AccessRequest.filter({ patient_id: patientId }, "-date_requested");
       setRequests(reqs);
+      // Doctor profile pictures for every doctor in the lists.
+      try {
+        const docs = await base44.entities.DoctorProfile.list();
+        setDoctorPhotos(Object.fromEntries(docs.map((d) => [d.id, d.photo_url])));
+      } catch (err) {
+        console.error(err);
+      }
     } catch (err) {
       console.error(err);
       setRequests([]);
@@ -102,12 +111,15 @@ export default function PatientAccessControl({ patientId }) {
             {pending.map((req) => (
               <div key={req.id} className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{req.doctor_name}</p>
-                    {doctorSubline(req) && (
-                      <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">Requested on {req.date_requested}</p>
+                  <div className="min-w-0 flex items-center gap-3">
+                    <DoctorAvatar photoUrl={doctorPhotos[req.doctor_id]} name={req.doctor_name} className="w-11 h-11 text-sm" />
+                    <div className="min-w-0">
+                      <p className="font-medium">{req.doctor_name}</p>
+                      {doctorSubline(req) && (
+                        <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">Requested on {req.date_requested}</p>
+                    </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <Button
@@ -149,7 +161,9 @@ export default function PatientAccessControl({ patientId }) {
               return (
                 <div key={req.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex items-center gap-3">
+                      <DoctorAvatar photoUrl={doctorPhotos[req.doctor_id]} name={req.doctor_name} className="w-11 h-11 text-sm" />
+                      <div className="min-w-0">
                       <p className="font-medium flex flex-wrap items-center gap-2">
                         {req.doctor_name}
                         {granted ? (
@@ -166,6 +180,7 @@ export default function PatientAccessControl({ patientId }) {
                         <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">Access granted on {req.date_responded || "—"}</p>
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -213,9 +228,12 @@ export default function PatientAccessControl({ patientId }) {
                 key={req.id}
                 className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex items-center gap-3">
+                  <DoctorAvatar photoUrl={doctorPhotos[req.doctor_id]} name={req.doctor_name} className="w-9 h-9 text-xs" />
+                  <div className="min-w-0">
                   <p className="text-sm font-medium">{req.doctor_name}</p>
                   <p className="text-xs text-muted-foreground">Declined on {req.date_responded || req.date_requested}</p>
+                  </div>
                 </div>
                 <Button
                   size="sm"

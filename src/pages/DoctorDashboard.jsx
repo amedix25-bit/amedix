@@ -10,6 +10,7 @@ import DoctorClinicalNotes from "@/components/doctor/DoctorClinicalNotes";
 import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell";
+import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
 import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image } from "lucide-react";
 
 const navItems = [
@@ -73,9 +74,12 @@ export default function DoctorDashboard() {
     <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
-            <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
+          <div className="flex items-center gap-4 min-w-0">
+            {profile && <DoctorProfilePicture profile={profile} onUpdated={setProfile} />}
+            <div>
+              <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+              <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
+            </div>
           </div>
           {user && (
             <DoctorNotificationsBell userId={user.id} onNavigate={openFromNotification} />
