@@ -1,0 +1,128 @@
+{
+  "name": "ImagingResult",
+  "type": "object",
+  "properties": {
+    "imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest id this result belongs to"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20260907-8F3K"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Ordering physician of the imaging request"
+    },
+    "scan_type": {
+      "type": "string"
+    },
+    "examination": {
+      "type": "string"
+    },
+    "radiologist_id": {
+      "type": "string",
+      "description": "RadiologistProfile id of the reporting radiologist"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist account \u2014 used for Row Level Security"
+    },
+    "radiologist_name": {
+      "type": "string"
+    },
+    "report_notes": {
+      "type": "string",
+      "description": "Full report text the radiologist finalized \u2014 findings, impressions, measurements, observations and clinical notes"
+    },
+    "report_pdf_url": {
+      "type": "string",
+      "description": "Finalized imaging report PDF available to the patient"
+    },
+    "images": {
+      "type": "array",
+      "description": "Actual completed imaging study images associated with the report",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_url": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_url"
+        ]
+      }
+    },
+    "date_completed": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the results were finalized and submitted"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the result was submitted (ISO datetime)"
+    }
+  },
+  "required": [
+    "imaging_request_id",
+    "patient_id",
+    "patient_user_id",
+    "radiologist_id",
+    "radiologist_user_id",
+    "report_pdf_url"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.radiologist_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -26,7 +26,13 @@ export default function RadiologistFindPatient({ radiologistProfile, user, pendi
   }
 
   if (mode === "add") {
-    return <RadiologistImagingRequestSearch user={user} onBack={() => setMode(null)} />;
+    return (
+      <RadiologistImagingRequestSearch
+        radiologistProfile={radiologistProfile}
+        user={user}
+        onBack={() => setMode(null)}
+      />
+    );
   }
 
   if (mode === "my") {

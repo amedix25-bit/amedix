@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Image } from "lucide-react";
+import { Image as ImageIcon, FileText, ScanLine, Loader2 } from "lucide-react";
+import PatientImagingResults from "@/components/patient/PatientImagingResults";
 
+// Patient Portal → Imaging. Each imaging record shows only two large options:
+// View Request (opens the original request PDF) and View Results (opens the
+// radiologist's finalized report PDF and study images).
 export default function PatientImaging({ patientId }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resultsRequest, setResultsRequest] = useState(null);
 
   useEffect(() => {
     load();
@@ -21,13 +26,19 @@ export default function PatientImaging({ patientId }) {
     }
   };
 
-  if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
+  if (resultsRequest) {
+    return <PatientImagingResults request={resultsRequest} onBack={() => setResultsRequest(null)} />;
+  }
 
   return (
     <div className="space-y-3">
-      {items.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center text-muted-foreground text-sm">
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+        </div>
+      ) : items.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          <Image className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p>No imaging requests</p>
         </div>
       ) : (
@@ -35,24 +46,38 @@ export default function PatientImaging({ patientId }) {
           <div key={img.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
-                <p className="font-medium">{img.scan_type} — {img.body_part}</p>
-                <p className="text-sm text-muted-foreground mt-1">Requested by {img.doctor_name}</p>
+                <p className="font-medium">{img.scan_type} — {img.examination}</p>
+                <p className="text-sm text-muted-foreground mt-1">Requested by Dr. {img.doctor_name}</p>
                 <p className="text-xs text-muted-foreground mt-1">{img.date_requested}</p>
               </div>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                }`}
+              >
                 {img.status}
               </span>
             </div>
-            {img.status === "completed" && img.report && (
-              <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                <p className="text-sm text-emerald-800">{img.report}</p>
-                {img.report_file_url && (
-                  <a href={img.report_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline mt-2 inline-block">
-                    View report file
-                  </a>
-                )}
-              </div>
-            )}
+
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button
+                type="button"
+                onClick={() => img.pdf_url && window.open(img.pdf_url, "_blank")}
+                disabled={!img.pdf_url}
+                className="flex flex-col items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/5 text-primary py-5 text-sm font-semibold hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <FileText className="w-6 h-6" />
+                View Request
+              </button>
+              <button
+                type="button"
+                onClick={() => setResultsRequest(img)}
+                className="flex flex-col items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-5 text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                <ScanLine className="w-6 h-6" />
+                View Results
+              </button>
+            </div>
           </div>
         ))
       )}

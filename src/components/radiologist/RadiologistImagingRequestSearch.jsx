@@ -10,7 +10,7 @@ import RadiologistImagingRequestDetail from "@/components/radiologist/Radiologis
 // Shows ONLY the patient's imaging request(s) — no profile, history, notes,
 // diagnoses, medications or lab results. Each request stays inaccessible
 // until the patient authorizes it (pending / accepted / declined).
-export default function RadiologistImagingRequestSearch({ user, onBack }) {
+export default function RadiologistImagingRequestSearch({ radiologistProfile, user, onBack }) {
   const [cin, setCin] = useState("");
   const [result, setResult] = useState(null); // { patient, requests }
   const [loading, setLoading] = useState(false);
@@ -50,7 +50,14 @@ export default function RadiologistImagingRequestSearch({ user, onBack }) {
   };
 
   if (viewRequestId) {
-    return <RadiologistImagingRequestDetail requestId={viewRequestId} onBack={() => setViewRequestId(null)} />;
+    return (
+      <RadiologistImagingRequestDetail
+        requestId={viewRequestId}
+        user={user}
+        radiologistProfile={radiologistProfile}
+        onBack={() => setViewRequestId(null)}
+      />
+    );
   }
 
   return (

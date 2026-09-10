@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Loader2, ExternalLink, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import RadiologistSubmitResults from "@/components/radiologist/RadiologistSubmitResults";
 
 function Field({ label, value }) {
   return (
@@ -17,9 +18,10 @@ function Field({ label, value }) {
 // added this radiologist's id to this request's authorized list. No other
 // patient data (profile, history, notes, diagnoses, medications, labs) is
 // ever loaded here.
-export default function RadiologistImagingRequestDetail({ requestId, onBack }) {
+export default function RadiologistImagingRequestDetail({ requestId, user, radiologistProfile, onBack }) {
   const [request, setRequest] = useState(null);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -32,7 +34,7 @@ export default function RadiologistImagingRequestDetail({ requestId, onBack }) {
       }
     };
     load();
-  }, [requestId]);
+  }, [requestId, reloadKey]);
 
   if (error) {
     return (
@@ -117,20 +119,14 @@ export default function RadiologistImagingRequestDetail({ requestId, onBack }) {
           </div>
         )}
 
-        {request.status === "completed" && (
+        {user && (
           <div className="pt-4 border-t border-border">
-            <Field label="Report" value={request.report} />
-            {request.report_file_url && (
-              <a
-                href={request.report_file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary underline mt-2"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Open report file
-              </a>
-            )}
+            <RadiologistSubmitResults
+              request={request}
+              user={user}
+              radiologistProfile={radiologistProfile}
+              onSubmitted={() => setReloadKey((k) => k + 1)}
+            />
           </div>
         )}
       </div>
