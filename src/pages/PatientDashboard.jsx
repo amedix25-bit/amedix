@@ -117,7 +117,7 @@ export default function PatientDashboard() {
         {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
         {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
         {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
-        {activeTab === "documents" && <PatientDocuments patientId={profile?.id} />}
+        {activeTab === "documents" && <PatientDocuments patient={profile} />}
         {activeTab === "access" && (
           <div className="space-y-10">
             <PatientAccessControl patientId={profile?.id} />

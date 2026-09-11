@@ -30,8 +30,30 @@
       ],
       "default": "other"
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "insurance",
+        "vaccination",
+        "medical_reports",
+        "lab_results",
+        "imaging",
+        "prescriptions",
+        "hospital",
+        "surgical",
+        "referral",
+        "pathology",
+        "other"
+      ],
+      "default": "other",
+      "description": "Documents section the file is saved under \u2014 insurance card, vaccination card, or one of the additional document categories"
+    },
     "file_url": {
       "type": "string"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original name of the captured / uploaded file"
     },
     "date": {
       "type": "string",

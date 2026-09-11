@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { FileText } from "lucide-react";
+import { Loader2, ShieldCheck, Syringe, FolderOpen } from "lucide-react";
+import DocumentCaptureCard from "@/components/patient/documents/DocumentCaptureCard";
+import {
+  INSURANCE_CARD,
+  VACCINATION_CARD,
+  ADDITIONAL_CATEGORIES,
+  LEGACY_TYPE_TO_CATEGORY,
+  CATEGORY_TO_TYPE,
+} from "@/components/patient/documents/documentsConfig";
 
-export default function PatientDocuments({ patientId }) {
-  const [items, setItems] = useState([]);
+export default function PatientDocuments({ patient }) {
+  const patientId = patient?.id;
+  const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingButton, setUploadingButton] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    load();
+    if (patientId) load();
   }, [patientId]);
 
   const load = async () => {
     try {
       const data = await base44.entities.MedicalDocument.filter({ patient_id: patientId }, "-date");
-      setItems(data);
+      setDocs(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -21,35 +32,107 @@ export default function PatientDocuments({ patientId }) {
     }
   };
 
-  if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
+  const docsFor = (key) =>
+    docs.filter((d) => (d.category || LEGACY_TYPE_TO_CATEGORY[d.type] || "other") === key);
+
+  const handleCapture = async (category, button, file) => {
+    const buttonId = `${category.key}:${button.id}`;
+    setUploadingButton(buttonId);
+    setError("");
+    try {
+      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      const multi = category.buttons.length > 1;
+      await base44.entities.MedicalDocument.create({
+        patient_id: patient.id,
+        patient_cin: patient.cin,
+        patient_name: patient.full_name,
+        title: multi ? `${category.label} — ${button.label}` : category.label,
+        type: CATEGORY_TO_TYPE[category.key] || "other",
+        category: category.key,
+        file_url,
+        file_name: file.name,
+        date: new Date().toISOString().slice(0, 10),
+      });
+      await load();
+    } catch (err) {
+      console.error(err);
+      setError("Could not save the picture. Please try again.");
+    } finally {
+      setUploadingButton(null);
+    }
+  };
+
+  const handleDelete = async (doc) => {
+    setDocs((prev) => prev.filter((d) => d.id !== doc.id));
+    try {
+      await base44.entities.MedicalDocument.delete(doc.id);
+    } catch (err) {
+      console.error(err);
+      load();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-muted-foreground">
+        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+        Loading documents...
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      {items.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No medical documents</p>
-        </div>
-      ) : (
-        items.map((doc) => (
-          <div key={doc.id} className="rounded-xl border border-border bg-card p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{doc.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {doc.type} · {doc.doctor_name || "Self"} · {doc.date}
-              </p>
-            </div>
-            {doc.file_url && (
-              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex-shrink-0">
-                View
-              </a>
-            )}
-          </div>
-        ))
+    <div className="space-y-8">
+      {error && (
+        <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>
       )}
+
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold">Insurance Documents</h2>
+        </div>
+        <DocumentCaptureCard
+          category={INSURANCE_CARD}
+          docs={docsFor(INSURANCE_CARD.key)}
+          uploadingButton={uploadingButton}
+          onCapture={handleCapture}
+          onDelete={handleDelete}
+        />
+      </section>
+
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Syringe className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold">Vaccination Records</h2>
+        </div>
+        <DocumentCaptureCard
+          category={VACCINATION_CARD}
+          docs={docsFor(VACCINATION_CARD.key)}
+          uploadingButton={uploadingButton}
+          onCapture={handleCapture}
+          onDelete={handleDelete}
+        />
+      </section>
+
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <FolderOpen className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold">Additional Documents</h2>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {ADDITIONAL_CATEGORIES.map((category) => (
+            <DocumentCaptureCard
+              key={category.key}
+              category={category}
+              docs={docsFor(category.key)}
+              uploadingButton={uploadingButton}
+              onCapture={handleCapture}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
