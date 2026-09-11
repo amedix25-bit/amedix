@@ -3,8 +3,10 @@ import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import InfoRow from "./InfoRow";
 import { Loader2 } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function SurgicalSection({ number, patient }) {
+  const { t } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,14 +27,14 @@ export default function SurgicalSection({ number, patient }) {
   }, [load]);
 
   return (
-    <SectionCard number={number} title="Past Surgical History">
+    <SectionCard number={number} title={t("Past Surgical History")}>
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
+          {t("Loading...")}
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No previous surgeries were recorded.</p>
+        <p className="text-sm text-muted-foreground">{t("No previous surgeries were recorded.")}</p>
       ) : (
         <div className="space-y-4">
           {items.map((s) => {
@@ -47,38 +49,38 @@ export default function SurgicalSection({ number, patient }) {
                   {s.surgery_date && <span className="text-xs text-muted-foreground shrink-0">{s.surgery_date}</span>}
                 </div>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-                  <InfoRow label="Reason / Indication" value={s.reason} />
-                  <InfoRow label="Complications" value={s.complications} />
-                  <InfoRow label="Recovery / Outcome" value={s.outcome} />
-                  <InfoRow label="Hospitalization Duration" value={s.hospitalization_duration} />
+                  <InfoRow label={t("Reason / Indication")} value={s.reason} />
+                  <InfoRow label={t("Complications")} value={s.complications} />
+                  <InfoRow label={t("Recovery / Outcome")} value={s.outcome} />
+                  <InfoRow label={t("Hospitalization Duration")} value={s.hospitalization_duration} />
                 </div>
                 {hasAnesthesia && (
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Anesthesia</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t("Anesthesia")}</p>
                     <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-                      <InfoRow label="Anesthesia History" value={s.anesthesia_history} />
-                      <InfoRow label="Anesthesia Complications" value={s.anesthesia_complications} />
+                      <InfoRow label={t("Anesthesia History")} value={s.anesthesia_history} />
+                      <InfoRow label={t("Anesthesia Complications")} value={s.anesthesia_complications} />
                     </div>
                   </div>
                 )}
                 {(s.other_procedures || s.implants_devices) && (
                   <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-                    <InfoRow label="Other Procedures" value={s.other_procedures} />
-                    <InfoRow label="Implants / Medical Devices" value={s.implants_devices} />
+                    <InfoRow label={t("Other Procedures")} value={s.other_procedures} />
+                    <InfoRow label={t("Implants / Medical Devices")} value={s.implants_devices} />
                   </div>
                 )}
                 {hasTransfusion && (
                   <div className="rounded-lg bg-muted p-3">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                      Blood Transfusion History
+                      {t("Blood Transfusion History")}
                     </p>
                     <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-                      <InfoRow label="Number of Transfusions" value={s.transfusion_count} />
-                      <InfoRow label="Blood / Component Type" value={s.transfusion_type} />
-                      <InfoRow label="Amount" value={s.transfusion_amount} />
-                      <InfoRow label="Reason" value={s.transfusion_reason} />
-                      <InfoRow label="Timing (relative to surgery)" value={s.transfusion_timing} />
-                      <InfoRow label="Reactions / Complications" value={s.transfusion_reactions} />
+                      <InfoRow label={t("Number of Transfusions")} value={s.transfusion_count} />
+                      <InfoRow label={t("Blood / Component Type")} value={s.transfusion_type} />
+                      <InfoRow label={t("Amount")} value={s.transfusion_amount} />
+                      <InfoRow label={t("Reason")} value={s.transfusion_reason} />
+                      <InfoRow label={t("Timing (relative to surgery)")} value={s.transfusion_timing} />
+                      <InfoRow label={t("Reactions / Complications")} value={s.transfusion_reactions} />
                     </div>
                   </div>
                 )}

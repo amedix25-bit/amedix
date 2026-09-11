@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Image as ImageIcon, FileText, ScanLine, Loader2 } from "lucide-react";
 import PatientImagingResults from "@/components/patient/PatientImagingResults";
+import { capitalize } from "@/lib/patientUtils";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 // Patient Portal → Imaging. Each imaging record shows only two large options:
 // View Request (opens the original request PDF) and View Results (opens the
 // radiologist's finalized report PDF and study images).
 export default function PatientImaging({ patientId }) {
+  const { t } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resultsRequest, setResultsRequest] = useState(null);
@@ -34,20 +37,20 @@ export default function PatientImaging({ patientId }) {
     <div className="space-y-3">
       {loading ? (
         <div className="flex items-center text-muted-foreground text-sm">
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("Loading...")}
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No imaging requests</p>
+          <p>{t("No imaging requests")}</p>
         </div>
       ) : (
         items.map((img) => (
           <div key={img.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
-                <p className="font-medium">{img.scan_type} — {img.examination}</p>
-                <p className="text-sm text-muted-foreground mt-1">Requested by Dr. {img.doctor_name}</p>
+                <p className="font-medium">{t(img.scan_type)} — {img.examination}</p>
+                <p className="text-sm text-muted-foreground mt-1">{t("Requested by Dr.")}{img.doctor_name}</p>
                 <p className="text-xs text-muted-foreground mt-1">{img.date_requested}</p>
               </div>
               <span
@@ -55,7 +58,7 @@ export default function PatientImaging({ patientId }) {
                   img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                 }`}
               >
-                {img.status}
+                {t(capitalize(img.status || ""))}
               </span>
             </div>
 
@@ -67,7 +70,7 @@ export default function PatientImaging({ patientId }) {
                 className="flex flex-col items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/5 text-primary py-5 text-sm font-semibold hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileText className="w-6 h-6" />
-                View Request
+                {t("View Request")}
               </button>
               <button
                 type="button"
@@ -75,7 +78,7 @@ export default function PatientImaging({ patientId }) {
                 className="flex flex-col items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-5 text-sm font-semibold hover:bg-primary/90 transition-colors"
               >
                 <ScanLine className="w-6 h-6" />
-                View Results
+                {t("View Results")}
               </button>
             </div>
           </div>

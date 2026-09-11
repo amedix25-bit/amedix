@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
 import { capitalize } from "@/lib/patientUtils";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const severityClass = (s) =>
   s === "severe"
@@ -12,6 +13,7 @@ const severityClass = (s) =>
       : "px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium shrink-0";
 
 export default function AllergiesSection({ number, patient }) {
+  const { t } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,14 +34,14 @@ export default function AllergiesSection({ number, patient }) {
   }, [load]);
 
   return (
-    <SectionCard number={number} title="Allergies">
+    <SectionCard number={number} title={t("Allergies")}>
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
+          {t("Loading...")}
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No allergies were recorded.</p>
+        <p className="text-sm text-muted-foreground">{t("No allergies were recorded.")}</p>
       ) : (
         <div className="space-y-3">
           {items.map((a) => (
@@ -47,10 +49,10 @@ export default function AllergiesSection({ number, patient }) {
               <div>
                 <p className="font-medium">{a.allergen}</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
-                  {[a.allergy_type && capitalize(a.allergy_type), a.reaction].filter(Boolean).join(" · ")}
+                  {[a.allergy_type && t(capitalize(a.allergy_type)), a.reaction].filter(Boolean).join(" · ")}
                 </p>
               </div>
-              {a.severity && <span className={severityClass(a.severity)}>{capitalize(a.severity)}</span>}
+              {a.severity && <span className={severityClass(a.severity)}>{t(capitalize(a.severity))}</span>}
             </div>
           ))}
         </div>

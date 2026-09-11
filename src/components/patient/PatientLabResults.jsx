@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, FileText, Loader2, Plus, Upload, X } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const TEST_TYPES = [
   "Complete Blood Count (CBC)",
@@ -24,6 +25,7 @@ const TEST_TYPES = [
 const EMPTY = { test_type: "", custom_type: "", test_date: "", lab_name: "" };
 
 export default function PatientLabResults({ patient }) {
+  const { t, locale } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -53,15 +55,15 @@ export default function PatientLabResults({ patient }) {
     e.preventDefault();
     setError("");
     if (!form.test_type) {
-      setError("Select the test type.");
+      setError(t("Select the test type."));
       return;
     }
     if (form.test_type === "Other" && !form.custom_type.trim()) {
-      setError("Enter the test type.");
+      setError(t("Enter the test type."));
       return;
     }
     if (!file) {
-      setError("Upload your laboratory report (PDF or image).");
+      setError(t("Upload your laboratory report (PDF or image)."));
       return;
     }
     setSubmitting(true);
@@ -83,11 +85,11 @@ export default function PatientLabResults({ patient }) {
       setForm(EMPTY);
       setFile(null);
       setShowForm(false);
-      setSuccessMsg("Your laboratory result was submitted and is now part of your medical record.");
+      setSuccessMsg(t("Your laboratory result was submitted and is now part of your medical record."));
       load();
     } catch (err) {
       console.error(err);
-      setError("Could not submit the result. Please try again.");
+      setError(t("Could not submit the result. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -108,40 +110,40 @@ export default function PatientLabResults({ patient }) {
       <div className="flex justify-end">
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Lab Result
+          {t("Add Lab Result")}
         </Button>
       </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold">Submit Laboratory Result</h3>
+            <h3 className="font-semibold">{t("Submit Laboratory Result")}</h3>
             <button type="button" onClick={() => setShowForm(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Test Type *</Label>
+              <Label>{t("Test Type *")}</Label>
               <Select value={form.test_type} onValueChange={(v) => setForm({ ...form, test_type: v })}>
-                <SelectTrigger><SelectValue placeholder="Select test type" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("Select test type")} /></SelectTrigger>
                 <SelectContent>
-                  {TEST_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  {TEST_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>{t(type)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             {form.test_type === "Other" && (
               <div className="space-y-2">
-                <Label>Test Type (specify) *</Label>
+                <Label>{t("Test Type (specify) *")}</Label>
                 <Input
                   value={form.custom_type}
                   onChange={(e) => setForm({ ...form, custom_type: e.target.value })}
-                  placeholder="e.g. Stool Analysis"
+                  placeholder={t("e.g. Stool Analysis")}
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label>Date of Test *</Label>
+              <Label>{t("Date of Test *")}</Label>
               <Input
                 type="date"
                 value={form.test_date}
@@ -150,17 +152,17 @@ export default function PatientLabResults({ patient }) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Laboratory Name *</Label>
+              <Label>{t("Laboratory Name *")}</Label>
               <Input
                 value={form.lab_name}
                 onChange={(e) => setForm({ ...form, lab_name: e.target.value })}
-                placeholder="e.g. Tripoli Medical Laboratory"
+                placeholder={t("e.g. Tripoli Medical Laboratory")}
                 required
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Laboratory Report (PDF or image) *</Label>
+            <Label>{t("Laboratory Report (PDF or image) *")}</Label>
             {file ? (
               <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 px-3 py-2">
                 <span className="text-sm truncate">{file.name}</span>
@@ -170,7 +172,7 @@ export default function PatientLabResults({ patient }) {
               <label className="cursor-pointer">
                 <span className="inline-flex items-center px-4 py-2 rounded-md text-sm border border-dashed border-border hover:bg-accent">
                   <Upload className="w-4 h-4 mr-2" />
-                  Choose PDF or image...
+                  {t("Choose PDF or image...")}
                 </span>
                 <input
                   type="file"
@@ -184,7 +186,7 @@ export default function PatientLabResults({ patient }) {
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={submitting}>
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Submit Result
+            {t("Submit Result")}
           </Button>
         </form>
       )}
@@ -192,13 +194,13 @@ export default function PatientLabResults({ patient }) {
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
+          {t("Loading...")}
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No lab results submitted yet</p>
-          <p className="text-xs mt-1">Results you submit will be listed here, organized by date.</p>
+          <p>{t("No lab results submitted yet")}</p>
+          <p className="text-xs mt-1">{t("Results you submit will be listed here, organized by date.")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -206,20 +208,20 @@ export default function PatientLabResults({ patient }) {
             <div key={r.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium">{r.test_type}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Test date: {r.test_date}</p>
+                  <p className="font-medium">{t(r.test_type)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("Test date:")} {r.test_date}</p>
                 </div>
                 <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                  {r.submitted_by_name === patient.full_name ? "Patient-submitted" : "Laboratory"}
+                  {r.submitted_by_name === patient.full_name ? t("Patient-submitted") : t("Laboratory")}
                 </span>
               </div>
               {r.lab_name && <p className="text-sm text-muted-foreground mt-1">{r.lab_name}</p>}
               <p className="text-xs text-muted-foreground mt-2">
-                Submitted {r.submitted_date ? new Date(r.submitted_date).toLocaleDateString() : ""} by {r.submitted_by_name}
+                {t("Submitted")} {r.submitted_date ? new Date(r.submitted_date).toLocaleDateString(locale) : ""} — {r.submitted_by_name}
               </p>
               <Button size="sm" variant="outline" className="mt-3" onClick={() => window.open(r.file_url, "_blank")}>
                 <FileText className="w-4 h-4 mr-1" />
-                View Lab Result
+                {t("View Lab Result")}
               </Button>
             </div>
           ))}

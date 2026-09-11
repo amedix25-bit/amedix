@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +17,7 @@ import {
 // One capture card: category header, "Take a Picture" buttons (front/back for
 // the insurance card), and the saved documents belonging to the category.
 export default function DocumentCaptureCard({ category, docs, uploadingButton, onCapture, onDelete, onView }) {
+  const { t } = usePatientLanguage();
   const inputRefs = useRef({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const multi = category.buttons.length > 1;
@@ -26,6 +28,9 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
     if (file) onCapture(category, button, file);
   };
 
+  const displayTitle = (title) =>
+    (title || "").split(" — ").map((part) => t(part)).join(" — ");
+
   return (
     <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="flex items-center gap-3">
@@ -33,9 +38,9 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
           <category.icon className="w-5 h-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-medium truncate">{category.label}</p>
+          <p className="font-medium truncate">{t(category.label)}</p>
           {category.description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{category.description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t(category.description)}</p>
           )}
         </div>
         {docs.length > 0 && (
@@ -69,7 +74,7 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
                 ) : (
                   <Camera className="w-4 h-4" />
                 )}
-                {multi ? `Take a Picture — ${button.label}` : "Take a Picture"}
+                {multi ? `${t("Take a Picture")} — ${t(button.label)}` : t("Take a Picture")}
               </Button>
             </React.Fragment>
           );
@@ -92,18 +97,18 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{doc.title}</p>
+                <p className="text-sm font-medium truncate">{displayTitle(doc.title)}</p>
                 <p className="text-xs text-muted-foreground">{doc.date}</p>
               </div>
               {doc.file_url && (
                 <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline shrink-0" onClick={() => onView?.(doc)}>
-                  View
+                  {t("View")}
                 </a>
               )}
               <button
                 onClick={() => setDeleteTarget(doc)}
                 className="text-muted-foreground hover:text-destructive shrink-0"
-                aria-label="Delete document"
+                aria-label={t("Delete document")}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -115,13 +120,13 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this document?</AlertDialogTitle>
+            <AlertDialogTitle>{t("Delete this document?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.title}" will be permanently removed from your documents.
+              {t('"{title}" will be permanently removed from your documents.', { title: displayTitle(deleteTarget?.title) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -129,7 +134,7 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
                 setDeleteTarget(null);
               }}
             >
-              Delete
+              {t("Delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

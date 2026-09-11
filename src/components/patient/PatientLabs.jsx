@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import PatientLabRequestCard from "@/components/patient/PatientLabRequestCard";
 import { FlaskConical } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientLabs({ patientId }) {
+  const { t } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,13 +35,13 @@ export default function PatientLabs({ patientId }) {
     return [...map.values()];
   }, [items]);
 
-  if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
+  if (loading) return <div className="text-muted-foreground text-sm">{t("Loading...")}</div>;
 
   if (items.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <FlaskConical className="w-12 h-12 mx-auto mb-3 opacity-30" />
-        <p>No laboratory requests</p>
+        <p>{t("No laboratory requests")}</p>
       </div>
     );
   }

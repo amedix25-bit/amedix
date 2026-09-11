@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, ShieldCheck, Syringe, FolderOpen } from "lucide-react";
 import DocumentCaptureCard from "@/components/patient/documents/DocumentCaptureCard";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   INSURANCE_CARD,
   VACCINATION_CARD,
@@ -11,6 +12,7 @@ import {
 } from "@/components/patient/documents/documentsConfig";
 
 export default function PatientDocuments({ patient }) {
+  const { t } = usePatientLanguage();
   const patientId = patient?.id;
   const [docs, setDocs] = useState([]);
   const [referralMap, setReferralMap] = useState({});
@@ -88,7 +90,7 @@ export default function PatientDocuments({ patient }) {
       await load();
     } catch (err) {
       console.error(err);
-      setError("Could not save the picture. Please try again.");
+      setError(t("Could not save the picture. Please try again."));
     } finally {
       setUploadingButton(null);
     }
@@ -108,7 +110,7 @@ export default function PatientDocuments({ patient }) {
     return (
       <div className="flex items-center justify-center py-12 text-muted-foreground">
         <Loader2 className="w-6 h-6 animate-spin mr-2" />
-        Loading documents...
+        {t("Loading documents...")}
       </div>
     );
   }
@@ -122,7 +124,7 @@ export default function PatientDocuments({ patient }) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <ShieldCheck className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold">Insurance Documents</h2>
+          <h2 className="font-semibold">{t("Insurance Documents")}</h2>
         </div>
         <DocumentCaptureCard
           category={INSURANCE_CARD}
@@ -136,7 +138,7 @@ export default function PatientDocuments({ patient }) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <Syringe className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold">Vaccination Records</h2>
+          <h2 className="font-semibold">{t("Vaccination Records")}</h2>
         </div>
         <DocumentCaptureCard
           category={VACCINATION_CARD}
@@ -150,7 +152,7 @@ export default function PatientDocuments({ patient }) {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <FolderOpen className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold">Additional Documents</h2>
+          <h2 className="font-semibold">{t("Additional Documents")}</h2>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           {ADDITIONAL_CATEGORIES.map((category) => (

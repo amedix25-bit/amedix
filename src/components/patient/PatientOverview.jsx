@@ -4,7 +4,7 @@ import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrC
 import QrCodeCard from "@/components/QrCodeCard";
 import InfoRow from "@/components/patient/medical/InfoRow";
 import { Button } from "@/components/ui/button";
-import { calcAgeLabel, capitalize, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
+import { calcAge, capitalize, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientOverview({ profile, stats, loading }) {
@@ -43,9 +43,10 @@ export default function PatientOverview({ profile, stats, loading }) {
     { label: t("Medications"), value: stats.medications, icon: Pill, color: "text-emerald-500" },
   ];
 
+  const age = calcAge(profile?.date_of_birth);
   const knownCaseText = med.conditions.map((c) => c.name_ar || c.name).join(", ");
   const allergyText = med.allergies
-    .map((a) => `${a.allergen}${a.severity ? ` (${a.severity})` : ""}`)
+    .map((a) => `${a.allergen}${a.severity ? ` (${t(capitalize(a.severity))})` : ""}`)
     .join(", ");
   const isFemale = profile?.gender === "female";
   const isPregnant = isFemale && profile?.pregnancy_status === "pregnant";
@@ -107,7 +108,7 @@ export default function PatientOverview({ profile, stats, loading }) {
           <div className="space-y-3">
             <InfoRow label={t("Full Name")} value={profile?.full_name} />
             <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth} />
-            <InfoRow label={t("Age")} value={calcAgeLabel(profile?.date_of_birth)} />
+            <InfoRow label={t("Age")} value={age === null ? null : t("{age} years", { age })} />
             <InfoRow label={t("Sex")} value={profile?.gender ? t(capitalize(profile.gender)) : null} />
             <InfoRow label={t("Emergency Contact Name")} value={profile?.emergency_contact_name} />
             <InfoRow label={t("Emergency Contact Phone")} value={profile?.emergency_contact_phone} />

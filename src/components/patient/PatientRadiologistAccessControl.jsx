@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Shield, Check, X, ScanLine, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const nowIso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -12,6 +13,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 // radiologist can be removed from the list. Every decision notifies the
 // radiologist in their portal.
 export default function PatientRadiologistAccessControl({ profile }) {
+  const { t } = usePatientLanguage();
   const [requests, setRequests] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
@@ -80,7 +82,7 @@ export default function PatientRadiologistAccessControl({ profile }) {
   if (requests === null) {
     return (
       <div className="flex items-center text-muted-foreground text-sm">
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("Loading...")}
       </div>
     );
   }
@@ -97,13 +99,13 @@ export default function PatientRadiologistAccessControl({ profile }) {
       <div>
         <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
           <ScanLine className="w-4 h-4 text-primary" />
-          Radiologist Access
+          {t("Radiologist Access")}
         </h3>
       </div>
 
       {pending.length > 0 && (
         <div>
-          <h4 className="font-semibold text-sm mb-3">Pending Radiologist Requests</h4>
+          <h4 className="font-semibold text-sm mb-3">{t("Pending Radiologist Requests")}</h4>
           <div className="space-y-3">
             {pending.map((req) => (
               <div key={req.id} className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
@@ -111,16 +113,16 @@ export default function PatientRadiologistAccessControl({ profile }) {
                   <div className="min-w-0">
                     <p className="font-medium">{req.radiologist_name}</p>
                     {subline(req) && <p className="text-sm text-muted-foreground">{subline(req)}</p>}
-                    <p className="text-xs text-muted-foreground mt-1">Requested on {req.date_requested}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("Requested on")} {req.date_requested}</p>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <Button size="sm" onClick={() => updateAccess(req, "approved")} disabled={busyId === req.id}>
                       <Check className="w-4 h-4 mr-1" />
-                      Accept
+                      {t("Accept")}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => updateAccess(req, "declined")} disabled={busyId === req.id}>
                       <X className="w-4 h-4 mr-1" />
-                      Decline
+                      {t("Decline")}
                     </Button>
                   </div>
                 </div>
@@ -134,7 +136,7 @@ export default function PatientRadiologistAccessControl({ profile }) {
         {radiologistAccess.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-xl">
             <Shield className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>No radiologists currently have access</p>
+            <p>{t("No radiologists currently have access")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -148,22 +150,22 @@ export default function PatientRadiologistAccessControl({ profile }) {
                         {req.radiologist_name}
                         {granted ? (
                           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Access Granted
+                            {t("Access Granted")}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            Access Suspended
+                            {t("Access Suspended")}
                           </span>
                         )}
                       </p>
                       {subline(req) && <p className="text-sm text-muted-foreground">{subline(req)}</p>}
-                      <p className="text-xs text-muted-foreground mt-1">Access granted on {req.date_responded || "—"}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("Access granted on")} {req.date_responded || "—"}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggleEye(req)}
                       disabled={busyId === req.id}
-                      title={granted ? "Turn off this radiologist's access" : "Restore this radiologist's access"}
+                      title={granted ? t("Turn off this radiologist's access") : t("Restore this radiologist's access")}
                       className={`w-10 h-10 rounded-full flex items-center justify-center border shrink-0 transition-colors disabled:opacity-50 ${
                         granted
                           ? "bg-primary text-primary-foreground border-primary"
@@ -181,7 +183,7 @@ export default function PatientRadiologistAccessControl({ profile }) {
                       disabled={busyId === req.id}
                     >
                       <X className="w-4 h-4 mr-1" />
-                      Remove Radiologist
+                      {t("Remove Radiologist")}
                     </Button>
                   </div>
                 </div>
@@ -193,7 +195,7 @@ export default function PatientRadiologistAccessControl({ profile }) {
 
       {declined.length > 0 && (
         <div>
-          <h4 className="font-semibold text-sm mb-3 text-muted-foreground">Declined Radiologist Requests</h4>
+          <h4 className="font-semibold text-sm mb-3 text-muted-foreground">{t("Declined Radiologist Requests")}</h4>
           <div className="space-y-2">
             {declined.map((req) => (
               <div
@@ -202,11 +204,11 @@ export default function PatientRadiologistAccessControl({ profile }) {
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{req.radiologist_name}</p>
-                  <p className="text-xs text-muted-foreground">Declined on {req.date_responded || req.date_requested}</p>
+                  <p className="text-xs text-muted-foreground">{t("Declined on")} {req.date_responded || req.date_requested}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => updateAccess(req, "approved")} disabled={busyId === req.id}>
                   <Check className="w-4 h-4 mr-1" />
-                  Re-accept Access
+                  {t("Re-accept Access")}
                 </Button>
               </div>
             ))}

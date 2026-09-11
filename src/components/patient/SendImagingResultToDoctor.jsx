@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Check, Eye, EyeOff, Loader2, Send, UserCog } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const nowIso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -11,6 +12,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 // The eye icon suspends/restores that doctor's record access, and Send
 // shares this specific finalized report with the chosen doctor.
 export default function SendImagingResultToDoctor({ patientId, result }) {
+  const { t } = usePatientLanguage();
   const [requests, setRequests] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [sendingId, setSendingId] = useState(null);
@@ -74,20 +76,20 @@ export default function SendImagingResultToDoctor({ patientId, result }) {
     <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
       <p className="text-sm font-semibold flex items-center gap-2">
         <Send className="w-4 h-4 text-primary" />
-        Send to Doctor
+        {t("Send to Doctor")}
       </p>
       <p className="text-xs text-muted-foreground">
-        Choose a doctor to share this report with. The eye icon suspends or restores a doctor's access.
+        {t("Choose a doctor to share this report with. The eye icon suspends or restores a doctor's access.")}
       </p>
 
       {requests === null ? (
         <div className="flex items-center text-muted-foreground text-sm">
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading your doctors...
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("Loading your doctors...")}
         </div>
       ) : myDoctors.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground text-sm">
           <UserCog className="w-8 h-8 mx-auto mb-2 opacity-30" />
-          <p>No doctors currently have access to your record</p>
+          <p>{t("No doctors currently have access to your record")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -101,13 +103,13 @@ export default function SendImagingResultToDoctor({ patientId, result }) {
                   <p className="text-sm font-medium truncate">{req.doctor_name}</p>
                   {subline && <p className="text-xs text-muted-foreground truncate">{subline}</p>}
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {granted ? "Has access to your record" : "Access suspended — turn the eye back on to send"}
+                    {granted ? t("Has access to your record") : t("Access suspended — turn the eye back on to send")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {sent ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
-                      <Check className="w-3.5 h-3.5" /> Sent
+                      <Check className="w-3.5 h-3.5" /> {t("Sent")}
                     </span>
                   ) : (
                     <Button size="sm" onClick={() => handleSend(req)} disabled={!granted || sendingId === req.id}>
@@ -116,14 +118,14 @@ export default function SendImagingResultToDoctor({ patientId, result }) {
                       ) : (
                         <Send className="w-4 h-4 mr-1" />
                       )}
-                      Send
+                      {t("Send")}
                     </Button>
                   )}
                   <button
                     type="button"
                     onClick={() => toggleEye(req)}
                     disabled={busyId === req.id}
-                    title={granted ? "Turn off this doctor's access" : "Restore this doctor's access"}
+                    title={granted ? t("Turn off this doctor's access") : t("Restore this doctor's access")}
                     className={`w-9 h-9 rounded-full flex items-center justify-center border shrink-0 transition-colors disabled:opacity-50 ${
                       granted
                         ? "bg-primary text-primary-foreground border-primary"

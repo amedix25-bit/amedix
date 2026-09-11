@@ -14,8 +14,10 @@ import {
 import LabCard from "@/components/patient/lab/LabCard";
 import SelectedLabCard from "@/components/patient/lab/SelectedLabCard";
 import { Building2, Loader2, Search, ShieldCheck } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function LabAuthorizationSection({ request, onAuthorized }) {
+  const { t } = usePatientLanguage();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -41,12 +43,13 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
         setResults(res.data.laboratories || []);
         setError("");
       } catch (err) {
-        setError(err.response?.data?.error || err.message || "Laboratory search failed.");
+        setError(err.response?.data?.error || err.message || t("Laboratory search failed."));
       } finally {
         setSearching(false);
       }
     }, 300);
     return () => clearTimeout(debounceRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   const handleAllow = async () => {
@@ -59,7 +62,7 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
       });
       onAuthorized?.(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to authorize the laboratory.");
+      setError(err.response?.data?.error || err.message || t("Failed to authorize the laboratory."));
       setSubmitting(false);
     }
   };
@@ -68,26 +71,26 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
     <div className="mt-3 pt-3 border-t border-border">
       <p className="text-sm font-semibold flex items-center gap-1.5">
         <Building2 className="w-4 h-4 text-primary" />
-        Select Laboratory
+        {t("Select Laboratory")}
       </p>
       <p className="text-xs text-muted-foreground mt-0.5">
-        The laboratory only receives this request after you select it and explicitly allow access.
+        {t("The laboratory only receives this request after you select it and explicitly allow access.")}
       </p>
 
       {!selectedLab ? (
         <>
           <div className="relative mt-3">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground rtl:left-auto rtl:right-3" />
             <Input
-              placeholder="Search by laboratory name or A&M Lab Number..."
+              placeholder={t("Search by laboratory name or A&M Lab Number...")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 rtl:pl-3 rtl:pr-9"
             />
           </div>
           {searching && (
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-              <Loader2 className="w-3 h-3 animate-spin" /> Searching laboratories...
+              <Loader2 className="w-3 h-3 animate-spin" /> {t("Searching laboratories...")}
             </p>
           )}
           {!searching && results.length > 0 && (
@@ -99,7 +102,7 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
           )}
           {!searching && query.trim().length >= 1 && results.length === 0 && (
             <p className="text-xs text-muted-foreground mt-2">
-              No registered laboratories match "{query.trim()}".
+              {t('No registered laboratories match "{query}".', { query: query.trim() })}
             </p>
           )}
         </>
@@ -111,29 +114,30 @@ export default function LabAuthorizationSection({ request, onAuthorized }) {
               <AlertDialogTrigger asChild>
                 <Button disabled={submitting} className="gap-1.5">
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                  Allow Laboratory to View Request
+                  {t("Allow Laboratory to View Request")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Allow Laboratory Access?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("Allow Laboratory Access?")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    You are giving {selectedLab.lab_name} (A&M Lab Number {selectedLab.lab_number || "—"})
-                    permission to view this laboratory request and the information required to perform the
-                    requested tests.
+                    {t(
+                      "You are giving {lab} (A&M Lab Number {number}) permission to view this laboratory request and the information required to perform the requested tests.",
+                      { lab: selectedLab.lab_name, number: selectedLab.lab_number || "—" }
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="flex justify-end gap-2">
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                   <Button onClick={handleAllow} disabled={submitting}>
                     {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Yes, Allow
+                    {t("Yes, Allow")}
                   </Button>
                 </div>
               </AlertDialogContent>
             </AlertDialog>
             <Button variant="ghost" size="sm" onClick={() => setSelectedLab(null)}>
-              Change
+              {t("Change")}
             </Button>
           </div>
         </div>

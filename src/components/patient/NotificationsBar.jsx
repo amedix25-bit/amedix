@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Bell, Calendar, RefreshCw, FlaskConical, Microscope, Info, Pill } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const TYPE_ICONS = {
   appointment: Calendar,
@@ -21,20 +22,21 @@ const TYPE_COLORS = {
   other: "text-muted-foreground",
 };
 
-function dayLabel(iso) {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const sameDay = (a, b) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (sameDay(d, today)) return "Today";
-  if (sameDay(d, yesterday)) return "Yesterday";
-  return d.toLocaleDateString(undefined, { month: "long", day: "numeric" });
-}
-
 export default function NotificationsBar({ patientId, onNavigate }) {
+  const { t, isArabic, locale } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [open, setOpen] = useState(false);
+
+  const dayLabel = (iso) => {
+    const d = new Date(iso);
+    const today = new Date();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const sameDay = (a, b) =>
+      a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (sameDay(d, today)) return t("Today");
+    if (sameDay(d, yesterday)) return t("Yesterday");
+    return d.toLocaleDateString(locale, { month: "long", day: "numeric" });
+  };
 
   const load = async () => {
     if (!patientId) return;
@@ -62,7 +64,8 @@ export default function NotificationsBar({ patientId, onNavigate }) {
       map.get(label).push(n);
     });
     return [...map.entries()];
-  }, [items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, isArabic]);
 
   const handleClick = async (n) => {
     setOpen(false);
@@ -82,7 +85,7 @@ export default function NotificationsBar({ patientId, onNavigate }) {
       <PopoverTrigger asChild>
         <button className="relative inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
           <Bell className="w-4 h-4" />
-          <span className="hidden sm:inline">Notifications</span>
+          <span className="hidden sm:inline">{t("Notifications")}</span>
           {unread > 0 && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
               {unread}
@@ -92,12 +95,12 @@ export default function NotificationsBar({ patientId, onNavigate }) {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 sm:w-96 p-0">
         <div className="px-4 py-3 border-b border-border">
-          <p className="font-semibold text-sm">Notifications</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Updates about your appointments and laboratory tests</p>
+          <p className="font-semibold text-sm">{t("Notifications")}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("Updates about your appointments and laboratory tests")}</p>
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No notifications yet</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t("No notifications yet")}</p>
           ) : (
             groups.map(([label, list]) => (
               <div key={label}>
@@ -112,19 +115,19 @@ export default function NotificationsBar({ patientId, onNavigate }) {
                     >
                       <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${TYPE_COLORS[n.type] || ""}`} />
                       <span className="flex-1 min-w-0">
-                        <span className={`block text-sm ${n.is_read ? "text-foreground" : "font-semibold"}`}>{n.title}</span>
-                        <span className="block text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{n.message}</span>
+                        <span className={`block text-sm ${n.is_read ? "text-foreground" : "font-semibold"}`}>{t(n.title)}</span>
+                        <span className="block text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{t(n.message)}</span>
                         {n.target && (
                           <span className="block text-xs font-medium text-primary mt-1">
                             {n.target === "appointments"
-                              ? "View Appointment"
+                              ? t("View Appointment")
                               : n.target === "medications"
-                                ? "Add Medication Information"
+                                ? t("Add Medication Information")
                                 : n.target === "labs"
-                                  ? "View Request"
+                                  ? t("View Request")
                                   : n.target === "radiology" || n.target === "access"
-                                    ? "Review & Authorize"
-                                    : "View"}
+                                    ? t("Review & Authorize")
+                                    : t("View")}
                           </span>
                         )}
                       </span>

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function CurrentDiagnosisSection({ number, patient }) {
+  const { t } = usePatientLanguage();
   const [latest, setLatest] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,21 +25,21 @@ export default function CurrentDiagnosisSection({ number, patient }) {
   }, [patient?.id]);
 
   return (
-    <SectionCard number={number} title="Current Diagnosis">
+    <SectionCard number={number} title={t("Current Diagnosis")}>
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
+          {t("Loading...")}
         </div>
       ) : !latest ? (
         <p className="text-sm text-muted-foreground">
-          No active diagnosis recorded. Diagnoses from your clinical visits will appear here.
+          {t("No active diagnosis recorded. Diagnoses from your clinical visits will appear here.")}
         </p>
       ) : (
         <div>
           <p className="font-medium text-sm">{latest.diagnosis}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Diagnosed on {latest.date} · {latest.doctor_name || "Attending doctor"}
+            {t("Diagnosed on")} {latest.date} · {latest.doctor_name || t("Attending doctor")}
           </p>
         </div>
       )}

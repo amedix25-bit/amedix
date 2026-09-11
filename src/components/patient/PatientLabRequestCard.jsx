@@ -3,8 +3,10 @@ import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import LabAuthorizationSection from "@/components/patient/lab/LabAuthorizationSection";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { Building2, FileText, ShieldCheck } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientLabRequestCard({ group, onRequestUpdated }) {
+  const { t, locale } = usePatientLanguage();
   const first = group[0];
   const [auth, setAuth] = useState(
     first.authorized_by_patient
@@ -37,10 +39,10 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
     : (group.find((l) => l.result_file_url) || {}).result_file_url;
 
   const byCategory = new Map();
-  tests.forEach((t) => {
-    const key = t.category || "Other";
+  tests.forEach((tc) => {
+    const key = tc.category || "Other";
     if (!byCategory.has(key)) byCategory.set(key, []);
-    byCategory.get(key).push(t.name);
+    byCategory.get(key).push(tc.name);
   });
 
   return (
@@ -49,10 +51,10 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
         <div className="flex-1 min-w-0">
           <p className="font-medium">
             {consolidated
-              ? `Lab Request${first.request_id ? ` · ${first.request_id}` : ""}`
-              : `Lab Request — ${tests.length} test${tests.length > 1 ? "s" : ""}`}
+              ? `${t("Lab Request")}${first.request_id ? ` · ${first.request_id}` : ""}`
+              : `${t("Lab Request")} — ${tests.length}`}
           </p>
-          <p className="text-sm text-muted-foreground mt-0.5">Requested by {first.doctor_name}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{t("Requested by Dr.")}{first.doctor_name}</p>
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
             <span>{first.date_requested}</span>
             {first.lab_name && (
@@ -66,15 +68,15 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
       <div className="mt-3 pt-3 border-t border-border space-y-2">
         {[...byCategory.entries()].map(([category, names]) => (
           <div key={category}>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{category}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t(category)}</p>
             <p className="text-sm">{names.join(", ")}</p>
           </div>
         ))}
         {first.indication && (
-          <p className="text-xs text-muted-foreground">Indication: {first.indication}</p>
+          <p className="text-xs text-muted-foreground">{t("Indication:")} {first.indication}</p>
         )}
         {first.instructions && (
-          <p className="text-xs text-muted-foreground">Instructions: {first.instructions}</p>
+          <p className="text-xs text-muted-foreground">{t("Instructions:")} {first.instructions}</p>
         )}
       </div>
 
@@ -85,13 +87,13 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
       {auth && (
         <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
           <p className="text-sm font-semibold text-emerald-800 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4" /> Access Granted
+            <ShieldCheck className="w-4 h-4" /> {t("Access Granted")}
           </p>
-          <p className="text-sm text-emerald-800 mt-1">Laboratory: {auth.lab_name}</p>
-          <p className="text-sm text-emerald-800">Lab ID: {auth.lab_number || "—"}</p>
+          <p className="text-sm text-emerald-800 mt-1">{t("Laboratory:")} {auth.lab_name}</p>
+          <p className="text-sm text-emerald-800">{t("Lab ID:")} {auth.lab_number || "—"}</p>
           <p className="text-xs text-emerald-700 mt-0.5">
-            Date Authorized:{" "}
-            {auth.authorization_datetime ? new Date(auth.authorization_datetime).toLocaleString() : "—"}
+            {t("Date Authorized:")}{" "}
+            {auth.authorization_datetime ? new Date(auth.authorization_datetime).toLocaleString(locale) : "—"}
           </p>
         </div>
       )}
@@ -106,7 +108,7 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
               rel="noopener noreferrer"
               className="text-xs text-emerald-600 underline mt-2 inline-block"
             >
-              View result file
+              {t("View result file")}
             </a>
           )}
         </div>
@@ -121,7 +123,7 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
             className="inline-flex items-center gap-1.5 text-sm text-primary underline"
           >
             <FileText className="w-4 h-4" />
-            Download request PDF
+            {t("Download request PDF")}
           </a>
         </div>
       )}

@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus, X, Ban, RotateCcw } from "lucide-react";
 import { medicationStatus, mealLabel, routeLabel, todayStr } from "@/lib/medicationUtils";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function MedicationsSection({ number, patient, editable }) {
+  const { t } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -76,11 +78,11 @@ export default function MedicationsSection({ number, patient, editable }) {
   return (
     <SectionCard
       number={number}
-      title="Medications"
+      title={t("Medications")}
       action={
         editable ? (
           <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
-            <Plus className="w-4 h-4 mr-1" /> Add
+            <Plus className="w-4 h-4 mr-1" /> {t("Add")}
           </Button>
         ) : undefined
       }
@@ -88,24 +90,24 @@ export default function MedicationsSection({ number, patient, editable }) {
       {showAdd && (
         <form onSubmit={handleAdd} className="mb-4 rounded-lg border border-border p-3 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Add Medication</p>
+            <p className="text-sm font-medium">{t("Add Medication")}</p>
             <button type="button" onClick={() => setShowAdd(false)} className="text-muted-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Medication name *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Metformin" required />
+              <Label>{t("Medication name *")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("e.g. Metformin")} required />
             </div>
             <div className="space-y-1.5">
-              <Label>Start date</Label>
+              <Label>{t("Start date")}</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
           </div>
           <Button type="submit" size="sm" disabled={saving}>
             {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
-            Save Medication
+            {t("Save Medication")}
           </Button>
         </form>
       )}
@@ -113,10 +115,10 @@ export default function MedicationsSection({ number, patient, editable }) {
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
+          {t("Loading...")}
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No medications were recorded.</p>
+        <p className="text-sm text-muted-foreground">{t("No medications were recorded.")}</p>
       ) : (
         <div className="space-y-3">
           {[...active, ...stopped].map((m) => (
@@ -131,11 +133,11 @@ export default function MedicationsSection({ number, patient, editable }) {
                   <p className="font-semibold text-sm">{m.name}</p>
                   {m.source === "doctor_prescribed" ? (
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                      Doctor-Prescribed
+                      {t("Doctor-Prescribed")}
                     </span>
                   ) : m.source === "patient_reported" ? (
                     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      Patient-Reported
+                      {t("Patient-Reported")}
                     </span>
                   ) : null}
                 </div>
@@ -143,9 +145,9 @@ export default function MedicationsSection({ number, patient, editable }) {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {[
                       m.dose,
-                      m.route && routeLabel(m.route),
-                      m.prn ? "PRN — as needed" : m.frequency,
-                      m.meal_timing && mealLabel(m.meal_timing),
+                      m.route && t(routeLabel(m.route)),
+                      m.prn ? t("PRN — as needed") : m.frequency,
+                      m.meal_timing && t(mealLabel(m.meal_timing)),
                       m.duration,
                     ]
                       .filter(Boolean)
@@ -155,19 +157,19 @@ export default function MedicationsSection({ number, patient, editable }) {
                 {medicationStatus(m, todayStr()) !== "active" && (
                   <p className="text-xs text-muted-foreground">
                     {m.stopped_date === m.end_date && m.end_date
-                      ? `Completed${m.stopped_date ? ` — ${m.stopped_date}` : ""}`
-                      : `Stopped${m.stopped_date ? ` — ${m.stopped_date}` : ""}`}
+                      ? `${t("Completed")}${m.stopped_date ? ` — ${m.stopped_date}` : ""}`
+                      : `${t("Stopped")}${m.stopped_date ? ` — ${m.stopped_date}` : ""}`}
                   </p>
                 )}
               </div>
               {editable &&
                 (m.is_active === false ? (
                   <Button size="sm" variant="outline" onClick={() => toggleActive(m, true)}>
-                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restart
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> {t("Restart")}
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" onClick={() => toggleActive(m, false)}>
-                    <Ban className="w-3.5 h-3.5 mr-1" /> Stop
+                    <Ban className="w-3.5 h-3.5 mr-1" /> {t("Stop")}
                   </Button>
                 ))}
             </div>

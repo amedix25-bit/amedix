@@ -1,6 +1,7 @@
 import React from "react";
 import { Pill, Pencil } from "lucide-react";
 import { medicationStatus, mealLabel, routeLabel } from "@/lib/medicationUtils";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const STATUS_STYLES = {
   active: { label: "Active", classes: "bg-emerald-100 text-emerald-700" },
@@ -9,21 +10,22 @@ const STATUS_STYLES = {
 };
 
 export default function MedicationCard({ med, today, onEdit }) {
+  const { t } = usePatientLanguage();
   const status = medicationStatus(med, today);
   const statusStyle = STATUS_STYLES[status];
   const isDoctor = med.source === "doctor_prescribed";
 
   const rows = [
-    { label: "Dose", value: med.dose },
-    { label: "Route of Administration", value: med.route ? routeLabel(med.route) : "" },
-    { label: "Frequency", value: med.prn ? "PRN — as needed" : med.frequency },
-    { label: "Max Frequency", value: med.prn ? med.max_frequency : "" },
-    { label: "Meal", value: med.meal_timing ? mealLabel(med.meal_timing) : "" },
-    { label: "Duration", value: med.duration },
-    { label: "End Date", value: med.end_date },
-    { label: "Indication", value: med.reason },
-    { label: isDoctor ? "Doctor's Notes" : "Notes", value: isDoctor ? med.doctor_notes : med.patient_notes },
-    { label: "Special Instructions", value: med.special_instructions },
+    { label: t("Dose"), value: med.dose },
+    { label: t("Route of Administration"), value: med.route ? t(routeLabel(med.route)) : "" },
+    { label: t("Frequency"), value: med.prn ? t("PRN — as needed") : med.frequency },
+    { label: t("Max Frequency"), value: med.prn ? med.max_frequency : "" },
+    { label: t("Meal"), value: med.meal_timing ? t(mealLabel(med.meal_timing)) : "" },
+    { label: t("Duration"), value: med.duration },
+    { label: t("End Date"), value: med.end_date },
+    { label: t("Indication"), value: med.reason },
+    { label: isDoctor ? t("Doctor's Notes") : t("Notes"), value: isDoctor ? med.doctor_notes : med.patient_notes },
+    { label: t("Special Instructions"), value: med.special_instructions },
   ].filter((r) => r.value);
 
   return (
@@ -37,18 +39,18 @@ export default function MedicationCard({ med, today, onEdit }) {
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-semibold">{med.name}</p>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusStyle.classes}`}>
-                {statusStyle.label}
+                {t(statusStyle.label)}
               </span>
               <span
                 className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                   isDoctor ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                 }`}
               >
-                {isDoctor ? "Doctor-Prescribed" : "Patient-Reported"}
+                {isDoctor ? t("Doctor-Prescribed") : t("Patient-Reported")}
               </span>
             </div>
             {med.start_date && (
-              <p className="text-xs text-muted-foreground mt-0.5">Started {med.start_date}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("Started")} {med.start_date}</p>
             )}
           </div>
         </div>

@@ -1,10 +1,12 @@
 import React from "react";
 import { Image } from "@/components/ui/image";
 import { Building2, MapPin } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 // Compact summary of the laboratory the patient selected, shown before they
 // confirm and assign it to the lab request.
 export default function SelectedLabCard({ lab }) {
+  const { t } = usePatientLanguage();
   return (
     <div className="flex items-start gap-3">
       <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-border bg-background flex items-center justify-center">
@@ -16,7 +18,7 @@ export default function SelectedLabCard({ lab }) {
       </div>
       <div className="min-w-0">
         <p className="font-semibold">{lab.lab_name}</p>
-        <p className="text-sm text-muted-foreground mt-0.5">A&M Lab Number: {lab.lab_number || "—"}</p>
+        <p className="text-sm text-muted-foreground mt-0.5">{t("A&M Lab Number:")} {lab.lab_number || "—"}</p>
         <p className="text-xs text-muted-foreground flex items-start gap-1 mt-0.5">
           <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
           {lab.address || "—"}

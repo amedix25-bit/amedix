@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function ConditionsSection({ number, title, category, patient, emptyText }) {
+  const { t } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +33,7 @@ export default function ConditionsSection({ number, title, category, patient, em
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Loading...
+          {t("Loading...")}
         </div>
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{emptyText}</p>

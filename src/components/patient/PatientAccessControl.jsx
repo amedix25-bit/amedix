@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Shield, Check, X, UserCog, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DoctorAvatar from "@/components/DoctorAvatar";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const nowIso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -14,6 +15,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 // stay recorded with a Re-accept option. Every change is written to the
 // patient's access log with the date and time.
 export default function PatientAccessControl({ patientId }) {
+  const { t } = usePatientLanguage();
   const [requests, setRequests] = useState(null);
   const [doctorPhotos, setDoctorPhotos] = useState({});
   const [busyId, setBusyId] = useState(null);
@@ -77,7 +79,7 @@ export default function PatientAccessControl({ patientId }) {
   if (requests === null) {
     return (
       <div className="flex items-center text-muted-foreground text-sm">
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("Loading...")}
       </div>
     );
   }
@@ -95,10 +97,11 @@ export default function PatientAccessControl({ patientId }) {
         <div className="flex items-start gap-3">
           <Shield className="w-5 h-5 text-primary mt-0.5" />
           <div>
-            <p className="font-medium text-sm">Your medical record is private</p>
+            <p className="font-medium text-sm">{t("Your medical record is private")}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Doctors can only access your records with your approval. Use the eye icon to
-              suspend or restore a doctor's access at any time — the doctor stays in your list.
+              {t(
+                "Doctors can only access your records with your approval. Use the eye icon to suspend or restore a doctor's access at any time — the doctor stays in your list."
+              )}
             </p>
           </div>
         </div>
@@ -106,7 +109,7 @@ export default function PatientAccessControl({ patientId }) {
 
       {pending.length > 0 && (
         <div>
-          <h3 className="font-semibold text-sm mb-3">Pending Access Requests</h3>
+          <h3 className="font-semibold text-sm mb-3">{t("Pending Access Requests")}</h3>
           <div className="space-y-3">
             {pending.map((req) => (
               <div key={req.id} className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
@@ -118,7 +121,7 @@ export default function PatientAccessControl({ patientId }) {
                       {doctorSubline(req) && (
                         <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">Requested on {req.date_requested}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("Requested on")} {req.date_requested}</p>
                     </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
@@ -128,7 +131,7 @@ export default function PatientAccessControl({ patientId }) {
                       disabled={busyId === req.id}
                     >
                       <Check className="w-4 h-4 mr-1" />
-                      Accept
+                      {t("Accept")}
                     </Button>
                     <Button
                       size="sm"
@@ -137,7 +140,7 @@ export default function PatientAccessControl({ patientId }) {
                       disabled={busyId === req.id}
                     >
                       <X className="w-4 h-4 mr-1" />
-                      Decline
+                      {t("Decline")}
                     </Button>
                   </div>
                 </div>
@@ -148,11 +151,11 @@ export default function PatientAccessControl({ patientId }) {
       )}
 
       <div>
-        <h3 className="font-semibold text-sm mb-3">Doctor Access</h3>
+        <h3 className="font-semibold text-sm mb-3">{t("Doctor Access")}</h3>
         {doctorAccess.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <UserCog className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>No doctors currently have access</p>
+            <p>{t("No doctors currently have access")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -168,25 +171,25 @@ export default function PatientAccessControl({ patientId }) {
                         {req.doctor_name}
                         {granted ? (
                           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Access Granted
+                            {t("Access Granted")}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            Access Suspended
+                            {t("Access Suspended")}
                           </span>
                         )}
                       </p>
                       {doctorSubline(req) && (
                         <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">Access granted on {req.date_responded || "—"}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t("Access granted on")} {req.date_responded || "—"}</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => toggleEye(req)}
                       disabled={busyId === req.id}
-                      title={granted ? "Turn off this doctor's access" : "Restore this doctor's access"}
+                      title={granted ? t("Turn off this doctor's access") : t("Restore this doctor's access")}
                       className={`w-10 h-10 rounded-full flex items-center justify-center border shrink-0 transition-colors disabled:opacity-50 ${
                         granted
                           ? "bg-primary text-primary-foreground border-primary"
@@ -198,8 +201,8 @@ export default function PatientAccessControl({ patientId }) {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {granted
-                      ? "This doctor can currently view your medical information."
-                      : "This doctor cannot view your medical information until you turn access back on."}
+                      ? t("This doctor can currently view your medical information.")
+                      : t("This doctor cannot view your medical information until you turn access back on.")}
                   </p>
                   <div className="flex justify-end">
                     <Button
@@ -209,7 +212,7 @@ export default function PatientAccessControl({ patientId }) {
                       disabled={busyId === req.id}
                     >
                       <X className="w-4 h-4 mr-1" />
-                      Remove Doctor
+                      {t("Remove Doctor")}
                     </Button>
                   </div>
                 </div>
@@ -221,7 +224,7 @@ export default function PatientAccessControl({ patientId }) {
 
       {declined.length > 0 && (
         <div>
-          <h3 className="font-semibold text-sm mb-3 text-muted-foreground">Declined Requests</h3>
+          <h3 className="font-semibold text-sm mb-3 text-muted-foreground">{t("Declined Requests")}</h3>
           <div className="space-y-2">
             {declined.map((req) => (
               <div
@@ -232,7 +235,7 @@ export default function PatientAccessControl({ patientId }) {
                   <DoctorAvatar photoUrl={doctorPhotos[req.doctor_id]} name={req.doctor_name} className="w-9 h-9 text-xs" />
                   <div className="min-w-0">
                   <p className="text-sm font-medium">{req.doctor_name}</p>
-                  <p className="text-xs text-muted-foreground">Declined on {req.date_responded || req.date_requested}</p>
+                  <p className="text-xs text-muted-foreground">{t("Declined on")} {req.date_responded || req.date_requested}</p>
                   </div>
                 </div>
                 <Button
@@ -242,7 +245,7 @@ export default function PatientAccessControl({ patientId }) {
                   disabled={busyId === req.id}
                 >
                   <Check className="w-4 h-4 mr-1" />
-                  Re-accept Access
+                  {t("Re-accept Access")}
                 </Button>
               </div>
             ))}
