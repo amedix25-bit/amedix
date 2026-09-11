@@ -40,7 +40,7 @@ export default function ConditionsSection({ number, title, category, patient, em
           {items.map((item) => (
             <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
               <div>
-                <p className="font-medium">{item.name}</p>
+                <p className="font-medium">{item.name_ar || item.name}</p>
                 {item.details && <p className="text-muted-foreground text-xs mt-0.5">{item.details}</p>}
               </div>
               {item.date && <span className="text-xs text-muted-foreground shrink-0">{item.date}</span>}

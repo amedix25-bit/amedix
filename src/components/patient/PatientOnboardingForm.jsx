@@ -72,6 +72,11 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         (lifestyle.pregnancy_status !== "pregnant" ||
           (!!lifestyle.gestational_age && !!lifestyle.estimated_due_date))));
 
+  const switchLang = (v) => {
+    setLang(v);
+    setForm((f) => ({ ...f, preferred_language: v }));
+  };
+
   const nextFromStep0 = (e) => {
     e.preventDefault();
     if (!form.gender) {
@@ -163,9 +168,31 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     })}
                   </p>
                 </div>
-                <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center rounded-full border border-border p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => switchLang("en")}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-colors ${
+                        lang === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchLang("ar")}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-colors ${
+                        lang === "ar" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      العربية
+                    </button>
+                  </div>
+                  <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 px-6 pt-4">
@@ -287,22 +314,6 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label>{t("Language")} *</Label>
-                        <Select
-                          value={form.preferred_language}
-                          onValueChange={(v) => {
-                            setForm((f) => ({ ...f, preferred_language: v }));
-                            setLang(v);
-                          }}
-                        >
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="en">English</SelectItem>
-                            <SelectItem value="ar">العربية</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
                   </section>
 
@@ -321,7 +332,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     title={`${t("Known Case Of")} *`}
                     description={t("Established chronic or previous medical conditions")}
                     entries={medical.knownCases}
-                    entryLabel={(c) => `${c.name}${c.date ? ` (${c.date})` : ""}`}
+                    entryLabel={(c) => `${c.name_ar || c.name}${c.date ? ` (${c.date})` : ""}`}
                     onRemove={removeEntry("knownCases")}
                     noneChecked={noneFlags.knownCases}
                     onNoneChange={toggleNone("knownCases")}
@@ -335,7 +346,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     title={`${t("Past Medical History")} *`}
                     description={t("Previous diseases and important hospitalizations")}
                     entries={medical.pastHistory}
-                    entryLabel={(c) => `${c.name}${c.date ? ` (${c.date})` : ""}`}
+                    entryLabel={(c) => `${c.name_ar || c.name}${c.date ? ` (${c.date})` : ""}`}
                     onRemove={removeEntry("pastHistory")}
                     noneChecked={noneFlags.pastHistory}
                     onNoneChange={toggleNone("pastHistory")}
@@ -387,7 +398,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     title={`${t("Past Surgical History")} *`}
                     description={t("Every previous surgery or operation")}
                     entries={medical.surgeries}
-                    entryLabel={(s) => `${s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}`}
+                    entryLabel={(s) => `${s.surgery_type_ar || s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}`}
                     onRemove={removeEntry("surgeries")}
                     noneChecked={noneFlags.surgeries}
                     onNoneChange={toggleNone("surgeries")}

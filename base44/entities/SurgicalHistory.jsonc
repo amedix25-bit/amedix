@@ -12,7 +12,12 @@
       "type": "string"
     },
     "surgery_type": {
-      "type": "string"
+      "type": "string",
+      "description": "Standardized English surgical terminology shown in the Doctor Portal"
+    },
+    "surgery_type_ar": {
+      "type": "string",
+      "description": "Standardized Arabic surgical term selected by the patient during registration \u2014 shown in the Patient Portal when present"
     },
     "surgery_date": {
       "type": "string",

@@ -12,7 +12,12 @@
       "type": "string"
     },
     "name": {
-      "type": "string"
+      "type": "string",
+      "description": "Standardized English medical terminology shown in the Doctor Portal"
+    },
+    "name_ar": {
+      "type": "string",
+      "description": "Standardized Arabic medical term selected by the patient during registration \u2014 shown in the Patient Portal when present"
     },
     "category": {
       "type": "string",

@@ -6,7 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { MED_ROUTES, MEAL_OPTIONS, routeLabel } from "@/lib/medicationUtils";
+import { AR_CONDITION_TERMS, AR_SURGERY_TERMS, ARABIC_REGEX } from "@/lib/arabicMedicalTerms";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import ArabicMedicalInput from "./ArabicMedicalInput";
 
 export function MedicalListSection({
   id, title, description, entries, entryLabel, onRemove, noneChecked, onNoneChange, noneLabel, children,
@@ -41,16 +43,42 @@ export function MedicalListSection({
 }
 
 export function ConditionEntryForm({ onAdd }) {
-  const { t } = usePatientLanguage();
-  const [form, setForm] = useState({ name: "", date: "", details: "" });
-  const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
+  const { t, isArabic } = usePatientLanguage();
+  const [form, setForm] = useState({ name: "", name_en: "", name_ar: "", date: "", details: "" });
+  const set = (f) => (e) =>
+    setForm((s) => ({
+      ...s,
+      [f]: e.target.value,
+      ...(f === "name" ? { name_en: "", name_ar: "" } : {}),
+    }));
+  // Selecting a suggestion maps the concept to the standardized English term
+  // (stored on the record for the Doctor Portal) while the patient sees the
+  // standardized Arabic term, which is preserved as name_ar.
+  const selectTerm = (term) =>
+    setForm((s) => ({
+      ...s,
+      name: isArabic ? term.ar : term.en,
+      name_en: term.en,
+      name_ar: isArabic ? term.ar : "",
+    }));
   const add = () => {
-    onAdd(form);
-    setForm({ name: "", date: "", details: "" });
+    onAdd({
+      name: form.name_en || form.name,
+      ...(form.name_ar ? { name_ar: form.name_ar } : {}),
+      date: form.date,
+      details: form.details,
+    });
+    setForm({ name: "", name_en: "", name_ar: "", date: "", details: "" });
   };
   return (
     <div className="grid sm:grid-cols-[2fr_1fr_2fr_auto] gap-2">
-      <Input placeholder={t("Condition, e.g. Hypertension")} value={form.name} onChange={set("name")} />
+      <ArabicMedicalInput
+        value={form.name}
+        onChange={set("name")}
+        onSelectTerm={selectTerm}
+        placeholder={t("Condition, e.g. Hypertension")}
+        terms={AR_CONDITION_TERMS}
+      />
       <Input type="date" value={form.date} onChange={set("date")} />
       <Input placeholder={t("Details (optional)")} value={form.details} onChange={set("details")} />
       <Button type="button" variant="outline" onClick={add} disabled={!form.name}>
@@ -64,8 +92,18 @@ export function MedicationEntryForm({ onAdd }) {
   const { t } = usePatientLanguage();
   const EMPTY = { name: "", dose: "", frequency: "", route: "oral", meal_timing: "", duration: "", patient_notes: "", start_date: "" };
   const [form, setForm] = useState(EMPTY);
-  const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
+  // Medication names are English-only — Arabic entries are rejected.
+  const [medError, setMedError] = useState("");
+  const set = (f) => (e) => {
+    setForm((s) => ({ ...s, [f]: e.target.value }));
+    if (f === "name") setMedError("");
+  };
   const add = () => {
+    if (ARABIC_REGEX.test(form.name)) {
+      setMedError("يجب إدخال أسماء الأدوية باللغة الإنجليزية فقط.");
+      return;
+    }
+    setMedError("");
     onAdd(form);
     setForm(EMPTY);
   };
@@ -97,6 +135,7 @@ export function MedicationEntryForm({ onAdd }) {
         <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
         {t("Add")}
       </Button>
+      {medError && <p className="text-xs text-destructive sm:col-span-3">{medError}</p>}
     </div>
   );
 }
@@ -138,18 +177,46 @@ export function AllergyEntryForm({ onAdd }) {
 }
 
 export function SurgeryEntryForm({ onAdd }) {
-  const { t } = usePatientLanguage();
+  const { t, isArabic } = usePatientLanguage();
   const [form, setForm] = useState({
-    surgery_type: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "",
+    surgery_type: "", surgery_type_en: "", surgery_type_ar: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "",
   });
-  const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
+  const set = (f) => (e) =>
+    setForm((s) => ({
+      ...s,
+      [f]: e.target.value,
+      ...(f === "surgery_type" ? { surgery_type_en: "", surgery_type_ar: "" } : {}),
+    }));
+  const selectTerm = (term) =>
+    setForm((s) => ({
+      ...s,
+      surgery_type: isArabic ? term.ar : term.en,
+      surgery_type_en: term.en,
+      surgery_type_ar: isArabic ? term.ar : "",
+    }));
   const add = () => {
-    onAdd(form);
-    setForm({ surgery_type: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "" });
+    onAdd({
+      surgery_type: form.surgery_type_en || form.surgery_type,
+      ...(form.surgery_type_ar ? { surgery_type_ar: form.surgery_type_ar } : {}),
+      surgery_date: form.surgery_date,
+      reason: form.reason,
+      complications: form.complications,
+      outcome: form.outcome,
+      hospitalization_duration: form.hospitalization_duration,
+    });
+    setForm({
+      surgery_type: "", surgery_type_en: "", surgery_type_ar: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "",
+    });
   };
   return (
     <div className="grid sm:grid-cols-3 gap-2">
-      <Input placeholder={`${t("Type of surgery, e.g. Appendectomy")} *`} value={form.surgery_type} onChange={set("surgery_type")} />
+      <ArabicMedicalInput
+        value={form.surgery_type}
+        onChange={set("surgery_type")}
+        onSelectTerm={selectTerm}
+        placeholder={`${t("Type of surgery, e.g. Appendectomy")} *`}
+        terms={AR_SURGERY_TERMS}
+      />
       <Input type="date" value={form.surgery_date} onChange={set("surgery_date")} />
       <Input placeholder={t("Reason / indication")} value={form.reason} onChange={set("reason")} />
       <Input placeholder={t("Complications")} value={form.complications} onChange={set("complications")} />

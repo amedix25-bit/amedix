@@ -43,7 +43,7 @@ export default function PatientOverview({ profile, stats, loading }) {
     { label: t("Medications"), value: stats.medications, icon: Pill, color: "text-emerald-500" },
   ];
 
-  const knownCaseText = med.conditions.map((c) => c.name).join(", ");
+  const knownCaseText = med.conditions.map((c) => c.name_ar || c.name).join(", ");
   const allergyText = med.allergies
     .map((a) => `${a.allergen}${a.severity ? ` (${a.severity})` : ""}`)
     .join(", ");

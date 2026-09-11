@@ -43,7 +43,7 @@ export default function SurgicalSection({ number, patient }) {
             return (
               <div key={s.id} className="rounded-lg border border-border p-4 space-y-4">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-semibold text-sm">{s.surgery_type}</p>
+                  <p className="font-semibold text-sm">{s.surgery_type_ar || s.surgery_type}</p>
                   {s.surgery_date && <span className="text-xs text-muted-foreground shrink-0">{s.surgery_date}</span>}
                 </div>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
