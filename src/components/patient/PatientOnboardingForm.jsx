@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Loader2, BadgeCheck, Lock, Fingerprint, ArrowLeft, Check } from "lucide-react";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, AllergyEntryForm, SurgeryEntryForm,
 } from "@/components/patient/onboarding/EntryForms";
@@ -14,6 +15,7 @@ import {
 const STEPS = ["Personal Information", "Medical History", "Medications & Surgeries", "Lifestyle & Pregnancy"];
 
 export default function PatientOnboardingForm({ user, onComplete, onClose }) {
+  const { lang, t, setLang } = usePatientLanguage();
   const nameParts = (user?.full_name || "").split(" ").filter(Boolean);
   const [step, setStep] = useState(0);
   const [cin, setCin] = useState(null);
@@ -32,7 +34,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     emergency_contact_phone: "",
     emergency_contact_relationship: "",
     identification_number: "",
-    preferred_language: "en",
+    preferred_language: lang === "ar" ? "ar" : "en",
   });
   const [medical, setMedical] = useState({
     knownCases: [], pastHistory: [], allergies: [], medications: [], surgeries: [],
@@ -73,7 +75,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const nextFromStep0 = (e) => {
     e.preventDefault();
     if (!form.gender) {
-      setError("Please select your sex.");
+      setError(t("Please select your sex."));
       return;
     }
     setStep(1);
@@ -136,7 +138,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       setStep(4);
     } catch (err) {
       console.error(err);
-      setError("Something went wrong while creating your profile. Please try again.");
+      setError(t("Something went wrong while creating your profile. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -152,9 +154,13 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
             <>
               <div className="flex items-start justify-between p-6 pb-0">
                 <div>
-                  <h2 className="text-xl font-bold">Patient Registration</h2>
+                  <h2 className="text-xl font-bold">{t("Patient Registration")}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Step {step + 1} of 4 — {STEPS[step]}. Your answers become your locked medical history.
+                    {t("Step {current} of {total} — {step}. Your answers become your locked medical history.", {
+                      current: step + 1,
+                      total: 4,
+                      step: t(STEPS[step]),
+                    })}
                   </p>
                 </div>
                 <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -181,7 +187,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                       >
                         {i < step ? <Check className="w-3 h-3" /> : i + 1}
                       </span>
-                      <span className="hidden lg:inline">{label}</span>
+                      <span className="hidden lg:inline">{t(label)}</span>
                     </div>
                     {i < STEPS.length - 1 && (
                       <div className={`flex-1 h-px min-w-2 ${i < step ? "bg-emerald-400" : "bg-border"}`} />
@@ -193,101 +199,107 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
               {step === 0 && (
                 <form onSubmit={nextFromStep0} className="p-6 space-y-6">
                   <section>
-                    <h3 className="text-sm font-semibold text-primary mb-3">Personal Information</h3>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Personal Information")}</h3>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="first_name">First name *</Label>
+                        <Label htmlFor="first_name">{t("First name")} *</Label>
                         <Input id="first_name" value={form.first_name} onChange={set("first_name")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="middle_name">Middle name</Label>
+                        <Label htmlFor="middle_name">{t("Middle name")}</Label>
                         <Input id="middle_name" value={form.middle_name} onChange={set("middle_name")} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="last_name">Last name *</Label>
+                        <Label htmlFor="last_name">{t("Last name")} *</Label>
                         <Input id="last_name" value={form.last_name} onChange={set("last_name")} required />
                       </div>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3 mt-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="dob">Date of birth *</Label>
+                        <Label htmlFor="dob">{t("Date of birth")} *</Label>
                         <Input id="dob" type="date" value={form.date_of_birth} onChange={set("date_of_birth")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Sex *</Label>
+                        <Label>{t("Sex")} *</Label>
                         <Select value={form.gender} onValueChange={(v) => setForm((f) => ({ ...f, gender: v }))}>
-                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="male">{t("Male")}</SelectItem>
+                            <SelectItem value="female">{t("Female")}</SelectItem>
+                            <SelectItem value="other">{t("Other")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3 mt-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="phone">Phone number *</Label>
+                        <Label htmlFor="phone">{t("Phone number")} *</Label>
                         <Input id="phone" type="tel" value={form.phone} onChange={set("phone")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t("Email")}</Label>
                         <Input id="email" value={user?.email || ""} disabled />
                       </div>
                     </div>
                   </section>
 
                   <section>
-                    <h3 className="text-sm font-semibold text-primary mb-3">Address</h3>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Address")}</h3>
                     <div className="space-y-1.5">
-                      <Label htmlFor="address">Address *</Label>
-                      <Input id="address" placeholder="Street, city, country" value={form.address} onChange={set("address")} required />
+                      <Label htmlFor="address">{t("Address")} *</Label>
+                      <Input id="address" placeholder={t("Street, city, country")} value={form.address} onChange={set("address")} required />
                     </div>
                   </section>
 
                   <section>
-                    <h3 className="text-sm font-semibold text-primary mb-3">Emergency Contact</h3>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Emergency Contact")}</h3>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="ec_name">Name *</Label>
+                        <Label htmlFor="ec_name">{t("Name")} *</Label>
                         <Input id="ec_name" value={form.emergency_contact_name} onChange={set("emergency_contact_name")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="ec_phone">Phone *</Label>
+                        <Label htmlFor="ec_phone">{t("Phone")} *</Label>
                         <Input id="ec_phone" type="tel" value={form.emergency_contact_phone} onChange={set("emergency_contact_phone")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="ec_rel">Relationship</Label>
-                        <Input id="ec_rel" placeholder="e.g. Spouse, Parent" value={form.emergency_contact_relationship} onChange={set("emergency_contact_relationship")} />
+                        <Label htmlFor="ec_rel">{t("Relationship")}</Label>
+                        <Input id="ec_rel" placeholder={t("e.g. Spouse, Parent")} value={form.emergency_contact_relationship} onChange={set("emergency_contact_relationship")} />
                       </div>
                     </div>
                   </section>
 
                   <section>
-                    <h3 className="text-sm font-semibold text-primary mb-3">Additional Information</h3>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Additional Information")}</h3>
                     <div className="grid sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="id_number">Identification number *</Label>
-                        <Input id="id_number" placeholder="National ID / passport number" value={form.identification_number} onChange={set("identification_number")} required />
+                        <Label htmlFor="id_number">{t("Identification number")} *</Label>
+                        <Input id="id_number" placeholder={t("National ID / passport number")} value={form.identification_number} onChange={set("identification_number")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Blood type</Label>
+                        <Label>{t("Blood type")}</Label>
                         <Select value={form.blood_type} onValueChange={(v) => setForm((f) => ({ ...f, blood_type: v }))}>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"].map((t) => (
-                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"].map((bt) => (
+                              <SelectItem key={bt} value={bt}>{bt === "Unknown" ? t("Unknown") : bt}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Language / اللغة *</Label>
-                        <Select value={form.preferred_language} onValueChange={(v) => setForm((f) => ({ ...f, preferred_language: v }))}>
+                        <Label>{t("Language")} *</Label>
+                        <Select
+                          value={form.preferred_language}
+                          onValueChange={(v) => {
+                            setForm((f) => ({ ...f, preferred_language: v }));
+                            setLang(v);
+                          }}
+                        >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="en">English</SelectItem>
-                            <SelectItem value="ar">العربية (Arabic)</SelectItem>
+                            <SelectItem value="ar">العربية</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -297,7 +309,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                   {error && <p className="text-sm text-destructive">{error}</p>}
 
                   <Button type="submit" className="w-full" size="lg">
-                    Continue
+                    {t("Continue")}
                   </Button>
                 </form>
               )}
@@ -306,49 +318,49 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                 <div className="p-6 space-y-4">
                   <MedicalListSection
                     id="none_knownCases"
-                    title="Known Case Of *"
-                    description="Established chronic or previous medical conditions"
+                    title={`${t("Known Case Of")} *`}
+                    description={t("Established chronic or previous medical conditions")}
                     entries={medical.knownCases}
                     entryLabel={(c) => `${c.name}${c.date ? ` (${c.date})` : ""}`}
                     onRemove={removeEntry("knownCases")}
                     noneChecked={noneFlags.knownCases}
                     onNoneChange={toggleNone("knownCases")}
-                    noneLabel="I have no known medical conditions"
+                    noneLabel={t("I have no known medical conditions")}
                   >
                     <ConditionEntryForm onAdd={addEntry("knownCases")} />
                   </MedicalListSection>
 
                   <MedicalListSection
                     id="none_pastHistory"
-                    title="Past Medical History *"
-                    description="Previous diseases and important hospitalizations"
+                    title={`${t("Past Medical History")} *`}
+                    description={t("Previous diseases and important hospitalizations")}
                     entries={medical.pastHistory}
                     entryLabel={(c) => `${c.name}${c.date ? ` (${c.date})` : ""}`}
                     onRemove={removeEntry("pastHistory")}
                     noneChecked={noneFlags.pastHistory}
                     onNoneChange={toggleNone("pastHistory")}
-                    noneLabel="No past medical history"
+                    noneLabel={t("No past medical history")}
                   >
                     <ConditionEntryForm onAdd={addEntry("pastHistory")} />
                   </MedicalListSection>
 
                   <MedicalListSection
                     id="none_allergies"
-                    title="Allergies *"
-                    description="Drug, food, or environmental allergies"
+                    title={`${t("Allergies")} *`}
+                    description={t("Drug, food, or environmental allergies")}
                     entries={medical.allergies}
                     entryLabel={(a) => `${a.allergen}${a.reaction ? ` — ${a.reaction}` : ""}`}
                     onRemove={removeEntry("allergies")}
                     noneChecked={noneFlags.allergies}
                     onNoneChange={toggleNone("allergies")}
-                    noneLabel="I have no allergies"
+                    noneLabel={t("I have no allergies")}
                   >
                     <AllergyEntryForm onAdd={addEntry("allergies")} />
                   </MedicalListSection>
 
                   {!step1Valid && (
                     <p className="text-xs text-muted-foreground">
-                      Answer each section — add entries or tick "None".
+                      {t("Answer each section — add entries or tick \"None\".")}
                     </p>
                   )}
                 </div>
@@ -358,35 +370,35 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                 <div className="p-6 space-y-4">
                   <MedicalListSection
                     id="none_medications"
-                    title="Current Medications *"
-                    description="Medicines you currently take, with dose and frequency"
+                    title={`${t("Current Medications")} *`}
+                    description={t("Medicines you currently take, with dose and frequency")}
                     entries={medical.medications}
                     entryLabel={(m) => `${m.name}${m.dose ? ` · ${m.dose}` : ""}${m.frequency ? ` · ${m.frequency}` : ""}`}
                     onRemove={removeEntry("medications")}
                     noneChecked={noneFlags.medications}
                     onNoneChange={toggleNone("medications")}
-                    noneLabel="I am not taking any medications"
+                    noneLabel={t("I am not taking any medications")}
                   >
                     <MedicationEntryForm onAdd={addEntry("medications")} />
                   </MedicalListSection>
 
                   <MedicalListSection
                     id="none_surgeries"
-                    title="Past Surgical History *"
-                    description="Every previous surgery or operation"
+                    title={`${t("Past Surgical History")} *`}
+                    description={t("Every previous surgery or operation")}
                     entries={medical.surgeries}
                     entryLabel={(s) => `${s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}`}
                     onRemove={removeEntry("surgeries")}
                     noneChecked={noneFlags.surgeries}
                     onNoneChange={toggleNone("surgeries")}
-                    noneLabel="I never had surgery"
+                    noneLabel={t("I never had surgery")}
                   >
                     <SurgeryEntryForm onAdd={addEntry("surgeries")} />
                   </MedicalListSection>
 
                   {!step2Valid && (
                     <p className="text-xs text-muted-foreground">
-                      Answer each section — add entries or tick "None".
+                      {t("Answer each section — add entries or tick \"None\".")}
                     </p>
                   )}
                 </div>
@@ -395,67 +407,67 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
               {step === 3 && (
                 <div className="p-6 space-y-4">
                   <div className="rounded-xl border border-border bg-card p-5">
-                    <h3 className="text-sm font-semibold text-primary mb-3">Lifestyle *</h3>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Lifestyle")} *</h3>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <Label>Smoking status *</Label>
+                        <Label>{t("Smoking status")} *</Label>
                         <Select value={lifestyle.smoking_status} onValueChange={(v) => setLifestyle((s) => ({ ...s, smoking_status: v }))}>
-                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="never">Never smoked</SelectItem>
-                            <SelectItem value="former">Former smoker</SelectItem>
-                            <SelectItem value="current">Current smoker</SelectItem>
+                            <SelectItem value="never">{t("Never smoked")}</SelectItem>
+                            <SelectItem value="former">{t("Former smoker")}</SelectItem>
+                            <SelectItem value="current">{t("Current smoker")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Alcohol use *</Label>
+                        <Label>{t("Alcohol use")} *</Label>
                         <Select value={lifestyle.alcohol_use} onValueChange={(v) => setLifestyle((s) => ({ ...s, alcohol_use: v }))}>
-                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="occasional">Occasional</SelectItem>
-                            <SelectItem value="regular">Regular</SelectItem>
-                            <SelectItem value="former">Former drinker</SelectItem>
+                            <SelectItem value="none">{t("None")}</SelectItem>
+                            <SelectItem value="occasional">{t("Occasional")}</SelectItem>
+                            <SelectItem value="regular">{t("Regular")}</SelectItem>
+                            <SelectItem value="former">{t("Former drinker")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="substance">Other substance use</Label>
-                        <Input id="substance" placeholder="None" value={lifestyle.substance_use} onChange={setL("substance_use")} />
+                        <Label htmlFor="substance">{t("Other substance use")}</Label>
+                        <Input id="substance" placeholder={t("None")} value={lifestyle.substance_use} onChange={setL("substance_use")} />
                       </div>
                     </div>
                   </div>
 
                   {isFemale && (
                     <div className="rounded-xl border border-border bg-card p-5">
-                      <h3 className="text-sm font-semibold text-primary mb-3">Pregnancy *</h3>
+                      <h3 className="text-sm font-semibold text-primary mb-3">{t("Pregnancy")} *</h3>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label>Pregnancy status *</Label>
+                          <Label>{t("Pregnancy status")} *</Label>
                           <Select value={lifestyle.pregnancy_status} onValueChange={(v) => setLifestyle((s) => ({ ...s, pregnancy_status: v }))}>
-                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="not_applicable">Not applicable</SelectItem>
-                              <SelectItem value="not_pregnant">Not pregnant</SelectItem>
-                              <SelectItem value="pregnant">Pregnant</SelectItem>
+                              <SelectItem value="not_applicable">{t("Not applicable")}</SelectItem>
+                              <SelectItem value="not_pregnant">{t("Not pregnant")}</SelectItem>
+                              <SelectItem value="pregnant">{t("Pregnant")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                         {lifestyle.pregnancy_status === "pregnant" && (
                           <>
                             <div className="space-y-1.5">
-                              <Label htmlFor="gest">Gestational age *</Label>
-                              <Input id="gest" placeholder="e.g. 18 weeks" value={lifestyle.gestational_age} onChange={setL("gestational_age")} />
+                              <Label htmlFor="gest">{t("Gestational age")} *</Label>
+                              <Input id="gest" placeholder={t("e.g. 18 weeks")} value={lifestyle.gestational_age} onChange={setL("gestational_age")} />
                             </div>
                             <div className="space-y-1.5">
-                              <Label htmlFor="edd">Estimated due date *</Label>
+                              <Label htmlFor="edd">{t("Estimated due date")} *</Label>
                               <Input id="edd" type="date" value={lifestyle.estimated_due_date} onChange={setL("estimated_due_date")} />
                             </div>
                           </>
                         )}
                         <div className="space-y-1.5 sm:col-span-2">
-                          <Label htmlFor="preg_hist">Pregnancy history</Label>
+                          <Label htmlFor="preg_hist">{t("Pregnancy history")}</Label>
                           <Input id="preg_hist" value={lifestyle.pregnancy_history} onChange={setL("pregnancy_history")} />
                         </div>
                       </div>
@@ -467,22 +479,22 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
               {step > 0 && (
                 <div className="flex items-center justify-between p-6 pt-0">
                   <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Back
+                    <ArrowLeft className="w-4 h-4 mr-1 rtl:rotate-180 rtl:ml-1 rtl:mr-0" />
+                    {t("Back")}
                   </Button>
                   {step < 3 ? (
                     <Button type="button" disabled={!stepValid} onClick={() => setStep(step + 1)}>
-                      Next
+                      {t("Next")}
                     </Button>
                   ) : (
                     <Button type="button" size="lg" disabled={!step3Valid || submitting} onClick={handleSubmit}>
                       {submitting ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Creating your profile...
+                          <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
+                          {t("Creating your profile...")}
                         </>
                       ) : (
-                        "Complete Registration"
+                        t("Complete Registration")
                       )}
                     </Button>
                   )}
@@ -496,33 +508,32 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
               <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
                 <BadgeCheck className="w-8 h-8 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-bold mt-4">Registration Complete</h2>
+              <h2 className="text-2xl font-bold mt-4">{t("Registration Complete")}</h2>
               <p className="text-muted-foreground text-sm mt-2">
-                Your unique Clinical Identification Number has been generated.
+                {t("Your unique Clinical Identification Number has been generated.")}
               </p>
               <p className="text-3xl font-bold tracking-widest text-primary mt-6">{cin}</p>
               <div className="flex justify-center mt-6">
                 <QrCodeCard cin={cin} size={180} />
               </div>
-              <div className="text-left max-w-sm mx-auto mt-6 space-y-2">
+              <div className="text-start rtl:text-end max-w-sm mx-auto mt-6 space-y-2">
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                   <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>Your CIN is permanent and can never be changed or duplicated.</span>
+                  <span>{t("Your CIN is permanent and can never be changed or duplicated.")}</span>
                 </div>
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                   <Fingerprint className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>It contains no personal information (such as your date of birth) and doctors can search for you with it.</span>
+                  <span>{t("It contains no personal information (such as your date of birth) and doctors can search for you with it.")}</span>
                 </div>
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                   <Lock className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>
-                    Your medical history has been saved to My Health and is locked. It can only be updated by an
-                    authorized doctor or administrator.
+                    {t("Your medical history has been saved to My Health and is locked. It can only be updated by an authorized doctor or administrator.")}
                   </span>
                 </div>
               </div>
               <Button className="mt-6 w-full max-w-xs" size="lg" onClick={onComplete}>
-                Continue to My Dashboard
+                {t("Continue to My Dashboard")}
               </Button>
             </div>
           )}

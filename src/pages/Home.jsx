@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
+import { PatientLanguageProvider } from "@/lib/patientLanguage";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -337,14 +338,16 @@ export default function Home() {
       )}
 
       {showPatientForm && (
-        <PatientOnboardingForm
-          user={user}
-          onComplete={() => {
-            localStorage.removeItem("amh_selected_role");
-            navigate("/patient");
-          }}
-          onClose={() => setShowPatientForm(false)}
-        />
+        <PatientLanguageProvider>
+          <PatientOnboardingForm
+            user={user}
+            onComplete={() => {
+              localStorage.removeItem("amh_selected_role");
+              navigate("/patient");
+            }}
+            onClose={() => setShowPatientForm(false)}
+          />
+        </PatientLanguageProvider>
       )}
     </div>
   );

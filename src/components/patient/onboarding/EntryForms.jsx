@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
-import { MED_ROUTES, MEAL_OPTIONS } from "@/lib/medicationUtils";
+import { MED_ROUTES, MEAL_OPTIONS, routeLabel } from "@/lib/medicationUtils";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export function MedicalListSection({
   id, title, description, entries, entryLabel, onRemove, noneChecked, onNoneChange, noneLabel, children,
@@ -40,6 +41,7 @@ export function MedicalListSection({
 }
 
 export function ConditionEntryForm({ onAdd }) {
+  const { t } = usePatientLanguage();
   const [form, setForm] = useState({ name: "", date: "", details: "" });
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
   const add = () => {
@@ -48,9 +50,9 @@ export function ConditionEntryForm({ onAdd }) {
   };
   return (
     <div className="grid sm:grid-cols-[2fr_1fr_2fr_auto] gap-2">
-      <Input placeholder="Condition, e.g. Hypertension" value={form.name} onChange={set("name")} />
+      <Input placeholder={t("Condition, e.g. Hypertension")} value={form.name} onChange={set("name")} />
       <Input type="date" value={form.date} onChange={set("date")} />
-      <Input placeholder="Details (optional)" value={form.details} onChange={set("details")} />
+      <Input placeholder={t("Details (optional)")} value={form.details} onChange={set("details")} />
       <Button type="button" variant="outline" onClick={add} disabled={!form.name}>
         <Plus className="w-4 h-4" />
       </Button>
@@ -59,6 +61,7 @@ export function ConditionEntryForm({ onAdd }) {
 }
 
 export function MedicationEntryForm({ onAdd }) {
+  const { t } = usePatientLanguage();
   const EMPTY = { name: "", dose: "", frequency: "", route: "oral", meal_timing: "", duration: "", patient_notes: "", start_date: "" };
   const [form, setForm] = useState(EMPTY);
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
@@ -68,37 +71,38 @@ export function MedicationEntryForm({ onAdd }) {
   };
   return (
     <div className="grid sm:grid-cols-3 gap-2">
-      <Input placeholder="Medication name *" value={form.name} onChange={set("name")} />
-      <Input placeholder="Dose, e.g. 500 mg" value={form.dose} onChange={set("dose")} />
+      <Input placeholder={`${t("Medication name")} *`} value={form.name} onChange={set("name")} />
+      <Input placeholder={t("Dose, e.g. 500 mg")} value={form.dose} onChange={set("dose")} />
       <Select value={form.route} onValueChange={(v) => setForm((s) => ({ ...s, route: v }))}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
           {MED_ROUTES.map((r) => (
-            <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+            <SelectItem key={r} value={r}>{t(routeLabel(r))}</SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Input placeholder="Frequency, e.g. Twice daily" value={form.frequency} onChange={set("frequency")} />
+      <Input placeholder={t("Frequency, e.g. Twice daily")} value={form.frequency} onChange={set("frequency")} />
       <Select value={form.meal_timing} onValueChange={(v) => setForm((s) => ({ ...s, meal_timing: v }))}>
-        <SelectTrigger><SelectValue placeholder="Before / after meals" /></SelectTrigger>
+        <SelectTrigger><SelectValue placeholder={t("Before / after meals")} /></SelectTrigger>
         <SelectContent>
           {MEAL_OPTIONS.map((o) => (
-            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            <SelectItem key={o.value} value={o.value}>{t(o.label)}</SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Input placeholder="Duration, e.g. 14 days" value={form.duration} onChange={set("duration")} />
-      <Input placeholder="Additional notes" value={form.patient_notes} onChange={set("patient_notes")} />
+      <Input placeholder={t("Duration, e.g. 14 days")} value={form.duration} onChange={set("duration")} />
+      <Input placeholder={t("Additional notes")} value={form.patient_notes} onChange={set("patient_notes")} />
       <Input type="date" value={form.start_date} onChange={set("start_date")} />
       <Button type="button" variant="outline" onClick={add} disabled={!form.name}>
-        <Plus className="w-4 h-4 mr-1" />
-        Add
+        <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+        {t("Add")}
       </Button>
     </div>
   );
 }
 
 export function AllergyEntryForm({ onAdd }) {
+  const { t } = usePatientLanguage();
   const [form, setForm] = useState({ allergen: "", allergy_type: "drug", reaction: "", severity: "mild" });
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
   const add = () => {
@@ -107,23 +111,23 @@ export function AllergyEntryForm({ onAdd }) {
   };
   return (
     <div className="grid sm:grid-cols-[2fr_1fr_2fr_1fr_auto] gap-2">
-      <Input placeholder="Allergen, e.g. Penicillin *" value={form.allergen} onChange={set("allergen")} />
+      <Input placeholder={`${t("Allergen, e.g. Penicillin")} *`} value={form.allergen} onChange={set("allergen")} />
       <Select value={form.allergy_type} onValueChange={(v) => setForm((s) => ({ ...s, allergy_type: v }))}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="drug">Drug</SelectItem>
-          <SelectItem value="food">Food</SelectItem>
-          <SelectItem value="environmental">Environmental</SelectItem>
-          <SelectItem value="other">Other</SelectItem>
+          <SelectItem value="drug">{t("Drug")}</SelectItem>
+          <SelectItem value="food">{t("Food")}</SelectItem>
+          <SelectItem value="environmental">{t("Environmental")}</SelectItem>
+          <SelectItem value="other">{t("Other")}</SelectItem>
         </SelectContent>
       </Select>
-      <Input placeholder="Reaction, e.g. Rash" value={form.reaction} onChange={set("reaction")} />
+      <Input placeholder={t("Reaction, e.g. Rash")} value={form.reaction} onChange={set("reaction")} />
       <Select value={form.severity} onValueChange={(v) => setForm((s) => ({ ...s, severity: v }))}>
         <SelectTrigger><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="mild">Mild</SelectItem>
-          <SelectItem value="moderate">Moderate</SelectItem>
-          <SelectItem value="severe">Severe</SelectItem>
+          <SelectItem value="mild">{t("Mild")}</SelectItem>
+          <SelectItem value="moderate">{t("Moderate")}</SelectItem>
+          <SelectItem value="severe">{t("Severe")}</SelectItem>
         </SelectContent>
       </Select>
       <Button type="button" variant="outline" onClick={add} disabled={!form.allergen}>
@@ -134,6 +138,7 @@ export function AllergyEntryForm({ onAdd }) {
 }
 
 export function SurgeryEntryForm({ onAdd }) {
+  const { t } = usePatientLanguage();
   const [form, setForm] = useState({
     surgery_type: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "",
   });
@@ -144,13 +149,13 @@ export function SurgeryEntryForm({ onAdd }) {
   };
   return (
     <div className="grid sm:grid-cols-3 gap-2">
-      <Input placeholder="Type of surgery, e.g. Appendectomy *" value={form.surgery_type} onChange={set("surgery_type")} />
+      <Input placeholder={`${t("Type of surgery, e.g. Appendectomy")} *`} value={form.surgery_type} onChange={set("surgery_type")} />
       <Input type="date" value={form.surgery_date} onChange={set("surgery_date")} />
-      <Input placeholder="Reason / indication" value={form.reason} onChange={set("reason")} />
-      <Input placeholder="Complications" value={form.complications} onChange={set("complications")} />
-      <Input placeholder="Recovery / outcome" value={form.outcome} onChange={set("outcome")} />
+      <Input placeholder={t("Reason / indication")} value={form.reason} onChange={set("reason")} />
+      <Input placeholder={t("Complications")} value={form.complications} onChange={set("complications")} />
+      <Input placeholder={t("Recovery / outcome")} value={form.outcome} onChange={set("outcome")} />
       <div className="flex gap-2">
-        <Input placeholder="Hospital stay, e.g. 3 days" value={form.hospitalization_duration} onChange={set("hospitalization_duration")} />
+        <Input placeholder={t("Hospital stay, e.g. 3 days")} value={form.hospitalization_duration} onChange={set("hospitalization_duration")} />
         <Button type="button" variant="outline" onClick={add} disabled={!form.surgery_type}>
           <Plus className="w-4 h-4" />
         </Button>
