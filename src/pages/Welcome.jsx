@@ -30,19 +30,18 @@ export default function Welcome() {
       <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold">Welcome to AMedix</h1>
 
-        <div className="mt-6 space-y-4 text-muted-foreground leading-relaxed font-bold">
+        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
           <p>
-            AMedix was created by two medical students, <strong className="text-foreground">Ayatallah Abed Elallegy</strong> and{" "}
-            <strong className="text-foreground">Mohammed Saad Alsaba</strong>, with a simple vision:{" "}
-            <strong className="text-foreground">to make healthcare easier for patients and healthcare professionals.</strong>
+            AMedix was created by two medical students, Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a simple
+            vision: to make healthcare easier for patients and healthcare professionals.
           </p>
           <p>
-            Our goal is to bring the patient's healthcare journey into <strong className="text-foreground">one place</strong>,
-            connecting <strong className="text-foreground">patients, doctors, and laboratories</strong> through one simple platform.
+            Our goal is to bring the patient's healthcare journey into one place, connecting patients, doctors, and
+            laboratories through one simple platform.
           </p>
           <p>
             From medical information and doctors' notes to laboratory requests and results, AMedix is designed to make
-            healthcare more <strong className="text-foreground">organized, accessible, and connected</strong>.
+            healthcare more organized, accessible, and connected.
           </p>
         </div>
 
