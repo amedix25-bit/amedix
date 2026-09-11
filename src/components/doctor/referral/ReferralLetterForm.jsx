@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, Users } from "lucide-react";
+import DoctorAvatar from "@/components/DoctorAvatar";
 import {
   makeReferralId,
   makeVerificationCode,
@@ -76,6 +77,9 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
   const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [colleagues, setColleagues] = useState([]);
+  const [colleagueQuery, setColleagueQuery] = useState("");
+  const [selectedColleague, setSelectedColleague] = useState(null);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -90,6 +94,42 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
     };
     load();
   }, [patient.id]);
+
+  // Accepted colleagues of this doctor — lets the referring doctor select the
+  // receiving doctor without entering their information manually.
+  useEffect(() => {
+    const loadColleagues = async () => {
+      try {
+        const [sent, received] = await Promise.all([
+          base44.entities.DoctorConnection.filter({ requester_doctor_id: doctorProfile.id, status: "accepted" }),
+          base44.entities.DoctorConnection.filter({ recipient_doctor_id: doctorProfile.id, status: "accepted" }),
+        ]);
+        const ids = [...sent.map((c) => c.recipient_doctor_id), ...received.map((c) => c.requester_doctor_id)];
+        if (ids.length === 0) return;
+        const all = await base44.entities.DoctorProfile.list();
+        setColleagues(all.filter((d) => ids.includes(d.id) && d.is_verified === true));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadColleagues();
+  }, [doctorProfile.id]);
+
+  const colleagueMatches = colleagueQuery.trim()
+    ? colleagues
+        .filter((c) =>
+          [c.full_name, c.specialization, c.hospital].some((v) =>
+            v && v.toLowerCase().includes(colleagueQuery.trim().toLowerCase())
+          )
+        )
+        .slice(0, 5)
+    : [];
+
+  const selectColleague = (c) => {
+    setSelectedColleague(c);
+    setColleagueQuery("");
+    setForm({ ...form, receiving_doctor: c.full_name, receiving_specialty: c.specialization || "" });
+  };
 
   const toggleDoc = (id) =>
     setSelectedDocIds((prev) => (prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]));
@@ -113,6 +153,9 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       const attachments = patientDocs
         .filter((d) => selectedDocIds.includes(d.id))
         .map((d) => ({ file_url: d.file_url, file_name: d.file_name || d.title, title: d.title }));
+      // Colleague selected for this referral — their verified hospital and
+      // contact travel with the letter when the name still matches.
+      const sel = selectedColleague && form.receiving_doctor === selectedColleague.full_name ? selectedColleague : null;
 
       const payload = {
         patient_id: patient.id,
@@ -136,6 +179,9 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         referral_datetime: now.toISOString(),
         receiving_doctor: form.receiving_doctor,
         receiving_specialty: form.receiving_specialty,
+        receiving_doctor_id: sel?.id || "",
+        receiving_hospital: sel?.hospital || "",
+        receiving_contact: sel?.phone || "",
         reason_for_referral: form.reason_for_referral,
         urgency: form.urgency,
         working_diagnosis: form.working_diagnosis,
@@ -222,6 +268,70 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       </Section>
 
       <Section title="Referral Information">
+        {colleagues.length > 0 && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Choose from My Colleagues
+              </p>
+              {selectedColleague && (
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => setSelectedColleague(null)}
+                >
+                  Change
+                </button>
+              )}
+            </div>
+            {selectedColleague ? (
+              <div className="flex items-center gap-3">
+                <DoctorAvatar photoUrl={selectedColleague.photo_url} name={selectedColleague.full_name} className="w-9 h-9 text-xs" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{selectedColleague.full_name}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {selectedColleague.specialization || "—"}
+                    {selectedColleague.hospital ? ` — ${selectedColleague.hospital}` : ""}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Input
+                  placeholder="Search your colleagues..."
+                  value={colleagueQuery}
+                  onChange={(e) => setColleagueQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+                />
+                {colleagueQuery.trim() && (
+                  <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                    {colleagueMatches.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No colleagues match your search.</p>
+                    ) : (
+                      colleagueMatches.map((c) => (
+                        <button
+                          type="button"
+                          key={c.id}
+                          onClick={() => selectColleague(c)}
+                          className="w-full flex items-center gap-3 rounded-lg border border-border p-2 hover:bg-accent/50 text-left"
+                        >
+                          <DoctorAvatar photoUrl={c.photo_url} name={c.full_name} className="w-8 h-8 text-xs" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{c.full_name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {c.specialization || "—"}
+                              {c.hospital ? ` — ${c.hospital}` : ""}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Referral Date" required>
             <Input type="date" value={form.referral_date} onChange={set("referral_date")} required />

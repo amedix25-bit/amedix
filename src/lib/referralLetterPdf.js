@@ -136,6 +136,8 @@ export function generateReferralLetterPdf(ref) {
   // ===== Referral information =====
   sectionHeader("REFERRAL INFORMATION");
   labelValue("RECEIVING DOCTOR / DEPARTMENT", [ref.receiving_doctor, ref.receiving_specialty].filter(Boolean).join(" — "));
+  labelValue("RECEIVING HOSPITAL / CLINIC", ref.receiving_hospital);
+  labelValue("RECEIVING DOCTOR CONTACT", ref.receiving_contact);
   labelValue("REASON FOR REFERRAL", ref.reason_for_referral);
   labelValue("PRIMARY / WORKING DIAGNOSIS", ref.working_diagnosis);
 

@@ -75,6 +75,18 @@
       "type": "string",
       "description": "Specialty or department of the receiving doctor"
     },
+    "receiving_doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the receiving doctor when selected from My Colleagues"
+    },
+    "receiving_hospital": {
+      "type": "string",
+      "description": "Hospital / clinic of the receiving doctor \u2014 from their verified profile"
+    },
+    "receiving_contact": {
+      "type": "string",
+      "description": "Professional contact information of the receiving doctor"
+    },
     "reason_for_referral": {
       "type": "string"
     },

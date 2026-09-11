@@ -1,0 +1,109 @@
+{
+  "name": "DoctorConnection",
+  "type": "object",
+  "properties": {
+    "requester_doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor who sent the connection request"
+    },
+    "requester_user_id": {
+      "type": "string",
+      "description": "User id of the requesting doctor account \u2014 used for Row Level Security"
+    },
+    "requester_name": {
+      "type": "string"
+    },
+    "recipient_doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor receiving the request"
+    },
+    "recipient_user_id": {
+      "type": "string",
+      "description": "User id of the receiving doctor account \u2014 used for Row Level Security"
+    },
+    "recipient_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ],
+      "default": "pending",
+      "description": "PENDING: awaiting the receiving doctor's response. ACCEPTED: the doctors are colleagues. DECLINED: the receiving doctor refused the request."
+    },
+    "date_requested": {
+      "type": "string",
+      "format": "date"
+    },
+    "date_responded": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the receiving doctor accepted or declined"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Date and time the request was created (ISO datetime)"
+    }
+  },
+  "required": [
+    "requester_doctor_id",
+    "requester_user_id",
+    "recipient_doctor_id",
+    "recipient_user_id",
+    "status",
+    "date_requested"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.requester_user_id": "{{user.id}}"
+        },
+        {
+          "data.recipient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.requester_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.requester_user_id": "{{user.id}}"
+        },
+        {
+          "data.recipient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.requester_user_id": "{{user.id}}"
+        },
+        {
+          "data.recipient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

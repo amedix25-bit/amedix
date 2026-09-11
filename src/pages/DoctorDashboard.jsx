@@ -12,11 +12,13 @@ import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell";
 import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image } from "lucide-react";
+import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
+import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
+  { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "notes", label: "Clinical Notes", icon: FileText },
   { key: "labs", label: "Lab Requests", icon: FlaskConical },
@@ -118,6 +120,7 @@ export default function DoctorDashboard() {
           />
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
+        {activeTab === "colleagues" && profile && <DoctorColleagues doctorProfile={profile} />}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
