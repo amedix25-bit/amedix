@@ -14,7 +14,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           <div className="flex items-center gap-4">
-            <BrandLogo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
+            <BrandLogo fittingType="fill" onDark className="w-20 h-20 rounded-full shrink-0" />
             <span className="font-bold tracking-tight text-5xl [font-family:'Crave_Fine',_sans-serif]">AMedix</span>
           </div>
 
