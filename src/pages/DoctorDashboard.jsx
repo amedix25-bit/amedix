@@ -32,6 +32,8 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ patients: 0, appointments: 0, labs: 0, imaging: 0 });
   const [searchPrefill, setSearchPrefill] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const now = new Date();
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -60,13 +62,20 @@ export default function DoctorDashboard() {
       }
       const p = profiles[0];
       setProfile(p);
-      const [apts, labs, imaging, accessReqs] = await Promise.all([
+      const [appointments, labs, imaging, accessReqs] = await Promise.all([
         base44.entities.Appointment.filter({ doctor_id: p.id }),
         base44.entities.LabRequest.filter({ doctor_id: p.id }),
         base44.entities.ImagingRequest.filter({ doctor_id: p.id }),
         base44.entities.AccessRequest.filter({ doctor_id: p.id, status: "approved" }),
       ]);
-      setStats({ patients: accessReqs.length, appointments: apts.length, labs: labs.length, imaging: imaging.length });
+      setStats({ patients: accessReqs.length, appointments: appointments.length, labs: labs.length, imaging: imaging.length });
+      const activity = [
+        ...accessReqs.map((r) => ({ icon: "user", text: "New patient added", detail: r.patient_name || r.patient_cin, at: r.created_date })),
+        ...labs.map((r) => ({ icon: "lab", text: "Lab request submitted", detail: (r.tests || []).slice(0, 3).map((t) => t.name).join(", "), at: r.created_date })),
+        ...imaging.map((r) => ({ icon: "imaging", text: r.report ? "Imaging result received" : "Imaging request created", detail: `${r.examination || r.scan_type} — ${r.patient_name || ""}`, at: r.created_date })),
+        ...appointments.map((r) => ({ icon: "calendar", text: "Appointment confirmed", detail: `${r.date} — ${r.time}`, at: r.created_date })),
+      ].filter((a) => a.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
+      setRecentActivity(activity);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
@@ -81,12 +90,26 @@ export default function DoctorDashboard() {
               <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
             </div>
           </div>
-          {user && (
-            <DoctorNotificationsBell userId={user.id} onNavigate={openFromNotification} />
-          )}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="text-right">
+              <p className="text-sm font-semibold">{now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</p>
+              <p className="text-xs text-muted-foreground">{now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</p>
+            </div>
+            {user && (
+              <DoctorNotificationsBell userId={user.id} onNavigate={openFromNotification} />
+            )}
+          </div>
         </div>
 
-        {activeTab === "overview" && <DoctorOverview profile={profile} stats={stats} loading={loading} />}
+        {activeTab === "overview" && (
+          <DoctorOverview
+            profile={profile}
+            stats={stats}
+            loading={loading}
+            recentActivity={recentActivity}
+            onNavigateTab={setActiveTab}
+          />
+        )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
