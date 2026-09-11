@@ -16,7 +16,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <div className="w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
               <HeartPulse className="w-7 h-7" />
             </div>
-            <span className="text-xl font-bold tracking-tight">A&M Healthcare</span>
+            <span className="text-xl font-bold tracking-tight [font-family:'Crave_Fine',_sans-serif]">AMedix</span>
           </div>
 
           <div className="space-y-8">
@@ -31,17 +31,17 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
 
             <div className="space-y-4">
               {[
-                "Unique Clinical Identification Number (CIN) for every patient",
-                "You own your medical records — doctors access them only with your consent",
-                "Manage appointments, lab results, imaging, and documents in one place",
-              ].map((feature, i) => (
-                <div key={i} className="flex items-start gap-3">
+              "Unique Clinical Identification Number (CIN) for every patient",
+              "You own your medical records — doctors access them only with your consent",
+              "Manage appointments, lab results, imaging, and documents in one place"].
+              map((feature, i) =>
+              <div key={i} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="w-3.5 h-3.5" />
                   </div>
                   <span className="text-white/80 text-sm">{feature}</span>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -74,11 +74,11 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             {children}
           </div>
 
-          {footer && (
-            <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
-          )}
+          {footer &&
+          <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
+          }
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
