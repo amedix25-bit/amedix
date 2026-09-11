@@ -12,12 +12,8 @@
     },
     "type": {
       "type": "string",
-      "enum": [
-        "imaging_result_shared",
-        "other"
-      ],
       "default": "other",
-      "description": "IMAGING_RESULT_SHARED: the patient shared a finalized imaging result with this doctor via 'Send to Doctor'. OTHER: general doctor notification."
+      "description": "Category of the notification \u2014 any event the doctor receives, e.g. imaging_result_shared, connection_request, lab_result, appointment, referral"
     },
     "title": {
       "type": "string",
@@ -61,15 +57,12 @@
     },
     "related_id": {
       "type": "string",
-      "description": "Related record id (the ImagingResult id) \u2014 dedupe key so the same result is not sent twice to the same doctor"
+      "description": "Related record id (e.g. ImagingResult or DoctorConnection id) \u2014 dedupe key so the same event is not sent twice to the same doctor"
     },
     "target": {
       "type": "string",
-      "enum": [
-        "find_patient"
-      ],
       "default": "find_patient",
-      "description": "Doctor Portal view the notification opens"
+      "description": "Doctor Portal view the notification opens, e.g. find_patient or colleagues"
     },
     "datetime": {
       "type": "string",
@@ -98,9 +91,7 @@
         }
       ]
     },
-    "create": {
-      "data.doctor_user_id": "{{user.id}}"
-    },
+    "create": {},
     "update": {
       "$or": [
         {
