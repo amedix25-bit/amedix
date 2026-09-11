@@ -8,26 +8,26 @@ const ROLE_CONTENT = {
     icon: User,
     title: "I am a Patient",
     description:
-      "Log in to view your records, appointments, and test results — or create an account to receive your unique Clinical Identification Number (CIN) and QR code.",
+    "Log in to view your records, appointments, and test results — or create an account to receive your unique Clinical Identification Number (CIN) and QR code."
   },
   doctor: {
     icon: Stethoscope,
     title: "I am a Doctor",
     description:
-      "Log in to manage your patients, appointments, and clinical records — or register your professional account to get started.",
+    "Log in to manage your patients, appointments, and clinical records — or register your professional account to get started."
   },
   radiologist: {
     icon: ScanLine,
     title: "I am a Radiologist",
     description:
-      "Log in to your Radiologist Portal to manage your authorized patients and radiology records — or register your professional account to get started.",
+    "Log in to your Radiologist Portal to manage your authorized patients and radiology records — or register your professional account to get started."
   },
   lab: {
     icon: FlaskConical,
     title: "I am a Lab",
     description:
-      "Register your laboratory, manage technicians, and process laboratory requests — or sign in to your Lab Portal.",
-  },
+    "Register your laboratory, manage technicians, and process laboratory requests — or sign in to your Lab Portal."
+  }
 };
 
 export default function Landing() {
@@ -50,17 +50,17 @@ export default function Landing() {
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
               <HeartPulse className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg">A&amp;M Healthcare</span>
+            <span className="font-bold text-lg">AM</span>
           </div>
-          {role && (
-            <button
-              onClick={() => setRole(null)}
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            >
+          {role &&
+          <button
+            onClick={() => setRole(null)}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
-          )}
+          }
         </div>
       </header>
 
@@ -76,15 +76,15 @@ export default function Landing() {
             Your medical information, securely connected to your healthcare.
           </p>
 
-          {!role ? (
-            <>
+          {!role ?
+          <>
               <p className="text-sm text-muted-foreground mt-6 font-medium">Choose how you use the platform</p>
 
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                 <button
-                  onClick={() => selectRole("patient")}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
-                >
+                onClick={() => selectRole("patient")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30">
+                
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -102,9 +102,9 @@ export default function Landing() {
                 </button>
 
                 <button
-                  onClick={() => setRole("doctor-choice")}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
-                >
+                onClick={() => setRole("doctor-choice")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30">
+                
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -122,9 +122,9 @@ export default function Landing() {
                 </button>
 
                 <button
-                  onClick={() => selectRole("lab")}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
-                >
+                onClick={() => selectRole("lab")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30">
+                
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -159,15 +159,15 @@ export default function Landing() {
                   <p className="text-xs text-muted-foreground mt-1">Appointments, labs, imaging, documents and medications, together.</p>
                 </div>
               </div>
-            </>
-          ) : role === "doctor-choice" ? (
-            <div className="max-w-2xl mx-auto mt-10">
+            </> :
+          role === "doctor-choice" ?
+          <div className="max-w-2xl mx-auto mt-10">
               <p className="text-sm text-muted-foreground font-medium">I am a Doctor — choose your role</p>
               <div className="grid sm:grid-cols-2 gap-6 mt-6 text-left">
                 <button
-                  onClick={() => selectRole("doctor")}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
-                >
+                onClick={() => selectRole("doctor")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30">
+                
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -185,9 +185,9 @@ export default function Landing() {
                 </button>
 
                 <button
-                  onClick={() => selectRole("radiologist")}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
-                >
+                onClick={() => selectRole("radiologist")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30">
+                
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative">
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -205,15 +205,15 @@ export default function Landing() {
                 </button>
               </div>
               <button
-                onClick={() => setRole(null)}
-                className="mt-6 mx-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-              >
+              onClick={() => setRole(null)}
+              className="mt-6 mx-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </button>
-            </div>
-          ) : (
-            <div className="max-w-md mx-auto mt-10">
+            </div> :
+
+          <div className="max-w-md mx-auto mt-10">
               <div className="rounded-2xl border border-border bg-card p-8 text-left">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   {RoleIcon && <RoleIcon className="w-7 h-7 text-primary" />}
@@ -232,20 +232,20 @@ export default function Landing() {
                 </div>
               </div>
               <button
-                onClick={() => setRole(null)}
-                className="mt-6 mx-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-              >
+              onClick={() => setRole(null)}
+              className="mt-6 mx-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              
                 <ArrowLeft className="w-4 h-4" />
                 I am neither — choose again
               </button>
             </div>
-          )}
+          }
         </div>
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
         A&amp;M Healthcare · Connected Care. Better Health.
       </footer>
-    </div>
-  );
+    </div>);
+
 }
