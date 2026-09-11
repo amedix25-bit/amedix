@@ -8,6 +8,27 @@
     "full_name": {
       "type": "string"
     },
+    "first_name": {
+      "type": "string",
+      "description": "Radiologist's first name"
+    },
+    "middle_name": {
+      "type": "string",
+      "description": "Radiologist's middle name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Radiologist's last name"
+    },
+    "name_edited": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the radiologist has set or confirmed their first/middle/last name in the portal"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Radiologist profile picture \u2014 uploaded by the radiologist, shown wherever the radiologist appears to other users"
+    },
     "specialization": {
       "type": "string",
       "description": "Radiology specialty, e.g. Diagnostic Radiology, Interventional Radiology, Neuroradiology"
@@ -43,18 +64,7 @@
     "specialization"
   ],
   "rls": {
-    "read": {
-      "$or": [
-        {
-          "created_by_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
+    "read": {},
     "update": {
       "$or": [
         {
@@ -68,9 +78,16 @@
       ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }

@@ -6,17 +6,21 @@ import DashboardLayout from "@/components/DashboardLayout";
 import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPatient";
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
-import { Search, Bell } from "lucide-react";
+import RadiologistOverview from "@/components/radiologist/RadiologistOverview";
+import RadiologistColleagues from "@/components/radiologist/colleagues/RadiologistColleagues";
+import { Search, Bell, LayoutDashboard, Users } from "lucide-react";
 
 const navItems = [
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "find", label: "Find Patient", icon: Search },
+  { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "notifications", label: "Notifications", icon: Bell },
 ];
 
 export default function RadiologistDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("find");
+  const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pendingMode, setPendingMode] = useState(null);
@@ -65,6 +69,12 @@ export default function RadiologistDashboard() {
           )}
         </div>
 
+        {activeTab === "overview" && profile && (
+          <RadiologistOverview profile={profile} onProfileUpdate={setProfile} />
+        )}
+        {activeTab === "colleagues" && profile && (
+          <RadiologistColleagues radiologistProfile={profile} />
+        )}
         {activeTab === "find" && profile && user && (
           <RadiologistFindPatient radiologistProfile={profile} user={user} pendingMode={pendingMode} />
         )}
