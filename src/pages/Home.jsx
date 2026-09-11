@@ -18,6 +18,9 @@ export default function Home() {
   const [doctorSplit, setDoctorSplit] = useState(false);
   const [creating, setCreating] = useState(false);
   const [doctorForm, setDoctorForm] = useState({
+    first_name: "",
+    middle_name: "",
+    last_name: "",
     specialization: "",
     license_number: "",
     hospital: "",
@@ -111,7 +114,11 @@ export default function Home() {
     try {
       await base44.entities.DoctorProfile.create({
         user_id: user.id,
-        full_name: user.full_name || user.email,
+        full_name: [doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" "),
+        first_name: doctorForm.first_name,
+        middle_name: doctorForm.middle_name,
+        last_name: doctorForm.last_name,
+        name_edited: true,
         specialization: doctorForm.specialization,
         license_number: doctorForm.license_number,
         hospital: doctorForm.hospital,
@@ -255,6 +262,20 @@ export default function Home() {
               </button>
             </div>
             <form onSubmit={handleDoctorSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="doc-first-name">First Name *</Label>
+                  <Input id="doc-first-name" placeholder="First name" value={doctorForm.first_name} onChange={(e) => setDoctorForm({ ...doctorForm, first_name: e.target.value })} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="doc-middle-name">Middle Name</Label>
+                  <Input id="doc-middle-name" placeholder="Middle name" value={doctorForm.middle_name} onChange={(e) => setDoctorForm({ ...doctorForm, middle_name: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="doc-last-name">Last Name *</Label>
+                <Input id="doc-last-name" placeholder="Last name" value={doctorForm.last_name} onChange={(e) => setDoctorForm({ ...doctorForm, last_name: e.target.value })} required />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="specialization">Specialization *</Label>
                 <Input id="specialization" placeholder="e.g. Cardiology" value={doctorForm.specialization} onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })} required />

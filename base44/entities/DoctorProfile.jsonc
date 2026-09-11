@@ -8,6 +8,23 @@
     "full_name": {
       "type": "string"
     },
+    "first_name": {
+      "type": "string",
+      "description": "Doctor's first name"
+    },
+    "middle_name": {
+      "type": "string",
+      "description": "Doctor's middle name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Doctor's last name"
+    },
+    "name_edited": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the doctor has set or confirmed their name \u2014 controls whether the one-time name edit is still available"
+    },
     "specialization": {
       "type": "string"
     },

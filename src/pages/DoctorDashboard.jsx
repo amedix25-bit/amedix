@@ -11,6 +11,7 @@ import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell";
 import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
+import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image } from "lucide-react";
 
 const navItems = [
@@ -100,6 +101,12 @@ export default function DoctorDashboard() {
             )}
           </div>
         </div>
+
+        {profile && profile.name_edited !== true && (
+          <div className="mb-6">
+            <DoctorNameEdit profile={profile} onUpdated={setProfile} />
+          </div>
+        )}
 
         {activeTab === "overview" && (
           <DoctorOverview

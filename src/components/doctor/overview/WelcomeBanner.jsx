@@ -9,7 +9,9 @@ export default function WelcomeBanner({ profile }) {
       <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-6">
         <div className="min-w-0">
           <p className="text-xs font-semibold tracking-widest text-muted-foreground">WELCOME BACK,</p>
-          <h2 className="text-2xl sm:text-3xl font-bold mt-1">{profile?.full_name}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mt-1">
+            Dr. {(profile?.full_name || "").replace(/^Dr\.?\s*/i, "").trim() || "Doctor"}
+          </h2>
           <p className="text-sm text-muted-foreground mt-2">
             Here's an overview of your daily activity and patient management.
           </p>
