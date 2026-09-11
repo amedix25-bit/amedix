@@ -16,7 +16,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <div className="w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
               <HeartPulse className="w-7 h-7" />
             </div>
-            <span className="text-xl font-bold tracking-tight [font-family:'Crave_Fine',_sans-serif]">AMedix</span>
+            <span className="font-bold tracking-tight text-5xl">A&M Healthcare</span>
           </div>
 
           <div className="space-y-8">
