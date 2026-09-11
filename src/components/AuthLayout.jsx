@@ -1,6 +1,6 @@
 import React from "react";
 import { Check } from "lucide-react";
-import BrandLogo from "@/components/BrandLogo";
+import AmedixMark from "@/components/AmedixMark";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   return (
@@ -14,7 +14,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           <div className="flex items-center gap-4">
-            <BrandLogo fittingType="fill" onDark className="w-20 h-20 rounded-full shrink-0" />
+            <AmedixMark className="w-20 h-20 shrink-0 text-white" />
             <span className="font-bold tracking-tight text-5xl [font-family:'Crave_Fine',_sans-serif]">AMedix</span>
           </div>
 
@@ -52,7 +52,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       <div className="flex-1 flex items-center justify-center px-4 py-8 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center gap-3 mb-6">
-            <BrandLogo fittingType="fill" className="w-14 h-14 rounded-full" />
+            <AmedixMark className="w-14 h-14 text-primary" />
             <span className="text-2xl font-bold text-foreground">AMedix</span>
           </div>
           <p className="lg:hidden text-center text-sm text-muted-foreground mb-8">
