@@ -1,5 +1,6 @@
 import React from "react";
-import { HeartPulse, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
   return (
@@ -13,10 +14,8 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
-              <HeartPulse className="w-7 h-7" />
-            </div>
-            <span className="font-bold tracking-tight text-5xl">A&M Healthcare</span>
+            <BrandLogo className="w-12 h-12 rounded-xl" />
+            <span className="font-bold tracking-tight text-5xl [font-family:'Crave_Fine',_sans-serif]">AMedix</span>
           </div>
 
           <div className="space-y-8">
@@ -45,7 +44,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             </div>
           </div>
 
-          <p className="text-white/50 text-sm">© 2026 A&M Healthcare. All rights reserved.</p>
+          <p className="text-white/50 text-sm">© 2026 AMedix. All rights reserved.</p>
         </div>
       </div>
 
@@ -53,10 +52,8 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       <div className="flex-1 flex items-center justify-center px-4 py-8 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <HeartPulse className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold text-foreground">A&M Healthcare</span>
+            <BrandLogo className="w-10 h-10 rounded-xl" />
+            <span className="text-lg font-bold text-foreground">AMedix</span>
           </div>
           <p className="lg:hidden text-center text-sm text-muted-foreground mb-8">
             Connected Care. Better Health.

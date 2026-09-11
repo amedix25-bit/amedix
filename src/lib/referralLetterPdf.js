@@ -42,7 +42,7 @@ export function generateReferralLetterPdf(ref) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("A&M Healthcare", M, 12);
+  doc.text("AMedix", M, 12);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text("Connected Care. Better Health.", M, 18.5);

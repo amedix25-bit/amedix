@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { HeartPulse, Stethoscope, ScanLine, User, ArrowRight, Loader2, X } from "lucide-react";
+import { Stethoscope, ScanLine, User, ArrowRight, Loader2, X } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -147,10 +148,8 @@ export default function Home() {
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <HeartPulse className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg">A&M Healthcare</span>
+            <BrandLogo className="w-9 h-9 rounded-xl" />
+            <span className="font-bold text-lg">AMedix</span>
           </div>
           <Button variant="ghost" size="sm" onClick={() => base44.auth.logout(window.location.origin)}>
             Log out
@@ -161,7 +160,7 @@ export default function Home() {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome to A&M Healthcare</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome to AMedix</h1>
             <p className="text-muted-foreground mt-3 text-lg">Connected Care. Better Health.</p>
             <p className="text-muted-foreground mt-1">Choose your account type to get started</p>
           </div>

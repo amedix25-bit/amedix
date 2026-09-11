@@ -156,7 +156,7 @@ export default function LabRegister() {
     <AuthLayout
       icon={Building2}
       title="Create Laboratory Account"
-      subtitle="Register your laboratory on A&M Healthcare"
+      subtitle="Register your laboratory on AMedix"
       footer={
         <>
           Already have a laboratory account?{" "}

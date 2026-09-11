@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { ArrowRight } from "lucide-react";
-
-const AMEDIX_LOGO_URL =
-  "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/1ce2ebd70_photo_2026-09-11_17-28-19.jpg";
+import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
 
 // Welcome screen — the first screen anyone sees when opening AMedix.
 // The AMedix logo sits behind the message as a large, low-opacity watermark

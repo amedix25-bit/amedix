@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { HeartPulse, LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 
@@ -34,10 +35,8 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <HeartPulse className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-sm">A&M Healthcare</span>
+            <BrandLogo className="w-8 h-8 rounded-lg" />
+            <span className="font-bold text-sm">AMedix</span>
           </div>
           <div className="w-6" />
         </header>
@@ -55,11 +54,9 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, onLogout }
     <>
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-sidebar-primary flex items-center justify-center">
-            <HeartPulse className="w-5 h-5 text-sidebar-primary-foreground" />
-          </div>
+          <BrandLogo className="w-9 h-9 rounded-xl" />
           <div>
-            <span className="font-bold text-sm">A&M Healthcare</span>
+            <span className="font-bold text-sm">AMedix</span>
             {roleLabel && <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>}
           </div>
         </div>

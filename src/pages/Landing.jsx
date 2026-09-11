@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HeartPulse, User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, ScanLine } from "lucide-react";
+import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, ScanLine } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 
 const ROLE_CONTENT = {
@@ -47,9 +48,7 @@ export default function Landing() {
       <header className="border-b border-border bg-background/90 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <HeartPulse className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <BrandLogo className="w-9 h-9 rounded-xl" />
             <span className="text-lg font-normal [font-family:'Bungee',_system-ui]">AMedix</span>
           </div>
           {role &&
@@ -71,7 +70,7 @@ export default function Landing() {
             Secure, patient-owned clinical records
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">Welcome to A&amp;M Healthcare</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">Welcome to AMedix</h1>
           <p className="text-lg sm:text-xl text-muted-foreground mt-4 max-w-2xl mx-auto">
             Your medical information, securely connected to your healthcare.
           </p>
@@ -244,7 +243,7 @@ export default function Landing() {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        A&amp;M Healthcare · Connected Care. Better Health.
+        AMedix · Connected Care. Better Health.
       </footer>
     </div>);
 
