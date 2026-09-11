@@ -53,10 +53,10 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, onLogout }
   return (
     <>
       <div className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <BrandLogo className="w-9 h-9 rounded-xl" />
-          <div>
-            <span className="font-bold text-sm">AMedix</span>
+        <div className="flex items-center gap-4">
+          <BrandLogo fittingType="fill" className="w-14 h-14 rounded-full shrink-0" />
+          <div className="min-w-0">
+            <span className="font-bold text-2xl tracking-tight leading-tight block">AMedix</span>
             {roleLabel && <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>}
           </div>
         </div>
