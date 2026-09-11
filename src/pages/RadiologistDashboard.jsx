@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
+import AmedixMark from "@/components/AmedixMark";
 import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPatient";
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
@@ -51,7 +52,7 @@ export default function RadiologistDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist">
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" logo={AmedixMark}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>

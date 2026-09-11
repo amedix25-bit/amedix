@@ -4,7 +4,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 
-export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, children }) {
+export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -14,7 +14,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden lg:flex w-64 flex-col border-r rtl:border-l rtl:border-r-0 border-border bg-sidebar">
-        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} />
+        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} />
       </aside>
 
       {sidebarOpen && (
@@ -24,7 +24,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-muted-foreground z-10">
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} />
+            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} />
           </aside>
         </div>
       )}
@@ -35,7 +35,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <BrandLogo fittingType="fill" className="w-9 h-9 rounded-full" />
+            <Logo fittingType="fill" className="w-9 h-9 rounded-full" />
             <span className="font-bold text-sm">AMedix</span>
           </div>
           <div className="w-6" />
@@ -49,12 +49,12 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   );
 }
 
-function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout }) {
+function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo }) {
   return (
     <>
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-4">
-          <BrandLogo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
+          <Logo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
           <div className="min-w-0">
             <span className="font-bold text-2xl tracking-tight leading-tight block">AMedix</span>
             {roleLabel && <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>}
