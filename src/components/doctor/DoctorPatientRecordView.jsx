@@ -3,6 +3,7 @@ import { ArrowLeft, History, FileText } from "lucide-react";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorPatientHistorySection from "@/components/doctor/patients/DoctorPatientHistorySection";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
+import { DoctorTranslationsProvider } from "@/lib/doctorMedicalTranslations";
 
 // Patient profile page (Find My Patient → My Patients → patient). Shows the
 // patient's identity and key medical information at the top, then two options —
@@ -25,6 +26,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
   );
 
   return (
+    <DoctorTranslationsProvider patientId={patient.id}>
     <div className="space-y-6">
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="w-4 h-4" /> All patients
@@ -57,5 +59,6 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         </p>
       )}
     </div>
+    </DoctorTranslationsProvider>
   );
 }

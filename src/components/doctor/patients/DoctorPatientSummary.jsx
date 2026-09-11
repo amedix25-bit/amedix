@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { User, AlertTriangle, HeartPulse, Pill, Loader2 } from "lucide-react";
 import { medicationStatus, todayStr } from "@/lib/medicationUtils";
+import { useDoctorText } from "@/lib/doctorMedicalTranslations";
 
 export default function DoctorPatientSummary({ patient }) {
+  const doctorText = useDoctorText();
   const [allergies, setAllergies] = useState(null);
   const [conditions, setConditions] = useState(null);
   const [meds, setMeds] = useState(null);
@@ -37,8 +39,11 @@ export default function DoctorPatientSummary({ patient }) {
     allergies === null
       ? null
       : allergies.length > 0
-        ? allergies.map((a) => a.allergen).join(", ")
-        : patient.allergies || "None recorded";
+        ? allergies
+            .map((a) => doctorText("Allergy", a, "allergen", a.allergen))
+            .filter(Boolean)
+            .join(", ")
+        : doctorText("PatientProfile", patient, "allergies", patient.allergies) || "None recorded";
 
   const items = [
     {
@@ -53,7 +58,10 @@ export default function DoctorPatientSummary({ patient }) {
         conditions === null
           ? null
           : conditions.length > 0
-            ? conditions.map((c) => c.name).join(", ")
+            ? conditions
+                .map((c) => doctorText("MedicalCondition", c, "name", c.name))
+                .filter(Boolean)
+                .join(", ")
             : "None recorded",
     },
     {

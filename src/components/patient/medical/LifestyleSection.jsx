@@ -4,9 +4,15 @@ import InfoRow from "./InfoRow";
 import { Button } from "@/components/ui/button";
 import { SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorText } from "@/lib/doctorMedicalTranslations";
 
-export default function LifestyleSection({ number, patient, onEdit }) {
+export default function LifestyleSection({ number, patient, onEdit, doctorView }) {
   const { t } = usePatientLanguage();
+  const doctorText = useDoctorText();
+  // Doctor Portal display value — English translation of patient-entered
+  // Arabic text; unchanged for English values and in the Patient Portal.
+  const dv = (field) =>
+    doctorView ? doctorText("PatientProfile", patient, field, patient?.[field]) : patient?.[field];
   const female = patient?.gender === "female";
   const pregnant = patient?.pregnancy_status === "pregnant";
 
@@ -19,7 +25,7 @@ export default function LifestyleSection({ number, patient, onEdit }) {
       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
         <InfoRow label={t("Smoking Status")} value={t(SMOKING_LABELS[patient?.smoking_status] || "Not specified")} />
         <InfoRow label={t("Alcohol Use")} value={t(ALCOHOL_LABELS[patient?.alcohol_use] || "Not specified")} />
-        <InfoRow label={t("Other Substance Use")} value={patient?.substance_use} />
+        <InfoRow label={t("Other Substance Use")} value={dv("substance_use")} />
       </div>
       {female && (
         <div className="mt-4 pt-4 border-t border-border">
@@ -27,11 +33,11 @@ export default function LifestyleSection({ number, patient, onEdit }) {
             <InfoRow label={t("Pregnancy Status")} value={t(PREGNANCY_LABELS[patient?.pregnancy_status] || "Not specified")} />
             {pregnant && (
               <>
-                <InfoRow label={t("Gestational Age")} value={patient?.gestational_age} />
+                <InfoRow label={t("Gestational Age")} value={dv("gestational_age")} />
                 <InfoRow label={t("Estimated Due Date")} value={patient?.estimated_due_date} />
               </>
             )}
-            <InfoRow label={t("Pregnancy History")} value={patient?.pregnancy_history} />
+            <InfoRow label={t("Pregnancy History")} value={dv("pregnancy_history")} />
           </div>
         </div>
       )}

@@ -45,6 +45,7 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
         category="known_case"
         patient={profile}
         emptyText={t("No known conditions were recorded at registration.")}
+        doctorView={doctorView}
       />
 
       <CurrentDiagnosisSection number="3" patient={profile} />
@@ -55,12 +56,13 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
         category="past_history"
         patient={profile}
         emptyText={t("No past medical history was recorded at registration.")}
+        doctorView={doctorView}
       />
 
-      <SurgicalSection number="5" patient={profile} />
-      <MedicationsSection number="6" patient={profile} editable={doctorView} />
-      <AllergiesSection number="7" patient={profile} />
-      <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} />
+      <SurgicalSection number="5" patient={profile} doctorView={doctorView} />
+      <MedicationsSection number="6" patient={profile} editable={doctorView} doctorView={doctorView} />
+      <AllergiesSection number="7" patient={profile} doctorView={doctorView} />
+      <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} doctorView={doctorView} />
     </div>
   );
 }

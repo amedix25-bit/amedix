@@ -3,9 +3,11 @@ import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTranslations";
 
-export default function ConditionsSection({ number, title, category, patient, emptyText }) {
+export default function ConditionsSection({ number, title, category, patient, emptyText, doctorView }) {
   const { t } = usePatientLanguage();
+  const doctorText = useDoctorText();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,8 +44,17 @@ export default function ConditionsSection({ number, title, category, patient, em
           {items.map((item) => (
             <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
               <div>
-                <p className="font-medium">{item.name_ar || item.name}</p>
-                {item.details && <p className="text-muted-foreground text-xs mt-0.5">{item.details}</p>}
+                <p className="font-medium">
+                  {doctorView
+                    ? doctorText("MedicalCondition", item, "name", item.name) ?? <TranslatingPlaceholder />
+                    : item.name_ar || item.name}
+                </p>
+                {(() => {
+                  const details = doctorView
+                    ? doctorText("MedicalCondition", item, "details", item.details)
+                    : item.details;
+                  return details ? <p className="text-muted-foreground text-xs mt-0.5">{details}</p> : null;
+                })()}
               </div>
               {item.date && <span className="text-xs text-muted-foreground shrink-0">{item.date}</span>}
             </div>

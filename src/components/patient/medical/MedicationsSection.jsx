@@ -7,9 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus, X, Ban, RotateCcw } from "lucide-react";
 import { medicationStatus, mealLabel, routeLabel, todayStr } from "@/lib/medicationUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorText } from "@/lib/doctorMedicalTranslations";
 
-export default function MedicationsSection({ number, patient, editable }) {
+export default function MedicationsSection({ number, patient, editable, doctorView }) {
   const { t } = usePatientLanguage();
+  const doctorText = useDoctorText();
+  // Doctor Portal display value — patient-entered Arabic text shown in
+  // English. Medication NAMES are never translated (English-only by rule).
+  const dv = (m, field) => (doctorView ? doctorText("Medication", m, field, m[field]) : m[field]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -144,11 +149,11 @@ export default function MedicationsSection({ number, patient, editable }) {
                 {(m.dose || m.route || m.frequency || m.meal_timing || m.duration) && (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {[
-                      m.dose,
+                      dv(m, "dose"),
                       m.route && t(routeLabel(m.route)),
-                      m.prn ? t("PRN — as needed") : m.frequency,
+                      m.prn ? t("PRN — as needed") : dv(m, "frequency"),
                       m.meal_timing && t(mealLabel(m.meal_timing)),
-                      m.duration,
+                      dv(m, "duration"),
                     ]
                       .filter(Boolean)
                       .join(" · ")}

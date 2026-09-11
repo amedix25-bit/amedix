@@ -1,0 +1,27 @@
+{
+  "name": "MedicalTranslation",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the translated text belongs to"
+    },
+    "source_text": {
+      "type": "string",
+      "description": "The patient's original Arabic text \u2014 always preserved exactly as entered"
+    },
+    "translated_text": {
+      "type": "string",
+      "description": "English medical translation generated for Doctor Portal display only"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the translation was generated (ISO datetime)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "source_text",
+    "translated_text"
+  ]
+}

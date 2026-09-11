@@ -4,6 +4,7 @@ import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
 import { capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTranslations";
 
 const severityClass = (s) =>
   s === "severe"
@@ -12,8 +13,9 @@ const severityClass = (s) =>
       ? "px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium shrink-0"
       : "px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium shrink-0";
 
-export default function AllergiesSection({ number, patient }) {
+export default function AllergiesSection({ number, patient, doctorView }) {
   const { t } = usePatientLanguage();
+  const doctorText = useDoctorText();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,17 +46,25 @@ export default function AllergiesSection({ number, patient }) {
         <p className="text-sm text-muted-foreground">{t("No allergies were recorded.")}</p>
       ) : (
         <div className="space-y-3">
-          {items.map((a) => (
+          {items.map((a) => {
+            const allergen = doctorView
+              ? doctorText("Allergy", a, "allergen", a.allergen) ?? <TranslatingPlaceholder />
+              : a.allergen;
+            const reaction = doctorView
+              ? doctorText("Allergy", a, "reaction", a.reaction)
+              : a.reaction;
+            return (
             <div key={a.id} className="flex items-start justify-between gap-3 text-sm">
               <div>
-                <p className="font-medium">{a.allergen}</p>
+                <p className="font-medium">{allergen}</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
-                  {[a.allergy_type && t(capitalize(a.allergy_type)), a.reaction].filter(Boolean).join(" · ")}
+                  {[a.allergy_type && t(capitalize(a.allergy_type)), reaction].filter(Boolean).join(" · ")}
                 </p>
               </div>
               {a.severity && <span className={severityClass(a.severity)}>{t(capitalize(a.severity))}</span>}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </SectionCard>
