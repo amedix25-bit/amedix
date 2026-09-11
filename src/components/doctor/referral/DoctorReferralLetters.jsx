@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Inbox, Send } from "lucide-react";
+import { FileText, Inbox, Send } from "lucide-react";
 import PatientSearchSelect from "@/components/doctor/patients/PatientSearchSelect";
 import ReferralLetterForm from "@/components/doctor/referral/ReferralLetterForm";
 import ReceivedReferrals from "@/components/doctor/referral/ReceivedReferrals";
+import SentReferrals from "@/components/doctor/referral/SentReferrals";
 
 // Referral Letters tab of the Doctor Portal — two options:
 // Send Referral (pick one of your authorized patients and generate the
@@ -35,7 +36,7 @@ export default function DoctorReferralLetters({ doctorProfile }) {
 
   if (!view) {
     return (
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <button
           type="button"
           onClick={() => setView("send")}
@@ -56,6 +57,17 @@ export default function DoctorReferralLetters({ doctorProfile }) {
           <p className="font-semibold">View Referrals</p>
           <p className="text-sm text-muted-foreground mt-1">
             Referral letters your colleagues sent to you.
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("sent")}
+          className="rounded-xl border border-border bg-card p-6 text-left hover:border-primary/50 hover:shadow-sm transition-colors"
+        >
+          <FileText className="w-8 h-8 text-primary mb-3" />
+          <p className="font-semibold">Referrals Sent by Me</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Referral letters you created, with their status and audit trail.
           </p>
         </button>
       </div>
@@ -93,6 +105,8 @@ export default function DoctorReferralLetters({ doctorProfile }) {
             )}
           </div>
         )
+      ) : view === "sent" ? (
+        <SentReferrals doctorProfile={doctorProfile} />
       ) : (
         <ReceivedReferrals doctorProfile={doctorProfile} />
       )}
