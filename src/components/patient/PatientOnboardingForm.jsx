@@ -32,6 +32,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     emergency_contact_phone: "",
     emergency_contact_relationship: "",
     identification_number: "",
+    preferred_language: "en",
   });
   const [medical, setMedical] = useState({
     knownCases: [], pastHistory: [], allergies: [], medications: [], surgeries: [],
@@ -97,6 +98,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         address: form.address,
         blood_type: form.blood_type,
         identification_number: form.identification_number,
+        preferred_language: form.preferred_language,
         emergency_contact_name: form.emergency_contact_name,
         emergency_contact_phone: form.emergency_contact_phone,
         emergency_contact_relationship: form.emergency_contact_relationship,
@@ -276,6 +278,16 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                             {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"].map((t) => (
                               <SelectItem key={t} value={t}>{t}</SelectItem>
                             ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Language / اللغة *</Label>
+                        <Select value={form.preferred_language} onValueChange={(v) => setForm((f) => ({ ...f, preferred_language: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="ar">العربية (Arabic)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

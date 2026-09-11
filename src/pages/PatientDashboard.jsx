@@ -17,9 +17,11 @@ import PatientHealth from "@/components/patient/PatientHealth";
 import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
 import NotificationsBar from "@/components/patient/NotificationsBar";
+import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
+import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
 import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
 
-const navItems = [
+const NAV_ITEMS = [
   { key: "overview", label: "Home", icon: HomeIcon },
   { key: "health", label: "My Health", icon: HeartPulse },
   { key: "appointments", label: "Appointments", icon: Calendar },
@@ -33,12 +35,23 @@ const navItems = [
 ];
 
 export default function PatientDashboard() {
+  return (
+    <PatientLanguageProvider>
+      <PatientPortal />
+    </PatientLanguageProvider>
+  );
+}
+
+function PatientPortal() {
   const { user } = useAuth();
+  const { t } = usePatientLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ appointments: 0, labs: 0, imaging: 0, documents: 0, medications: 0 });
+
+  const navItems = NAV_ITEMS.map((item) => ({ ...item, label: t(item.label) }));
 
   useEffect(() => {
     loadProfile();
@@ -95,38 +108,47 @@ export default function PatientDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Patient">
-      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        <div className="mb-6 flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">
-              {activeTab === "overview"
-                ? `Welcome, ${profile?.full_name?.split(" ")[0] || ""}`
-                : navItems.find((n) => n.key === activeTab)?.label}
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
+    <>
+      <DashboardLayout
+        navItems={navItems}
+        activeKey={activeTab}
+        onNavClick={setActiveTab}
+        roleLabel={t("Patient")}
+        logoutLabel={t("Log out")}
+      >
+        <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold">
+                {activeTab === "overview"
+                  ? `${t("Welcome,")} ${profile?.full_name?.split(" ")[0] || ""}`
+                  : t(navItems.find((n) => n.key === activeTab)?.label)}
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
+            </div>
+            {profile && <NotificationsBar patientId={profile.id} onNavigate={setActiveTab} />}
           </div>
-          {profile && <NotificationsBar patientId={profile.id} onNavigate={setActiveTab} />}
-        </div>
 
-        {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
-        {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
-        {activeTab === "medications" && <PatientMedications patient={profile} />}
-        {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
-        {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
-        {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
-        {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
-        {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
-        {activeTab === "documents" && <PatientDocuments patient={profile} />}
-        {activeTab === "access" && (
-          <div className="space-y-10">
-            <PatientAccessControl patientId={profile?.id} />
-            {profile && <PatientRadiologistAccessControl profile={profile} />}
-            {profile && <PatientRadiologyRequests profile={profile} />}
-            {profile && <PatientAccessLog patientId={profile.id} />}
-          </div>
-        )}
-      </div>
-    </DashboardLayout>
+          {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
+          {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
+          {activeTab === "medications" && <PatientMedications patient={profile} />}
+          {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
+          {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
+          {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
+          {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
+          {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
+          {activeTab === "documents" && <PatientDocuments patient={profile} />}
+          {activeTab === "access" && (
+            <div className="space-y-10">
+              <PatientAccessControl patientId={profile?.id} />
+              {profile && <PatientRadiologistAccessControl profile={profile} />}
+              {profile && <PatientRadiologyRequests profile={profile} />}
+              {profile && <PatientAccessLog patientId={profile.id} />}
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
+      <PatientLanguageSwitch />
+    </>
   );
 }

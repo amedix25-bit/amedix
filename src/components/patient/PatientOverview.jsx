@@ -5,8 +5,10 @@ import QrCodeCard from "@/components/QrCodeCard";
 import InfoRow from "@/components/patient/medical/InfoRow";
 import { Button } from "@/components/ui/button";
 import { calcAgeLabel, capitalize, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientOverview({ profile, stats, loading }) {
+  const { t } = usePatientLanguage();
   const [showQr, setShowQr] = useState(false);
   const [med, setMed] = useState({ conditions: [], medications: [], allergies: [] });
 
@@ -30,15 +32,15 @@ export default function PatientOverview({ profile, stats, loading }) {
   }, [profile?.id]);
 
   if (loading) {
-    return <div className="text-muted-foreground text-sm">Loading...</div>;
+    return <div className="text-muted-foreground text-sm">{t("Loading...")}</div>;
   }
 
   const statCards = [
-    { label: "Appointments", value: stats.appointments, icon: Calendar, color: "text-primary" },
-    { label: "Lab Requests", value: stats.labs, icon: FlaskConical, color: "text-blue-500" },
-    { label: "Imaging", value: stats.imaging, icon: ImageIcon, color: "text-purple-500" },
-    { label: "Documents", value: stats.documents, icon: FileText, color: "text-amber-500" },
-    { label: "Medications", value: stats.medications, icon: Pill, color: "text-emerald-500" },
+    { label: t("Appointments"), value: stats.appointments, icon: Calendar, color: "text-primary" },
+    { label: t("Lab Requests"), value: stats.labs, icon: FlaskConical, color: "text-blue-500" },
+    { label: t("Imaging"), value: stats.imaging, icon: ImageIcon, color: "text-purple-500" },
+    { label: t("Documents"), value: stats.documents, icon: FileText, color: "text-amber-500" },
+    { label: t("Medications"), value: stats.medications, icon: Pill, color: "text-emerald-500" },
   ];
 
   const knownCaseText = med.conditions.map((c) => c.name).join(", ");
@@ -49,8 +51,14 @@ export default function PatientOverview({ profile, stats, loading }) {
   const isPregnant = isFemale && profile?.pregnancy_status === "pregnant";
   const pregnancyText = isFemale
     ? isPregnant
-      ? `Pregnant${profile?.gestational_age ? ` · ${profile.gestational_age}` : ""}${profile?.estimated_due_date ? ` · EDD ${profile.estimated_due_date}` : ""}`
-      : PREGNANCY_LABELS[profile?.pregnancy_status] || "Not pregnant"
+      ? [
+          t("Pregnant"),
+          profile?.gestational_age,
+          profile?.estimated_due_date ? `${t("EDD")} ${profile.estimated_due_date}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : t(PREGNANCY_LABELS[profile?.pregnancy_status] || "Not pregnant")
     : null;
 
   return (
@@ -59,19 +67,19 @@ export default function PatientOverview({ profile, stats, loading }) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3">
-              <p className="text-sm text-muted-foreground">My CIN</p>
+              <p className="text-sm text-muted-foreground">{t("My CIN")}</p>
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
                 <Shield className="w-3 h-3" />
-                Verified Patient
+                {t("Verified Patient")}
               </div>
             </div>
             <p className="text-3xl font-bold tracking-wider text-primary mt-1">{profile?.cin}</p>
             <p className="text-xs text-muted-foreground mt-2">
-              Your permanent Clinical Identification Number — unique to you.
+              {t("Your permanent Clinical Identification Number — unique to you.")}
             </p>
             <Button variant="outline" size="sm" className="mt-4" onClick={() => setShowQr(true)}>
-              <QrCode className="w-4 h-4 mr-2" />
-              Show QR Code
+              <QrCode className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+              {t("Show QR Code")}
             </Button>
           </div>
           <div className="mx-auto sm:mx-0">
@@ -95,24 +103,24 @@ export default function PatientOverview({ profile, stats, loading }) {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="font-semibold text-sm mb-4">Personal Information</h3>
+          <h3 className="font-semibold text-sm mb-4">{t("Personal Information")}</h3>
           <div className="space-y-3">
-            <InfoRow label="Full Name" value={profile?.full_name} />
-            <InfoRow label="Date of Birth" value={profile?.date_of_birth} />
-            <InfoRow label="Age" value={calcAgeLabel(profile?.date_of_birth)} />
-            <InfoRow label="Sex" value={profile?.gender ? capitalize(profile.gender) : null} />
-            <InfoRow label="Emergency Contact Name" value={profile?.emergency_contact_name} />
-            <InfoRow label="Emergency Contact Phone" value={profile?.emergency_contact_phone} />
+            <InfoRow label={t("Full Name")} value={profile?.full_name} />
+            <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth} />
+            <InfoRow label={t("Age")} value={calcAgeLabel(profile?.date_of_birth)} />
+            <InfoRow label={t("Sex")} value={profile?.gender ? t(capitalize(profile.gender)) : null} />
+            <InfoRow label={t("Emergency Contact Name")} value={profile?.emergency_contact_name} />
+            <InfoRow label={t("Emergency Contact Phone")} value={profile?.emergency_contact_phone} />
           </div>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="font-semibold text-sm mb-4">Medical Information</h3>
+          <h3 className="font-semibold text-sm mb-4">{t("Medical Information")}</h3>
           <div className="space-y-3">
-            <InfoRow label="Known Case Of" value={knownCaseText || null} />
+            <InfoRow label={t("Known Case Of")} value={knownCaseText || null} />
             <div className="flex justify-between gap-4 text-sm">
-              <span className="text-muted-foreground shrink-0">Current Medication</span>
-              <span className="font-medium text-right">
+              <span className="text-muted-foreground shrink-0">{t("Current Medication")}</span>
+              <span className="font-medium text-end">
                 {med.medications.filter((m) => m.is_active !== false).length === 0
                   ? "—"
                   : med.medications
@@ -124,10 +132,10 @@ export default function PatientOverview({ profile, stats, loading }) {
                       ))}
               </span>
             </div>
-            <InfoRow label="Allergies" value={allergyText || profile?.allergies || null} />
-            <InfoRow label="Smoking Status" value={SMOKING_LABELS[profile?.smoking_status] || "Not specified"} />
-            <InfoRow label="Alcohol Use" value={ALCOHOL_LABELS[profile?.alcohol_use] || "Not specified"} />
-            {pregnancyText && <InfoRow label="Pregnancy Status" value={pregnancyText} />}
+            <InfoRow label={t("Allergies")} value={allergyText || profile?.allergies || null} />
+            <InfoRow label={t("Smoking Status")} value={t(SMOKING_LABELS[profile?.smoking_status] || "Not specified")} />
+            <InfoRow label={t("Alcohol Use")} value={t(ALCOHOL_LABELS[profile?.alcohol_use] || "Not specified")} />
+            {pregnancyText && <InfoRow label={t("Pregnancy Status")} value={pregnancyText} />}
           </div>
         </div>
       </div>
@@ -138,13 +146,13 @@ export default function PatientOverview({ profile, stats, loading }) {
             <button onClick={() => setShowQr(false)} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
               <X className="w-5 h-5" />
             </button>
-            <p className="text-sm font-medium text-slate-600">Show this to your doctor</p>
+            <p className="text-sm font-medium text-slate-600">{t("Show this to your doctor")}</p>
             <p className="text-2xl font-bold tracking-wider text-primary mt-1">{profile?.cin}</p>
             <div className="mt-5 flex justify-center">
               <QrCodeCard cin={profile?.cin} size={220} />
             </div>
             <p className="text-xs text-slate-500 mt-4">
-              Doctors can find your record by scanning this code or searching your CIN.
+              {t("Doctors can find your record by scanning this code or searching your CIN.")}
             </p>
           </div>
         </div>

@@ -115,6 +115,15 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the patient has completed their medication information. When true, the 'Update Your Medication Information' notification is not recreated. An administrator can reset this flag to show the notification again."
+    },
+    "preferred_language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "ar"
+      ],
+      "default": "en",
+      "description": "Patient's preferred Patient Portal language. Chosen during patient registration or with the language switch button inside the Patient Portal. 'ar' shows the portal in Arabic with an RTL layout."
     }
   },
   "required": [

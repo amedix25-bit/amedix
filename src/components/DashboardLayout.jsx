@@ -4,7 +4,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 
-export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, children }) {
+export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -13,8 +13,8 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-sidebar">
-        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} onLogout={handleLogout} />
+      <aside className="hidden lg:flex w-64 flex-col border-r rtl:border-l rtl:border-r-0 border-border bg-sidebar">
+        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} />
       </aside>
 
       {sidebarOpen && (
@@ -24,7 +24,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-muted-foreground z-10">
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} onLogout={handleLogout} />
+            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} />
           </aside>
         </div>
       )}
@@ -49,7 +49,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   );
 }
 
-function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, onLogout }) {
+function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout }) {
   return (
     <>
       <div className="p-6 border-b border-sidebar-border">
@@ -85,8 +85,8 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, onLogout }
 
       <div className="p-4 border-t border-sidebar-border">
         <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent" onClick={onLogout}>
-          <LogOut className="w-4 h-4 mr-2" />
-          Log out
+          <LogOut className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+          {logoutLabel || "Log out"}
         </Button>
       </div>
     </>
