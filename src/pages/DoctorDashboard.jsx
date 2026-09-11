@@ -13,12 +13,14 @@ import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell
 import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users } from "lucide-react";
+import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
+import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
   { key: "colleagues", label: "My Colleagues", icon: Users },
+  { key: "referrals", label: "Referral Letters", icon: Mail },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "notes", label: "Clinical Notes", icon: FileText },
   { key: "labs", label: "Lab Requests", icon: FlaskConical },
@@ -99,7 +101,11 @@ export default function DoctorDashboard() {
               <p className="text-xs text-muted-foreground">{now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</p>
             </div>
             {user && (
-              <DoctorNotificationsBell userId={user.id} onNavigate={openFromNotification} />
+              <DoctorNotificationsBell
+                userId={user.id}
+                onNavigate={openFromNotification}
+                onOpenReferrals={() => setActiveTab("referrals")}
+              />
             )}
           </div>
         </div>
@@ -121,6 +127,7 @@ export default function DoctorDashboard() {
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
         {activeTab === "colleagues" && profile && <DoctorColleagues doctorProfile={profile} />}
+        {activeTab === "referrals" && profile && <DoctorReferralLetters doctorProfile={profile} />}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}

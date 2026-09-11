@@ -180,6 +180,7 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         receiving_doctor: form.receiving_doctor,
         receiving_specialty: form.receiving_specialty,
         receiving_doctor_id: sel?.id || "",
+        receiving_doctor_user_id: sel?.user_id || "",
         receiving_hospital: sel?.hospital || "",
         receiving_contact: sel?.phone || "",
         reason_for_referral: form.reason_for_referral,
@@ -198,19 +199,52 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       );
       const { file_url } = await base44.integrations.Core.UploadPublicFile({ file: pdfFile });
 
+      // A referral addressed to a colleague is sent right away; otherwise
+      // it stays a draft until the doctor sends it.
+      const audit_trail = [
+        {
+          action: "created",
+          by_name: doctorProfile.full_name,
+          by_role: "doctor",
+          datetime: now.toISOString(),
+        },
+      ];
+      if (sel) {
+        audit_trail.push({
+          action: "sent",
+          by_name: doctorProfile.full_name,
+          by_role: "doctor",
+          datetime: now.toISOString(),
+        });
+      }
       await base44.entities.ReferralLetter.create({
         ...payload,
         pdf_url: file_url,
-        status: "draft",
-        audit_trail: [
-          {
-            action: "created",
-            by_name: doctorProfile.full_name,
-            by_role: "doctor",
-            datetime: now.toISOString(),
-          },
-        ],
+        status: sel ? "sent" : "draft",
+        audit_trail,
       });
+
+      // Notify the receiving colleague about the referral
+      if (sel?.user_id) {
+        try {
+          await base44.entities.DoctorNotification.create({
+            doctor_user_id: sel.user_id,
+            doctor_id: sel.id,
+            type: "referral_received",
+            title: `New referral from ${doctorProfile.full_name}`,
+            message: `${referral_number} — ${patient.full_name}${form.reason_for_referral ? `: ${form.reason_for_referral}` : ""}`,
+            patient_id: patient.id,
+            patient_name: patient.full_name,
+            patient_cin: patient.cin,
+            request_ref: referral_number,
+            related_id: referral_number,
+            target: "referrals",
+            datetime: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
 
       // File the referral under the patient's Documents → Referral Letters
       await base44.entities.MedicalDocument.create({
@@ -227,8 +261,10 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       });
 
       toast({
-        title: "Referral letter generated",
-        description: `${referral_number} was saved under the patient's Documents → Referral Letters.`,
+        title: sel ? "Referral letter sent" : "Referral letter generated",
+        description: sel
+          ? `${referral_number} was sent to ${sel.full_name} — they were notified.`
+          : `${referral_number} was saved under the patient's Documents → Referral Letters.`,
       });
       onDone();
     } catch (err) {

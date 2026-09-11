@@ -79,6 +79,10 @@
       "type": "string",
       "description": "DoctorProfile id of the receiving doctor when selected from My Colleagues"
     },
+    "receiving_doctor_user_id": {
+      "type": "string",
+      "description": "User id of the receiving doctor account \u2014 used for Row Level Security so the receiving doctor can view and manage referrals sent to them"
+    },
     "receiving_hospital": {
       "type": "string",
       "description": "Hospital / clinic of the receiving doctor \u2014 from their verified profile"
@@ -238,6 +242,9 @@
           "data.doctor_user_id": "{{user.id}}"
         },
         {
+          "data.receiving_doctor_user_id": "{{user.id}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
@@ -251,6 +258,9 @@
       "$or": [
         {
           "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "data.receiving_doctor_user_id": "{{user.id}}"
         },
         {
           "data.patient_user_id": "{{user.id}}"

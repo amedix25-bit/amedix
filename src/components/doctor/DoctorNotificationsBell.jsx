@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 // result ("Send to Doctor"), the doctor is alerted here. Clicking a
 // notification opens the patient in Find Patient; the PDF link opens the
 // shared report directly.
-export default function DoctorNotificationsBell({ userId, onNavigate }) {
+export default function DoctorNotificationsBell({ userId, onNavigate, onOpenReferrals }) {
   const [unread, setUnread] = useState(0);
   const [recent, setRecent] = useState([]);
   const [open, setOpen] = useState(false);
@@ -40,6 +40,10 @@ export default function DoctorNotificationsBell({ userId, onNavigate }) {
       } catch (err) {
         console.error(err);
       }
+    }
+    if (n.target === "referrals" && onOpenReferrals) {
+      onOpenReferrals();
+      return;
     }
     if (n.patient_cin) onNavigate(n.patient_cin);
   };
