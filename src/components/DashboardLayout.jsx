@@ -35,7 +35,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <BrandLogo className="w-8 h-8 rounded-lg" />
+            <BrandLogo fittingType="fill" className="w-9 h-9 rounded-full" />
             <span className="font-bold text-sm">AMedix</span>
           </div>
           <div className="w-6" />
@@ -54,7 +54,7 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, onLogout }
     <>
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-4">
-          <BrandLogo fittingType="fill" className="w-14 h-14 rounded-full shrink-0" />
+          <BrandLogo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
           <div className="min-w-0">
             <span className="font-bold text-2xl tracking-tight leading-tight block">AMedix</span>
             {roleLabel && <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>}

@@ -13,8 +13,8 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
         <div className="absolute top-1/3 right-10 w-40 h-40 rounded-full bg-white/5" />
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          <div className="flex items-center gap-3">
-            <BrandLogo className="w-12 h-12 rounded-xl" />
+          <div className="flex items-center gap-4">
+            <BrandLogo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
             <span className="font-bold tracking-tight text-5xl [font-family:'Crave_Fine',_sans-serif]">AMedix</span>
           </div>
 
@@ -51,9 +51,9 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 bg-background">
         <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-            <BrandLogo className="w-10 h-10 rounded-xl" />
-            <span className="text-lg font-bold text-foreground">AMedix</span>
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-6">
+            <BrandLogo fittingType="fill" className="w-14 h-14 rounded-full" />
+            <span className="text-2xl font-bold text-foreground">AMedix</span>
           </div>
           <p className="lg:hidden text-center text-sm text-muted-foreground mb-8">
             Connected Care. Better Health.
