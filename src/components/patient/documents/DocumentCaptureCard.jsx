@@ -15,7 +15,7 @@ import {
 
 // One capture card: category header, "Take a Picture" buttons (front/back for
 // the insurance card), and the saved documents belonging to the category.
-export default function DocumentCaptureCard({ category, docs, uploadingButton, onCapture, onDelete }) {
+export default function DocumentCaptureCard({ category, docs, uploadingButton, onCapture, onDelete, onView }) {
   const inputRefs = useRef({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const multi = category.buttons.length > 1;
@@ -96,7 +96,7 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
                 <p className="text-xs text-muted-foreground">{doc.date}</p>
               </div>
               {doc.file_url && (
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline shrink-0">
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline shrink-0" onClick={() => onView?.(doc)}>
                   View
                 </a>
               )}

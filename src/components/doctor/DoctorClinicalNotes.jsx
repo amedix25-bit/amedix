@@ -9,8 +9,9 @@ import DiagnosisForm from "@/components/doctor/notes/DiagnosisForm";
 import PatientSearchSelect from "@/components/doctor/patients/PatientSearchSelect";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorMedicationForm from "@/components/doctor/medications/DoctorMedicationForm";
+import ReferralLetterManager from "@/components/doctor/referral/ReferralLetterManager";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, FileText, ArrowLeft, Search, Loader2, Pill, Stethoscope } from "lucide-react";
+import { Plus, FileText, ArrowLeft, Search, Loader2, Pill, Stethoscope, Send } from "lucide-react";
 
 export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab, returnPatient }) {
   const { toast } = useToast();
@@ -126,7 +127,43 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab, retu
             <h3 className="font-semibold text-lg">Add Diagnosis</h3>
             <p className="text-sm text-muted-foreground mt-1">Search and select a patient, then record and save a diagnosis.</p>
           </button>
+          <button
+            onClick={() => openMode("referral")}
+            className="rounded-xl border border-border bg-card p-8 text-left hover:border-primary/50 hover:bg-accent/50 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+              <Send className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold text-lg">Referral Letter</h3>
+            <p className="text-sm text-muted-foreground mt-1">Search and select a patient, then create a professional referral letter.</p>
+          </button>
         </div>
+      )}
+
+      {mode === "referral" && !selectedPatient && (
+        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={backToOptions}>
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back
+            </Button>
+            <h3 className="font-semibold">Referral Letter — Select a Patient</h3>
+          </div>
+          <PatientSearchSelect
+            label="Find My Patient"
+            patients={myPatients}
+            selected={null}
+            onSelect={(p) => setSelectedPatient(p)}
+          />
+        </div>
+      )}
+
+      {mode === "referral" && selectedPatient && (
+        <ReferralLetterManager
+          doctorProfile={doctorProfile}
+          patient={selectedPatient}
+          onBack={() => setSelectedPatient(null)}
+        />
       )}
 
       {mode === "create" && !selectedPatient && (

@@ -13,13 +13,45 @@ import {
 export default function PatientDocuments({ patient }) {
   const patientId = patient?.id;
   const [docs, setDocs] = useState([]);
+  const [referralMap, setReferralMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [uploadingButton, setUploadingButton] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (patientId) load();
+    if (patient?.id) loadReferralMap();
   }, [patientId]);
+
+  // Referral letters linked to the referral documents shown below — used to
+  // mark a referral as VIEWED the first time the patient opens it.
+  const loadReferralMap = async () => {
+    try {
+      const letters = await base44.entities.ReferralLetter.filter({ patient_id: patient.id });
+      const map = {};
+      letters.forEach((l) => {
+        if (l.pdf_url) map[l.pdf_url] = l;
+      });
+      setReferralMap(map);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleReferralView = (doc) => {
+    const letter = referralMap[doc.file_url];
+    if (letter && letter.status === "sent") {
+      base44.entities.ReferralLetter.update(letter.id, {
+        status: "viewed",
+        audit_trail: [
+          ...(letter.audit_trail || []),
+          { action: "viewed", by_name: patient.full_name, by_role: "patient", datetime: new Date().toISOString() },
+        ],
+      })
+        .then(loadReferralMap)
+        .catch(console.error);
+    }
+  };
 
   const load = async () => {
     try {
@@ -129,6 +161,7 @@ export default function PatientDocuments({ patient }) {
               uploadingButton={uploadingButton}
               onCapture={handleCapture}
               onDelete={handleDelete}
+              onView={category.key === "referral" ? handleReferralView : undefined}
             />
           ))}
         </div>
