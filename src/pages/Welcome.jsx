@@ -22,15 +22,15 @@ export default function Welcome() {
         <Image
           src={AMEDIX_LOGO_URL}
           alt=""
-          fittingType="fit"
-          className="h-full w-full opacity-[0.07] mix-blend-multiply"
+          fittingType="fill"
+          className="h-full w-full opacity-[0.15] mix-blend-multiply"
         />
       </div>
 
       <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold">Welcome to AMedix</h1>
 
-        <div className="mt-6 space-y-4 text-muted-foreground leading-relaxed">
+        <div className="mt-6 space-y-4 text-muted-foreground leading-relaxed font-bold">
           <p>
             AMedix was created by two medical students, <strong className="text-foreground">Ayatallah Abed Elallegy</strong> and{" "}
             <strong className="text-foreground">Mohammed Saad Alsaba</strong>, with a simple vision:{" "}
@@ -46,7 +46,7 @@ export default function Welcome() {
           </p>
         </div>
 
-        <p className="mt-8 text-xl font-semibold">
+        <p className="mt-8 text-xl font-bold">
           AMedix — Your Healthcare, All in One Place.
         </p>
 
