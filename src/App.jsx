@@ -13,6 +13,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Home from '@/pages/Home';
 import Landing from '@/pages/Landing';
+import Welcome from '@/pages/Welcome';
 import PatientDashboard from '@/pages/PatientDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
 import LabRequestDetail from '@/pages/LabRequestDetail';
@@ -52,7 +53,8 @@ const AuthenticatedApp = () => {
       <Route path="/lab" element={<LabLogin />} />
       <Route path="/lab/register" element={<LabRegister />} />
       <Route path="/lab-technician" element={<LabTechnician />} />
-      <Route path="/" element={isAuthenticated ? <Home /> : <Landing />} />
+      <Route path="/" element={isAuthenticated ? <Home /> : <Welcome />} />
+      <Route path="/landing" element={<Landing />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
