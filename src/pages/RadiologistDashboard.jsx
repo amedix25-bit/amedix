@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useAppLanguage } from "@/lib/appLanguage";
 import AmedixMark from "@/components/AmedixMark";
 import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPatient";
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
@@ -20,6 +21,7 @@ const navItems = [
 
 export default function RadiologistDashboard() {
   const { user } = useAuth();
+  const { t } = useAppLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState(null);
@@ -56,7 +58,7 @@ export default function RadiologistDashboard() {
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+            <h1 className="text-2xl font-bold">{t(navItems.find((n) => n.key === activeTab)?.label)}</h1>
             <p className="text-muted-foreground text-sm mt-1">
               {profile?.full_name} · {profile?.specialization}
             </p>

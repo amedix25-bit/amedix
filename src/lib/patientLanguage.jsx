@@ -574,14 +574,26 @@ export function PatientLanguageProvider({ children }) {
     el.setAttribute("lang", lang === "ar" ? "ar" : "en");
   }, [lang]);
 
-  // Restore LTR when the patient leaves the portal (logout / navigation).
+  // When the patient leaves the portal (logout / navigation), restore the
+  // platform-wide language choice (shared storage key) instead of forcing LTR.
   useEffect(
     () => () => {
-      document.documentElement.setAttribute("dir", "ltr");
-      document.documentElement.setAttribute("lang", "en");
+      const rtl = localStorage.getItem(LANG_STORAGE_KEY) === "ar";
+      document.documentElement.setAttribute("dir", rtl ? "rtl" : "ltr");
+      document.documentElement.setAttribute("lang", rtl ? "ar" : "en");
     },
     []
   );
+
+  // Stay in sync with the platform-wide switcher — it writes the same
+  // storage key and broadcasts this event, so both UIs update instantly.
+  useEffect(() => {
+    const onLangChange = (e) => {
+      if (e.detail === "ar" || e.detail === "en") setLangState(e.detail);
+    };
+    window.addEventListener("amedix-lang-change", onLangChange);
+    return () => window.removeEventListener("amedix-lang-change", onLangChange);
+  }, []);
 
   // Load the language saved on the patient's profile once per visit.
   useEffect(() => {
@@ -610,6 +622,7 @@ export function PatientLanguageProvider({ children }) {
     if (next !== "ar" && next !== "en") return;
     setLangState(next);
     localStorage.setItem(LANG_STORAGE_KEY, next);
+    window.dispatchEvent(new CustomEvent("amedix-lang-change", { detail: next }));
     if (profileIdRef.current) {
       base44.entities.PatientProfile.update(profileIdRef.current, { preferred_language: next }).catch(console.error);
     }

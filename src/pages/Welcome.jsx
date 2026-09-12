@@ -4,13 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { ArrowRight } from "lucide-react";
 import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
+import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 // Welcome screen — the first screen anyone sees when opening AMedix.
 // The AMedix logo sits behind the message as a large, low-opacity watermark
 // so the text and button stay fully readable. Get Started leads to the
-// existing role-choice page.
+// existing role-choice page. The language switcher is available from here,
+// before any login or registration.
 export default function Welcome() {
   const navigate = useNavigate();
+  const { t } = useAppLanguage();
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden flex items-center justify-center">
@@ -27,31 +31,39 @@ export default function Welcome() {
         />
       </div>
 
+      {/* Top navigation — language selection available before login */}
+      <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-end px-4 py-4">
+        <AppLanguageSwitcher />
+      </div>
+
       <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold">Welcome to AMedix</h1>
+        <h1 className="text-4xl sm:text-5xl font-bold">{t("Welcome to AMedix")}</h1>
 
         <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
           <p>
-            AMedix was created by two medical students, Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a simple
-            vision: to make healthcare easier for patients and healthcare professionals.
+            {t(
+              "AMedix was created by two medical students, Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a simple vision: to make healthcare easier for patients and healthcare professionals."
+            )}
           </p>
           <p>
-            Our goal is to bring the patient's healthcare journey into one place, connecting patients, doctors, and
-            laboratories through one simple platform.
+            {t(
+              "Our goal is to bring the patient's healthcare journey into one place, connecting patients, doctors, and laboratories through one simple platform."
+            )}
           </p>
           <p>
-            From medical information and doctors' notes to laboratory requests and results, AMedix is designed to make
-            healthcare more organized, accessible, and connected.
+            {t(
+              "From medical information and doctors' notes to laboratory requests and results, AMedix is designed to make healthcare more organized, accessible, and connected."
+            )}
           </p>
         </div>
 
         <p className="mt-8 text-xl font-bold">
-          AMedix — Your Healthcare, All in One Place.
+          {t("AMedix — Your Healthcare, All in One Place.")}
         </p>
 
         <Button size="lg" className="mt-8" onClick={() => navigate("/landing")}>
-          Get Started
-          <ArrowRight className="w-4 h-4 ml-1" />
+          {t("Get Started")}
+          <ArrowRight className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1" />
         </Button>
       </div>
     </div>

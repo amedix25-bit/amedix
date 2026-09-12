@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useAppLanguage } from "@/lib/appLanguage";
 import DoctorOverview from "@/components/doctor/DoctorOverview";
 import DoctorPatientSearch from "@/components/doctor/DoctorPatientSearch";
 import DoctorAppointments from "@/components/doctor/DoctorAppointments";
@@ -29,6 +30,7 @@ const navItems = [
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
+  const { t } = useAppLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [labsDraftContext, setLabsDraftContext] = useState(null);
@@ -91,7 +93,7 @@ export default function DoctorDashboard() {
           <div className="flex items-center gap-4 min-w-0">
             {profile && <DoctorProfilePicture profile={profile} onUpdated={setProfile} />}
             <div>
-              <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+              <h1 className="text-2xl font-bold">{t(navItems.find((n) => n.key === activeTab)?.label)}</h1>
               <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
             </div>
           </div>

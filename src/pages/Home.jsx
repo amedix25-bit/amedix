@@ -9,10 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
 import { PatientLanguageProvider } from "@/lib/patientLanguage";
+import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useAppLanguage();
   const [loading, setLoading] = useState(true);
   const [showDoctorForm, setShowDoctorForm] = useState(false);
   const [showPatientForm, setShowPatientForm] = useState(false);
@@ -152,57 +155,60 @@ export default function Home() {
             <BrandLogo className="w-9 h-9 rounded-xl" />
             <span className="font-bold text-lg">AMedix</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => base44.auth.logout(window.location.origin)}>
-            Log out
-          </Button>
+          <div className="flex items-center gap-3">
+            <AppLanguageSwitcher />
+            <Button variant="ghost" size="sm" onClick={() => base44.auth.logout(window.location.origin)}>
+              {t("Log out")}
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-12">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome to AMedix</h1>
-            <p className="text-muted-foreground mt-3 text-lg">Connected Care. Better Health.</p>
-            <p className="text-muted-foreground mt-1">Choose your account type to get started</p>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{t("Welcome to AMedix")}</h1>
+            <p className="text-muted-foreground mt-3 text-lg">{t("Connected Care. Better Health.")}</p>
+            <p className="text-muted-foreground mt-1">{t("Choose your account type to get started")}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <button
               onClick={handlePatientSelect}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30 disabled:opacity-50"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30 disabled:opacity-50"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <User className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">I am a Patient</h3>
+                <h3 className="text-xl font-bold">{t("I am a Patient")}</h3>
                 <p className="text-muted-foreground text-sm mt-2">
-                  Receive a unique Clinical Identification Number (CIN) and manage your health records in one secure place.
+                  {t("Receive a unique Clinical Identification Number (CIN) and manage your health records in one secure place.")}
                 </p>
                 <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                  Get started
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  {t("Get started")}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
                 </div>
               </div>
             </button>
 
             <button
               onClick={() => setDoctorSplit(true)}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left transition-all hover:shadow-lg hover:border-primary/30"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Stethoscope className="w-7 h-7 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">I am a Doctor</h3>
+                <h3 className="text-xl font-bold">{t("I am a Doctor")}</h3>
                 <p className="text-muted-foreground text-sm mt-2">
-                  Register your professional account, search patients by CIN, and manage clinical records and test requests.
+                  {t("Register your professional account, search patients by CIN, and manage clinical records and test requests.")}
                 </p>
                 <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                  Register
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  {t("Register")}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
                 </div>
               </div>
             </button>
@@ -212,7 +218,7 @@ export default function Home() {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setDoctorSplit(false)}>
               <div className="bg-card rounded-2xl shadow-xl border border-border p-8 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">I am a Doctor</h2>
+                  <h2 className="text-xl font-bold">{t("I am a Doctor")}</h2>
                   <button onClick={() => setDoctorSplit(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
@@ -220,26 +226,26 @@ export default function Home() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <button
                     onClick={() => { setDoctorSplit(false); setShowDoctorForm(true); }}
-                    className="rounded-xl border border-border p-5 text-left hover:border-primary/40 hover:bg-accent/40 transition-colors"
+                    className="rounded-xl border border-border p-5 text-left rtl:text-right hover:border-primary/40 hover:bg-accent/40 transition-colors"
                   >
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                       <Stethoscope className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="font-semibold">I am a Doctor</p>
+                    <p className="font-semibold">{t("I am a Doctor")}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Manage patients, appointments, clinical notes, and test requests.
+                      {t("Manage patients, appointments, clinical notes, and test requests.")}
                     </p>
                   </button>
                   <button
                     onClick={() => { setDoctorSplit(false); setShowRadiologistForm(true); }}
-                    className="rounded-xl border border-border p-5 text-left hover:border-primary/40 hover:bg-accent/40 transition-colors"
+                    className="rounded-xl border border-border p-5 text-left rtl:text-right hover:border-primary/40 hover:bg-accent/40 transition-colors"
                   >
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                       <ScanLine className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="font-semibold">I am a Radiologist</p>
+                    <p className="font-semibold">{t("I am a Radiologist")}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Manage authorized patients and radiology records in the Radiologist Portal.
+                      {t("Manage authorized patients and radiology records in the Radiologist Portal.")}
                     </p>
                   </button>
                 </div>
@@ -254,8 +260,8 @@ export default function Home() {
           <div className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold">Doctor Registration</h2>
-                <p className="text-sm text-muted-foreground mt-1">Enter your professional details</p>
+                <h2 className="text-xl font-bold">{t("Doctor Registration")}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{t("Enter your professional details")}</p>
               </div>
               <button onClick={() => setShowDoctorForm(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
@@ -264,36 +270,36 @@ export default function Home() {
             <form onSubmit={handleDoctorSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="doc-first-name">First Name *</Label>
-                  <Input id="doc-first-name" placeholder="First name" value={doctorForm.first_name} onChange={(e) => setDoctorForm({ ...doctorForm, first_name: e.target.value })} required />
+                  <Label htmlFor="doc-first-name">{t("First Name *")}</Label>
+                  <Input id="doc-first-name" placeholder={t("First name")} value={doctorForm.first_name} onChange={(e) => setDoctorForm({ ...doctorForm, first_name: e.target.value })} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="doc-middle-name">Middle Name</Label>
-                  <Input id="doc-middle-name" placeholder="Middle name" value={doctorForm.middle_name} onChange={(e) => setDoctorForm({ ...doctorForm, middle_name: e.target.value })} />
+                  <Label htmlFor="doc-middle-name">{t("Middle Name")}</Label>
+                  <Input id="doc-middle-name" placeholder={t("Middle name")} value={doctorForm.middle_name} onChange={(e) => setDoctorForm({ ...doctorForm, middle_name: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="doc-last-name">Last Name *</Label>
-                <Input id="doc-last-name" placeholder="Last name" value={doctorForm.last_name} onChange={(e) => setDoctorForm({ ...doctorForm, last_name: e.target.value })} required />
+                <Label htmlFor="doc-last-name">{t("Last Name *")}</Label>
+                <Input id="doc-last-name" placeholder={t("Last name")} value={doctorForm.last_name} onChange={(e) => setDoctorForm({ ...doctorForm, last_name: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialization">Specialization *</Label>
-                <Input id="specialization" placeholder="e.g. Cardiology" value={doctorForm.specialization} onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })} required />
+                <Label htmlFor="specialization">{t("Specialization *")}</Label>
+                <Input id="specialization" placeholder={t("e.g. Cardiology")} value={doctorForm.specialization} onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="license">License Number *</Label>
-                <Input id="license" placeholder="Medical license number" value={doctorForm.license_number} onChange={(e) => setDoctorForm({ ...doctorForm, license_number: e.target.value })} required />
+                <Label htmlFor="license">{t("License Number *")}</Label>
+                <Input id="license" placeholder={t("Medical license number")} value={doctorForm.license_number} onChange={(e) => setDoctorForm({ ...doctorForm, license_number: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="hospital">Hospital / Clinic</Label>
-                <Input id="hospital" placeholder="Hospital or clinic name" value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />
+                <Label htmlFor="hospital">{t("Hospital / Clinic")}</Label>
+                <Input id="hospital" placeholder={t("Hospital or clinic name")} value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Contact number" value={doctorForm.phone} onChange={(e) => setDoctorForm({ ...doctorForm, phone: e.target.value })} />
+                <Label htmlFor="phone">{t("Phone")}</Label>
+                <Input id="phone" placeholder={t("Contact number")} value={doctorForm.phone} onChange={(e) => setDoctorForm({ ...doctorForm, phone: e.target.value })} />
               </div>
               <Button type="submit" className="w-full" disabled={creating}>
-                {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Create Doctor Account"}
+                {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Doctor Account")}
               </Button>
             </form>
           </div>
@@ -305,8 +311,8 @@ export default function Home() {
           <div className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold">Radiologist Registration</h2>
-                <p className="text-sm text-muted-foreground mt-1">Enter your professional details</p>
+                <h2 className="text-xl font-bold">{t("Radiologist Registration")}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{t("Enter your professional details")}</p>
               </div>
               <button onClick={() => setShowRadiologistForm(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
@@ -314,23 +320,23 @@ export default function Home() {
             </div>
             <form onSubmit={handleRadiologistSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="rad-specialization">Specialization *</Label>
-                <Input id="rad-specialization" placeholder="e.g. Diagnostic Radiology" value={radiologistForm.specialization} onChange={(e) => setRadiologistForm({ ...radiologistForm, specialization: e.target.value })} required />
+                <Label htmlFor="rad-specialization">{t("Specialization *")}</Label>
+                <Input id="rad-specialization" placeholder={t("e.g. Diagnostic Radiology")} value={radiologistForm.specialization} onChange={(e) => setRadiologistForm({ ...radiologistForm, specialization: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rad-license">License Number *</Label>
-                <Input id="rad-license" placeholder="Medical license number" value={radiologistForm.license_number} onChange={(e) => setRadiologistForm({ ...radiologistForm, license_number: e.target.value })} required />
+                <Label htmlFor="rad-license">{t("License Number *")}</Label>
+                <Input id="rad-license" placeholder={t("Medical license number")} value={radiologistForm.license_number} onChange={(e) => setRadiologistForm({ ...radiologistForm, license_number: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rad-hospital">Hospital / Imaging Center</Label>
-                <Input id="rad-hospital" placeholder="Hospital or imaging center name" value={radiologistForm.hospital} onChange={(e) => setRadiologistForm({ ...radiologistForm, hospital: e.target.value })} />
+                <Label htmlFor="rad-hospital">{t("Hospital / Imaging Center")}</Label>
+                <Input id="rad-hospital" placeholder={t("Hospital or imaging center name")} value={radiologistForm.hospital} onChange={(e) => setRadiologistForm({ ...radiologistForm, hospital: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rad-phone">Phone</Label>
-                <Input id="rad-phone" placeholder="Contact number" value={radiologistForm.phone} onChange={(e) => setRadiologistForm({ ...radiologistForm, phone: e.target.value })} />
+                <Label htmlFor="rad-phone">{t("Phone")}</Label>
+                <Input id="rad-phone" placeholder={t("Contact number")} value={radiologistForm.phone} onChange={(e) => setRadiologistForm({ ...radiologistForm, phone: e.target.value })} />
               </div>
               <Button type="submit" className="w-full" disabled={creating}>
-                {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Create Radiologist Account"}
+                {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Radiologist Account")}
               </Button>
             </form>
           </div>

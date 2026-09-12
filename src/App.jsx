@@ -23,6 +23,7 @@ import LabRegister from '@/pages/LabRegister';
 import LabPortal from '@/pages/LabPortal';
 import LabTechnician from '@/pages/LabTechnician';
 import RadiologistDashboard from '@/pages/RadiologistDashboard';
+import { AppLanguageProvider } from '@/lib/appLanguage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
@@ -74,7 +75,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
-          <AuthenticatedApp />
+          <AppLanguageProvider>
+            <AuthenticatedApp />
+          </AppLanguageProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>

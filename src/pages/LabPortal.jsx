@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useAppLanguage } from "@/lib/appLanguage";
 import LabDashboardSection from "@/components/lab/portal/LabDashboardSection";
 import LabRequestsSection from "@/components/lab/portal/LabRequestsSection";
 import LabPendingTestsSection from "@/components/lab/portal/LabPendingTestsSection";
@@ -27,6 +28,7 @@ const navItems = [
 
 export default function LabPortal() {
   const { user } = useAuth();
+  const { t } = useAppLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [notifPatientId, setNotifPatientId] = useState(null);
@@ -65,9 +67,9 @@ export default function LabPortal() {
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{navItems.find((n) => n.key === activeTab)?.label}</h1>
+            <h1 className="text-2xl font-bold">{t(navItems.find((n) => n.key === activeTab)?.label)}</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {profile.lab_name} · A&M Lab No. {profile.lab_number}
+              {profile.lab_name} · {t("A&M Lab No.")} {profile.lab_number}
             </p>
           </div>
           <NotificationsBell

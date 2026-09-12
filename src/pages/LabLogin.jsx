@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, FlaskConical, Loader2, Lock, LogIn, Mail, UserCircle } from "lucide-react";
 import { saveLabSession } from "@/lib/labSession";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 export default function LabLogin() {
   const [tab, setTab] = useState("lab");
@@ -15,6 +16,7 @@ export default function LabLogin() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { t } = useAppLanguage();
 
   const handleLabLogin = async (e) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ export default function LabLogin() {
       await base44.auth.loginViaEmailPassword(email, password);
       window.location.href = "/lab-portal";
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      setError(err.message || t("Invalid email or password"));
       setLoading(false);
     }
   };
@@ -38,7 +40,7 @@ export default function LabLogin() {
       saveLabSession(res.data);
       window.location.href = "/lab-technician";
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Invalid username or password");
+      setError(err.response?.data?.error || err.message || t("Invalid username or password"));
       setLoading(false);
     }
   };
@@ -46,13 +48,13 @@ export default function LabLogin() {
   return (
     <AuthLayout
       icon={Building2}
-      title="Lab Portal"
-      subtitle="Laboratory and technician sign-in"
+      title={t("Lab Portal")}
+      subtitle={t("Laboratory and technician sign-in")}
       footer={
         <>
-          Don't have a laboratory account?{" "}
+          {t("Don't have a laboratory account?")}{" "}
           <Link to="/lab/register" className="text-primary font-medium hover:underline">
-            Create one
+            {t("Create one")}
           </Link>
         </>
       }
@@ -66,7 +68,7 @@ export default function LabLogin() {
           }`}
         >
           <Building2 className="w-4 h-4" />
-          Laboratory
+          {t("Laboratory")}
         </button>
         <button
           type="button"
@@ -76,7 +78,7 @@ export default function LabLogin() {
           }`}
         >
           <FlaskConical className="w-4 h-4" />
-          Technician
+          {t("Technician")}
         </button>
       </div>
 
@@ -85,7 +87,7 @@ export default function LabLogin() {
       {tab === "lab" ? (
         <form onSubmit={handleLabLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("Email")}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
@@ -102,7 +104,7 @@ export default function LabLogin() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("Password")}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
@@ -121,12 +123,12 @@ export default function LabLogin() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Logging in...
+                {t("Logging in...")}
               </>
             ) : (
               <>
-                <LogIn className="w-4 h-4 mr-2" />
-                Log in to Lab Portal
+                <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                {t("Log in to Lab Portal")}
               </>
             )}
           </Button>
@@ -134,7 +136,7 @@ export default function LabLogin() {
       ) : (
         <form onSubmit={handleTechLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Technician Username</Label>
+            <Label htmlFor="username">{t("Technician Username")}</Label>
             <div className="relative">
               <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
@@ -150,7 +152,7 @@ export default function LabLogin() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="tech_password">Password</Label>
+            <Label htmlFor="tech_password">{t("Password")}</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
               <Input
@@ -169,10 +171,10 @@ export default function LabLogin() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Signing in...
+                {t("Signing in...")}
               </>
             ) : (
-              "Sign in to your workspace"
+              t("Sign in to your workspace")
             )}
           </Button>
         </form>

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { LogOut, Menu, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
+import { useAppLanguage } from "@/lib/appLanguage";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 
@@ -38,7 +40,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <Logo fittingType="fill" className="w-9 h-9 rounded-full" />
             <span className="font-bold text-sm">AMedix</span>
           </div>
-          <div className="w-6" />
+          <AppLanguageSwitcher />
         </header>
 
         <main className="flex-1 overflow-y-auto">
@@ -50,6 +52,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
 }
 
 function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo }) {
+  const { t } = useAppLanguage();
   return (
     <>
       <div className="p-6 border-b border-sidebar-border">
@@ -57,7 +60,7 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
           <Logo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
           <div className="min-w-0">
             <span className="font-bold text-2xl tracking-tight leading-tight block">AMedix</span>
-            {roleLabel && <p className="text-xs text-sidebar-foreground/60">{roleLabel}</p>}
+            {roleLabel && <p className="text-xs text-sidebar-foreground/60">{t(roleLabel)}</p>}
           </div>
         </div>
       </div>
@@ -77,16 +80,19 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
               }`}
             >
               <Icon className="w-5 h-5" />
-              {item.label}
+              {t(item.label)}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        <div className="flex justify-center">
+          <AppLanguageSwitcher />
+        </div>
         <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent" onClick={onLogout}>
           <LogOut className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-          {logoutLabel || "Log out"}
+          {t(logoutLabel || "Log out")}
         </Button>
       </div>
     </>

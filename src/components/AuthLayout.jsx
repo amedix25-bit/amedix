@@ -2,8 +2,11 @@ import React from "react";
 import { Check } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
+import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
+  const { t } = useAppLanguage();
   return (
     <div className="min-h-screen flex">
       {/* Left branding panel */}
@@ -24,18 +27,18 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
           <div className="space-y-8">
             <div>
               <h2 className="text-4xl font-bold leading-tight">
-                Connected Care.<br />Better Health.
+                {t("Connected Care.")}<br />{t("Better Health.")}
               </h2>
               <p className="text-white/80 mt-4 text-lg max-w-md">
-                A secure healthcare platform connecting doctors and patients in one unified, confidential system.
+                {t("A secure healthcare platform connecting doctors and patients in one unified, confidential system.")}
               </p>
             </div>
 
             <div className="space-y-4">
               {[
-              "Unique Clinical Identification Number (CIN) for every patient",
-              "You own your medical records — doctors access them only with your consent",
-              "Manage appointments, lab results, imaging, and documents in one place"].
+              t("Unique Clinical Identification Number (CIN) for every patient"),
+              t("You own your medical records — doctors access them only with your consent"),
+              t("Manage appointments, lab results, imaging, and documents in one place")].
               map((feature, i) =>
               <div key={i} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -47,12 +50,15 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             </div>
           </div>
 
-          <p className="text-white/50 text-sm">© 2026 AMedix. All rights reserved.</p>
+          <p className="text-white/50 text-sm">{t("© 2026 AMedix. All rights reserved.")}</p>
         </div>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8 bg-background">
+      <div className="relative flex-1 flex items-center justify-center px-4 py-8 bg-background">
+        <div className="absolute top-4 right-4 rtl:left-4 rtl:right-auto z-10">
+          <AppLanguageSwitcher />
+        </div>
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center gap-3 mb-6">
             <div className="w-14 h-14 rounded-full bg-white overflow-hidden">
@@ -61,7 +67,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
             <span className="text-2xl font-bold text-foreground">AMedix</span>
           </div>
           <p className="lg:hidden text-center text-sm text-muted-foreground mb-8">
-            Connected Care. Better Health.
+            {t("Connected Care. Better Health.")}
           </p>
 
           <div className="text-center mb-8">
