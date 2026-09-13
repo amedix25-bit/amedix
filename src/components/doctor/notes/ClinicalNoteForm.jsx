@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
 import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
+import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
@@ -15,7 +16,7 @@ const EMPTY = {
   encounter_datetime: "",
   location: "",
   history: "",
-  vital_signs: "",
+  vitals: { temperature: "", pulse: "", respiratory_rate: "", blood_pressure: "", spo2: "" },
   physical_examination: "",
   diagnosis: "",
   prescription: "",
@@ -154,6 +155,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         `${(m.special_instructions || "").trim() ? ` — Special instructions: ${(m.special_instructions || "").trim()}` : ""}`
       )
       .join("\n");
+    const v = form.vitals || {};
+    const vitalsSummary = [
+      v.blood_pressure ? `BP: ${v.blood_pressure} mmHg` : "",
+      v.pulse ? `Pulse: ${v.pulse} bpm` : "",
+      v.temperature ? `Temp: ${v.temperature}°C` : "",
+      v.respiratory_rate ? `RR: ${v.respiratory_rate} breaths/min` : "",
+      v.spo2 ? `SpO₂: ${v.spo2}%` : "",
+    ].filter(Boolean).join(" · ");
     setSaving(true);
     try {
       await base44.entities.ClinicalNote.create({
@@ -166,7 +175,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         encounter_datetime: form.encounter_datetime ? new Date(form.encounter_datetime).toISOString() : "",
         location: form.location,
         history: form.history,
-        vital_signs: form.vital_signs,
+        vital_signs: vitalsSummary,
         physical_examination: form.physical_examination,
         diagnosis: form.diagnosis,
         prescription: prescriptionSummary,
@@ -261,12 +270,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
 
       <div className="space-y-2">
         <Label>Vital Signs</Label>
-        <Textarea
-          value={form.vital_signs}
-          onChange={(e) => setForm({ ...form, vital_signs: e.target.value })}
-          rows={2}
-          placeholder="e.g. BP 120/80, HR 78, Temp 37.0°C, RR 16"
-        />
+        <VitalSignsForm value={form.vitals} onChange={(v) => setForm({ ...form, vitals: v })} />
       </div>
 
       <div className="space-y-2">
