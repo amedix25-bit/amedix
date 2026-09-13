@@ -421,6 +421,22 @@ const AR = {
   "Delete document": "حذف المستند",
   "Clinical Notes": "الملاحظات السريرية",
   "Switch Portal": "تبديل البوابة",
+
+  // ─── Demographics editing ───
+  "Demographics": "البيانات الديموغرافية",
+  "Nationality": "الجنسية",
+  "Nationality, e.g. Libyan": "الجنسية، مثال: ليبي",
+  "Occupations": "المهن",
+  "Occupation, e.g. Student, Physician": "المهنة، مثال: طالب، طبيب",
+  "Add Occupation": "إضافة مهنة",
+  "Phone Numbers": "أرقام الهاتف",
+  "Add Phone Number": "إضافة رقم هاتف",
+  "Primary": "رئيسي",
+  "Secondary": "ثانوي",
+  "Work": "العمل",
+  "Emergency Contacts": "جهات اتصال الطوارئ",
+  "Add Emergency Contact": "إضافة جهة اتصال للطوارئ",
+  "Remove": "إزالة",
   "Clinical notes saved by your doctors appear here automatically.":
     "تظهر هنا تلقائياً جميع الملاحظات السريرية التي سجلها أطباؤك.",
   "No clinical notes yet": "لا توجد ملاحظات سريرية بعد",

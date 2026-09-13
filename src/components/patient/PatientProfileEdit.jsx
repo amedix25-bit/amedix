@@ -6,32 +6,44 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Lock, CheckCircle2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { OccupationsEditor, PhoneNumbersEditor, EmergencyContactsEditor } from "@/components/patient/profile/DemographicsEditors";
 
 export default function PatientProfileEdit({ profile, onSaved }) {
   const { t } = usePatientLanguage();
-  const [form, setForm] = useState({
-    phone: "",
-    address: "",
-    blood_type: "Unknown",
-    allergies: "",
-    emergency_contact_name: "",
-    emergency_contact_phone: "",
-    emergency_contact_relationship: "",
-  });
+  const [form, setForm] = useState({ address: "", blood_type: "Unknown", allergies: "", nationality: "" });
+  const [occupations, setOccupations] = useState([]);
+  const [phoneNumbers, setPhoneNumbers] = useState([]);
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (profile) {
       setForm({
-        phone: profile.phone || "",
         address: profile.address || "",
         blood_type: profile.blood_type || "Unknown",
         allergies: profile.allergies || "",
-        emergency_contact_name: profile.emergency_contact_name || "",
-        emergency_contact_phone: profile.emergency_contact_phone || "",
-        emergency_contact_relationship: profile.emergency_contact_relationship || "",
+        nationality: profile.nationality || "",
       });
+      // Seed the multi-entry lists from the legacy single fields so existing
+      // profiles upgrade automatically.
+      setPhoneNumbers(
+        profile.phone_numbers?.length
+          ? profile.phone_numbers
+          : profile.phone ? [{ label: "Primary", number: profile.phone }] : []
+      );
+      setEmergencyContacts(
+        profile.emergency_contacts?.length
+          ? profile.emergency_contacts
+          : profile.emergency_contact_name
+            ? [{
+                name: profile.emergency_contact_name,
+                relationship: profile.emergency_contact_relationship || "",
+                phone: profile.emergency_contact_phone || "",
+              }]
+            : []
+      );
+      setOccupations(profile.occupations || []);
     }
   }, [profile]);
 
@@ -39,11 +51,32 @@ export default function PatientProfileEdit({ profile, onSaved }) {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     setSaved(false);
   };
+  const touch = (setter) => (value) => {
+    setter(value);
+    setSaved(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await base44.entities.PatientProfile.update(profile.id, form);
+      const phones = phoneNumbers.filter((p) => (p.number || "").trim());
+      const contacts = emergencyContacts.filter((c) => (c.name || "").trim() || (c.phone || "").trim());
+      const occs = occupations.map((o) => (o || "").trim()).filter(Boolean);
+      await base44.entities.PatientProfile.update(profile.id, {
+        address: form.address,
+        blood_type: form.blood_type,
+        allergies: form.allergies,
+        nationality: form.nationality,
+        occupations: occs,
+        phone_numbers: phones,
+        emergency_contacts: contacts,
+        // Keep the legacy single fields in sync so every existing view of the
+        // patient's demographics stays up to date.
+        phone: phones[0]?.number || "",
+        emergency_contact_name: contacts[0]?.name || "",
+        emergency_contact_phone: contacts[0]?.phone || "",
+        emergency_contact_relationship: contacts[0]?.relationship || "",
+      });
       setSaved(true);
       if (onSaved) onSaved();
     } catch (err) {
@@ -80,12 +113,26 @@ export default function PatientProfileEdit({ profile, onSaved }) {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4">{t("Demographics")}</h3>
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="p_nationality">{t("Nationality")}</Label>
+            <Input id="p_nationality" placeholder={t("Nationality, e.g. Libyan")} value={form.nationality} onChange={set("nationality")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("Occupations")}</Label>
+            <OccupationsEditor value={occupations} onChange={touch(setOccupations)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("Phone Numbers")}</Label>
+            <PhoneNumbersEditor value={phoneNumbers} onChange={touch(setPhoneNumbers)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="font-semibold text-sm mb-4">{t("Contact & Medical Details")}</h3>
         <div className="grid sm:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="p_phone">{t("Phone")}</Label>
-            <Input id="p_phone" type="tel" value={form.phone} onChange={set("phone")} />
-          </div>
           <div className="space-y-1.5">
             <Label>{t("Blood type")}</Label>
             <Select value={form.blood_type} onValueChange={(v) => { setForm((f) => ({ ...f, blood_type: v })); setSaved(false); }}>
@@ -97,7 +144,7 @@ export default function PatientProfileEdit({ profile, onSaved }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5 sm:col-span-2">
+          <div className="space-y-1.5">
             <Label htmlFor="p_address">{t("Address")}</Label>
             <Input id="p_address" value={form.address} onChange={set("address")} />
           </div>
@@ -110,21 +157,8 @@ export default function PatientProfileEdit({ profile, onSaved }) {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">
-        <h3 className="font-semibold text-sm mb-4">{t("Emergency Contact")}</h3>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="p_ec_name">{t("Name")}</Label>
-            <Input id="p_ec_name" value={form.emergency_contact_name} onChange={set("emergency_contact_name")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="p_ec_phone">{t("Phone")}</Label>
-            <Input id="p_ec_phone" type="tel" value={form.emergency_contact_phone} onChange={set("emergency_contact_phone")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="p_ec_rel">{t("Relationship")}</Label>
-            <Input id="p_ec_rel" value={form.emergency_contact_relationship} onChange={set("emergency_contact_relationship")} />
-          </div>
-        </div>
+        <h3 className="font-semibold text-sm mb-4">{t("Emergency Contacts")}</h3>
+        <EmergencyContactsEditor value={emergencyContacts} onChange={touch(setEmergencyContacts)} />
       </div>
 
       <div className="flex items-center gap-3">

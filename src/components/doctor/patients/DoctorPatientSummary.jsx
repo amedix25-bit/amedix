@@ -45,6 +45,23 @@ export default function DoctorPatientSummary({ patient }) {
             .join(", ")
         : doctorText("PatientProfile", patient, "allergies", patient.allergies) || "None recorded";
 
+  const phoneNumbers =
+    patient.phone_numbers?.length
+      ? patient.phone_numbers
+      : patient.phone
+        ? [{ label: "Primary", number: patient.phone }]
+        : [];
+  const emergencyContacts =
+    patient.emergency_contacts?.length
+      ? patient.emergency_contacts
+      : patient.emergency_contact_name
+        ? [{
+            name: patient.emergency_contact_name,
+            relationship: patient.emergency_contact_relationship,
+            phone: patient.emergency_contact_phone,
+          }]
+        : [];
+
   const items = [
     {
       icon: <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />,
@@ -68,6 +85,16 @@ export default function DoctorPatientSummary({ patient }) {
       icon: <Pill className="w-4 h-4 text-primary shrink-0 mt-0.5" />,
       label: "Current Medications",
       value: meds === null ? null : meds.length > 0 ? meds.join(", ") : "None",
+    },
+    {
+      icon: <User className="w-4 h-4 text-primary shrink-0 mt-0.5" />,
+      label: "Emergency Contacts",
+      value:
+        emergencyContacts.length > 0
+          ? emergencyContacts
+              .map((c) => `${c.name}${c.relationship ? ` (${c.relationship})` : ""}${c.phone ? ` — ${c.phone}` : ""}`)
+              .join("; ")
+          : "None recorded",
     },
   ];
 
@@ -100,8 +127,20 @@ export default function DoctorPatientSummary({ patient }) {
           <p className="font-medium">{patient.blood_type || "—"}</p>
         </div>
         <div>
+          <p className="text-muted-foreground text-xs">Nationality</p>
+          <p className="font-medium">{patient.nationality || "—"}</p>
+        </div>
+        <div className="sm:col-span-2">
+          <p className="text-muted-foreground text-xs">Occupation</p>
+          <p className="font-medium">{(patient.occupations || []).join(", ") || "—"}</p>
+        </div>
+        <div className="sm:col-span-2">
           <p className="text-muted-foreground text-xs">Phone</p>
-          <p className="font-medium">{patient.phone || "—"}</p>
+          <p className="font-medium">
+            {phoneNumbers.length > 0
+              ? phoneNumbers.map((p) => `${p.label}: ${p.number}`).join(" · ")
+              : "—"}
+          </p>
         </div>
       </div>
 

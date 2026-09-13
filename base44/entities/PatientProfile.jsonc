@@ -33,8 +33,47 @@
         "other"
       ]
     },
+    "nationality": {
+      "type": "string",
+      "description": "Patient's nationality \u2014 editable by the patient in Demographics"
+    },
+    "occupations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Patient's occupations, e.g. Student, Physician \u2014 the patient can save several, each displayed separately and editable or removable"
+    },
     "phone": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy primary phone \u2014 kept in sync with the first entry of phone_numbers"
+    },
+    "phone_numbers": {
+      "type": "array",
+      "description": "Patient's phone numbers, each saved separately with a clear label",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "enum": [
+              "Primary",
+              "Secondary",
+              "Work",
+              "Other"
+            ],
+            "description": "Label of this phone number"
+          },
+          "number": {
+            "type": "string",
+            "description": "The phone number itself"
+          }
+        },
+        "required": [
+          "label",
+          "number"
+        ]
+      }
     },
     "address": {
       "type": "string"
@@ -62,13 +101,38 @@
       "description": "National ID, passport, or other required identification number"
     },
     "emergency_contact_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy first emergency contact name \u2014 kept in sync with the first entry of emergency_contacts"
     },
     "emergency_contact_phone": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy first emergency contact phone \u2014 kept in sync with the first entry of emergency_contacts"
     },
     "emergency_contact_relationship": {
-      "type": "string"
+      "type": "string",
+      "description": "Legacy first emergency contact relationship \u2014 kept in sync with the first entry of emergency_contacts"
+    },
+    "emergency_contacts": {
+      "type": "array",
+      "description": "Patient's emergency contacts \u2014 each has their own name, relationship to the patient and phone number, and can be edited or removed individually",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "relationship": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone"
+        ]
+      }
     },
     "smoking_status": {
       "type": "string",
