@@ -144,6 +144,25 @@ const AR = {
   "Continue as Administrator": "متابعة كمدير نظام",
   "Choose a different portal": "اختيار بوابة دخول أخرى",
 
+  // ─── Patient account for professionals & portal switching ───
+  "Switch Portal": "تبديل البوابة",
+  "Create Patient Account": "إنشاء حساب مريض",
+  "Add a patient profile linked to this account. You will be able to switch between your professional portal and the Patient Portal.":
+    "أضف ملف مريض مرتبطاً بهذا الحساب. ستتمكن من التبديل بين بوابتك المهنية وبوابة المريض.",
+  "Date of Birth": "تاريخ الميلاد",
+  "Sex": "الجنس",
+  "Male": "ذكر",
+  "Female": "أنثى",
+  "Other": "أخرى",
+  "Creating patient account...": "جارٍ إنشاء حساب المريض...",
+  "Patient Account Created": "تم إنشاء حساب المريض",
+  "Your patient CIN is:": "رقم الـ CIN الخاص بك كمريض هو:",
+  "You can now switch between your professional portal and the Patient Portal at any time.":
+    "يمكنك الآن التبديل بين بوابتك المهنية وبوابة المريض في أي وقت.",
+  "Open Patient Portal": "فتح بوابة المريض",
+  "Could not create the patient account. Please try again.":
+    "تعذّر إنشاء حساب المريض. يرجى المحاولة مرة أخرى.",
+
   // ─── Register ───
   "Verify your email": "تحقق من بريدك الإلكتروني",
   "We sent a code to {email}": "أرسلنا رمزاً إلى {email}",

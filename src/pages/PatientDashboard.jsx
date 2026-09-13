@@ -19,6 +19,7 @@ import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
 import NotificationsBar from "@/components/patient/NotificationsBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
+import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
 import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -115,6 +116,7 @@ function PatientPortal() {
         onNavClick={setActiveTab}
         roleLabel={t("Patient")}
         logoutLabel={t("Log out")}
+        sidebarAction={user ? <ProfessionalPortalSwitch user={user} /> : null}
       >
         <div className="p-4 lg:p-6 max-w-5xl mx-auto">
           <div className="mb-6 flex items-start justify-between gap-3">

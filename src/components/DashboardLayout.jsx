@@ -6,7 +6,7 @@ import { useAppLanguage } from "@/lib/appLanguage";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 
-export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, children }) {
+export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -16,7 +16,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden lg:flex w-64 flex-col border-r rtl:border-l rtl:border-r-0 border-border bg-sidebar">
-        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} />
+        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} />
       </aside>
 
       {sidebarOpen && (
@@ -26,7 +26,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-muted-foreground z-10">
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} />
+            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} />
           </aside>
         </div>
       )}
@@ -51,7 +51,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   );
 }
 
-function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo }) {
+function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo, sidebarAction }) {
   const { t } = useAppLanguage();
   return (
     <>
@@ -87,6 +87,7 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
       </nav>
 
       <div className="p-4 border-t border-sidebar-border space-y-3">
+        {sidebarAction}
         <div className="flex justify-center">
           <AppLanguageSwitcher />
         </div>

@@ -10,6 +10,7 @@ import RadiologistNotifications from "@/components/radiologist/RadiologistNotifi
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
 import RadiologistOverview from "@/components/radiologist/RadiologistOverview";
 import RadiologistColleagues from "@/components/radiologist/colleagues/RadiologistColleagues";
+import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
 import { Search, Bell, LayoutDashboard, Users } from "lucide-react";
 
 const navItems = [
@@ -54,7 +55,7 @@ export default function RadiologistDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" logo={AmedixMark}>
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" logo={AmedixMark} sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>

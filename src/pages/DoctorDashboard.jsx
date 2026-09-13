@@ -15,6 +15,7 @@ import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
+import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
 import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail } from "lucide-react";
 
 const navItems = [
@@ -87,7 +88,7 @@ export default function DoctorDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor">
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div className="flex items-center gap-4 min-w-0">
