@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
+import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
 
@@ -275,6 +276,11 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
           onChange={(e) => setForm({ ...form, physical_examination: e.target.value })}
           rows={3}
         />
+        {patient && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <ExaminationsTab patient={patient} doctorProfile={doctorProfile} />
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
