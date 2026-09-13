@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, ShieldCheck, Syringe, FolderOpen } from "lucide-react";
+import { Loader2, ShieldCheck, Syringe, FolderOpen, ClipboardList } from "lucide-react";
 import DocumentCaptureCard from "@/components/patient/documents/DocumentCaptureCard";
+import ClinicalNotesSection from "@/components/patient/documents/ClinicalNotesSection";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   INSURANCE_CARD,
@@ -147,6 +148,14 @@ export default function PatientDocuments({ patient }) {
           onCapture={handleCapture}
           onDelete={handleDelete}
         />
+      </section>
+
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <ClipboardList className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold">{t("Clinical Notes")}</h2>
+        </div>
+        <ClinicalNotesSection patient={patient} />
       </section>
 
       <section>

@@ -419,6 +419,13 @@ const AR = {
   "Delete this document?": "حذف هذا المستند؟",
   '"{title}" will be permanently removed from your documents.': 'سيتم حذف "{title}" نهائياً من مستنداتك.',
   "Delete document": "حذف المستند",
+  "Clinical Notes": "الملاحظات السريرية",
+  "Clinical notes saved by your doctors appear here automatically.":
+    "تظهر هنا تلقائياً جميع الملاحظات السريرية التي سجلها أطباؤك.",
+  "No clinical notes yet": "لا توجد ملاحظات سريرية بعد",
+  "View PDF": "عرض PDF",
+  "Provisional Diagnosis": "التشخيص المبدئي",
+  "Dr.": "د.",
 
   // Patient Registration screen
   "Patient Registration": "تسجيل المريض",
