@@ -49,8 +49,17 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
         <Field label="Vital Signs" value={note.vital_signs} />
         <Field label="Physical Examination" value={note.physical_examination} />
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Final Diagnosis</p>
-          <p className="text-sm font-medium">{note.diagnosis}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Provisional Diagnosis</p>
+          {(Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
+            ? note.provisional_diagnoses
+            : [note.diagnosis]
+          )
+            .filter(Boolean)
+            .map((d, i) => (
+              <p key={i} className="text-sm font-medium">
+                {i + 1}. {d}
+              </p>
+            ))}
         </div>
 
         {hasManagement && (

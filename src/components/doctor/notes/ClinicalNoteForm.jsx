@@ -9,7 +9,7 @@ import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
 import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
-import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight } from "lucide-react";
+import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight, Plus } from "lucide-react";
 
 const EMPTY = {
   patient_cin: "",
@@ -18,7 +18,7 @@ const EMPTY = {
   history: "",
   vitals: { temperature: "", pulse: "", respiratory_rate: "", blood_pressure: "", spo2: "" },
   physical_examination: "",
-  diagnosis: "",
+  provisional_diagnoses: [""],
   prescription: "",
   interventions: "",
   biopsy: "",
@@ -40,7 +40,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
 
   const restoreDraft = (d) => {
     setDraftId(d.id);
-    if (d.form_data) setForm((f) => ({ ...f, ...d.form_data }));
+    if (d.form_data)
+      setForm((f) => {
+        const merged = { ...f, ...d.form_data };
+        if (!Array.isArray(merged.provisional_diagnoses) || merged.provisional_diagnoses.length === 0) {
+          merged.provisional_diagnoses = merged.diagnosis ? [merged.diagnosis] : [""];
+        }
+        return merged;
+      });
     if (Array.isArray(d.medications)) setMedications(d.medications);
     if (Array.isArray(d.selected_lab_request_ids)) setSelectedLabs(new Set(d.selected_lab_request_ids));
     if (Array.isArray(d.selected_imaging_request_ids)) setSelectedImaging(new Set(d.selected_imaging_request_ids));
@@ -135,8 +142,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       setError("Select the location of the encounter.");
       return;
     }
-    if (!form.diagnosis.trim()) {
-      setError("Final diagnosis is required.");
+    const diagnoses = (form.provisional_diagnoses || []).map((d) => d.trim()).filter(Boolean);
+    if (diagnoses.length === 0) {
+      setError("Provisional diagnosis is required.");
       return;
     }
     const meds = medications.filter((m) => m.name.trim());
@@ -177,7 +185,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         history: form.history,
         vital_signs: vitalsSummary,
         physical_examination: form.physical_examination,
-        diagnosis: form.diagnosis,
+        provisional_diagnoses: diagnoses,
+        diagnosis: diagnoses.join("; "),
         prescription: prescriptionSummary,
         interventions: form.interventions,
         biopsy: form.biopsy,
@@ -187,7 +196,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       });
       if (meds.length > 0) {
         await base44.entities.Medication.bulkCreate(
-          meds.map((m) => medicationRecordFromForm(m, { patient, fallbackReason: form.diagnosis }))
+          meds.map((m) => medicationRecordFromForm(m, { patient, fallbackReason: diagnoses[0] }))
         );
       }
       if (draftId) {
@@ -288,12 +297,42 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       </div>
 
       <div className="space-y-2">
-        <Label>Final Diagnosis *</Label>
-        <Input
-          value={form.diagnosis}
-          onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
-          required
-        />
+        <Label>Provisional Diagnosis *</Label>
+        {(form.provisional_diagnoses || [""]).map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input
+              value={d}
+              onChange={(e) => {
+                const next = [...form.provisional_diagnoses];
+                next[i] = e.target.value;
+                setForm({ ...form, provisional_diagnoses: next });
+              }}
+              placeholder={i === 0 ? "Primary provisional diagnosis" : `Provisional diagnosis ${i + 1}`}
+              required={i === 0}
+            />
+            {(form.provisional_diagnoses || []).length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  setForm({ ...form, provisional_diagnoses: form.provisional_diagnoses.filter((_, idx) => idx !== i) })
+                }
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setForm({ ...form, provisional_diagnoses: [...(form.provisional_diagnoses || []), ""] })}
+        >
+          <Plus className="w-4 h-4 mr-1.5" />
+          Add Provisional Diagnosis
+        </Button>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-4">

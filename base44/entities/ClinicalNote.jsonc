@@ -48,9 +48,16 @@
       "type": "string",
       "description": "Physical Examination section of the clinical note"
     },
+    "provisional_diagnoses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Provisional diagnoses entered by the doctor for this encounter \u2014 one entry per diagnosis"
+    },
     "diagnosis": {
       "type": "string",
-      "description": "Final Diagnosis"
+      "description": "Provisional diagnoses joined into a single summary string"
     },
     "notes": {
       "type": "string"
