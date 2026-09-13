@@ -11,8 +11,19 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, AllergyEntryForm, SurgeryEntryForm,
 } from "@/components/patient/onboarding/EntryForms";
+import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Surgeries", "Lifestyle & Pregnancy"];
+
+// Pregnancy-history counters — selection-only questions with predefined
+// number options, answered by married female patients during registration.
+const PREGNANCY_COUNTS = [
+  { key: "gravida", label: "Number of pregnancies (Gravida)" },
+  { key: "para", label: "Number of births (Para)" },
+  { key: "living_children", label: "Number of living children" },
+  { key: "miscarriages", label: "Number of miscarriages/abortions" },
+  { key: "stillbirths", label: "Number of stillbirths" },
+];
 
 export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const { lang, t, setLang } = usePatientLanguage();
@@ -37,14 +48,16 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     preferred_language: lang === "ar" ? "ar" : "en",
   });
   const [medical, setMedical] = useState({
-    knownCases: [], pastHistory: [], allergies: [], medications: [], surgeries: [],
+    familyHistory: [], pastHistory: [], allergies: [], medications: [], surgeries: [],
   });
   const [noneFlags, setNoneFlags] = useState({
-    knownCases: false, pastHistory: false, allergies: false, medications: false, surgeries: false,
+    familyHistory: false, pastHistory: false, allergies: false, medications: false, surgeries: false,
   });
   const [lifestyle, setLifestyle] = useState({
     smoking_status: "", alcohol_use: "", substance_use: "",
-    pregnancy_status: "", gestational_age: "", estimated_due_date: "", pregnancy_history: "",
+    marital_status: "",
+    pregnancy_status: "", gestational_age: "", estimated_due_date: "",
+    gravida: "", para: "", living_children: "", miscarriages: "", stillbirths: "",
   });
 
   const isFemale = form.gender === "female";
@@ -62,15 +75,19 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   };
 
   const sectionAnswered = (flag) => noneFlags[flag] || medical[flag].length > 0;
-  const step1Valid = ["knownCases", "pastHistory", "allergies"].every(sectionAnswered);
+  const step1Valid = ["familyHistory", "pastHistory", "allergies"].every(sectionAnswered);
   const step2Valid = ["medications", "surgeries"].every(sectionAnswered);
+  const pregnancyCountsAnswered = PREGNANCY_COUNTS.every(({ key }) => lifestyle[key] !== "");
   const step3Valid =
     !!lifestyle.smoking_status &&
     !!lifestyle.alcohol_use &&
     (!isFemale ||
-      (!!lifestyle.pregnancy_status &&
-        (lifestyle.pregnancy_status !== "pregnant" ||
-          (!!lifestyle.gestational_age && !!lifestyle.estimated_due_date))));
+      (!!lifestyle.marital_status &&
+        (lifestyle.marital_status !== "married" ||
+          (!!lifestyle.pregnancy_status &&
+            pregnancyCountsAnswered &&
+            (lifestyle.pregnancy_status !== "pregnant" ||
+              (!!lifestyle.gestational_age && !!lifestyle.estimated_due_date))))));
 
   const switchLang = (v) => {
     setLang(v);
@@ -89,6 +106,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     setError("");
+    const marriedFemale = isFemale && lifestyle.marital_status === "married";
+    const isPregnant = marriedFemale && lifestyle.pregnancy_status === "pregnant";
     try {
       const newCin = await generateUniqueCIN();
       const fullName = [form.first_name, form.middle_name, form.last_name].filter(Boolean).join(" ");
@@ -112,19 +131,27 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         smoking_status: lifestyle.smoking_status,
         alcohol_use: lifestyle.alcohol_use,
         substance_use: lifestyle.substance_use,
-        pregnancy_status: isFemale ? lifestyle.pregnancy_status : "not_applicable",
-        gestational_age: isFemale ? lifestyle.gestational_age : "",
-        estimated_due_date: isFemale ? lifestyle.estimated_due_date : "",
-        pregnancy_history: isFemale ? lifestyle.pregnancy_history : "",
+        marital_status: isFemale ? lifestyle.marital_status : "",
+        pregnancy_status: marriedFemale ? lifestyle.pregnancy_status : "not_applicable",
+        gestational_age: isPregnant ? lifestyle.gestational_age : "",
+        estimated_due_date: isPregnant ? lifestyle.estimated_due_date : "",
+        gravida: marriedFemale ? Number(lifestyle.gravida) : 0,
+        para: marriedFemale ? Number(lifestyle.para) : 0,
+        living_children: marriedFemale ? Number(lifestyle.living_children) : 0,
+        miscarriages_abortions: marriedFemale ? Number(lifestyle.miscarriages) : 0,
+        stillbirths: marriedFemale ? Number(lifestyle.stillbirths) : 0,
+        pregnancy_history: marriedFemale
+          ? `G${lifestyle.gravida} P${lifestyle.para} · ${lifestyle.living_children} living children · ${lifestyle.miscarriages} miscarriages/abortions · ${lifestyle.stillbirths} stillbirths`
+          : "",
         medication_info_completed: true,
       });
       const meta = { patient_id: profile.id, patient_cin: newCin, patient_name: fullName };
-      const conditions = [
-        ...medical.knownCases.map((c) => ({ ...meta, ...c, category: "known_case" })),
-        ...medical.pastHistory.map((c) => ({ ...meta, ...c, category: "past_history" })),
-      ];
+      const conditions = medical.pastHistory.map((c) => ({ ...meta, ...c, category: "past_history" }));
       const creates = [];
       if (conditions.length) creates.push(base44.entities.MedicalCondition.bulkCreate(conditions));
+      if (medical.familyHistory.length) {
+        creates.push(base44.entities.FamilyHistory.bulkCreate(medical.familyHistory.map((f) => ({ ...meta, ...f }))));
+      }
       if (medical.allergies.length) {
         creates.push(base44.entities.Allergy.bulkCreate(medical.allergies.map((a) => ({ ...meta, ...a }))));
       }
@@ -328,17 +355,17 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
               {step === 1 && (
                 <div className="p-6 space-y-4">
                   <MedicalListSection
-                    id="none_knownCases"
-                    title={`${t("Known Case Of")} *`}
-                    description={t("Established chronic or previous medical conditions")}
-                    entries={medical.knownCases}
-                    entryLabel={(c) => `${c.name_ar || c.name}${c.date ? ` (${c.date})` : ""}`}
-                    onRemove={removeEntry("knownCases")}
-                    noneChecked={noneFlags.knownCases}
-                    onNoneChange={toggleNone("knownCases")}
-                    noneLabel={t("I have no known medical conditions")}
+                    id="none_familyHistory"
+                    title={`${t("Family History")} *`}
+                    description={t("Diseases or medical conditions that run in your family")}
+                    entries={medical.familyHistory}
+                    entryLabel={(c) => `${familyConditionLabel(c, lang === "ar")} — ${relationLabel(c.relation, lang === "ar")}`}
+                    onRemove={removeEntry("familyHistory")}
+                    noneChecked={noneFlags.familyHistory}
+                    onNoneChange={toggleNone("familyHistory")}
+                    noneLabel={t("No family history of diseases")}
                   >
-                    <ConditionEntryForm onAdd={addEntry("knownCases")} />
+                    <FamilyHistoryEntryForm onAdd={addEntry("familyHistory")} />
                   </MedicalListSection>
 
                   <MedicalListSection
@@ -452,14 +479,26 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
                   {isFemale && (
                     <div className="rounded-xl border border-border bg-card p-5">
-                      <h3 className="text-sm font-semibold text-primary mb-3">{t("Pregnancy")} *</h3>
+                      <h3 className="text-sm font-semibold text-primary mb-3">{t("Marital Status")} *</h3>
+                      <Select value={lifestyle.marital_status} onValueChange={(v) => setLifestyle((s) => ({ ...s, marital_status: v }))}>
+                        <SelectTrigger className="sm:max-w-xs"><SelectValue placeholder={t("Select")} /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="married">{t("Married")}</SelectItem>
+                          <SelectItem value="not_married">{t("Not Married")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {isFemale && lifestyle.marital_status === "married" && (
+                    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+                      <h3 className="text-sm font-semibold text-primary">{t("Pregnancy History")} *</h3>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label>{t("Pregnancy status")} *</Label>
                           <Select value={lifestyle.pregnancy_status} onValueChange={(v) => setLifestyle((s) => ({ ...s, pregnancy_status: v }))}>
                             <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="not_applicable">{t("Not applicable")}</SelectItem>
                               <SelectItem value="not_pregnant">{t("Not pregnant")}</SelectItem>
                               <SelectItem value="pregnant">{t("Pregnant")}</SelectItem>
                             </SelectContent>
@@ -468,8 +507,15 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         {lifestyle.pregnancy_status === "pregnant" && (
                           <>
                             <div className="space-y-1.5">
-                              <Label htmlFor="gest">{t("Gestational age")} *</Label>
-                              <Input id="gest" placeholder={t("e.g. 18 weeks")} value={lifestyle.gestational_age} onChange={setL("gestational_age")} />
+                              <Label>{t("Gestational age")} *</Label>
+                              <Select value={lifestyle.gestational_age} onValueChange={(v) => setLifestyle((s) => ({ ...s, gestational_age: v }))}>
+                                <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 40 }, (_, i) => i + 1).map((w) => (
+                                    <SelectItem key={w} value={`${w} weeks`}>{w} {t("weeks")}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="space-y-1.5">
                               <Label htmlFor="edd">{t("Estimated due date")} *</Label>
@@ -477,10 +523,26 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                             </div>
                           </>
                         )}
-                        <div className="space-y-1.5 sm:col-span-2">
-                          <Label htmlFor="preg_hist">{t("Pregnancy history")}</Label>
-                          <Input id="preg_hist" value={lifestyle.pregnancy_history} onChange={setL("pregnancy_history")} />
-                        </div>
+                      </div>
+                      {lifestyle.pregnancy_status === "not_pregnant" && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("Answer about previous pregnancies even if you are not pregnant now.")}
+                        </p>
+                      )}
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        {PREGNANCY_COUNTS.map(({ key, label }) => (
+                          <div key={key} className="space-y-1.5">
+                            <Label>{t(label)} *</Label>
+                            <Select value={lifestyle[key]} onValueChange={(v) => setLifestyle((s) => ({ ...s, [key]: v }))}>
+                              <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 13 }, (_, i) => String(i)).map((n) => (
+                                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

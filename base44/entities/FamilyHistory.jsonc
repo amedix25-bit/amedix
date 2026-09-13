@@ -1,0 +1,40 @@
+{
+  "name": "FamilyHistory",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the family history entry belongs to"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "condition": {
+      "type": "string",
+      "description": "Familial disease or medical condition in standardized English terminology"
+    },
+    "condition_ar": {
+      "type": "string",
+      "description": "Standardized Arabic term selected by the patient during registration \u2014 preserved exactly as entered and shown in the Patient Portal when present"
+    },
+    "relation": {
+      "type": "string",
+      "enum": [
+        "father",
+        "mother",
+        "brother",
+        "sister",
+        "other"
+      ],
+      "description": "Affected family member"
+    }
+  },
+  "required": [
+    "patient_id",
+    "condition",
+    "relation"
+  ]
+}

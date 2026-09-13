@@ -156,6 +156,14 @@
     "substance_use": {
       "type": "string"
     },
+    "marital_status": {
+      "type": "string",
+      "enum": [
+        "married",
+        "not_married"
+      ],
+      "description": "Marital status \u2014 collected at registration for female patients"
+    },
     "pregnancy_status": {
       "type": "string",
       "enum": [
@@ -163,7 +171,8 @@
         "not_pregnant",
         "pregnant"
       ],
-      "default": "not_applicable"
+      "default": "not_applicable",
+      "description": "Pregnancy status of a married female patient \u2014 answered at registration"
     },
     "gestational_age": {
       "type": "string"
@@ -171,6 +180,26 @@
     "estimated_due_date": {
       "type": "string",
       "format": "date"
+    },
+    "gravida": {
+      "type": "integer",
+      "description": "Number of pregnancies (Gravida) \u2014 collected at registration for married female patients"
+    },
+    "para": {
+      "type": "integer",
+      "description": "Number of births (Para) \u2014 collected at registration for married female patients"
+    },
+    "living_children": {
+      "type": "integer",
+      "description": "Number of living children \u2014 collected at registration for married female patients"
+    },
+    "miscarriages_abortions": {
+      "type": "integer",
+      "description": "Number of miscarriages/abortions \u2014 collected at registration for married female patients"
+    },
+    "stillbirths": {
+      "type": "integer",
+      "description": "Number of stillbirths \u2014 collected at registration for married female patients"
     },
     "pregnancy_history": {
       "type": "string"
