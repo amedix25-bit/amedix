@@ -1,0 +1,216 @@
+{
+  "name": "PatientExamination",
+  "type": "object",
+  "properties": {
+    "examination_id": {
+      "type": "string",
+      "description": "Unique examination reference, e.g. EX-20260913-8F3K. Shared by all versions of the same examination (amendments keep the same examination_id and increment version)."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the examination belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Encounter reference this examination belongs to, e.g. ENC-20260913-8F3K"
+    },
+    "examination_type_key": {
+      "type": "string",
+      "description": "Configuration key of the examination type, e.g. respiratory, cardiovascular, neurological"
+    },
+    "examination_type": {
+      "type": "string",
+      "description": "Display name of the examination type"
+    },
+    "sections": {
+      "type": "array",
+      "description": "Documented examination sections with findings \u2014 generated from the examination configuration",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "description": "normal_abnormal or free"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_documented",
+              "normal",
+              "abnormal",
+              "partially_completed"
+            ]
+          },
+          "values": {
+            "type": "object",
+            "description": "Field values keyed by field key"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-text clinical findings for this section"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "status"
+        ]
+      }
+    },
+    "normal_sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Section keys documented as Normal"
+    },
+    "abnormal_sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Section keys documented as Abnormal"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "abnormal",
+        "partially_completed"
+      ],
+      "default": "partially_completed",
+      "description": "Overall examination status \u2014 abnormal if any section is abnormal, normal if all documented sections are normal, partially completed otherwise"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the examining doctor"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "clinical_location": {
+      "type": "string",
+      "enum": [
+        "ER",
+        "Clinic",
+        "Ward",
+        "ICU",
+        "Other"
+      ],
+      "default": "Clinic",
+      "description": "Clinical location where the examination took place"
+    },
+    "examination_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "examination_time": {
+      "type": "string",
+      "description": "Time of the examination (HH:MM)"
+    },
+    "additional_notes": {
+      "type": "string",
+      "description": "Additional notes recorded at examination level"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the examination record was created (ISO datetime)"
+    },
+    "version": {
+      "type": "integer",
+      "default": 1,
+      "description": "Version number \u2014 original examinations are version 1, amendments increment it. Completed records are immutable; corrections create a new version."
+    },
+    "previous_version_id": {
+      "type": "string",
+      "description": "Id of the record version this amendment corrects \u2014 empty for original records"
+    },
+    "edit_reason": {
+      "type": "string",
+      "description": "Reason for the amendment, entered by the editing doctor"
+    },
+    "edited_by_name": {
+      "type": "string",
+      "description": "Name of the doctor who created the amended version"
+    },
+    "edited_datetime": {
+      "type": "string",
+      "description": "Date and time the amended version was created (ISO datetime)"
+    },
+    "audit_trail": {
+      "type": "array",
+      "description": "Audit trail \u2014 created / amended actions with doctor and datetime",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "created / amended"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "by_role": {
+            "type": "string",
+            "description": "doctor / admin"
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_name",
+    "examination_type_key",
+    "examination_type",
+    "doctor_id",
+    "doctor_user_id",
+    "examination_date"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "data.doctor_user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
