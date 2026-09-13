@@ -3,15 +3,17 @@ import { base44 } from "@/api/base44Client";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftRight, UserPlus } from "lucide-react";
-import CreatePatientAccountDialog from "@/components/portal/CreatePatientAccountDialog";
+import { PatientLanguageProvider } from "@/lib/patientLanguage";
+import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
 
 // Sidebar action for the Doctor / Radiologist portals. When the account also
 // has a patient role, it switches to the Patient Portal; otherwise it offers
-// to create the linked patient profile.
+// to create the linked patient profile through the exact same registration
+// wizard a patient uses to create their own account.
 export default function PatientPortalSwitchAction({ user }) {
   const { t } = useAppLanguage();
   const [hasPatient, setHasPatient] = useState(null); // null = loading
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,15 +40,23 @@ export default function PatientPortalSwitchAction({ user }) {
       {hasPatient ? (
         <Button variant="ghost" size="sm" className={buttonClass} onClick={() => { window.location.href = "/patient"; }}>
           <ArrowLeftRight className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-          {t("Switch Portal")}
+          {t("Switch Portal to Patient")}
         </Button>
       ) : (
-        <Button variant="ghost" size="sm" className={buttonClass} onClick={() => setDialogOpen(true)}>
+        <Button variant="ghost" size="sm" className={buttonClass} onClick={() => setShowOnboarding(true)}>
           <UserPlus className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
           {t("Create Patient Account")}
         </Button>
       )}
-      <CreatePatientAccountDialog open={dialogOpen} user={user} onClose={() => setDialogOpen(false)} />
+      {showOnboarding && (
+        <PatientLanguageProvider>
+          <PatientOnboardingForm
+            user={user}
+            onComplete={() => { window.location.href = "/patient"; }}
+            onClose={() => setShowOnboarding(false)}
+          />
+        </PatientLanguageProvider>
+      )}
     </>
   );
 }
