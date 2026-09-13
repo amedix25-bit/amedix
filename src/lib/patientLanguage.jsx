@@ -426,6 +426,7 @@ const AR = {
   "Demographics": "البيانات الديموغرافية",
   "Nationality": "الجنسية",
   "Nationality, e.g. Libyan": "الجنسية، مثال: ليبي",
+  "Occupation": "المهنة",
   "Occupations": "المهن",
   "Occupation, e.g. Student, Physician": "المهنة، مثال: طالب، طبيب",
   "Add Occupation": "إضافة مهنة",

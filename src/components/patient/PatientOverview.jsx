@@ -61,6 +61,18 @@ export default function PatientOverview({ profile, stats, loading }) {
           .join(" · ")
       : t(PREGNANCY_LABELS[profile?.pregnancy_status] || "Not pregnant")
     : null;
+  const phoneNumbers = profile?.phone_numbers?.length
+    ? profile.phone_numbers
+    : profile?.phone ? [{ label: "Primary", number: profile.phone }] : [];
+  const emergencyContacts = profile?.emergency_contacts?.length
+    ? profile.emergency_contacts
+    : profile?.emergency_contact_name
+      ? [{
+          name: profile.emergency_contact_name,
+          relationship: profile.emergency_contact_relationship,
+          phone: profile.emergency_contact_phone,
+        }]
+      : [];
 
   return (
     <div className="space-y-6">
@@ -110,8 +122,32 @@ export default function PatientOverview({ profile, stats, loading }) {
             <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth} />
             <InfoRow label={t("Age")} value={age === null ? null : t("{age} years", { age })} />
             <InfoRow label={t("Sex")} value={profile?.gender ? t(capitalize(profile.gender)) : null} />
-            <InfoRow label={t("Emergency Contact Name")} value={profile?.emergency_contact_name} />
-            <InfoRow label={t("Emergency Contact Phone")} value={profile?.emergency_contact_phone} />
+            <InfoRow label={t("Nationality")} value={profile?.nationality} />
+            <InfoRow label={t("Occupation")} value={(profile?.occupations || []).join(", ") || null} />
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="text-muted-foreground shrink-0">{t("Phone Numbers")}</span>
+              <span className="font-medium text-end">
+                {phoneNumbers.length === 0
+                  ? "—"
+                  : phoneNumbers.map((p, i) => (
+                      <span key={i} className="block">
+                        {t(p.label)}: {p.number}
+                      </span>
+                    ))}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="text-muted-foreground shrink-0">{t("Emergency Contacts")}</span>
+              <span className="font-medium text-end">
+                {emergencyContacts.length === 0
+                  ? "—"
+                  : emergencyContacts.map((c, i) => (
+                      <span key={i} className="block">
+                        {c.name}{c.relationship ? ` (${c.relationship})` : ""} · {c.phone}
+                      </span>
+                    ))}
+              </span>
+            </div>
           </div>
         </div>
 
