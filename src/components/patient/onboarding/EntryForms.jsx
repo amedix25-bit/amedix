@@ -44,7 +44,13 @@ export function MedicalListSection({
 
 export function ConditionEntryForm({ onAdd }) {
   const { t, isArabic } = usePatientLanguage();
-  const [form, setForm] = useState({ name: "", name_en: "", name_ar: "", date: "", details: "" });
+  const EMPTY = { name: "", name_en: "", name_ar: "", date: "", details: "" };
+  const [form, setForm] = useState(EMPTY);
+  // Input starts open for the first disease. After each Save it collapses to
+  // an "Add" button; clicking Add reveals the empty input again for the next
+  // disease. Saving only records that single disease — it never submits the
+  // registration form.
+  const [open, setOpen] = useState(true);
   const set = (f) => (e) =>
     setForm((s) => ({
       ...s,
@@ -61,17 +67,28 @@ export function ConditionEntryForm({ onAdd }) {
       name_en: term.en,
       name_ar: isArabic ? term.ar : "",
     }));
-  const add = () => {
+  const save = () => {
     onAdd({
       name: form.name_en || form.name,
       ...(form.name_ar ? { name_ar: form.name_ar } : {}),
       date: form.date,
       details: form.details,
     });
-    setForm({ name: "", name_en: "", name_ar: "", date: "", details: "" });
+    setForm(EMPTY);
+    setOpen(false);
   };
+
+  if (!open) {
+    return (
+      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+        <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+        {t("Add")}
+      </Button>
+    );
+  }
+
   return (
-    <div className="grid sm:grid-cols-[2fr_1fr_2fr_auto] gap-2">
+    <div className="grid sm:grid-cols-[2fr_auto_1fr_2fr] gap-2">
       <ArabicMedicalInput
         value={form.name}
         onChange={set("name")}
@@ -79,11 +96,11 @@ export function ConditionEntryForm({ onAdd }) {
         placeholder={t("Condition, e.g. Hypertension")}
         terms={AR_CONDITION_TERMS}
       />
+      <Button type="button" onClick={save} disabled={!form.name}>
+        {t("Save")}
+      </Button>
       <Input type="date" value={form.date} onChange={set("date")} />
       <Input placeholder={t("Details (optional)")} value={form.details} onChange={set("details")} />
-      <Button type="button" variant="outline" onClick={add} disabled={!form.name}>
-        <Plus className="w-4 h-4" />
-      </Button>
     </div>
   );
 }
