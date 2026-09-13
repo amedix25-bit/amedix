@@ -127,6 +127,23 @@ const AR = {
   "Log in": "تسجيل الدخول",
   "Invalid email or password": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
 
+  // ─── Portal login validation ───
+  "Patient": "مريض",
+  "Patient Login": "تسجيل دخول المريض",
+  "Doctor Login": "تسجيل دخول الطبيب",
+  "Radiologist Login": "تسجيل دخول طبيب الأشعة",
+  "Laboratory Login": "تسجيل دخول المختبر",
+  "Administrator Login": "تسجيل دخول مدير النظام",
+  "Incorrect login. This account is registered as {role}. Please use the {roleLogin}.":
+    "تسجيل دخول غير صحيح. هذا الحساب مسجّل كـ{role}. يرجى استخدام {roleLogin}.",
+  "Welcome back, {name} — Continue as:": "مرحباً بعودتك، {name} — تابع كـ:",
+  "Continue as Patient": "متابعة كمريض",
+  "Continue as Doctor": "متابعة كطبيب",
+  "Continue as Radiologist": "متابعة كطبيب أشعة",
+  "Continue as Laboratory": "متابعة كمختبر",
+  "Continue as Administrator": "متابعة كمدير نظام",
+  "Choose a different portal": "اختيار بوابة دخول أخرى",
+
   // ─── Register ───
   "Verify your email": "تحقق من بريدك الإلكتروني",
   "We sent a code to {email}": "أرسلنا رمزاً إلى {email}",

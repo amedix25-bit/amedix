@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,16 +10,83 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
+import PortalSelection from "@/components/PortalSelection";
+import {
+  VALID_PORTALS,
+  ROLE_LOGIN_LABELS,
+  validatePortalAccess,
+  rejectionMessage,
+  logoutWithRejection,
+  routeAfterValidation,
+} from "@/lib/portalAccess";
+
+// The portal selected on the role-choice page: ?portal= wins, the role stored
+// by the landing page is the fallback.
+const urlParams = new URLSearchParams(window.location.search);
+// Post-login destination (e.g. the MCP OAuth consent page sends users here
+// with returnTo so the grant flow can resume). Same-origin paths only.
+const returnTo = safeReturnTo();
+const portalParam = urlParams.get("portal");
+const storedRole = localStorage.getItem("amh_selected_role");
+const rejectedParam = urlParams.get("rejected");
+const selectedPortal = VALID_PORTALS.includes(portalParam)
+  ? portalParam
+  : VALID_PORTALS.includes(storedRole)
+    ? storedRole
+    : null;
 
 export default function Login() {
+  const { t } = useAppLanguage();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => (rejectedParam ? rejectionMessage(rejectedParam, t) : ""));
   const [loading, setLoading] = useState(false);
-  // Post-login destination (e.g. the MCP OAuth consent page sends users here
-  // with returnTo so the grant flow can resume). Same-origin paths only.
-  const returnTo = safeReturnTo();
-  const { t } = useAppLanguage();
+  const [selection, setSelection] = useState(null);
+
+  const reject = (role) => logoutWithRejection(role, "/login", selectedPortal ? { portal: selectedPortal } : {});
+
+  // After authentication the backend decides which portals the account is
+  // authorized for — a mismatch is rejected, never silently redirected.
+  const finishLogin = async () => {
+    const data = await validatePortalAccess(selectedPortal);
+    routeAfterValidation(data, selectedPortal, {
+      onSelection: (sel) => {
+        setSelection({ ...sel, full_name: sel.full_name || email });
+        setLoading(false);
+      },
+      onReject: reject,
+    });
+  };
+
+  // Visitors arriving already authenticated (e.g. returning from Google
+  // sign-in) go through the same backend role check before any portal opens.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (returnTo !== "/") {
+          window.location.href = returnTo;
+          return;
+        }
+        const data = await validatePortalAccess(selectedPortal);
+        if (!cancelled) {
+          routeAfterValidation(data, selectedPortal, {
+            onSelection: (sel) => setSelection(sel),
+            onReject: reject,
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,22 +94,40 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = returnTo;
+      if (returnTo !== "/") {
+        window.location.href = returnTo;
+        return;
+      }
+      await finishLogin();
     } catch (err) {
       setError(err.message || t("Invalid email or password"));
-    } finally {
       setLoading(false);
     }
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider("google", returnTo);
+    // After Google returns, the user lands back on this page authenticated —
+    // the backend role check then runs before any portal opens.
+    const fromUrl = returnTo !== "/" ? returnTo : `${window.location.origin}/login${selectedPortal ? `?portal=${selectedPortal}` : ""}`;
+    base44.auth.loginWithProvider("google", fromUrl);
   };
+
+  if (selection) {
+    return (
+      <AuthLayout
+        icon={LogIn}
+        title={t("Welcome Back")}
+        subtitle={t("Log in to your A&M Healthcare account")}
+      >
+        <PortalSelection fullName={selection.full_name} roles={selection.roles} />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
       icon={LogIn}
-      title={t("Welcome Back")}
+      title={selectedPortal ? t(ROLE_LOGIN_LABELS[selectedPortal]) : t("Welcome Back")}
       subtitle={t("Log in to your A&M Healthcare account")}
       footer={
         <>
@@ -129,6 +215,16 @@ export default function Login() {
           )}
         </Button>
       </form>
+
+      {selectedPortal && (
+        <button
+          type="button"
+          onClick={() => navigate("/landing")}
+          className="w-full mt-4 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {t("Choose a different portal")}
+        </button>
+      )}
     </AuthLayout>
   );
 }

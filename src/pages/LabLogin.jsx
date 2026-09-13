@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, FlaskConical, Loader2, Lock, LogIn, Mail, UserCircle } from "lucide-react";
 import { saveLabSession } from "@/lib/labSession";
+import PortalSelection from "@/components/PortalSelection";
+import { validatePortalAccess, rejectionMessage, logoutWithRejection, routeAfterValidation } from "@/lib/portalAccess";
 import { useAppLanguage } from "@/lib/appLanguage";
 
 export default function LabLogin() {
@@ -14,17 +16,30 @@ export default function LabLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [error, setError] = useState("");
+  const [selection, setSelection] = useState(null);
   const [loading, setLoading] = useState(false);
   const { t } = useAppLanguage();
+  const [error, setError] = useState(() => {
+    const rejected = new URLSearchParams(window.location.search).get("rejected");
+    return rejected ? rejectionMessage(rejected, t) : "";
+  });
 
+  // The Laboratory login only accepts accounts authorized for the Lab Portal —
+  // verified against the user's database roles by the checkPortalAccess function.
   const handleLabLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/lab-portal";
+      const data = await validatePortalAccess("lab");
+      routeAfterValidation(data, "lab", {
+        onSelection: (sel) => {
+          setSelection({ ...sel, full_name: sel.full_name || email });
+          setLoading(false);
+        },
+        onReject: (role) => logoutWithRejection(role, "/lab"),
+      });
     } catch (err) {
       setError(err.message || t("Invalid email or password"));
       setLoading(false);
@@ -44,6 +59,18 @@ export default function LabLogin() {
       setLoading(false);
     }
   };
+
+  if (selection) {
+    return (
+      <AuthLayout
+        icon={Building2}
+        title={t("Lab Portal")}
+        subtitle={t("Laboratory and technician sign-in")}
+      >
+        <PortalSelection fullName={selection.full_name} roles={selection.roles} />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

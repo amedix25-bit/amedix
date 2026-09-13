@@ -220,7 +220,7 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mt-2">{t(roleContent.description)}</p>
 
                 <div className="flex flex-col gap-3 mt-6">
-                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : "/login")}>
+                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : "/login?portal=" + role)}>
                     <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     {t("Log In")}
                   </Button>

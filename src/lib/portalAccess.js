@@ -1,0 +1,77 @@
+import { base44 } from "@/api/base44Client";
+
+// Portal login validation helpers. The credentials identify the user, the
+// database determines their authorized roles (checked server-side in the
+// checkPortalAccess backend function), and the selected login portal must
+// match one of those roles before access is granted.
+
+export const VALID_PORTALS = ["patient", "doctor", "radiologist", "lab"];
+
+export const ROLE_LABELS = {
+  patient: "Patient",
+  doctor: "Doctor",
+  radiologist: "Radiologist",
+  lab: "Laboratory",
+  admin: "Administrator",
+};
+
+export const ROLE_LOGIN_LABELS = {
+  patient: "Patient Login",
+  doctor: "Doctor Login",
+  radiologist: "Radiologist Login",
+  lab: "Laboratory Login",
+  admin: "Administrator Login",
+};
+
+export const PORTAL_DESTINATIONS = {
+  patient: "/patient",
+  doctor: "/doctor",
+  radiologist: "/radiologist",
+  lab: "/lab-portal",
+  admin: "/admin",
+};
+
+// Asks the backend which portals the currently authenticated user is
+// authorized for, and whether the selected portal matches one of them.
+export async function validatePortalAccess(portal) {
+  const res = await base44.functions.invoke("checkPortalAccess", { portal: portal || null });
+  return res.data;
+}
+
+export function rejectionMessage(role, t) {
+  if (!ROLE_LOGIN_LABELS[role]) return "";
+  return t("Incorrect login. This account is registered as {role}. Please use the {roleLogin}.", {
+    role: t(ROLE_LABELS[role]),
+    roleLogin: t(ROLE_LOGIN_LABELS[role]),
+  });
+}
+
+// Logs the user out and returns them to the login page they used, carrying the
+// rejection reason so the page can show the message after the reload.
+export function logoutWithRejection(role, basePath = "/login", extraParams = {}) {
+  const params = new URLSearchParams(extraParams);
+  params.set("rejected", role);
+  base44.auth.logout(`${window.location.origin}${basePath}?${params.toString()}`);
+}
+
+// Decides what happens after a successful, backend-verified check:
+// - no profile yet → the post-registration onboarding page
+// - one role → that portal (rejected if the selected portal doesn't match)
+// - multiple roles → the "Welcome back — Continue as" selection screen
+export function routeAfterValidation(data, selectedPortal, { onSelection, onReject }) {
+  const { roles, allowed } = data;
+  if (!roles || roles.length === 0) {
+    window.location.href = "/";
+    return;
+  }
+  if (roles.length === 1) {
+    const role = roles[0];
+    if (selectedPortal && !allowed) {
+      onReject(role);
+      return;
+    }
+    window.location.href = PORTAL_DESTINATIONS[role];
+    return;
+  }
+  onSelection({ full_name: data.full_name, roles });
+}
