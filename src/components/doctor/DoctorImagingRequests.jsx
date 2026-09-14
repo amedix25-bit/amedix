@@ -6,6 +6,7 @@ import { Image, Plus, Eye } from "lucide-react";
 import ImagingRequestForm from "./imaging/ImagingRequestForm";
 import ImagingRequestCard from "./imaging/ImagingRequestCard";
 import DoctorSharedImagingResults from "./DoctorSharedImagingResults";
+import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
 
 export default function DoctorImagingRequests({ doctorProfile }) {
@@ -35,6 +36,12 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
       if (patients.length === 0) { alert("Patient not found"); return; }
       const p = patients[0];
+      // Check-in gate — the backend verifies it again at creation time.
+      const gate = await fetchCheckInStatus(p.id);
+      if (!gate.checked_in) {
+        alert(LOCKED_MESSAGE);
+        return;
+      }
       const now = new Date();
       const examination = form.examination === "Other" ? form.examination_other.trim() : form.examination;
       const showContrast = CONTRAST_APPLICABLE.includes(form.scan_type);
@@ -84,7 +91,7 @@ export default function DoctorImagingRequests({ doctorProfile }) {
       });
       const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${payload.date_requested}.pdf`, { type: "application/pdf" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
-      await base44.entities.ImagingRequest.create({ ...payload, pdf_url: file_url });
+      await base44.functions.invoke("createImagingRequest", { ...payload, pdf_url: file_url });
       setView("list");
       load();
     } catch (err) { console.error(err); }

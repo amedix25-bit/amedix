@@ -9,6 +9,7 @@ import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
 import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
+import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send, ArrowLeft, Search } from "lucide-react";
 
 export default function DoctorLabRequests({ doctorProfile, draftContext, onNavigateTab }) {
@@ -135,6 +136,13 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
         return;
       }
       const p = patients[0];
+      // Check-in gate — the backend verifies it again at creation time.
+      const gate = await fetchCheckInStatus(p.id);
+      if (!gate.checked_in) {
+        setFormError(LOCKED_MESSAGE);
+        setSubmitting(false);
+        return;
+      }
       const count = selectedEntries.length;
       const today = new Date().toISOString().slice(0, 10);
       const payload = {
@@ -166,7 +174,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       await addRequestBarcode(doc, payload.request_id);
       const pdfFile = new File([doc.output("blob")], `LabRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
-      const created = await base44.entities.LabRequest.create({ ...payload, pdf_url: file_url });
+      const created = (await base44.functions.invoke("createLabRequest", { ...payload, pdf_url: file_url })).data.lab_request;
       if (draftContext?.patient && p.id === draftContext.patient.id) {
         try {
           const drafts = await base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id });

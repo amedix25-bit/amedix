@@ -56,11 +56,12 @@ export default function Home() {
         navigate("/admin");
         return;
       }
-      const [patientProfiles, doctorProfiles, labProfiles, radiologistProfiles] = await Promise.all([
+      const [patientProfiles, doctorProfiles, labProfiles, radiologistProfiles, hospitalProfiles] = await Promise.all([
         base44.entities.PatientProfile.filter({ user_id: user.id }),
         base44.entities.DoctorProfile.filter({ user_id: user.id }),
         base44.entities.LaboratoryProfile.filter({ user_id: user.id }),
         base44.entities.RadiologistProfile.filter({ user_id: user.id }),
+        base44.entities.HospitalProfile.filter({ user_id: user.id }),
       ]);
       // Radiologist accounts go to the Radiologist Portal. A radiologist may only
       // use the regular Doctor Portal when an administrator has explicitly
@@ -75,6 +76,10 @@ export default function Home() {
       }
       if (labProfiles.length > 0) {
         navigate("/lab-portal");
+        return;
+      }
+      if (hospitalProfiles.length > 0) {
+        navigate("/hospital-portal");
         return;
       }
       if (patientProfiles.length > 0) {

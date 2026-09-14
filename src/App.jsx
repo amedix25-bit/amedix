@@ -20,6 +20,10 @@ import LabRequestDetail from '@/pages/LabRequestDetail';
 import AdminDashboard from '@/pages/AdminDashboard';
 import LabLogin from '@/pages/LabLogin';
 import LabRegister from '@/pages/LabRegister';
+import HospitalLogin from '@/pages/HospitalLogin';
+import HospitalRegister from '@/pages/HospitalRegister';
+import Receptionist from '@/pages/Receptionist';
+import HospitalPortal from '@/pages/HospitalPortal';
 import LabPortal from '@/pages/LabPortal';
 import LabTechnician from '@/pages/LabTechnician';
 import RadiologistDashboard from '@/pages/RadiologistDashboard';
@@ -53,6 +57,9 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/lab" element={<LabLogin />} />
       <Route path="/lab/register" element={<LabRegister />} />
+      <Route path="/hospital" element={<HospitalLogin />} />
+      <Route path="/hospital/register" element={<HospitalRegister />} />
+      <Route path="/hospital/receptionist" element={<Receptionist />} />
       <Route path="/lab-technician" element={<LabTechnician />} />
       <Route path="/" element={isAuthenticated ? <Home /> : <Welcome />} />
       <Route path="/landing" element={<Landing />} />
@@ -63,6 +70,7 @@ const AuthenticatedApp = () => {
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/lab-portal" element={<LabPortal />} />
+        <Route path="/hospital-portal" element={<HospitalPortal />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

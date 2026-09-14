@@ -1,0 +1,94 @@
+{
+  "name": "HospitalReceptionist",
+  "type": "object",
+  "properties": {
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id the receptionist belongs to"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator account \u2014 used for Row Level Security"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Receptionist's full name"
+    },
+    "username": {
+      "type": "string",
+      "description": "Unique receptionist login username \u2014 every receptionist has individual credentials"
+    },
+    "password_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the receptionist's password (salted)"
+    },
+    "salt": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Deactivated receptionists cannot log in"
+    },
+    "session_token": {
+      "type": "string",
+      "description": "Active session token issued at login \u2014 required for all receptionist actions"
+    },
+    "last_active_datetime": {
+      "type": "string",
+      "description": "Date and time of the receptionist's last action (ISO datetime) \u2014 powers the online/offline status"
+    }
+  },
+  "required": [
+    "hospital_id",
+    "hospital_user_id",
+    "full_name",
+    "username",
+    "password_hash",
+    "salt"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.hospital_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -5,7 +5,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 // authorized for (patient / doctor / radiologist / lab / admin profiles plus
 // the platform admin role) and whether the portal selected on the login page
 // matches one of those roles.
-const VALID_PORTALS = ['patient', 'doctor', 'radiologist', 'lab', 'admin'];
+const VALID_PORTALS = ['patient', 'doctor', 'radiologist', 'lab', 'hospital', 'admin'];
 
 export default async function (req) {
   try {
@@ -25,11 +25,12 @@ export default async function (req) {
     }
 
     // Roles come from the database, never from the client.
-    const [patients, doctors, radiologists, laboratories] = await Promise.all([
+    const [patients, doctors, radiologists, laboratories, hospitals] = await Promise.all([
       base44.asServiceRole.entities.PatientProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.DoctorProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.LaboratoryProfile.filter({ user_id: user.id }),
+      base44.asServiceRole.entities.HospitalProfile.filter({ user_id: user.id }),
     ]);
 
     const roles = [];
@@ -38,6 +39,7 @@ export default async function (req) {
     if (doctors.length > 0) roles.push('doctor');
     if (radiologists.length > 0) roles.push('radiologist');
     if (laboratories.length > 0) roles.push('lab');
+    if (hospitals.length > 0) roles.push('hospital');
 
     const allowed = portal ? roles.includes(portal) : false;
 

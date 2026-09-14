@@ -9,7 +9,8 @@ import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
 import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
-import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight, Plus } from "lucide-react";
+import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
+import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
 
 const EMPTY = {
   patient_cin: "",
@@ -37,6 +38,17 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [draftId, setDraftId] = useState(null);
   const [showDraftConfirm, setShowDraftConfirm] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Backend-verified check-in gate — the clinical functions stay locked until
+  // the patient is checked in at the doctor's hospital.
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [gateLoading, setGateLoading] = useState(false);
+
+  const loadGate = async (patientId) => {
+    setGateLoading(true);
+    const s = await fetchCheckInStatus(patientId);
+    setCheckedIn(!!s.checked_in);
+    setGateLoading(false);
+  };
 
   const restoreDraft = (d) => {
     setDraftId(d.id);
@@ -65,6 +77,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       }
     };
     loadDraft();
+    loadGate(preselectedPatient.id);
   }, [preselectedPatient, doctorProfile]);
 
   const findPatient = async () => {
@@ -83,6 +96,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       }
       const p = patients[0];
       setPatient(p);
+      loadGate(p.id);
       const drafts = await base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id });
       if (drafts.length > 0) restoreDraft(drafts[0]);
     } catch (err) {
@@ -173,7 +187,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     ].filter(Boolean).join(" · ");
     setSaving(true);
     try {
-      await base44.entities.ClinicalNote.create({
+      // The backend independently verifies the active check-in before creating
+      // the note — the frontend lock is only a visual hint.
+      await base44.functions.invoke("createClinicalNote", {
         patient_id: patient.id,
         doctor_id: doctorProfile.id,
         patient_cin: patient.cin,
@@ -242,6 +258,25 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         <p className="text-sm text-muted-foreground">
           Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
         </p>
+      )}
+
+      {patient && (
+        gateLoading ? (
+          <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Verifying hospital check-in...
+          </div>
+        ) : checkedIn ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            Patient is checked in at your hospital — clinical functions unlocked.
+          </div>
+        ) : (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-center gap-2">
+            <Lock className="w-4 h-4 shrink-0" />
+            {LOCKED_MESSAGE}
+          </div>
+        )
       )}
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -427,7 +462,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={saving}>
+      <Button type="submit" disabled={saving || !checkedIn} title={!checkedIn ? LOCKED_MESSAGE : undefined}>
         {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         Save Clinical Note
       </Button>

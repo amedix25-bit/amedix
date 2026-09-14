@@ -1,0 +1,128 @@
+{
+  "name": "HospitalCheckIn",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id of the checked-in patient"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_dob": {
+      "type": "string"
+    },
+    "patient_gender": {
+      "type": "string"
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id the patient was checked in at"
+    },
+    "hospital_name": {
+      "type": "string",
+      "description": "Hospital name \u2014 matched against the doctor's hospital to unlock clinical functions"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator account \u2014 used for Row Level Security"
+    },
+    "receptionist_id": {
+      "type": "string",
+      "description": "HospitalReceptionist id that performed the check-in"
+    },
+    "receptionist_name": {
+      "type": "string"
+    },
+    "checkin_datetime": {
+      "type": "string",
+      "description": "Date and time the patient was checked in (ISO datetime)"
+    },
+    "checkin_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "checkin_time": {
+      "type": "string",
+      "description": "Time of the check-in (HH:MM)"
+    },
+    "payment_amount": {
+      "type": "string",
+      "description": "Payment amount collected from the patient for this visit \u2014 required before check-in"
+    },
+    "payment_method": {
+      "type": "string",
+      "description": "Payment method used by the patient, e.g. Cash, Card, Bank Transfer \u2014 required before check-in"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the patient is currently checked in \u2014 clinical functions unlocked at this hospital. COMPLETED: the visit was ended by a hospital administrator; a new check-in is required before clinical functions unlock again."
+    },
+    "completed_datetime": {
+      "type": "string",
+      "description": "Date and time the visit was ended (ISO datetime)"
+    },
+    "completed_by_name": {
+      "type": "string",
+      "description": "Hospital administrator who ended the visit"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_cin",
+    "patient_name",
+    "hospital_id",
+    "hospital_name",
+    "hospital_user_id",
+    "receptionist_id",
+    "receptionist_name",
+    "checkin_datetime",
+    "payment_amount",
+    "payment_method",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.hospital_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "$or": [
+        {
+          "data.hospital_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

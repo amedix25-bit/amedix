@@ -259,6 +259,23 @@ const AR = {
   "One PDF containing both sides": "ملف PDF واحد يحتوي على الوجهين",
   "Please upload the back side of your Personal Card, or upload one PDF containing both sides.": "يرجى رفع الوجه الخلفي للبطاقة الشخصية، أو رفع ملف PDF واحد يحتوي على الوجهين.",
   "The front and back photos do not belong to the same card. Please upload both sides of your Personal Card.": "لا تعود صور الوجه الأمامي والخلفي إلى البطاقة نفسها. يرجى رفع وجهي بطاقتك الشخصية.",
+
+  // ─── Hospital Portal ───
+  "Hospital Portal": "بوابة المستشفى",
+  "Hospital": "مستشفى",
+  "Hospital Login": "تسجيل دخول المستشفى",
+  "Receptionist": "موظف الاستقبال",
+  "Receptionist Login": "تسجيل دخول موظف الاستقبال",
+  "Receptionist Username": "اسم مستخدم موظف الاستقبال",
+  "Log in to Hospital Portal": "تسجيل الدخول إلى بوابة المستشفى",
+  "Don't have a hospital account?": "ليس لديك حساب مستشفى؟",
+  "Create Hospital Account": "إنشاء حساب مستشفى",
+  "Hospital and receptionist sign-in": "تسجيل دخول المستشفى وموظفي الاستقبال",
+  "I am a Hospital": "أنا مستشفى",
+  "Register your hospital, manage receptionists, patient check-ins, and visit payments — or sign in to your Hospital Portal.": "سجّل مستشفاك، وأدر موظفي الاستقبال وتسجيل حضور المرضى ومدفوعات الزيارات — أو سجّل الدخول إلى بوابة المستشفى.",
+  "Register your hospital, manage receptionists, patient check-ins, and visit payments.": "سجّل مستشفاك، وأدر موظفي الاستقبال وتسجيل حضور المرضى ومدفوعات الزيارات.",
+  "Visits": "الزيارات",
+  "Receptionists": "موظفو الاستقبال",
 };
 
 const AppLanguageContext = createContext(null);

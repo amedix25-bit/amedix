@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, ScanLine } from "lucide-react";
+import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, ScanLine, Building2 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
@@ -29,9 +29,15 @@ const ROLE_CONTENT = {
     icon: FlaskConical,
     title: "I am a Lab",
     description:
-    "Register your laboratory, manage technicians, and process laboratory requests — or sign in to your Lab Portal."
+      "Register your laboratory, manage technicians, and process laboratory requests — or sign in to your Lab Portal."
+  },
+  hospital: {
+    icon: Building2,
+    title: "I am a Hospital",
+    description:
+      "Register your hospital, manage receptionists, patient check-ins, and visit payments — or sign in to your Hospital Portal."
   }
-};
+  };
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -84,7 +90,7 @@ export default function Landing() {
           <>
               <p className="text-sm text-muted-foreground mt-6 font-medium">{t("Choose how you use the platform")}</p>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+              <div className="grid sm:grid-cols-2 gap-6 mt-8">
                 <button
                 onClick={() => selectRole("patient")}
                 className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
@@ -134,6 +140,25 @@ export default function Landing() {
                     <h3 className="text-xl font-bold">{t("I am a Lab")}</h3>
                     <p className="text-muted-foreground text-sm mt-2">
                       {t("Register your laboratory, manage technicians, and process laboratory requests.")}
+                    </p>
+                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
+                      {t("Continue")}
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                onClick={() => selectRole("hospital")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
+                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                      <Building2 className="w-7 h-7 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold">{t("I am a Hospital")}</h3>
+                    <p className="text-muted-foreground text-sm mt-2">
+                      {t("Register your hospital, manage receptionists, patient check-ins, and visit payments.")}
                     </p>
                     <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
                       {t("Continue")}
@@ -220,11 +245,11 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mt-2">{t(roleContent.description)}</p>
 
                 <div className="flex flex-col gap-3 mt-6">
-                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : "/login?portal=" + role)}>
+                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : role === "hospital" ? "/hospital" : "/login?portal=" + role)}>
                     <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     {t("Log In")}
                   </Button>
-                  <Button size="lg" onClick={() => navigate(role === "lab" ? "/lab/register" : "/register")}>
+                  <Button size="lg" onClick={() => navigate(role === "lab" ? "/lab/register" : role === "hospital" ? "/hospital/register" : "/register")}>
                     {t("Create Account")}
                   </Button>
                 </div>
