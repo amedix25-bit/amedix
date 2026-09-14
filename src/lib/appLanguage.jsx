@@ -295,6 +295,26 @@ const AR = {
   "Payment Method": "طريقة الدفع",
   "Total Payments": "إجمالي المدفوعات",
   "Total Patients Seen": "إجمالي المرضى المستقبَلين",
+  // ── Hospital Portal: Manage Doctors ──
+  "Manage Doctors": "إدارة الأطباء",
+  "Add New Doctor": "إضافة طبيب جديد",
+  "AMedix Hospital Code": "رمز مستشفى AMedix",
+  "Select Specialty": "اختيار التخصص",
+  "All Specialties": "كل التخصصات",
+  "Copy Code": "نسخ الرمز",
+  "Generate Code": "إنشاء الرمز",
+  "Remove Doctor": "إزالة الطبيب",
+  "Deactivate Doctor": "تعطيل الطبيب",
+  "Reactivate Doctor": "إعادة تنشيط الطبيب",
+  "Confirm Remove": "تأكيد الإزالة",
+  // ── Doctor Portal: My Hospitals ──
+  "My Hospitals": "مستشفياتي",
+  "Join Hospital": "الانضمام إلى مستشفى",
+  "Verify Code": "التحقق من الرمز",
+  "Confirm Join": "تأكيد الانضمام",
+  "Work Here": "العمل هنا",
+  "Working Here": "تعمل هنا حالياً",
+  "Your specialty / department at this hospital": "تخصصك / قسمك في هذا المستشفى",
 };
 
 const AppLanguageContext = createContext(null);

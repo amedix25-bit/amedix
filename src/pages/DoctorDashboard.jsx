@@ -15,14 +15,16 @@ import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
+import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail } from "lucide-react";
+import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2 } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
   { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "referrals", label: "Referral Letters", icon: Mail },
+  { key: "hospitals", label: "My Hospitals", icon: Building2 },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "notes", label: "Clinical Notes", icon: FileText },
   { key: "labs", label: "Lab Requests", icon: FlaskConical },
@@ -44,6 +46,14 @@ export default function DoctorDashboard() {
   const now = new Date();
 
   useEffect(() => { loadProfile(); }, []);
+
+  useEffect(() => {
+    if (!profile) return undefined;
+    const interval = setInterval(() => {
+      base44.entities.DoctorProfile.update(profile.id, { last_active_datetime: new Date().toISOString() }).catch(() => {});
+    }, 4 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [profile]);
 
   const handleNavigateTab = (tab, context) => {
     setActiveTab(tab);
@@ -70,6 +80,9 @@ export default function DoctorDashboard() {
       }
       const p = profiles[0];
       setProfile(p);
+      // Fresh online status for the hospital's Manage Doctors view — refreshed
+      // again every few minutes while the Doctor Portal is open.
+      base44.entities.DoctorProfile.update(p.id, { last_active_datetime: new Date().toISOString() }).catch(() => {});
       const [appointments, labs, imaging, accessReqs] = await Promise.all([
         base44.entities.Appointment.filter({ doctor_id: p.id }),
         base44.entities.LabRequest.filter({ doctor_id: p.id }),
@@ -131,6 +144,9 @@ export default function DoctorDashboard() {
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
         {activeTab === "colleagues" && profile && <DoctorColleagues doctorProfile={profile} />}
         {activeTab === "referrals" && profile && <DoctorReferralLetters doctorProfile={profile} />}
+        {activeTab === "hospitals" && profile && user && (
+          <DoctorHospitalsSection profile={profile} user={user} onProfileUpdated={setProfile} />
+        )}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}

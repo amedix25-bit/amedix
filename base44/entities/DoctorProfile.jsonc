@@ -32,7 +32,8 @@
       "type": "string"
     },
     "hospital": {
-      "type": "string"
+      "type": "string",
+      "description": "The hospital the doctor is currently working at \u2014 selected by the doctor from their verified hospital associations and used by the check-in security gate to match active check-ins. Clinical notes, lab requests and imaging requests are associated with this hospital."
     },
     "phone": {
       "type": "string"
@@ -44,6 +45,10 @@
     "is_verified": {
       "type": "boolean",
       "default": false
+    },
+    "last_active_datetime": {
+      "type": "string",
+      "description": "Date and time of the doctor's last activity in the Doctor Portal (ISO datetime) \u2014 refreshed while the portal is open and powers the Online/Offline status in the hospital's Manage Doctors view"
     }
   },
   "required": [

@@ -1,0 +1,94 @@
+{
+  "name": "HospitalDoctor",
+  "type": "object",
+  "properties": {
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id the doctor is associated with"
+    },
+    "hospital_name": {
+      "type": "string",
+      "description": "Hospital name at join time"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator account \u2014 used for Row Level Security"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the associated doctor"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Doctor full name at join time"
+    },
+    "doctor_photo_url": {
+      "type": "string",
+      "description": "Doctor profile picture at join time \u2014 the Manage Doctors view reads the live profile photo"
+    },
+    "specialization": {
+      "type": "string",
+      "description": "The doctor's specialty / department at this hospital, confirmed by the doctor when joining with the hospital code"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "deactivated",
+        "removed"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the doctor is officially associated with the hospital. DEACTIVATED: the hospital paused the association \u2014 it can be reactivated. REMOVED: the association is ended and the doctor immediately loses access to this hospital's patients and information; re-joining requires the hospital code again."
+    },
+    "joined_datetime": {
+      "type": "string",
+      "description": "Date and time the doctor joined the hospital (ISO datetime)"
+    }
+  },
+  "required": [
+    "hospital_id",
+    "hospital_name",
+    "hospital_user_id",
+    "doctor_id",
+    "doctor_user_id",
+    "doctor_name",
+    "specialization",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.hospital_user_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
