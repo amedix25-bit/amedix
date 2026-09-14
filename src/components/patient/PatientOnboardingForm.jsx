@@ -12,6 +12,7 @@ import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, AllergyEntryForm, SurgeryEntryForm,
 } from "@/components/patient/onboarding/EntryForms";
 import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
+import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Surgeries", "Lifestyle & Pregnancy"];
 
@@ -62,8 +63,13 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
   const isFemale = form.gender === "female";
 
+  // Backend verdict for the Verification Process section — { status, reason, verification_id }.
+  const [verification, setVerification] = useState(null);
   const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
+    // The entered identity information is part of the verification — editing
+    // it invalidates any previous verdict.
+    if (field === "date_of_birth" || field === "identification_number") setVerification(null);
     setError("");
   };
   const setL = (field) => (e) => setLifestyle((s) => ({ ...s, [field]: e.target.value }));
@@ -98,6 +104,10 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     e.preventDefault();
     if (!form.gender) {
       setError(t("Please select your sex."));
+      return;
+    }
+    if (verification?.status !== "verified") {
+      setError(t("Verification is required before you can continue."));
       return;
     }
     setStep(1);
@@ -166,6 +176,18 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         creates.push(base44.entities.SurgicalHistory.bulkCreate(medical.surgeries.map((s) => ({ ...meta, ...s }))));
       }
       if (creates.length) await Promise.all(creates);
+      // Associate the verified birth certificate with the new profile.
+      if (verification?.status === "verified" && verification.verification_id) {
+        try {
+          await base44.functions.invoke("attachVerificationToProfile", {
+            record_ids: [verification.verification_id],
+            profile_type: "patient",
+            patient_id: profile.id,
+          });
+        } catch (verr) {
+          console.error(verr);
+        }
+      }
       setCin(newCin);
       setStep(4);
     } catch (err) {
@@ -342,6 +364,24 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         </Select>
                       </div>
                     </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Verification Process")} *</h3>
+                    <DocumentVerificationCard
+                      profileType="patient"
+                      documentType="birth_certificate"
+                      title={t("Birth Certificate")}
+                      description={t("Upload a clear photo or PDF")}
+                      fields={[
+                        { key: "date_of_birth", label: t("Date of Birth"), readOnly: true },
+                        { key: "national_id_number", label: t("National ID Number"), readOnly: true },
+                      ]}
+                      values={{ date_of_birth: form.date_of_birth, national_id_number: form.identification_number }}
+                      result={verification}
+                      onResult={setVerification}
+                      t={t}
+                    />
                   </section>
 
                   {error && <p className="text-sm text-destructive">{error}</p>}

@@ -86,23 +86,6 @@ export default async function(req) {
 
     const attemptedAt = new Date().toISOString();
 
-    // The document stays in private storage — the backend issues a short-lived
-    // signed URL just long enough for the OCR extraction.
-    const signed = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri, expires_in: 300 });
-
-    const extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
-      file_url: signed.signed_url,
-      json_schema: {
-        type: 'object',
-        properties: {
-          date_of_birth: { type: 'string' },
-          national_id_number: { type: 'string' },
-          license_number: { type: 'string' },
-        },
-        required: requiredFields,
-      },
-    });
-
     const baseRecord = {
       user_id: user.id,
       profile_type,
@@ -114,6 +97,41 @@ export default async function(req) {
       expected_license_number: typeof expected.license_number === 'string' ? expected.license_number : '',
       attempted_datetime: attemptedAt,
     };
+
+    const unreadable = async () => {
+      const record = await base44.asServiceRole.entities.IdentityVerification.create({
+        ...baseRecord,
+        extracted_date_of_birth: '',
+        extracted_national_id_number: '',
+        extracted_license_number: '',
+        status: 'failed',
+        reason: 'unreadable',
+        verified_datetime: '',
+      });
+      return Response.json({ status: 'failed', reason: 'unreadable', verification_id: record.id });
+    };
+
+    let extraction;
+    try {
+      // The document stays in private storage — the backend issues a
+      // short-lived signed URL just long enough for the OCR extraction.
+      const signed = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri, expires_in: 300 });
+      extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: signed.signed_url,
+        json_schema: {
+          type: 'object',
+          properties: {
+            date_of_birth: { type: 'string' },
+            national_id_number: { type: 'string' },
+            license_number: { type: 'string' },
+          },
+          required: requiredFields,
+        },
+      });
+    } catch (extractError) {
+      // Unsupported or unreadable file — recorded as a failed attempt.
+      return unreadable();
+    }
 
     // The verification record is created with the service role — app users
     // cannot create or modify verification results themselves, so a "Verified"

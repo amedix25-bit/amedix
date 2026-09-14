@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
+import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
 import { PatientLanguageProvider } from "@/lib/patientLanguage";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -31,6 +32,11 @@ export default function Home() {
     hospital: "",
     phone: "",
   });
+  // Verification Process — backend verdicts per document, plus the national ID
+  // number entered inside the verification section.
+  const [doctorNationalId, setDoctorNationalId] = useState("");
+  const [doctorVerification, setDoctorVerification] = useState({ national_id: null, medical_license: null });
+  const [doctorVerError, setDoctorVerError] = useState("");
   const [radiologistForm, setRadiologistForm] = useState({
     specialization: "",
     license_number: "",
@@ -115,9 +121,14 @@ export default function Home() {
 
   const handleDoctorSubmit = async (e) => {
     e.preventDefault();
+    // Both verification documents must be verified by the backend first.
+    if (doctorVerification.national_id?.status !== "verified" || doctorVerification.medical_license?.status !== "verified") {
+      setDoctorVerError(t("Verification is required before you can continue."));
+      return;
+    }
     setCreating(true);
     try {
-      await base44.entities.DoctorProfile.create({
+      const profile = await base44.entities.DoctorProfile.create({
         user_id: user.id,
         full_name: [doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" "),
         first_name: doctorForm.first_name,
@@ -130,6 +141,19 @@ export default function Home() {
         phone: doctorForm.phone,
         is_verified: false,
       });
+      // Associate the verified documents with the new doctor profile.
+      try {
+        await base44.functions.invoke("attachVerificationToProfile", {
+          record_ids: [
+            doctorVerification.national_id.verification_id,
+            doctorVerification.medical_license.verification_id,
+          ],
+          profile_type: "doctor",
+          doctor_id: profile.id,
+        });
+      } catch (verr) {
+        console.error(verr);
+      }
       localStorage.removeItem("amh_selected_role");
       navigate("/doctor");
     } catch (err) {
@@ -257,7 +281,7 @@ export default function Home() {
 
       {showDoctorForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowDoctorForm(false)}>
-          <div className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-bold">{t("Doctor Registration")}</h2>
@@ -287,10 +311,6 @@ export default function Home() {
                 <Input id="specialization" placeholder={t("e.g. Cardiology")} value={doctorForm.specialization} onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="license">{t("License Number *")}</Label>
-                <Input id="license" placeholder={t("Medical license number")} value={doctorForm.license_number} onChange={(e) => setDoctorForm({ ...doctorForm, license_number: e.target.value })} required />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="hospital">{t("Hospital / Clinic")}</Label>
                 <Input id="hospital" placeholder={t("Hospital or clinic name")} value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />
               </div>
@@ -298,6 +318,43 @@ export default function Home() {
                 <Label htmlFor="phone">{t("Phone")}</Label>
                 <Input id="phone" placeholder={t("Contact number")} value={doctorForm.phone} onChange={(e) => setDoctorForm({ ...doctorForm, phone: e.target.value })} />
               </div>
+              <div className="pt-2">
+                <h3 className="text-sm font-semibold text-primary">{t("Verification Process")} *</h3>
+                <p className="text-xs text-muted-foreground mt-1 mb-3">
+                  {t("Your documents are verified securely and stored with your profile.")}
+                </p>
+              </div>
+              <DocumentVerificationCard
+                profileType="doctor"
+                documentType="national_id"
+                title={t("Official Identification Document")}
+                description={t("Upload a clear photo or PDF")}
+                fields={[{ key: "national_id_number", label: t("National ID Number"), placeholder: t("National ID Number") }]}
+                values={{ national_id_number: doctorNationalId }}
+                onValueChange={(key, value) => {
+                  setDoctorNationalId(value);
+                  setDoctorVerification((s) => ({ ...s, national_id: null }));
+                }}
+                result={doctorVerification.national_id}
+                onResult={(r) => setDoctorVerification((s) => ({ ...s, national_id: r }))}
+                t={t}
+              />
+              <DocumentVerificationCard
+                profileType="doctor"
+                documentType="medical_license"
+                title={t("Medical / Professional License Document")}
+                description={t("Upload a clear photo or PDF")}
+                fields={[{ key: "license_number", label: t("Medical License Number"), placeholder: t("Medical license number") }]}
+                values={{ license_number: doctorForm.license_number }}
+                onValueChange={(key, value) => {
+                  setDoctorForm((f) => ({ ...f, license_number: value }));
+                  setDoctorVerification((s) => ({ ...s, medical_license: null }));
+                }}
+                result={doctorVerification.medical_license}
+                onResult={(r) => setDoctorVerification((s) => ({ ...s, medical_license: r }))}
+                t={t}
+              />
+              {doctorVerError && <p className="text-sm text-destructive">{doctorVerError}</p>}
               <Button type="submit" className="w-full" disabled={creating}>
                 {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Doctor Account")}
               </Button>
