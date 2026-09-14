@@ -27,7 +27,19 @@ export default async function(req) {
     const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
     if (!checkin) return gateBlocked();
 
-    const note = await base44.entities.ClinicalNote.create(payload);
+    // Prescribed medications ride along with the note; the note and the
+    // medications are written server-side (service role) — direct client-side
+    // writes are blocked by Row Level Security.
+    const { medications, ...notePayload } = payload;
+    const note = await base44.asServiceRole.entities.ClinicalNote.create(notePayload);
+    const meds = Array.isArray(medications) ? medications : [];
+    if (meds.length > 0) {
+      const patients = await base44.asServiceRole.entities.PatientProfile.filter({ id: String(payload.patient_id) });
+      const patientUser = patients.length > 0 ? patients[0].user_id : "";
+      await base44.asServiceRole.entities.Medication.bulkCreate(
+        meds.map((m) => ({ ...m, patient_user_id: patientUser }))
+      );
+    }
     return Response.json({ note, checkin_id: checkin.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

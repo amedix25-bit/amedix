@@ -137,7 +137,7 @@
     },
     "payment_datetime": {
       "type": "string",
-      "description": "Date and time the payment was recorded (ISO datetime)"
+      "description": "Date and time the payment was recorded"
     },
     "pdf_url": {
       "type": "string",
@@ -157,5 +157,22 @@
     "doctor_id",
     "tests",
     "date_requested"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

@@ -211,6 +211,11 @@
         }
       ]
     },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "update": {
       "$or": [
         {

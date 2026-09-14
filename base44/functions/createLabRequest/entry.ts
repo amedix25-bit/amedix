@@ -25,7 +25,9 @@ export default async function(req) {
     const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
     if (!checkin) return gateBlocked();
 
-    const lab_request = await base44.entities.LabRequest.create(payload);
+    // Written with the service role — doctors cannot create lab requests
+    // directly through the client API (Row Level Security blocks it).
+    const lab_request = await base44.asServiceRole.entities.LabRequest.create(payload);
     return Response.json({ lab_request, checkin_id: checkin.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
