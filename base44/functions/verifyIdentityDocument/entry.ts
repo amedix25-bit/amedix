@@ -1,16 +1,35 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
-// Which identifying fields each verification document must confirm, per
-// profile type. This whitelist is the only accepted input — anything else is
-// rejected before any extraction happens.
+// Identity verification for profile creation. The user selects exactly ONE
+// method — Birth Certificate, Personal Card or Passport — and a successful
+// verification of that method is sufficient to verify the account; the other
+// methods are not required. Doctors additionally verify their medical license
+// through a separate call.
+//
+// Whitelist of accepted (profile_type, document_type) pairs and the fields
+// each must confirm — anything else is rejected before any extraction runs.
 const DOC_TYPES = {
   patient: {
     birth_certificate: ['date_of_birth', 'national_id_number'],
+    personal_card: ['full_name', 'personal_card_number'],
+    passport: ['full_name', 'passport_number'],
   },
   doctor: {
-    national_id: ['national_id_number'],
+    birth_certificate: ['date_of_birth', 'national_id_number'],
+    personal_card: ['full_name', 'personal_card_number'],
+    passport: ['full_name', 'passport_number'],
+    national_id: ['national_id_number'], // legacy identity document
     medical_license: ['license_number'],
   },
+};
+
+// What the OCR extraction is asked to read from each document type.
+const EXTRACT_SCHEMAS = {
+  birth_certificate: { date_of_birth: { type: 'string' }, national_id_number: { type: 'string' } },
+  national_id: { national_id_number: { type: 'string' } },
+  medical_license: { license_number: { type: 'string' } },
+  personal_card: { full_name: { type: 'string' }, personal_card_number: { type: 'string' } },
+  passport: { full_name: { type: 'string' }, passport_number: { type: 'string' } },
 };
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -62,6 +81,23 @@ function normalizeId(raw) {
   return normalizeDigits(raw).replace(/\s+/g, '');
 }
 
+// Full names must match exactly. The comparison is case-insensitive and
+// ignores spacing differences (documents print names in many layouts); the
+// entered information is never modified — it is only compared.
+function normalizeName(raw) {
+  if (raw === undefined || raw === null) return '';
+  return normalizeDigits(String(raw)).toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function fieldMatches(key, raw, expectedValue) {
+  if (key === 'date_of_birth') {
+    const d = normalizeDate(raw);
+    return d !== null && d === normalizeDate(expectedValue);
+  }
+  if (key === 'full_name') return normalizeName(raw) === normalizeName(expectedValue);
+  return normalizeId(raw) === normalizeId(expectedValue);
+}
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -69,120 +105,128 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { profile_type, document_type, file_uri, file_name, expected = {} } = body;
+    const {
+      profile_type, document_type, file_uri, file_name,
+      file_uri_back = '', file_name_back = '', expected = {},
+    } = body;
+
     const requiredFields = DOC_TYPES[profile_type]?.[document_type];
     if (!requiredFields) {
-      return Response.json({ error: 'Invalid document type' }, { status: 400 });
+      return Response.json({ error: 'Invalid verification method' }, { status: 400 });
     }
     if (typeof file_uri !== 'string' || file_uri.length === 0 || file_uri.length > 500) {
       return Response.json({ error: 'Invalid file' }, { status: 400 });
     }
+    if (typeof file_uri_back !== 'string' || file_uri_back.length > 500) {
+      return Response.json({ error: 'Invalid file' }, { status: 400 });
+    }
     for (const key of requiredFields) {
       const value = expected[key];
-      if (typeof value !== 'string' || value.trim() === '' || value.length > 100) {
+      const max = key === 'full_name' ? 200 : 100;
+      if (typeof value !== 'string' || value.trim() === '' || value.length > max) {
         return Response.json({ error: 'Missing required information' }, { status: 400 });
       }
     }
 
+    // A Personal Card requires BOTH sides: either two separate photos or a
+    // single PDF containing both. Enforced server-side so the frontend cannot
+    // bypass it.
+    const frontIsPdf = typeof file_name === 'string' && file_name.toLowerCase().endsWith('.pdf');
+    if (document_type === 'personal_card' && !file_uri_back && !frontIsPdf) {
+      return Response.json(
+        { error: 'Personal Card requires both sides — upload the front and back photos, or one PDF containing both sides' },
+        { status: 400 }
+      );
+    }
+
     const attemptedAt = new Date().toISOString();
 
+    const expectedRecord = {};
+    for (const key of requiredFields) {
+      expectedRecord[`expected_${key}`] = typeof expected[key] === 'string' ? expected[key] : '';
+    }
     const baseRecord = {
       user_id: user.id,
       profile_type,
       document_type,
       file_uri,
       file_name: typeof file_name === 'string' ? file_name.slice(0, 200) : '',
-      expected_date_of_birth: typeof expected.date_of_birth === 'string' ? expected.date_of_birth : '',
-      expected_national_id_number: typeof expected.national_id_number === 'string' ? expected.national_id_number : '',
-      expected_license_number: typeof expected.license_number === 'string' ? expected.license_number : '',
+      file_uri_back,
+      file_name_back: typeof file_name_back === 'string' ? file_name_back.slice(0, 200) : '',
       attempted_datetime: attemptedAt,
+      ...expectedRecord,
     };
-
-    const unreadable = async () => {
-      const record = await base44.asServiceRole.entities.IdentityVerification.create({
-        ...baseRecord,
-        extracted_date_of_birth: '',
-        extracted_national_id_number: '',
-        extracted_license_number: '',
-        status: 'failed',
-        reason: 'unreadable',
-        verified_datetime: '',
-      });
-      return Response.json({ status: 'failed', reason: 'unreadable', verification_id: record.id });
-    };
-
-    let extraction;
-    try {
-      // The document stays in private storage — the backend issues a
-      // short-lived signed URL just long enough for the OCR extraction.
-      const signed = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri, expires_in: 300 });
-      extraction = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: signed.signed_url,
-        json_schema: {
-          type: 'object',
-          properties: {
-            date_of_birth: { type: 'string' },
-            national_id_number: { type: 'string' },
-            license_number: { type: 'string' },
-          },
-          required: requiredFields,
-        },
-      });
-    } catch (extractError) {
-      // Unsupported or unreadable file — recorded as a failed attempt.
-      return unreadable();
-    }
 
     // The verification record is created with the service role — app users
-    // cannot create or modify verification results themselves, so a "Verified"
+    // cannot create or modify verification results themselves, so a 'verified'
     // status can only ever be produced here, after a real server-side match.
-    if (extraction.status !== 'success' || !extraction.output) {
+    const saveRecord = async (status, reason, extractedValues = {}) => {
+      const extractedRecord = {};
+      for (const key of requiredFields) {
+        const v = extractedValues[key];
+        extractedRecord[`extracted_${key}`] = v !== undefined && v !== null ? String(v) : '';
+      }
       const record = await base44.asServiceRole.entities.IdentityVerification.create({
         ...baseRecord,
-        extracted_date_of_birth: '',
-        extracted_national_id_number: '',
-        extracted_license_number: '',
-        status: 'failed',
-        reason: 'unreadable',
-        verified_datetime: '',
+        ...extractedRecord,
+        status,
+        reason,
+        verified_datetime: status === 'verified' ? new Date().toISOString() : '',
       });
-      return Response.json({ status: 'failed', reason: 'unreadable', verification_id: record.id });
+      return Response.json({ status, reason, verification_id: record.id });
+    };
+
+    // The document stays in private storage — the backend issues a
+    // short-lived signed URL just long enough for the OCR extraction.
+    const extractFrom = async (uri, schema) => {
+      const signed = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 300 });
+      const res = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: signed.signed_url,
+        json_schema: { type: 'object', properties: schema, required: Object.keys(schema) },
+      });
+      if (res.status !== 'success' || !res.output) return null;
+      const out = Array.isArray(res.output) ? res.output[0] : res.output;
+      return out && typeof out === 'object' ? out : null;
+    };
+
+    let front;
+    try {
+      front = await extractFrom(file_uri, EXTRACT_SCHEMAS[document_type]);
+    } catch (extractError) {
+      // Unsupported or unreadable file — recorded as a failed attempt.
+      return saveRecord('failed', 'unreadable');
     }
+    if (!front) return saveRecord('failed', 'unreadable');
 
-    const out = Array.isArray(extraction.output) ? extraction.output[0] : extraction.output;
-    const extracted = out && typeof out === 'object' ? out : {};
-
-    let anyExtracted = false;
-    const matches = {};
-    for (const key of requiredFields) {
-      const raw = extracted[key];
-      const present = raw !== undefined && raw !== null && String(raw).trim() !== '';
-      if (present) anyExtracted = true;
-      if (key === 'date_of_birth') {
-        matches[key] = present && normalizeDate(raw) !== null && normalizeDate(raw) === normalizeDate(expected[key]);
-      } else {
-        matches[key] = present && normalizeId(raw) === normalizeId(expected[key]);
+    // Personal Card with separate side photos: the back must be readable and
+    // carry the SAME card number as the front — proving both photos belong to
+    // one card.
+    if (document_type === 'personal_card' && file_uri_back) {
+      let back = null;
+      try {
+        back = await extractFrom(file_uri_back, { personal_card_number: { type: 'string' } });
+      } catch (backError) {
+        back = null;
+      }
+      const backNumber = back && back.personal_card_number !== undefined && back.personal_card_number !== null
+        ? String(back.personal_card_number) : '';
+      if (backNumber.trim() === '') return saveRecord('failed', 'unreadable', front);
+      if (normalizeId(backNumber) !== normalizeId(front.personal_card_number)) {
+        return saveRecord('failed', 'card_mismatch', front);
       }
     }
 
-    const verified = requiredFields.every((key) => matches[key]);
-    const reason = !anyExtracted ? 'unreadable' : 'mismatch';
+    let anyExtracted = false;
+    for (const key of requiredFields) {
+      const raw = front[key];
+      if (raw !== undefined && raw !== null && String(raw).trim() !== '') anyExtracted = true;
+    }
+    // Every required field must match exactly — the entered information is
+    // never modified, so a mismatch fails verification instead of passing it.
+    const verified = requiredFields.every((key) => fieldMatches(key, front[key], expected[key]));
 
-    const record = await base44.asServiceRole.entities.IdentityVerification.create({
-      ...baseRecord,
-      extracted_date_of_birth: extracted.date_of_birth !== undefined && extracted.date_of_birth !== null ? String(extracted.date_of_birth) : '',
-      extracted_national_id_number: extracted.national_id_number !== undefined && extracted.national_id_number !== null ? String(extracted.national_id_number) : '',
-      extracted_license_number: extracted.license_number !== undefined && extracted.license_number !== null ? String(extracted.license_number) : '',
-      status: verified ? 'verified' : 'failed',
-      reason: verified ? '' : reason,
-      verified_datetime: verified ? new Date().toISOString() : '',
-    });
-
-    return Response.json({
-      status: verified ? 'verified' : 'failed',
-      reason: verified ? '' : reason,
-      verification_id: record.id,
-    });
+    if (verified) return saveRecord('verified', '', front);
+    return saveRecord('failed', !anyExtracted ? 'unreadable' : 'mismatch', front);
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

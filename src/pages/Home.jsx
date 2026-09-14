@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
+import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
 import { PatientLanguageProvider } from "@/lib/patientLanguage";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
@@ -32,10 +33,10 @@ export default function Home() {
     hospital: "",
     phone: "",
   });
-  // Verification Process — backend verdicts per document, plus the national ID
-  // number entered inside the verification section.
-  const [doctorNationalId, setDoctorNationalId] = useState("");
-  const [doctorVerification, setDoctorVerification] = useState({ national_id: null, medical_license: null });
+  // Verification Process — the backend verdict of the ONE selected identity
+  // method (Birth Certificate / Personal Card / Passport) plus the medical
+  // license verification.
+  const [doctorVerification, setDoctorVerification] = useState({ identity: null, medical_license: null });
   const [doctorVerError, setDoctorVerError] = useState("");
   const [radiologistForm, setRadiologistForm] = useState({
     specialization: "",
@@ -121,8 +122,8 @@ export default function Home() {
 
   const handleDoctorSubmit = async (e) => {
     e.preventDefault();
-    // Both verification documents must be verified by the backend first.
-    if (doctorVerification.national_id?.status !== "verified" || doctorVerification.medical_license?.status !== "verified") {
+    // One verified identity method AND the medical license are required.
+    if (doctorVerification.identity?.status !== "verified" || doctorVerification.medical_license?.status !== "verified") {
       setDoctorVerError(t("Verification is required before you can continue."));
       return;
     }
@@ -145,7 +146,7 @@ export default function Home() {
       try {
         await base44.functions.invoke("attachVerificationToProfile", {
           record_ids: [
-            doctorVerification.national_id.verification_id,
+            doctorVerification.identity.verification_id,
             doctorVerification.medical_license.verification_id,
           ],
           profile_type: "doctor",
@@ -324,19 +325,11 @@ export default function Home() {
                   {t("Your documents are verified securely and stored with your profile.")}
                 </p>
               </div>
-              <DocumentVerificationCard
+              <VerificationMethodSelector
                 profileType="doctor"
-                documentType="national_id"
-                title={t("Official Identification Document")}
-                description={t("Upload a clear photo or PDF")}
-                fields={[{ key: "national_id_number", label: t("National ID Number"), placeholder: t("National ID Number") }]}
-                values={{ national_id_number: doctorNationalId }}
-                onValueChange={(key, value) => {
-                  setDoctorNationalId(value);
-                  setDoctorVerification((s) => ({ ...s, national_id: null }));
-                }}
-                result={doctorVerification.national_id}
-                onResult={(r) => setDoctorVerification((s) => ({ ...s, national_id: r }))}
+                fullName={[doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" ")}
+                result={doctorVerification.identity}
+                onResult={(r) => setDoctorVerification((s) => ({ ...s, identity: r }))}
                 t={t}
               />
               <DocumentVerificationCard

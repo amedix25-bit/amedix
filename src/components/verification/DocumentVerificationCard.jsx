@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { UploadCloud, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 // One document inside the Verification Process section of profile creation.
-// The user uploads a document to private storage and (when the fields are
+// The user uploads documents to private storage and (when the fields are
 // editable) enters the identifying information; the OCR extraction and the
 // exact comparison run in the backend — this component only displays the
 // backend's verdict, it never decides it.
+//
+// twoSided (Personal Card): the front is always required; the back is required
+// too unless the uploaded front file is a single PDF containing both sides.
 //
 // fields: [{ key, label, placeholder?, type?, readOnly? }]
 // values: { [key]: currentValue } — readOnly fields are rendered as text and
@@ -17,17 +20,22 @@ import { UploadCloud, Loader2, CheckCircle2, XCircle } from "lucide-react";
 // result: { status: "verified" | "failed", reason? } | null (backend verdict)
 // onResult: called with the backend result, or null when state is reset.
 export default function DocumentVerificationCard({
-  profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t,
+  profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t, twoSided = false,
 }) {
   const [file, setFile] = useState(null);
+  const [fileBack, setFileBack] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
-  const inputRef = useRef(null);
+  const frontInputRef = useRef(null);
+  const backInputRef = useRef(null);
 
   const allFieldsFilled = fields.every((f) => (values?.[f.key] || "").toString().trim() !== "");
+  const frontIsPdf = !!file && /\.pdf$/i.test(file.name);
+  const backRequired = twoSided && !frontIsPdf;
+  const readyToVerify = !!file && (!backRequired || !!fileBack) && allFieldsFilled;
 
-  const handleFile = async (e) => {
+  const handleFile = (slot) => async (e) => {
     const selected = e.target.files?.[0];
     e.target.value = "";
     if (!selected) return;
@@ -36,7 +44,9 @@ export default function DocumentVerificationCard({
     onResult(null);
     try {
       const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: selected });
-      setFile({ uri: file_uri, name: selected.name });
+      const uploaded = { uri: file_uri, name: selected.name };
+      if (slot === "back") setFileBack(uploaded);
+      else setFile(uploaded);
     } catch (err) {
       console.error(err);
       setError(t("Something went wrong during verification. Please try again."));
@@ -46,7 +56,7 @@ export default function DocumentVerificationCard({
   };
 
   const handleVerify = async () => {
-    if (!file || !allFieldsFilled) return;
+    if (!readyToVerify) return;
     setVerifying(true);
     setError("");
     try {
@@ -57,6 +67,8 @@ export default function DocumentVerificationCard({
         document_type: documentType,
         file_uri: file.uri,
         file_name: file.name,
+        file_uri_back: twoSided && fileBack ? fileBack.uri : "",
+        file_name_back: twoSided && fileBack ? fileBack.name : "",
         expected,
       });
       onResult(res.data);
@@ -66,6 +78,40 @@ export default function DocumentVerificationCard({
     } finally {
       setVerifying(false);
     }
+  };
+
+  const renderSlot = (slot, label, uploadLabel) => {
+    const f = slot === "back" ? fileBack : file;
+    const ref = slot === "back" ? backInputRef : frontInputRef;
+    return (
+      <div className="space-y-1.5">
+        {twoSided && <Label>{label}</Label>}
+        <input ref={ref} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFile(slot)} />
+        {f ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2">
+            <p className="text-sm truncate">{f.name}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              onClick={() => { (slot === "back" ? setFileBack : setFile)(null); onResult(null); }}
+            >
+              {t("Change file")}
+            </Button>
+          </div>
+        ) : (
+          <Button type="button" variant="outline" className="w-full" disabled={uploading} onClick={() => ref.current?.click()}>
+            {uploading ? (
+              <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
+            ) : (
+              <UploadCloud className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+            )}
+            {uploadLabel}
+          </Button>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -91,36 +137,22 @@ export default function DocumentVerificationCard({
           </div>
         ))}
 
-        <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFile} />
-        {file ? (
-          <div className="flex items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2">
-            <p className="text-sm truncate">{file.name}</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => { setFile(null); onResult(null); }}
-            >
-              {t("Change file")}
-            </Button>
-          </div>
-        ) : (
-          <Button type="button" variant="outline" className="w-full" disabled={uploading} onClick={() => inputRef.current?.click()}>
-            {uploading ? (
-              <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
-            ) : (
-              <UploadCloud className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-            )}
-            {t("Upload a clear photo or PDF")}
-          </Button>
+        {renderSlot("front", t("Front side"), twoSided ? t("Upload a clear photo or PDF of the front side") : t("Upload a clear photo or PDF"))}
+        {twoSided && !frontIsPdf && renderSlot("back", t("Back side"), t("Upload a clear photo or PDF of the back side"))}
+        {twoSided && frontIsPdf && (
+          <p className="text-xs text-muted-foreground">{t("One PDF containing both sides")}</p>
         )}
 
         {!allFieldsFilled && (
           <p className="text-xs text-muted-foreground">{t("Enter the required information first.")}</p>
         )}
+        {backRequired && !fileBack && (
+          <p className="text-xs text-muted-foreground">
+            {t("Please upload the back side of your Personal Card, or upload one PDF containing both sides.")}
+          </p>
+        )}
 
-        <Button type="button" className="w-full" disabled={!file || !allFieldsFilled || verifying} onClick={handleVerify}>
+        <Button type="button" className="w-full" disabled={!readyToVerify || verifying} onClick={handleVerify}>
           {verifying ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
@@ -149,7 +181,9 @@ export default function DocumentVerificationCard({
             <p className="text-xs text-muted-foreground mt-1">
               {result.reason === "unreadable"
                 ? t("We could not read the document. Please upload a clearer photo or PDF.")
-                : t("The information you entered does not match the document. Please correct your information or upload the correct document.")}
+                : result.reason === "card_mismatch"
+                  ? t("The front and back photos do not belong to the same card. Please upload both sides of your Personal Card.")
+                  : t("The information you entered does not match the document. Please correct your information or upload the correct document.")}
             </p>
           </div>
         )}

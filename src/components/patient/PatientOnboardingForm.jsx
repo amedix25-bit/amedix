@@ -12,7 +12,7 @@ import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, AllergyEntryForm, SurgeryEntryForm,
 } from "@/components/patient/onboarding/EntryForms";
 import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
-import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
+import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Surgeries", "Lifestyle & Pregnancy"];
 
@@ -69,7 +69,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     // The entered identity information is part of the verification — editing
     // it invalidates any previous verdict.
-    if (field === "date_of_birth" || field === "identification_number") setVerification(null);
+    if (["date_of_birth", "identification_number", "first_name", "middle_name", "last_name"].includes(field)) setVerification(null);
     setError("");
   };
   const setL = (field) => (e) => setLifestyle((s) => ({ ...s, [field]: e.target.value }));
@@ -176,7 +176,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         creates.push(base44.entities.SurgicalHistory.bulkCreate(medical.surgeries.map((s) => ({ ...meta, ...s }))));
       }
       if (creates.length) await Promise.all(creates);
-      // Associate the verified birth certificate with the new profile.
+      // Associate the verified identity document with the new profile.
       if (verification?.status === "verified" && verification.verification_id) {
         try {
           await base44.functions.invoke("attachVerificationToProfile", {
@@ -368,16 +368,12 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
                   <section>
                     <h3 className="text-sm font-semibold text-primary mb-3">{t("Verification Process")} *</h3>
-                    <DocumentVerificationCard
+                    <VerificationMethodSelector
                       profileType="patient"
-                      documentType="birth_certificate"
-                      title={t("Birth Certificate")}
-                      description={t("Upload a clear photo or PDF")}
-                      fields={[
-                        { key: "date_of_birth", label: t("Date of Birth"), readOnly: true },
-                        { key: "national_id_number", label: t("National ID Number"), readOnly: true },
-                      ]}
-                      values={{ date_of_birth: form.date_of_birth, national_id_number: form.identification_number }}
+                      fullName={[form.first_name, form.middle_name, form.last_name].filter(Boolean).join(" ")}
+                      birthCertificateReadOnly
+                      dateOfBirth={form.date_of_birth}
+                      nationalIdNumber={form.identification_number}
                       result={verification}
                       onResult={setVerification}
                       t={t}

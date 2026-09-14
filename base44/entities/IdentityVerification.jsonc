@@ -18,42 +18,76 @@
       "type": "string",
       "enum": [
         "birth_certificate",
+        "personal_card",
+        "passport",
         "national_id",
         "medical_license"
       ],
-      "description": "Type of the uploaded verification document"
+      "description": "Selected verification method \u2014 Birth Certificate, Personal Card or Passport (one identity method is enough to verify the account), Medical License for doctor credentials, or legacy national_id records"
     },
     "file_uri": {
       "type": "string",
-      "description": "Private storage URI of the uploaded verification document \u2014 only accessible via signed URLs issued by the backend"
+      "description": "Private storage URI of the uploaded document (front side for a two-sided Personal Card) \u2014 only accessible via signed URLs issued by the backend"
     },
     "file_name": {
       "type": "string",
-      "description": "Original name of the uploaded verification document"
+      "description": "Original name of the uploaded document"
+    },
+    "file_uri_back": {
+      "type": "string",
+      "description": "Private storage URI of the back side photo of a Personal Card uploaded as separate photos \u2014 empty when a single PDF contains both sides"
+    },
+    "file_name_back": {
+      "type": "string",
+      "description": "Original name of the back side file"
     },
     "expected_date_of_birth": {
       "type": "string",
       "description": "Date of birth as entered by the user \u2014 compared against the document"
     },
-    "expected_national_id_number": {
-      "type": "string",
-      "description": "National ID number as entered by the user \u2014 compared against the document"
-    },
-    "expected_license_number": {
-      "type": "string",
-      "description": "Medical license number as entered by the user \u2014 compared against the document"
-    },
     "extracted_date_of_birth": {
       "type": "string",
       "description": "Date of birth as read from the uploaded document by OCR"
+    },
+    "expected_national_id_number": {
+      "type": "string",
+      "description": "National ID number as entered by the user \u2014 compared against the document"
     },
     "extracted_national_id_number": {
       "type": "string",
       "description": "National ID number as read from the uploaded document by OCR"
     },
+    "expected_license_number": {
+      "type": "string",
+      "description": "Medical license number as entered by the user \u2014 compared against the document"
+    },
     "extracted_license_number": {
       "type": "string",
       "description": "License number as read from the uploaded document by OCR"
+    },
+    "expected_full_name": {
+      "type": "string",
+      "description": "Full name as entered by the user \u2014 compared against the document (Personal Card / Passport)"
+    },
+    "extracted_full_name": {
+      "type": "string",
+      "description": "Full name as read from the uploaded document by OCR"
+    },
+    "expected_personal_card_number": {
+      "type": "string",
+      "description": "Personal Card number as entered by the user \u2014 must match the document character-for-character"
+    },
+    "extracted_personal_card_number": {
+      "type": "string",
+      "description": "Personal Card number as read from the uploaded document by OCR"
+    },
+    "expected_passport_number": {
+      "type": "string",
+      "description": "Passport number as entered by the user \u2014 must match the document character-for-character"
+    },
+    "extracted_passport_number": {
+      "type": "string",
+      "description": "Passport number as read from the uploaded document by OCR"
     },
     "status": {
       "type": "string",
@@ -61,11 +95,11 @@
         "verified",
         "failed"
       ],
-      "description": "VERIFIED: every required field matched the document exactly. FAILED: mismatch or the document could not be read."
+      "description": "VERIFIED: every required field matched the document exactly. FAILED: mismatch, the two sides do not belong to the same card, or the document could not be read."
     },
     "reason": {
       "type": "string",
-      "description": "mismatch / unreadable \u2014 empty when verified"
+      "description": "mismatch / unreadable / card_mismatch \u2014 empty when verified"
     },
     "attempted_datetime": {
       "type": "string",

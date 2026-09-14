@@ -244,6 +244,21 @@ const AR = {
   "Enter the required information first.": "أدخل المعلومات المطلوبة أولاً.",
   "Something went wrong during verification. Please try again.": "حدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى.",
   "Your documents are verified securely and stored with your profile.": "يتم التحقق من وثائقك بأمان وتخزينها مع ملفك الشخصي.",
+  "Choose one verification method — successfully verifying it verifies your account. The other methods are not required.": "اختر طريقة تحقق واحدة — نجاح التحقق بها يوثّق حسابك، ولا حاجة لاستخدام الطرق الأخرى.",
+  "Personal Card": "البطاقة الشخصية",
+  "Passport": "جواز السفر",
+  "Full Name": "الاسم الكامل",
+  "Personal Card Number": "رقم البطاقة الشخصية",
+  "Passport Number": "رقم جواز السفر",
+  "Front side": "الوجه الأمامي",
+  "Back side": "الوجه الخلفي",
+  "Upload a clear photo or PDF of the front side": "ارفع صورة أو ملف PDF واضحاً للوجه الأمامي",
+  "Upload a clear photo or PDF of the back side": "ارفع صورة أو ملف PDF واضحاً للوجه الخلفي",
+  "Upload clear photos of both sides, or one PDF containing both sides": "ارفع صوراً واضحة للوجهين، أو ملف PDF واحداً يحتوي على الوجهين",
+  "Upload a clear photo or PDF of the identification page": "ارفع صورة أو ملف PDF واضحاً لصفحة التعريف",
+  "One PDF containing both sides": "ملف PDF واحد يحتوي على الوجهين",
+  "Please upload the back side of your Personal Card, or upload one PDF containing both sides.": "يرجى رفع الوجه الخلفي للبطاقة الشخصية، أو رفع ملف PDF واحد يحتوي على الوجهين.",
+  "The front and back photos do not belong to the same card. Please upload both sides of your Personal Card.": "لا تعود صور الوجه الأمامي والخلفي إلى البطاقة نفسها. يرجى رفع وجهي بطاقتك الشخصية.",
 };
 
 const AppLanguageContext = createContext(null);
