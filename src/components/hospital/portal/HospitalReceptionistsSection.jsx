@@ -4,7 +4,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, UserCog } from "lucide-react";
+import { Loader2, Plus, UserCog, Users, Wifi, WifiOff } from "lucide-react";
+import { useAppLanguage } from "@/lib/appLanguage";
 import { hashPassword, randomSalt } from "@/lib/hashUtils";
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -24,6 +25,7 @@ const isOnline = (r) =>
 // deactivate/reactivate them, reset their passwords, and see who is online.
 export default function HospitalReceptionistsSection({ profile }) {
   const { toast } = useToast();
+  const { t } = useAppLanguage();
   const [items, setItems] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -80,7 +82,7 @@ export default function HospitalReceptionistsSection({ profile }) {
         is_active: true,
       });
       toast({
-        title: "Receptionist added",
+        title: "Receptionist created",
         description: `Login username: ${finalUsername} — share it with the receptionist.`,
       });
       setFullName("");
@@ -120,11 +122,32 @@ export default function HospitalReceptionistsSection({ profile }) {
     }
   };
 
+  const total = items ? items.length : 0;
+  const online = items ? items.filter((r) => isOnline(r)).length : 0;
+
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <Users className="w-5 h-5 text-primary mb-2" />
+          <p className="text-2xl font-bold">{total}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("Total Receptionists")}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <Wifi className="w-5 h-5 text-emerald-600 mb-2" />
+          <p className="text-2xl font-bold">{online}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("Online")}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <WifiOff className="w-5 h-5 text-muted-foreground mb-2" />
+          <p className="text-2xl font-bold">{total - online}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("Offline")}</p>
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="w-4 h-4 mr-1.5" /> Add Receptionist
+          <Plus className="w-4 h-4 mr-1.5" /> {t("Create Receptionist")}
         </Button>
       </div>
 
@@ -132,7 +155,7 @@ export default function HospitalReceptionistsSection({ profile }) {
         <form onSubmit={handleAdd} className="rounded-xl border border-border bg-card p-5 space-y-4">
           <div className="flex items-center gap-2">
             <UserCog className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">Add Receptionist</h3>
+            <h3 className="font-semibold">{t("Create Receptionist")}</h3>
           </div>
           <p className="text-xs text-muted-foreground">
             Each receptionist gets their own individual login — accounts are never shared.
@@ -160,7 +183,7 @@ export default function HospitalReceptionistsSection({ profile }) {
           </div>
           <Button type="submit" disabled={saving}>
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Add Receptionist
+            {t("Create Receptionist")}
           </Button>
         </form>
       )}

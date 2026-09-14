@@ -56,7 +56,7 @@ export default function HospitalDashboardSection({ profile }) {
         <p className="font-semibold">Total Visit Revenue</p>
         <p className="text-3xl font-bold text-primary mt-2">{totalRevenue.toFixed(2)} LYD</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Every check-in records the payment collected by the receptionist — the full visit history with amounts and payment methods is available under Visits.
+          Every check-in records the payment collected by the receptionist — the full visit history with amounts and payment methods is available under Manage Patients.
         </p>
       </div>
     </div>

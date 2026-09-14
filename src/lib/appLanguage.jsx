@@ -276,6 +276,25 @@ const AR = {
   "Register your hospital, manage receptionists, patient check-ins, and visit payments.": "سجّل مستشفاك، وأدر موظفي الاستقبال وتسجيل حضور المرضى ومدفوعات الزيارات.",
   "Visits": "الزيارات",
   "Receptionists": "موظفو الاستقبال",
+  // ── Hospital Portal: Manage Patients + Receptionists ──
+  "Manage Patients": "إدارة المرضى",
+  "Create Receptionist": "إنشاء موظف استقبال",
+  "Total Receptionists": "إجمالي موظفي الاستقبال",
+  "Online": "متصل",
+  "Offline": "غير متصل",
+  "All Time": "كل الفترات",
+  "Today": "اليوم",
+  "This Week": "هذا الأسبوع",
+  "This Month": "هذا الشهر",
+  "Custom Range": "فترة مخصصة",
+  "From": "من",
+  "To": "إلى",
+  "Patient Name": "اسم المريض",
+  "Date/Time Seen": "تاريخ ووقت الزيارة",
+  "Amount Paid": "المبلغ المدفوع",
+  "Payment Method": "طريقة الدفع",
+  "Total Payments": "إجمالي المدفوعات",
+  "Total Patients Seen": "إجمالي المرضى المستقبَلين",
 };
 
 const AppLanguageContext = createContext(null);

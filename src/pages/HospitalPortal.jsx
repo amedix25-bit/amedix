@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
 import HospitalDashboardSection from "@/components/hospital/portal/HospitalDashboardSection";
-import HospitalVisitsSection from "@/components/hospital/portal/HospitalVisitsSection";
+import HospitalManagePatientsSection from "@/components/hospital/portal/HospitalManagePatientsSection";
 import HospitalReceptionistsSection from "@/components/hospital/portal/HospitalReceptionistsSection";
 import HospitalProfileSection from "@/components/hospital/portal/HospitalProfileSection";
 import { Loader2 } from "lucide-react";
@@ -13,7 +13,7 @@ import { LayoutDashboard, ClipboardList, UserCog, Building2 } from "lucide-react
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "visits", label: "Visits", icon: ClipboardList },
+  { key: "patients", label: "Manage Patients", icon: ClipboardList },
   { key: "staff", label: "Receptionists", icon: UserCog },
   { key: "profile", label: "Profile", icon: Building2 },
 ];
@@ -62,7 +62,7 @@ export default function HospitalPortal() {
         </div>
 
         {activeTab === "dashboard" && <HospitalDashboardSection profile={profile} />}
-        {activeTab === "visits" && <HospitalVisitsSection profile={profile} />}
+        {activeTab === "patients" && <HospitalManagePatientsSection profile={profile} />}
         {activeTab === "staff" && <HospitalReceptionistsSection profile={profile} />}
         {activeTab === "profile" && <HospitalProfileSection profile={profile} onUpdate={setProfile} />}
       </div>
