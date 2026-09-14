@@ -1,0 +1,122 @@
+{
+  "name": "IdentityVerification",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User id of the account being verified \u2014 used for Row Level Security"
+    },
+    "profile_type": {
+      "type": "string",
+      "enum": [
+        "patient",
+        "doctor"
+      ],
+      "description": "Kind of profile this verification belongs to"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "birth_certificate",
+        "national_id",
+        "medical_license"
+      ],
+      "description": "Type of the uploaded verification document"
+    },
+    "file_uri": {
+      "type": "string",
+      "description": "Private storage URI of the uploaded verification document \u2014 only accessible via signed URLs issued by the backend"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original name of the uploaded verification document"
+    },
+    "expected_date_of_birth": {
+      "type": "string",
+      "description": "Date of birth as entered by the user \u2014 compared against the document"
+    },
+    "expected_national_id_number": {
+      "type": "string",
+      "description": "National ID number as entered by the user \u2014 compared against the document"
+    },
+    "expected_license_number": {
+      "type": "string",
+      "description": "Medical license number as entered by the user \u2014 compared against the document"
+    },
+    "extracted_date_of_birth": {
+      "type": "string",
+      "description": "Date of birth as read from the uploaded document by OCR"
+    },
+    "extracted_national_id_number": {
+      "type": "string",
+      "description": "National ID number as read from the uploaded document by OCR"
+    },
+    "extracted_license_number": {
+      "type": "string",
+      "description": "License number as read from the uploaded document by OCR"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "failed"
+      ],
+      "description": "VERIFIED: every required field matched the document exactly. FAILED: mismatch or the document could not be read."
+    },
+    "reason": {
+      "type": "string",
+      "description": "mismatch / unreadable \u2014 empty when verified"
+    },
+    "attempted_datetime": {
+      "type": "string",
+      "description": "Date and time of the verification attempt (ISO datetime)"
+    },
+    "verified_datetime": {
+      "type": "string",
+      "description": "Date and time the document was verified (ISO datetime) \u2014 set only on successful verification"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the verification documents are attached to"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id the verification documents are attached to"
+    }
+  },
+  "required": [
+    "user_id",
+    "profile_type",
+    "document_type",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
