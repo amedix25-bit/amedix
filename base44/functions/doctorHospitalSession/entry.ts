@@ -15,17 +15,42 @@ export default async function(req) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const code = String((body && body.code) || "").trim().toUpperCase();
-    const hospitalName = String((body && body.hospital_name) || "").trim();
-    if (!code && !hospitalName) {
-      return Response.json({ error: "Enter the hospital's AMedix Hospital Code." }, { status: 400 });
-    }
 
     const doctors = await base44.asServiceRole.entities.DoctorProfile.filter({ user_id: user.id });
     if (doctors.length === 0) {
       return Response.json({ error: "Doctor profile not found." }, { status: 403 });
     }
     const doctor = doctors[0];
+
+    // List mode — the doctor's own hospitals for the Overview switcher. Only
+    // hospitals with an ACTIVE verified association are ever returned, each
+    // with its official logo. A hospital the doctor is not authorized at can
+    // never appear here.
+    if (body && body.list) {
+      const assocs = await base44.asServiceRole.entities.HospitalDoctor.filter({ doctor_id: doctor.id });
+      const hospitals = await base44.asServiceRole.entities.HospitalProfile.list();
+      const byId = new Map(hospitals.map((h) => [h.id, h]));
+      const list = assocs
+        .filter((a) => a.status === "active")
+        .map((a) => {
+          const h = byId.get(a.hospital_id);
+          if (!h) return null;
+          return {
+            hospital_id: h.id,
+            hospital_name: h.hospital_name,
+            hospital_location: h.location || "",
+            hospital_photo_url: h.photo_url || "",
+          };
+        })
+        .filter(Boolean);
+      return Response.json({ hospitals: list });
+    }
+
+    const code = String((body && body.code) || "").trim().toUpperCase();
+    const hospitalName = String((body && body.hospital_name) || "").trim();
+    if (!code && !hospitalName) {
+      return Response.json({ error: "Enter the hospital's AMedix Hospital Code." }, { status: 400 });
+    }
 
     let hospital = null;
     if (code) {

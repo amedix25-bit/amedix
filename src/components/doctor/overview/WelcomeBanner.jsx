@@ -1,9 +1,13 @@
 import React from "react";
-import { Heart } from "lucide-react";
+import { Heart, Building2 } from "lucide-react";
 import { Image } from "@/components/ui/image";
+import HospitalSwitcher from "@/components/doctor/overview/HospitalSwitcher";
 
-// "Welcome back" banner: greeting, tagline and stethoscope illustration.
-export default function WelcomeBanner({ profile }) {
+// "Welcome back" banner. Next to the welcome greeting the banner shows the
+// official logo and name of the hospital the doctor is currently working at
+// (from the verified hospital session), with a small ▼ switcher to move
+// between the doctor's other authorized hospitals.
+export default function WelcomeBanner({ profile, hospitalSession, onSwitchHospital }) {
   return (
     <div className="rounded-2xl border border-border bg-card shadow-sm p-6 sm:p-8 overflow-hidden">
       <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-6">
@@ -20,13 +24,25 @@ export default function WelcomeBanner({ profile }) {
             <p className="font-cursive text-2xl text-primary leading-none">Good care makes a difference</p>
           </div>
         </div>
-        <div className="w-36 h-36 sm:w-44 sm:h-44 mx-auto sm:ml-auto shrink-0 rounded-full overflow-hidden">
-          <Image
-            src="https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/9a0a3e1b2_generated_image.png"
-            alt="Stethoscope illustration"
-            fittingType="fill"
-            className="w-full h-full"
-          />
+        <div className="flex flex-col items-center gap-2 sm:items-end shrink-0">
+          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border border-border bg-background flex items-center justify-center overflow-hidden shadow-sm">
+            {hospitalSession?.hospital_photo_url ? (
+              <Image
+                src={hospitalSession.hospital_photo_url}
+                alt={`${hospitalSession.hospital_name} logo`}
+                fittingType="fill"
+                className="w-full h-full"
+              />
+            ) : (
+              <Building2 className="w-12 h-12 text-primary/40" />
+            )}
+          </div>
+          <div className="text-center sm:text-right">
+            <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+              Currently working at
+            </p>
+            <HospitalSwitcher current={hospitalSession} onSwitched={onSwitchHospital} />
+          </div>
         </div>
       </div>
     </div>

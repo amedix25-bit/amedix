@@ -16,6 +16,8 @@ import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
+import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
+import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
 import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2 } from "lucide-react";
 
@@ -43,6 +45,10 @@ export default function DoctorDashboard() {
   const [stats, setStats] = useState({ patients: 0, appointments: 0, labs: 0, imaging: 0 });
   const [searchPrefill, setSearchPrefill] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
+  // The verified hospital session — the doctor's active hospital for the
+  // current portal session, opened via the AMedix Hospital Code gate. All
+  // hospital-specific information and clinical actions apply to this hospital.
+  const [hospitalSession, setHospitalSession] = useState(null);
   const now = new Date();
 
   useEffect(() => { loadProfile(); }, []);
@@ -80,6 +86,12 @@ export default function DoctorDashboard() {
       }
       const p = profiles[0];
       setProfile(p);
+      // A stored session is only reused while it still matches the doctor's
+      // current working hospital — otherwise the code gate is shown again.
+      const stored = getDoctorHospitalSession();
+      if (stored && p.hospital && String(stored.hospital_name).trim().toLowerCase() === String(p.hospital).trim().toLowerCase()) {
+        setHospitalSession(stored);
+      }
       // Fresh online status for the hospital's Manage Doctors view — refreshed
       // again every few minutes while the Doctor Portal is open.
       base44.entities.DoctorProfile.update(p.id, { last_active_datetime: new Date().toISOString() }).catch(() => {});
@@ -98,6 +110,31 @@ export default function DoctorDashboard() {
       ].filter((a) => a.at).sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 5);
       setRecentActivity(activity);
     } catch (err) { console.error(err); } finally { setLoading(false); }
+  };
+
+  // Hospital Code Gate — the portal stays closed until the doctor verifies the
+  // AMedix Hospital Code of the hospital they are working at. Every hospital
+  // switch afterwards is re-verified by the backend.
+  if (profile && !hospitalSession) {
+    return (
+      <DoctorHospitalGate
+        profile={profile}
+        user={user}
+        onVerified={(session) => {
+          setDoctorHospitalSession(session);
+          setHospitalSession(session);
+          setProfile((prev) => (prev ? { ...prev, hospital: session.hospital_name } : prev));
+        }}
+      />
+    );
+  }
+
+  // Switching hospitals from the Overview switcher — the backend already
+  // verified the active association; the session becomes the new hospital.
+  const handleSwitchHospital = (session) => {
+    setDoctorHospitalSession(session);
+    setHospitalSession(session);
+    setProfile((prev) => (prev ? { ...prev, hospital: session.hospital_name } : prev));
   };
 
   return (
@@ -135,6 +172,8 @@ export default function DoctorDashboard() {
         {activeTab === "overview" && (
           <DoctorOverview
             profile={profile}
+            hospitalSession={hospitalSession}
+            onSwitchHospital={handleSwitchHospital}
             stats={stats}
             loading={loading}
             recentActivity={recentActivity}

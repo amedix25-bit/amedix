@@ -5,12 +5,12 @@ import StatCards from "@/components/doctor/overview/StatCards";
 import RecentActivity from "@/components/doctor/overview/RecentActivity";
 import QuickActions from "@/components/doctor/overview/QuickActions";
 
-export default function DoctorOverview({ profile, stats, loading, recentActivity, onNavigateTab }) {
+export default function DoctorOverview({ profile, hospitalSession, onSwitchHospital, stats, loading, recentActivity, onNavigateTab }) {
   if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
 
   return (
     <div className="space-y-6">
-      <WelcomeBanner profile={profile} />
+      <WelcomeBanner profile={profile} hospitalSession={hospitalSession} onSwitchHospital={onSwitchHospital} />
       <StatCards stats={stats} onNavigate={onNavigateTab} />
       <div className="grid lg:grid-cols-2 gap-4">
         <RecentActivity activity={recentActivity} />
