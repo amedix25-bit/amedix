@@ -9,6 +9,8 @@ import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { DOCUMENT_TYPES } from "@/lib/clinicalDocuments";
 import { getSpecialtyDocs, getDocDef, getSpecialtyLabel, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import DocumentFields, { EmergencyWorkflowStrip } from "./DocumentFields";
+import ToothChart from "@/components/doctor/dental/ToothChart";
+import { CERTIFICATE_DEFS, CERTIFICATE_KEYS } from "@/lib/specialtyDocumentsPart4";
 import { Loader2, Lock, PenLine } from "lucide-react";
 
 // Creates a new clinical document in an encounter, or — in amend mode — a
@@ -45,6 +47,40 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
 
   const setData = (key, value) => setDataValues((s) => ({ ...s, [key]: value }));
 
+  // The interactive Tooth Chart is linked to the patient's dental encounters
+  // and dental treatment history — tooth statuses recorded in the patient's
+  // earlier dental documents are overlaid on the chart for every new dental
+  // document (oldest to newest, latest entry wins).
+  const [dentalHistory, setDentalHistory] = useState({});
+  useEffect(() => {
+    if (!def?.toothChart || !patient?.id) {
+      setDentalHistory({});
+      return undefined;
+    }
+    let cancelled = false;
+    base44.entities.ClinicalDocument.filter({ patient_id: patient.id, specialty: "dentistry" }, "created_date", 200)
+      .then((docs) => {
+        if (cancelled) return;
+        const map = {};
+        docs.forEach((d) => {
+          const tc = d.data?.tooth_chart?.value;
+          if (Array.isArray(tc)) {
+            tc.forEach((e) => {
+              if (e && e.tooth) {
+                map[e.tooth] = {
+                  status: e.status, note: e.note,
+                  doc: d.document_type_label, date: d.created_datetime,
+                };
+              }
+            });
+          }
+        });
+        setDentalHistory(map);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [def?.key, patient?.id]);
+
   // Clinical photographs (e.g. dermatology lesion photos) — uploaded to
   // PRIVATE storage and attached to the lesion document and its encounter.
   // They follow the same permission, access control and audit rules as all
@@ -75,6 +111,12 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       const v = dataValues[f.key];
       if (v !== undefined && v !== null && v !== "") data[f.key] = { label: f.label, value: String(v) };
     });
+    // The interactive Tooth Chart saves its entries (FDI tooth number, status,
+    // note) into the document's structured data — attached to this dental
+    // encounter and the longitudinal patient record like any other document.
+    if (def.toothChart && Array.isArray(dataValues.tooth_chart) && dataValues.tooth_chart.length > 0) {
+      data.tooth_chart = { label: "Tooth Chart", value: dataValues.tooth_chart };
+    }
     return data;
   };
 
@@ -154,7 +196,13 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
             <SelectContent className="max-h-80">
               <SelectGroup>
                 <SelectLabel>General Documents</SelectLabel>
-                {DOCUMENT_TYPES.map((d) => (
+                {DOCUMENT_TYPES.filter((d) => !CERTIFICATE_KEYS.includes(d.key)).map((d) => (
+                  <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel>Certificates & Official Documents</SelectLabel>
+                {CERTIFICATE_DEFS.map((d) => (
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
               </SelectGroup>
@@ -175,6 +223,17 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
 
       {hasFields && (
         <DocumentFields defs={def.fields} values={dataValues} onChange={setData} />
+      )}
+
+      {def && def.toothChart && (
+        <div className="space-y-1.5">
+          <Label>Tooth Chart</Label>
+          <ToothChart
+            value={Array.isArray(dataValues.tooth_chart) ? dataValues.tooth_chart : []}
+            onChange={(entries) => setData("tooth_chart", entries)}
+            history={dentalHistory}
+          />
+        </div>
       )}
 
       {def && def.photos && (

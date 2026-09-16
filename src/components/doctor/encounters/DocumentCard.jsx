@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
+import ToothChart from "@/components/doctor/dental/ToothChart";
 import { format } from "date-fns";
 import { generateClinicalDocumentPdfUrl } from "@/lib/clinicalDocumentPdf";
 import { Loader2, FileSignature, History, FileText, PenLine } from "lucide-react";
@@ -112,6 +113,14 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
                 {f.value}
               </p>
             ))}
+        </div>
+      )}
+
+      {/* Interactive Tooth Chart — stored dental findings */}
+      {viewing.data?.tooth_chart && Array.isArray(viewing.data.tooth_chart.value) && viewing.data.tooth_chart.value.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tooth Chart</p>
+          <ToothChart value={viewing.data.tooth_chart.value} readOnly />
         </div>
       )}
 

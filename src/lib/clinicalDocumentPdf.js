@@ -108,7 +108,14 @@ export async function generateClinicalDocumentPdfUrl(doc) {
       pdf.text(label, M, y);
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9.5);
-      const valLines = pdf.splitTextToSize(String(f.value), boxW - 6);
+      let val = f.value;
+      if (Array.isArray(val)) {
+        // Tooth Chart entries and other structured arrays render as lines.
+        val = val.map((e) => e && typeof e === "object"
+          ? `Tooth ${e.tooth} — ${(e.status || "").replace(/_/g, " ")}${e.note ? ` (${e.note})` : ""}`
+          : String(e)).join("\n");
+      }
+      const valLines = pdf.splitTextToSize(String(val), boxW - 6);
       y = ensure(y, 5 + valLines.length * 4.8);
       pdf.text(valLines, M + 4, y + 4.5);
       y += 4.5 + valLines.length * 4.8 + 1.5;

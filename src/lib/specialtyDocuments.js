@@ -4,6 +4,11 @@
 // same PDF header, digital signature, timestamp, AMedix Document ID, version
 // control, amendment system, permissions and audit log. No separate records.
 
+import {
+  ONCOLOGY_DOCS, INFECTIOUS_DISEASE_DOCS, RHEUMATOLOGY_DOCS, HEMATOLOGY_DOCS,
+  FAMILY_MEDICINE_DOCS, DENTAL_DOCS, PHYSIO_DOCS, NUTRITION_DOCS, CERTIFICATE_DEFS,
+} from "@/lib/specialtyDocumentsPart4";
+
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
   "Surgeon": "surgery",
@@ -23,6 +28,15 @@ export const SPECIALTY_KEYS = {
   "Gastroenterology": "gastroenterology",
   "Nephrology": "nephrology",
   "Endocrinology": "endocrinology",
+  "Oncology": "oncology",
+  "Infectious Diseases": "infectious_disease",
+  "Rheumatology": "rheumatology",
+  "Hematology": "hematology",
+  "Family Medicine": "family_medicine",
+  "General Practice": "family_medicine",
+  "Dentistry": "dentistry",
+  "Physical Medicine & Rehabilitation": "physiotherapy",
+  "Nutrition & Dietetics": "nutrition",
 };
 
 export const SPECIALTY_LABELS = {
@@ -44,6 +58,14 @@ export const SPECIALTY_LABELS = {
   gastroenterology: "Gastroenterology",
   nephrology: "Nephrology",
   endocrinology: "Endocrinology",
+  oncology: "Oncology",
+  infectious_disease: "Infectious Disease",
+  rheumatology: "Rheumatology",
+  hematology: "Hematology",
+  family_medicine: "Family Medicine / General Practice",
+  dentistry: "Dentistry",
+  physiotherapy: "Physiotherapy / Rehabilitation",
+  nutrition: "Nutrition / Dietetics",
 };
 
 // Emergency workflow: Arrival → Triage → Assessment → Investigations →
@@ -935,6 +957,8 @@ export const SPECIALTY_DOCUMENTS = [
   ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
   ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
   ...NEPHROLOGY_DOCS, ...ENDOCRINOLOGY_DOCS,
+  ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS, ...RHEUMATOLOGY_DOCS, ...HEMATOLOGY_DOCS,
+  ...FAMILY_MEDICINE_DOCS, ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
 ];
 
 export const getSpecialtyDocs = (specialization) => {
