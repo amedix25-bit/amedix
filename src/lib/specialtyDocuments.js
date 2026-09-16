@@ -8,6 +8,7 @@ import {
   ONCOLOGY_DOCS, INFECTIOUS_DISEASE_DOCS, RHEUMATOLOGY_DOCS, HEMATOLOGY_DOCS,
   FAMILY_MEDICINE_DOCS, DENTAL_DOCS, PHYSIO_DOCS, NUTRITION_DOCS, CERTIFICATE_DEFS,
 } from "@/lib/specialtyDocumentsPart4";
+import { RADIOLOGY_DOCS, LABORATORY_DOCS, PATHOLOGY_DOCS } from "@/lib/specialtyDocumentsPart5";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -37,6 +38,9 @@ export const SPECIALTY_KEYS = {
   "Dentistry": "dentistry",
   "Physical Medicine & Rehabilitation": "physiotherapy",
   "Nutrition & Dietetics": "nutrition",
+  "Radiology": "radiology",
+  "Pathology": "pathology",
+  "Laboratory Medicine": "laboratory",
 };
 
 export const SPECIALTY_LABELS = {
@@ -66,6 +70,9 @@ export const SPECIALTY_LABELS = {
   dentistry: "Dentistry",
   physiotherapy: "Physiotherapy / Rehabilitation",
   nutrition: "Nutrition / Dietetics",
+  radiology: "Radiology",
+  pathology: "Pathology",
+  laboratory: "Laboratory Medicine",
 };
 
 // Emergency workflow: Arrival → Triage → Assessment → Investigations →
@@ -959,6 +966,7 @@ export const SPECIALTY_DOCUMENTS = [
   ...NEPHROLOGY_DOCS, ...ENDOCRINOLOGY_DOCS,
   ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS, ...RHEUMATOLOGY_DOCS, ...HEMATOLOGY_DOCS,
   ...FAMILY_MEDICINE_DOCS, ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
+  ...RADIOLOGY_DOCS, ...LABORATORY_DOCS, ...PATHOLOGY_DOCS,
 ];
 
 export const getSpecialtyDocs = (specialization) => {

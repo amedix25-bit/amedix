@@ -168,6 +168,24 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "nutr_care_plan", "nutr_diet_prescription", "nutr_followup",
     "nutr_progress_note", "nutr_completion",
   ],
+  radiology: [
+    "rad_patient_preparation", "rad_imaging_procedure_record",
+    "rad_preliminary_report", "rad_final_report",
+    "rad_critical_finding_notification", "rad_addendum_correction",
+    "rad_consultation", "rad_image_report_association",
+  ],
+  laboratory: [
+    "lab_specimen_collection_record", "lab_accession_record",
+    "lab_test_processing_record", "lab_result_entry",
+    "lab_result_verification", "lab_critical_result_notification",
+    "lab_corrected_result", "lab_final_report",
+  ],
+  pathology: [
+    "path_request", "path_specimen_registration", "path_gross_description",
+    "path_histopathology_report", "path_cytology_report", "path_biopsy_report",
+    "path_surgical_pathology_report", "path_preliminary_report",
+    "path_final_report", "path_addendum", "path_consultation",
+  ],
 };
 
 // Restricted/confidential clinical documents — every psychiatric document is

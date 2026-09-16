@@ -127,6 +127,59 @@
       "type": "string",
       "description": "Laboratory technician who submitted the results"
     },
+    "specimen_collected_datetime": {
+      "type": "string",
+      "description": "Date and time the specimen was collected (ISO datetime) \u2014 Laboratory workflow: Request \u2192 Specimen Collected \u2192 Processing \u2192 Result \u2192 Verification \u2192 Released"
+    },
+    "collected_by_name": {
+      "type": "string",
+      "description": "Laboratory professional who collected the specimen"
+    },
+    "accession_number": {
+      "type": "string",
+      "description": "Specimen / accession number assigned by the laboratory \u2014 permanently connects the specimen and results to this request, patient, encounter and requesting doctor"
+    },
+    "processing_notes": {
+      "type": "string",
+      "description": "Test processing notes \u2014 methodology, analyzer, quality control"
+    },
+    "result_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the responsible laboratory professional verified the result. Verification records the professional, date/time and verification status in the Audit Log."
+    },
+    "verified_by_name": {
+      "type": "string",
+      "description": "Laboratory professional responsible for verifying the result"
+    },
+    "verified_datetime": {
+      "type": "string",
+      "description": "Date and time the result was verified (ISO datetime)"
+    },
+    "released_datetime": {
+      "type": "string",
+      "description": "Date and time the verified result was released to the patient (ISO datetime)"
+    },
+    "corrected_result_file_url": {
+      "type": "string",
+      "description": "Corrected results PDF \u2014 corrected results NEVER overwrite the original released result; the original result and file always stay intact with complete audit history"
+    },
+    "corrected_result_file_name": {
+      "type": "string",
+      "description": "Name of the uploaded corrected results file"
+    },
+    "correction_reason": {
+      "type": "string",
+      "description": "Reason for the corrected result, entered by the laboratory"
+    },
+    "corrected_by_name": {
+      "type": "string",
+      "description": "Laboratory professional who issued the corrected result"
+    },
+    "corrected_datetime": {
+      "type": "string",
+      "description": "Date and time the corrected result was issued (ISO datetime)"
+    },
     "payment_amount": {
       "type": "string",
       "description": "Payment amount collected from the patient for this laboratory request"

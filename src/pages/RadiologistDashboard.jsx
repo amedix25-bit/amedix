@@ -9,12 +9,14 @@ import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPati
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
 import RadiologistOverview from "@/components/radiologist/RadiologistOverview";
+import RadiologyWorklist from "@/components/radiologist/RadiologyWorklist";
 import RadiologistColleagues from "@/components/radiologist/colleagues/RadiologistColleagues";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { Search, Bell, LayoutDashboard, Users } from "lucide-react";
+import { Search, Bell, ClipboardList, LayoutDashboard, Users } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "worklist", label: "Imaging Worklist", icon: ClipboardList },
   { key: "find", label: "Find Patient", icon: Search },
   { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "notifications", label: "Notifications", icon: Bell },
@@ -75,6 +77,9 @@ export default function RadiologistDashboard() {
 
         {activeTab === "overview" && profile && (
           <RadiologistOverview profile={profile} onProfileUpdate={setProfile} />
+        )}
+        {activeTab === "worklist" && profile && (
+          <RadiologyWorklist radiologistProfile={profile} />
         )}
         {activeTab === "colleagues" && profile && (
           <RadiologistColleagues radiologistProfile={profile} />
