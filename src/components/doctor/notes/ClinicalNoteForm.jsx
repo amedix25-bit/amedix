@@ -58,6 +58,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [dataValues, setDataValues] = useState({});
   const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
   const hasSpecialtyFields = !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
+  // In specialty mode the note displays ONLY the specialty's own fields —
+  // the universal generic sections (History, Vital Signs, Physical
+  // Examination, Interventions, Biopsy, Recommendations) are replaced by the
+  // specialty-specific structure. Diagnosis, prescriptions and the
+  // lab/imaging links stay — they are the platform-wide clinical record.
+  const isGeneralNote = !activeDef;
+  const [photoUris, setPhotoUris] = useState([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   // Backend-verified check-in gate — the clinical functions stay locked until
   // the patient is checked in at the doctor's hospital.
   const [checkedIn, setCheckedIn] = useState(false);
@@ -74,6 +82,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     setDraftId(d.id);
     if (d.specialty_doc_type) setDocType(d.specialty_doc_type);
     if (d.specialty_data_values) setDataValues(d.specialty_data_values);
+    if (Array.isArray(d.photo_file_uris)) setPhotoUris(d.photo_file_uris);
     if (d.form_data)
       setForm((f) => {
         const merged = { ...f, ...d.form_data };
@@ -129,6 +138,28 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     }
   };
 
+  // Clinical photographs (e.g. dermatology lesion photos) — uploaded to
+  // PRIVATE storage and attached to the note, following the same permission,
+  // access control and audit rules as all other clinical information.
+  const handlePhotos = async (e) => {
+    const files = Array.from(e.target.files || []).slice(0, 6 - photoUris.length);
+    if (!files.length) return;
+    setUploadingPhotos(true);
+    try {
+      const uris = [];
+      for (const f of files) {
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: f });
+        uris.push(file_uri);
+      }
+      setPhotoUris((s) => [...s, ...uris]);
+    } catch (err) {
+      setError("Could not upload the photographs. Please try again.");
+    } finally {
+      setUploadingPhotos(false);
+      e.target.value = "";
+    }
+  };
+
   const saveDraft = async () => {
     const payload = {
       patient_id: patient.id,
@@ -138,6 +169,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       form_data: { ...form },
       specialty_doc_type: docType,
       specialty_data_values: dataValues,
+      photo_file_uris: photoUris,
       medications,
       selected_lab_request_ids: [...selectedLabs],
       selected_imaging_request_ids: [...selectedImaging],
@@ -249,6 +281,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         document_type: docType !== GENERAL_KEY ? docType : "",
         document_type_label: docType !== GENERAL_KEY ? activeDef?.label || docType : "",
         data: specialtyData,
+        photo_file_uris: photoUris,
       });
       if (meds.length > 0) {
         await base44.entities.Medication.bulkCreate(
@@ -322,7 +355,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       {myDocs.length > 0 && (
         <div className="space-y-2">
           <Label>Note Type — {mySpecialty} (auto-detected)</Label>
-          <Select value={docType} onValueChange={(v) => { setDocType(v); setDataValues({}); }}>
+          <Select value={docType} onValueChange={(v) => { setDocType(v); setDataValues({}); if (!getDocDef(v)?.photos) setPhotoUris([]); }}>
             <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
             <SelectContent className="max-h-80">
               <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
@@ -345,6 +378,45 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             values={dataValues}
             onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
           />
+        </div>
+      )}
+
+      {activeDef && activeDef.photos && (
+        <div className="space-y-1.5">
+          <Label>Clinical Photographs ({photoUris.length}/6)</Label>
+          <Input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotos}
+            disabled={uploadingPhotos || photoUris.length >= 6}
+          />
+          {uploadingPhotos && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading photographs...
+            </p>
+          )}
+          {photoUris.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {photoUris.map((uri) => (
+                <span key={uri} className="text-xs bg-secondary px-2 py-1 rounded-md flex items-center gap-1.5">
+                  Photograph attached
+                  <button
+                    type="button"
+                    onClick={() => setPhotoUris((s) => s.filter((u) => u !== uri))}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="Remove photograph"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Photographs are attached to this note, stored privately, and follow the same permission, access control,
+            audit and patient privacy rules as all clinical information.
+          </p>
         </div>
       )}
 
@@ -371,34 +443,38 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>History</Label>
-        <Textarea
-          value={form.history}
-          onChange={(e) => setForm({ ...form, history: e.target.value })}
-          rows={3}
-          placeholder="Presenting complaint and history"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Vital Signs</Label>
-        <VitalSignsForm value={form.vitals} onChange={(v) => setForm({ ...form, vitals: v })} />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Physical Examination</Label>
-        <Textarea
-          value={form.physical_examination}
-          onChange={(e) => setForm({ ...form, physical_examination: e.target.value })}
-          rows={3}
-        />
-        {patient && (
-          <div className="rounded-xl border border-border bg-muted/30 p-4">
-            <ExaminationsTab patient={patient} doctorProfile={doctorProfile} />
+      {isGeneralNote && (
+        <>
+          <div className="space-y-2">
+            <Label>History</Label>
+            <Textarea
+              value={form.history}
+              onChange={(e) => setForm({ ...form, history: e.target.value })}
+              rows={3}
+              placeholder="Presenting complaint and history"
+            />
           </div>
-        )}
-      </div>
+
+          <div className="space-y-2">
+            <Label>Vital Signs</Label>
+            <VitalSignsForm value={form.vitals} onChange={(v) => setForm({ ...form, vitals: v })} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Physical Examination</Label>
+            <Textarea
+              value={form.physical_examination}
+              onChange={(e) => setForm({ ...form, physical_examination: e.target.value })}
+              rows={3}
+            />
+            {patient && (
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <ExaminationsTab patient={patient} doctorProfile={doctorProfile} />
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="space-y-2">
         <Label>Provisional Diagnosis *</Label>
@@ -450,23 +526,27 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
           <PrescriptionEditor medications={medications} onChange={setMedications} />
         </div>
 
-        <div className="space-y-2">
-          <Label>Interventions</Label>
-          <Textarea
-            value={form.interventions}
-            onChange={(e) => setForm({ ...form, interventions: e.target.value })}
-            rows={2}
-          />
-        </div>
+        {isGeneralNote && (
+          <>
+            <div className="space-y-2">
+              <Label>Interventions</Label>
+              <Textarea
+                value={form.interventions}
+                onChange={(e) => setForm({ ...form, interventions: e.target.value })}
+                rows={2}
+              />
+            </div>
 
-        <div className="space-y-2">
-          <Label>Biopsy (if required)</Label>
-          <Textarea
-            value={form.biopsy}
-            onChange={(e) => setForm({ ...form, biopsy: e.target.value })}
-            rows={2}
-          />
-        </div>
+            <div className="space-y-2">
+              <Label>Biopsy (if required)</Label>
+              <Textarea
+                value={form.biopsy}
+                onChange={(e) => setForm({ ...form, biopsy: e.target.value })}
+                rows={2}
+              />
+            </div>
+          </>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -519,15 +599,17 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         </div>
       </div>
 
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
-        <Label className="text-primary">Doctor's Recommendations</Label>
-        <Textarea
-          value={form.recommendations}
-          onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
-          rows={3}
-          placeholder="Recommendations, follow-up instructions, lifestyle advice, referrals..."
-        />
-      </div>
+      {isGeneralNote && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+          <Label className="text-primary">Doctor's Recommendations</Label>
+          <Textarea
+            value={form.recommendations}
+            onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
+            rows={3}
+            placeholder="Recommendations, follow-up instructions, lifestyle advice, referrals..."
+          />
+        </div>
+      )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

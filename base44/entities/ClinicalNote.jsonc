@@ -34,6 +34,13 @@
       "description": "Structured specialty-specific field values keyed by field key \u2014 each value is { label, value } so the note carries its own field labels. The note structure changes dynamically with the doctor's verified specialty; empty for general free-text notes.",
       "additionalProperties": true
     },
+    "photo_file_uris": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Clinical photographs attached to the note (e.g. dermatology lesion photos) \u2014 private storage URIs, only viewable via backend-issued signed URLs after permission checks. Follows the same permission, access control and audit rules as other clinical information."
+    },
     "date": {
       "type": "string",
       "format": "date"
