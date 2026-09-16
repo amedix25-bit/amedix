@@ -14,8 +14,8 @@ export default async function(req) {
 
     const body = await req.json();
     const payload = body && typeof body === "object" ? body : {};
-    if (!payload.document_record_id || !String(payload.content || "").trim() || !String(payload.amendment_reason || "").trim()) {
-      return Response.json({ error: "Document, corrected content and amendment reason are required." }, { status: 400 });
+    if (!payload.document_record_id || !String(payload.amendment_reason || "").trim()) {
+      return Response.json({ error: "Document and amendment reason are required." }, { status: 400 });
     }
 
     let original = null;
@@ -52,9 +52,11 @@ export default async function(req) {
       doctor_user_id: user.id,
       doctor_name: original.doctor_name || "",
       doctor_specialty: original.doctor_specialty || "",
+      specialty: original.specialty || "",
       document_type: original.document_type,
       document_type_label: original.document_type_label || original.document_type,
-      content: String(payload.content),
+      content: String(payload.content || ""),
+      data: (payload.data && typeof payload.data === "object") ? payload.data : (original.data || {}),
       version: (original.version || 1) + 1,
       previous_version_id: original.id,
       is_amendment: true,

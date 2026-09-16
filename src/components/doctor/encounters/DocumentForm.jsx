@@ -4,18 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { DOCUMENT_TYPES } from "@/lib/clinicalDocuments";
+import { getSpecialtyDocs, getDocDef, getSpecialtyLabel, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
+import DocumentFields, { EmergencyWorkflowStrip } from "./DocumentFields";
 import { Loader2, Lock, PenLine } from "lucide-react";
 
 // Creates a new clinical document in an encounter, or — in amend mode — a
 // new VERSION of a signed document (the original is never overwritten).
-// Available to every doctor regardless of specialty.
+// Offers the general document types to every doctor plus the doctor's own
+// specialty paperwork (Internal Medicine, Surgery, Emergency Medicine,
+// Pediatrics, OB/GYN, Anesthesiology) with its structured fields.
 export default function DocumentForm({ doctorProfile, patient, encounter, amendOf, onSaved, onCancel }) {
   const [documentType, setDocumentType] = useState(undefined);
   const [content, setContent] = useState(amendOf ? amendOf.content || "" : "");
   const [amendmentReason, setAmendmentReason] = useState("");
+  const [dataValues, setDataValues] = useState(() => {
+    const initial = {};
+    if (amendOf && amendOf.data) {
+      Object.entries(amendOf.data).forEach(([k, v]) => { initial[k] = v && v.value !== undefined ? v.value : ""; });
+    }
+    return initial;
+  });
   const [checkIn, setCheckIn] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -24,14 +35,33 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
     fetchCheckInStatus(patient.id).then(setCheckIn);
   }, [patient.id]);
 
+  const myDocs = doctorProfile ? getSpecialtyDocs(doctorProfile.specialization) : [];
+  const mySpecialtyKey = doctorProfile ? SPECIALTY_KEYS[doctorProfile.specialization] : null;
+  const activeType = amendOf ? amendOf.document_type : documentType;
+  const def = getDocDef(activeType);
+  const hasFields = !!(def && def.fields && def.fields.length > 0);
+
+  const setData = (key, value) => setDataValues((s) => ({ ...s, [key]: value }));
+
+  const buildData = () => {
+    if (!def) return {};
+    const data = {};
+    def.fields.forEach((f) => {
+      const v = dataValues[f.key];
+      if (v !== undefined && v !== null && v !== "") data[f.key] = { label: f.label, value: String(v) };
+    });
+    return data;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     if (!amendOf && !documentType) {
       setError("Please select the document type.");
       return;
     }
-    if (!content.trim()) {
-      setError("Please write the document content.");
+    const data = buildData();
+    if (!content.trim() && Object.keys(data).length === 0) {
+      setError(hasFields ? "Please fill in the document fields or the narrative." : "Please write the document content.");
       return;
     }
     if (amendOf && !amendmentReason.trim()) {
@@ -49,18 +79,23 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
         const res = await base44.functions.invoke("amendClinicalDocument", {
           document_record_id: amendOf.id,
           content,
+          data,
           amendment_reason: amendmentReason,
         });
         onSaved(res.data.document);
       } else {
-        const type = DOCUMENT_TYPES.find((d) => d.key === documentType);
+        const label =
+          DOCUMENT_TYPES.find((d) => d.key === documentType)?.label ||
+          getDocDef(documentType)?.label ||
+          documentType;
         const res = await base44.functions.invoke("createClinicalDocument", {
           patient_id: patient.id,
           doctor_id: doctorProfile.id,
           encounter_id: encounter.encounter_id,
           document_type: documentType,
-          document_type_label: type.label,
+          document_type_label: label,
           content,
+          data,
         });
         onSaved(res.data.document);
       }
@@ -89,14 +124,32 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
           <Label>Document Type *</Label>
           <Select value={documentType} onValueChange={setDocumentType}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Select a document type..." /></SelectTrigger>
-            <SelectContent className="max-h-72">
-              {DOCUMENT_TYPES.map((d) => (
-                <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
-              ))}
+            <SelectContent className="max-h-80">
+              <SelectGroup>
+                <SelectLabel>General Documents</SelectLabel>
+                {DOCUMENT_TYPES.map((d) => (
+                  <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                ))}
+              </SelectGroup>
+              {mySpecialtyKey && myDocs.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>{getSpecialtyLabel(mySpecialtyKey)} — Specialty Documents</SelectLabel>
+                  {myDocs.map((d) => (
+                    <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
             </SelectContent>
           </Select>
         </div>
       )}
+
+      {def && def.specialty === "emergency_medicine" && <EmergencyWorkflowStrip />}
+
+      {hasFields && (
+        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} />
+      )}
+
       {amendOf && (
         <div className="space-y-1.5">
           <Label>Reason for Amendment *</Label>
@@ -104,7 +157,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
         </div>
       )}
       <div className="space-y-1.5">
-        <Label>Content *</Label>
+        <Label>{hasFields ? "Additional Narrative (optional)" : "Content *"}</Label>
         <Textarea rows={8} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Document the clinical content..." />
       </div>
       {error && (

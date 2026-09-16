@@ -334,7 +334,7 @@ const OBGYN_DOCS = [
     fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
   },
   {
-    key: "obgyn_gyn_operative_note", label: "Gynecologic Operative Note", specialty: "obstiatrics_gynecology",
+    key: "obgyn_gyn_operative_note", label: "Gynecologic Operative Note", specialty: "obstetrics_gynecology",
     fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Monitored Anesthesia Care", "Sedation", "Other"]), T("indication", "Indication"), T("findings", "Findings"), T("procedure_details", "Procedure Details"), T("specimens", "Specimens"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("postop_plan", "Post-Operative Plan")],
   },
   {

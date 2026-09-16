@@ -77,8 +77,22 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
         <p>AMedix Document ID: <span className="text-foreground font-medium">{viewing.document_id}</span></p>
       </div>
 
+      {/* Structured specialty fields */}
+      {viewing.data && Object.keys(viewing.data).length > 0 && (
+        <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
+          {Object.entries(viewing.data)
+            .filter(([, f]) => f && f.value !== null && f.value !== undefined && f.value !== "")
+            .map(([k, f]) => (
+              <p key={k} className="text-sm">
+                <span className="text-muted-foreground">{f.label}: </span>
+                {f.value}
+              </p>
+            ))}
+        </div>
+      )}
+
       {/* Content */}
-      <p className="text-sm whitespace-pre-wrap">{viewing.content}</p>
+      {viewing.content && <p className="text-sm whitespace-pre-wrap">{viewing.content}</p>}
 
       {/* Digital signature block */}
       {viewing.status === "signed" && (

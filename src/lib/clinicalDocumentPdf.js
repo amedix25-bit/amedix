@@ -96,8 +96,27 @@ export async function generateClinicalDocumentPdfUrl(doc) {
   pdf.setTextColor(...GRAY);
   pdf.text(`Encounter ID: ${doc.encounter_id || "-"}    Version: ${doc.version || 1}    Amendment status: ${doc.amendment_status === "amendment" ? "Amendment" : "Original"}    Status: ${doc.status === "signed" ? "Signed" : "Draft"}`, M + 3, y + 5.5);
 
+  // ===== Structured specialty fields =====
+  if (doc.data && Object.keys(doc.data).length > 0) {
+    y += 8;
+    Object.values(doc.data).forEach((f) => {
+      if (!f || f.value === null || f.value === undefined || String(f.value) === "") return;
+      const label = String(f.label || "");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      y = ensure(y, 12);
+      pdf.text(label, M, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9.5);
+      const valLines = pdf.splitTextToSize(String(f.value), boxW - 6);
+      y = ensure(y, 5 + valLines.length * 4.8);
+      pdf.text(valLines, M + 4, y + 4.5);
+      y += 4.5 + valLines.length * 4.8 + 1.5;
+    });
+  }
+
   // ===== Content =====
-  y += 16;
+  y += 8;
   const lines = pdf.splitTextToSize(String(doc.content || ""), boxW - 2);
   pdf.setFontSize(10.5);
   pdf.setTextColor(...DARK);

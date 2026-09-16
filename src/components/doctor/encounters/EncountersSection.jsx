@@ -7,6 +7,7 @@ import EncounterForm from "./EncounterForm";
 import EncounterWorkspace from "./EncounterWorkspace";
 import DocumentCard from "./DocumentCard";
 import DocumentForm from "./DocumentForm";
+import GrowthChart from "./GrowthChart";
 import { getEncounterTypeLabel, groupDocumentFamilies } from "@/lib/clinicalDocuments";
 import { format } from "date-fns";
 import { Plus, Loader2, ClipboardList, FileText, Activity, ChevronDown, ChevronRight, Stethoscope } from "lucide-react";
@@ -271,6 +272,9 @@ export default function EncountersSection({ doctorProfile }) {
               </div>
             )}
           </div>
+          {doctorProfile.specialization === "Pediatrics" && (
+            <GrowthChart documents={record.documents} />
+          )}
         </>
       )}
 

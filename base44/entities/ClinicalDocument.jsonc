@@ -52,42 +52,13 @@
       "type": "string",
       "description": "Doctor specialty \u2014 automatically attached to every completed document"
     },
+    "specialty": {
+      "type": "string",
+      "description": "Specialty key this document type belongs to, e.g. internal_medicine, surgery, emergency_medicine, pediatrics, obstetrics_gynecology, anesthesiology \u2014 empty for general documents available to all doctors. Derived server-side from the document type."
+    },
     "document_type": {
       "type": "string",
-      "enum": [
-        "initial_consultation_note",
-        "follow_up_note",
-        "progress_note",
-        "problem_oriented_progress_note",
-        "assessment_and_plan",
-        "procedure_note",
-        "clinical_summary",
-        "discharge_summary",
-        "referral_note",
-        "consultation_request",
-        "consultation_response",
-        "medical_certificate",
-        "medical_report",
-        "sick_leave_certificate",
-        "patient_instructions",
-        "medication_reconciliation",
-        "allergy_reaction_record",
-        "active_problem_list",
-        "past_medical_history",
-        "surgical_history",
-        "family_history",
-        "social_history",
-        "medication_list",
-        "diagnosis_history",
-        "care_plan",
-        "follow_up_plan",
-        "admission_note",
-        "daily_progress_note",
-        "transfer_note",
-        "transfer_of_care_note",
-        "discharge_instructions"
-      ],
-      "description": "Type of clinical document \u2014 determines its purpose in the patient record"
+      "description": "Type of clinical document \u2014 a general type key (e.g. progress_note, discharge_summary) or a specialty-specific type key (e.g. surg_operative_note, em_triage, obgyn_initial_antenatal, peds_well_child, anes_intraop_record). Validated server-side against the clinical document catalog."
     },
     "document_type_label": {
       "type": "string",
@@ -95,7 +66,12 @@
     },
     "content": {
       "type": "string",
-      "description": "Clinical content of this document version"
+      "description": "Clinical narrative content of this document version"
+    },
+    "data": {
+      "type": "object",
+      "description": "Structured specialty field values keyed by field key \u2014 each value is { label, value } so every completed document carries its own field labels for display and PDF. Empty for general free-text documents.",
+      "additionalProperties": true
     },
     "version": {
       "type": "integer",

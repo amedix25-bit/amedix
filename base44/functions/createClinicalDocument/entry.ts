@@ -1,26 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
 import { generateClinicalRef, logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { isKnownDocumentType, getDocumentSpecialty } from "../../shared/clinicalDocumentCatalog.ts";
 
-// Universal clinical documentation — available to every doctor regardless of
-// specialty. The document automatically receives the patient identity, the
-// full encounter context (hospital, department, doctor, specialty, date/time,
-// Encounter ID), a unique AMedix Document ID, version 1, amendment status
-// "original", and the creation date/time with the creating doctor. Written
-// with the service role after the mandatory check-in gate — direct client
-// writes are blocked by Row Level Security.
-const DOCUMENT_TYPES = [
-  "initial_consultation_note", "follow_up_note", "progress_note",
-  "problem_oriented_progress_note", "assessment_and_plan", "procedure_note",
-  "clinical_summary", "discharge_summary", "referral_note",
-  "consultation_request", "consultation_response", "medical_certificate",
-  "medical_report", "sick_leave_certificate", "patient_instructions",
-  "medication_reconciliation", "allergy_reaction_record", "active_problem_list",
-  "past_medical_history", "surgical_history", "family_history",
-  "social_history", "medication_list", "diagnosis_history", "care_plan",
-  "follow_up_plan", "admission_note", "daily_progress_note", "transfer_note",
-  "transfer_of_care_note", "discharge_instructions",
-];
+// Universal clinical documentation — the general document types plus the
+// specialty-specific paperwork, available to every doctor regardless of
+// specialty through the same system. The document automatically receives the
+// patient identity, the full encounter context (hospital, department, doctor,
+// specialty, date/time, Encounter ID), its specialty (derived server-side
+// from the document type), a unique AMedix Document ID, version 1, amendment
+// status "original", and the creation date/time with the creating doctor.
+// Written with the service role after the mandatory check-in gate — direct
+// client writes are blocked by Row Level Security.
 
 export default async function(req) {
   try {
@@ -34,10 +25,22 @@ export default async function(req) {
       return Response.json({ error: "Patient, doctor, encounter and document type are required." }, { status: 400 });
     }
     const documentType = String(payload.document_type);
-    if (!DOCUMENT_TYPES.includes(documentType)) {
+    if (!isKnownDocumentType(documentType)) {
       return Response.json({ error: "Unknown document type." }, { status: 400 });
     }
-    if (!String(payload.content || "").trim()) {
+    // Structured specialty fields — sanitized to { label, value } entries.
+    const data = {};
+    if (payload.data && typeof payload.data === "object") {
+      for (const [k, v] of Object.entries(payload.data)) {
+        if (v && typeof v === "object" && "label" in v && "value" in v) {
+          if (v.value !== null && v.value !== undefined && String(v.value) !== "") {
+            data[k] = { label: String(v.label || k), value: String(v.value) };
+          }
+        }
+      }
+    }
+    const hasData = Object.keys(data).length > 0;
+    if (!String(payload.content || "").trim() && !hasData) {
       return Response.json({ error: "Document content is required." }, { status: 400 });
     }
 
@@ -88,9 +91,11 @@ export default async function(req) {
       doctor_user_id: user.id,
       doctor_name: doctor.full_name || "",
       doctor_specialty: doctor.specialization || "",
+      specialty: getDocumentSpecialty(documentType),
       document_type: documentType,
       document_type_label: String(payload.document_type_label || documentType),
-      content: String(payload.content),
+      content: String(payload.content || ""),
+      data,
       version: 1,
       previous_version_id: "",
       is_amendment: false,
