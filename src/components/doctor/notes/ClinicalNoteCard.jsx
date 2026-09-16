@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, Image as ImageIcon, ExternalLink } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { Image } from "@/components/ui/image";
+import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2 } from "lucide-react";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -23,11 +25,37 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
   const labIds = note.lab_request_ids || [];
   const imagingIds = note.imaging_request_ids || [];
   const hasManagement = labIds.length > 0 || imagingIds.length > 0 || note.prescription || note.interventions || note.biopsy;
+  const photoCount = Array.isArray(note.photo_file_uris) ? note.photo_file_uris.length : 0;
+  const [photoUrls, setPhotoUrls] = useState(null);
+  const [photosLoading, setPhotosLoading] = useState(false);
+
+  // Clinical photographs live in private storage — signed URLs are issued by
+  // the backend only after permission checks, and every view is audit-logged.
+  useEffect(() => {
+    if (photoCount > 0) {
+      setPhotosLoading(true);
+      setPhotoUrls(null);
+      base44.functions.invoke("getDocumentPhotos", { document_record_id: note.id, record_type: "clinical_note" })
+        .then((res) => setPhotoUrls(res.data?.photos || []))
+        .catch(() => setPhotoUrls([]))
+        .finally(() => setPhotosLoading(false));
+    } else {
+      setPhotoUrls(null);
+      setPhotosLoading(false);
+    }
+  }, [note.id, photoCount]);
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <p className="font-medium">{note.patient_name}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="font-medium truncate">{note.patient_name}</p>
+          {note.document_type_label && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+              {note.document_type_label}
+            </span>
+          )}
+        </div>
         <span className="text-xs text-muted-foreground">{note.date}</span>
       </div>
       <div className="rounded-lg bg-muted/60 border border-border p-3 mb-3 text-sm grid sm:grid-cols-3 gap-2">
@@ -45,6 +73,18 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
         </div>
       </div>
       <div className="space-y-3">
+        {note.data && Object.keys(note.data).length > 0 && (
+          <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
+            {Object.entries(note.data)
+              .filter(([, f]) => f && f.value !== null && f.value !== undefined && f.value !== "")
+              .map(([k, f]) => (
+                <p key={k} className="text-sm">
+                  <span className="text-muted-foreground">{f.label}: </span>
+                  {f.value}
+                </p>
+              ))}
+          </div>
+        )}
         <Field label="History" value={note.history} />
         <Field label="Vital Signs" value={note.vital_signs} />
         <Field label="Physical Examination" value={note.physical_examination} />
@@ -100,6 +140,35 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
             <Field label="Prescriptions" value={note.prescription} />
             <Field label="Interventions" value={note.interventions} />
             <Field label="Biopsy" value={note.biopsy} />
+          </div>
+        )}
+
+        {photoCount > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Clinical Photographs ({photoCount})
+            </p>
+            {photosLoading ? (
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading photographs...
+              </p>
+            ) : photoUrls && photoUrls.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {photoUrls.map((url, i) => (
+                  <Image
+                    key={url}
+                    src={url}
+                    alt={`Clinical photograph ${i + 1}`}
+                    fittingType="fit"
+                    className="w-full aspect-square rounded-lg border border-border overflow-hidden"
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Photographs are restricted — you are not authorized to view them.
+              </p>
+            )}
           </div>
         )}
 
