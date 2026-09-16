@@ -312,10 +312,9 @@ export default function Home() {
                 <Label htmlFor="doc-last-name">{t("Last Name *")}</Label>
                 <Input id="doc-last-name" placeholder={t("Last name")} value={doctorForm.last_name} onChange={(e) => setDoctorForm({ ...doctorForm, last_name: e.target.value })} required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="specialization">{t("Specialization *")}</Label>
-                <Input id="specialization" placeholder={t("e.g. Cardiology")} value={doctorForm.specialization} onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })} required />
-              </div>
+              <p className="text-xs text-muted-foreground">
+                {t("You will select your specialty from a predefined list when you first enter the Doctor Portal.")}
+              </p>
               <div className="space-y-2">
                 <Label htmlFor="hospital">{t("Hospital / Clinic")}</Label>
                 <Input id="hospital" placeholder={t("Hospital or clinic name")} value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />

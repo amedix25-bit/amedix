@@ -16,6 +16,8 @@ import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
+import SpecialtySelection from "@/components/doctor/SpecialtySelection";
+import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
@@ -50,6 +52,13 @@ export default function DoctorDashboard() {
   // hospital-specific information and clinical actions apply to this hospital.
   const [hospitalSession, setHospitalSession] = useState(null);
   const now = new Date();
+  // Specialty-driven navigation — a Surgeon's Clinical Notes section becomes
+  // Surgical Records with its own record types; every other feature stays the
+  // same for all doctors.
+  const isSurgeon = profile?.specialization === "Surgeon";
+  const menuItems = navItems.map((n) =>
+    n.key === "notes" && isSurgeon ? { ...n, label: "Surgical Records" } : n
+  );
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -112,6 +121,14 @@ export default function DoctorDashboard() {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
+  // Select Your Specialty — first portal entry after login: the doctor picks
+  // their specialty from the predefined list instead of typing it. The
+  // selection is stored on the verified doctor profile and drives the
+  // specialty-specific clinical documentation (Surgeons get Surgical Records).
+  if (profile && !profile.specialization) {
+    return <SpecialtySelection profile={profile} onSelected={setProfile} />;
+  }
+
   // Hospital Code Gate — the portal stays closed until the doctor verifies the
   // AMedix Hospital Code of the hospital they are working at. Every hospital
   // switch afterwards is re-verified by the backend.
@@ -138,13 +155,13 @@ export default function DoctorDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
+    <DashboardLayout navItems={menuItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div className="flex items-center gap-4 min-w-0">
             {profile && <DoctorProfilePicture profile={profile} onUpdated={setProfile} />}
             <div>
-              <h1 className="text-2xl font-bold">{t(navItems.find((n) => n.key === activeTab)?.label)}</h1>
+              <h1 className="text-2xl font-bold">{t(menuItems.find((n) => n.key === activeTab)?.label)}</h1>
               <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
             </div>
           </div>
@@ -187,7 +204,11 @@ export default function DoctorDashboard() {
           <DoctorHospitalsSection profile={profile} user={user} onProfileUpdated={setProfile} />
         )}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
-        {activeTab === "notes" && profile && <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />}
+        {activeTab === "notes" && profile && (isSurgeon ? (
+          <SurgicalRecords doctorProfile={profile} />
+        ) : (
+          <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />
+        ))}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
         {activeTab === "imaging" && profile && <DoctorImagingRequests doctorProfile={profile} />}
       </div>

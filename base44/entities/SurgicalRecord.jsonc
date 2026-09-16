@@ -1,0 +1,94 @@
+{
+  "name": "SurgicalRecord",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the surgical record belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the surgeon authoring the record"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_specialization": {
+      "type": "string",
+      "description": "Specialty recorded on the surgeon's profile at documentation time"
+    },
+    "doctor_hospital": {
+      "type": "string",
+      "description": "Hospital the surgeon was working at when the record was created"
+    },
+    "record_type": {
+      "type": "string",
+      "enum": [
+        "surgical_consultation",
+        "preop_assessment",
+        "operative_note",
+        "procedure_note",
+        "postop_note",
+        "daily_progress",
+        "discharge_summary",
+        "surgical_followup",
+        "pathology_specimens"
+      ],
+      "description": "Type of surgical record \u2014 determines the structured documentation form it was created from"
+    },
+    "record_type_title": {
+      "type": "string",
+      "description": "Display name of the record type"
+    },
+    "data": {
+      "type": "object",
+      "description": "Documentation field values keyed by the field key of the surgical record template",
+      "additionalProperties": true
+    },
+    "record_datetime": {
+      "type": "string",
+      "description": "Date and time the surgical record was created (ISO datetime)"
+    },
+    "record_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "record_type",
+    "record_date"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
