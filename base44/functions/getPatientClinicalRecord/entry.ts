@@ -45,11 +45,17 @@ export default async function(req) {
     if (patients.length === 0) return Response.json({ error: "Patient not found." }, { status: 404 });
     const patient = patients[0];
 
-    const [encounters, documents, consents] = await Promise.all([
+    const [encounters, allDocuments, consents] = await Promise.all([
       base44.asServiceRole.entities.Encounter.filter({ patient_id: patient.id }, "-encounter_datetime", 200),
       base44.asServiceRole.entities.ClinicalDocument.filter({ patient_id: patient.id }, "-created_datetime", 500),
       base44.asServiceRole.entities.Consent.filter({ patient_id: patient.id }, "-consent_datetime", 200),
     ]);
+    // Restricted/confidential documents (e.g. psychiatric records) are only
+    // accessible to their authoring doctor — the service role bypasses Row
+    // Level Security, so they are filtered out of every other doctor's view.
+    const documents = allDocuments.filter(
+      (d) => !d.is_confidential || d.doctor_user_id === user.id
+    );
 
     await logClinicalAudit(base44, {
       actor_user_id: user.id,

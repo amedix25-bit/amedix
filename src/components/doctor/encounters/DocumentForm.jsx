@@ -27,6 +27,8 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
     }
     return initial;
   });
+  const [photoUris, setPhotoUris] = useState(() => (amendOf && Array.isArray(amendOf.photo_file_uris) ? amendOf.photo_file_uris : []));
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [checkIn, setCheckIn] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +44,29 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
   const hasFields = !!(def && def.fields && def.fields.length > 0);
 
   const setData = (key, value) => setDataValues((s) => ({ ...s, [key]: value }));
+
+  // Clinical photographs (e.g. dermatology lesion photos) — uploaded to
+  // PRIVATE storage and attached to the lesion document and its encounter.
+  // They follow the same permission, access control and audit rules as all
+  // other clinical information.
+  const handlePhotos = async (e) => {
+    const files = Array.from(e.target.files || []).slice(0, 6 - photoUris.length);
+    if (!files.length) return;
+    setUploadingPhotos(true);
+    try {
+      const uris = [];
+      for (const f of files) {
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: f });
+        uris.push(file_uri);
+      }
+      setPhotoUris((s) => [...s, ...uris]);
+    } catch (err) {
+      setError("Could not upload the photographs. Please try again.");
+    } finally {
+      setUploadingPhotos(false);
+      e.target.value = "";
+    }
+  };
 
   const buildData = () => {
     if (!def) return {};
@@ -80,6 +105,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
           document_record_id: amendOf.id,
           content,
           data,
+          photo_file_uris: photoUris,
           amendment_reason: amendmentReason,
         });
         onSaved(res.data.document);
@@ -96,6 +122,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
           document_type_label: label,
           content,
           data,
+          photo_file_uris: photoUris,
         });
         onSaved(res.data.document);
       }
@@ -148,6 +175,45 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
 
       {hasFields && (
         <DocumentFields defs={def.fields} values={dataValues} onChange={setData} />
+      )}
+
+      {def && def.photos && (
+        <div className="space-y-1.5">
+          <Label>Clinical Photographs ({photoUris.length}/6)</Label>
+          <Input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotos}
+            disabled={uploadingPhotos || photoUris.length >= 6}
+          />
+          {uploadingPhotos && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading photographs...
+            </p>
+          )}
+          {photoUris.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {photoUris.map((uri) => (
+                <span key={uri} className="text-xs bg-secondary px-2 py-1 rounded-md flex items-center gap-1.5">
+                  Photograph attached
+                  <button
+                    type="button"
+                    onClick={() => setPhotoUris((s) => s.filter((u) => u !== uri))}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="Remove photograph"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Photographs are attached to this lesion document and its encounter, stored privately, and follow the same
+            permission, access control, audit and patient privacy rules as all clinical information.
+          </p>
+        </div>
       )}
 
       {amendOf && (

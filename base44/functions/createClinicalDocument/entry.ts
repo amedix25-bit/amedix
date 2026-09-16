@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
 import { generateClinicalRef, logClinicalAudit } from "../../shared/clinicalAudit.ts";
-import { isKnownDocumentType, getDocumentSpecialty } from "../../shared/clinicalDocumentCatalog.ts";
+import { isKnownDocumentType, getDocumentSpecialty, isConfidentialDocumentType } from "../../shared/clinicalDocumentCatalog.ts";
 
 // Universal clinical documentation — the general document types plus the
 // specialty-specific paperwork, available to every doctor regardless of
@@ -43,6 +43,11 @@ export default async function(req) {
     if (!String(payload.content || "").trim() && !hasData) {
       return Response.json({ error: "Document content is required." }, { status: 400 });
     }
+    // Clinical photographs (e.g. dermatology lesion photos) — private storage,
+    // never public; viewable only through backend-issued signed URLs.
+    const photoUris = Array.isArray(payload.photo_file_uris)
+      ? payload.photo_file_uris.filter((u) => typeof u === "string" && u).slice(0, 6)
+      : [];
 
     let doctor = null;
     try {
@@ -96,6 +101,8 @@ export default async function(req) {
       document_type_label: String(payload.document_type_label || documentType),
       content: String(payload.content || ""),
       data,
+      is_confidential: isConfidentialDocumentType(documentType),
+      photo_file_uris: photoUris,
       version: 1,
       previous_version_id: "",
       is_amendment: false,

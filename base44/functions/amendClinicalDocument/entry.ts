@@ -57,6 +57,10 @@ export default async function(req) {
       document_type_label: original.document_type_label || original.document_type,
       content: String(payload.content || ""),
       data: (payload.data && typeof payload.data === "object") ? payload.data : (original.data || {}),
+      is_confidential: original.is_confidential || false,
+      photo_file_uris: Array.isArray(payload.photo_file_uris)
+        ? payload.photo_file_uris.filter((u) => typeof u === "string" && u).slice(0, 6)
+        : (original.photo_file_uris || []),
       version: (original.version || 1) + 1,
       previous_version_id: original.id,
       is_amendment: true,

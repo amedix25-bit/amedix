@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { format } from "date-fns";
 import { generateClinicalDocumentPdfUrl } from "@/lib/clinicalDocumentPdf";
 import { Loader2, FileSignature, History, FileText, PenLine } from "lucide-react";
@@ -14,6 +15,24 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
   const [viewing, setViewing] = useState(doc);
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState("");
+  const [photoUrls, setPhotoUrls] = useState(null);
+  const [photosLoading, setPhotosLoading] = useState(false);
+
+  // Clinical photographs live in private storage — signed URLs are issued by
+  // the backend only after permission checks, and every view is audit-logged.
+  useEffect(() => {
+    if (viewing.photo_file_uris && viewing.photo_file_uris.length > 0) {
+      setPhotosLoading(true);
+      setPhotoUrls(null);
+      base44.functions.invoke("getDocumentPhotos", { document_record_id: viewing.id })
+        .then((res) => setPhotoUrls(res.data?.photos || []))
+        .catch(() => setPhotoUrls([]))
+        .finally(() => setPhotosLoading(false));
+    } else {
+      setPhotoUrls(null);
+      setPhotosLoading(false);
+    }
+  }, [viewing.id, viewing.photo_file_uris]);
   const canManage = doctorProfile && viewing.doctor_user_id === doctorProfile.user_id;
   const family = versions && versions.length > 0 ? versions : [doc];
 
@@ -61,6 +80,11 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
           <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
             Version {viewing.version} · {viewing.amendment_status === "amendment" ? "Amendment" : "Original"}
           </span>
+          {viewing.is_confidential && (
+            <span className="text-xs font-medium px-2 py-1 rounded-full bg-destructive/10 text-destructive">
+              Confidential
+            </span>
+          )}
         </div>
       </div>
 
@@ -88,6 +112,36 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
                 {f.value}
               </p>
             ))}
+        </div>
+      )}
+
+      {/* Clinical photographs — private, permission-checked */}
+      {viewing.photo_file_uris && viewing.photo_file_uris.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Clinical Photographs ({viewing.photo_file_uris.length})
+          </p>
+          {photosLoading ? (
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading photographs...
+            </p>
+          ) : photoUrls && photoUrls.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {photoUrls.map((url, i) => (
+                <Image
+                  key={url}
+                  src={url}
+                  alt={`Clinical photograph ${i + 1}`}
+                  fittingType="fit"
+                  className="w-full aspect-square rounded-lg border border-border overflow-hidden"
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Photographs are restricted — you are not authorized to view them.
+            </p>
+          )}
         </div>
       )}
 

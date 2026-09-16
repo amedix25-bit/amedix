@@ -54,11 +54,11 @@
     },
     "specialty": {
       "type": "string",
-      "description": "Specialty key this document type belongs to, e.g. internal_medicine, surgery, emergency_medicine, pediatrics, obstetrics_gynecology, anesthesiology \u2014 empty for general documents available to all doctors. Derived server-side from the document type."
+      "description": "Specialty key this document type belongs to, e.g. cardiology, neurology, psychiatry, ophthalmology, dermatology, orthopedics, urology, ent, pulmonology, gastroenterology, nephrology, endocrinology \u2014 empty for general documents. Derived server-side from the document type."
     },
     "document_type": {
       "type": "string",
-      "description": "Type of clinical document \u2014 a general type key (e.g. progress_note, discharge_summary) or a specialty-specific type key (e.g. surg_operative_note, em_triage, obgyn_initial_antenatal, peds_well_child, anes_intraop_record). Validated server-side against the clinical document catalog."
+      "description": "Type of clinical document \u2014 a general type key (e.g. progress_note, discharge_summary) or a specialty-specific type key (e.g. cardio_ecg_report, neuro_stroke_record, psy_risk_assessment, derm_lesion_assessment, neph_dialysis_record). Validated server-side against the clinical document catalog."
     },
     "document_type_label": {
       "type": "string",
@@ -72,6 +72,18 @@
       "type": "object",
       "description": "Structured specialty field values keyed by field key \u2014 each value is { label, value } so every completed document carries its own field labels for display and PDF. Empty for general free-text documents.",
       "additionalProperties": true
+    },
+    "is_confidential": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for restricted/confidential documents (e.g. psychiatric records). Confidential documents are only accessible to the authoring doctor, the patient and administrators \u2014 Row Level Security and the clinical record endpoint exclude them from every other doctor's view."
+    },
+    "photo_file_uris": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Clinical photographs attached to the document (e.g. dermatology lesion photos) \u2014 private storage URIs, only viewable via backend-issued signed URLs after permission checks. Follows the same permission, access control and audit rules as other clinical information."
     },
     "version": {
       "type": "integer",
@@ -139,6 +151,26 @@
     "status"
   ],
   "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.is_confidential": {
+            "$ne": true
+          }
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "create": {
       "user_condition": {
         "role": "admin"

@@ -11,6 +11,18 @@ export const SPECIALTY_KEYS = {
   "Pediatrics": "pediatrics",
   "Obstetrics & Gynecology": "obstetrics_gynecology",
   "Anesthesiology & Intensive Care": "anesthesiology",
+  "Cardiology": "cardiology",
+  "Neurology": "neurology",
+  "Psychiatry": "psychiatry",
+  "Ophthalmology": "ophthalmology",
+  "Dermatology": "dermatology",
+  "Orthopedics": "orthopedics",
+  "Urology": "urology",
+  "ENT (Otolaryngology)": "ent",
+  "Pulmonology": "pulmonology",
+  "Gastroenterology": "gastroenterology",
+  "Nephrology": "nephrology",
+  "Endocrinology": "endocrinology",
 };
 
 export const SPECIALTY_LABELS = {
@@ -20,6 +32,18 @@ export const SPECIALTY_LABELS = {
   pediatrics: "Pediatrics",
   obstetrics_gynecology: "Obstetrics & Gynecology",
   anesthesiology: "Anesthesiology",
+  cardiology: "Cardiology",
+  neurology: "Neurology",
+  psychiatry: "Psychiatry",
+  ophthalmology: "Ophthalmology",
+  dermatology: "Dermatology",
+  orthopedics: "Orthopedics",
+  urology: "Urology",
+  ent: "ENT / Otolaryngology",
+  pulmonology: "Pulmonology / Respiratory Medicine",
+  gastroenterology: "Gastroenterology",
+  nephrology: "Nephrology",
+  endocrinology: "Endocrinology",
 };
 
 // Emergency workflow: Arrival → Triage → Assessment → Investigations →
@@ -406,8 +430,511 @@ const ANESTHESIA_DOCS = [
   },
 ];
 
+const CARDIOLOGY_DOCS = [
+  {
+    key: "cardio_consultation", label: "Cardiology Consultation", specialty: "cardiology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("cardiac_risk_factors", "Cardiac Risk Factors"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Cardiovascular Examination Findings"), T("ecg_findings", "ECG Findings"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "cardio_followup", label: "Cardiology Follow-Up", specialty: "cardiology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Symptoms (Angina / Dyspnea / Palpitations / Syncope)"), S("functional_class", "NYHA Functional Class", ["I", "II", "III", "IV"]), T("exam_findings", "Examination Findings"), T("investigations_reviewed", "Investigations Reviewed"), T("assessment", "Assessment"), T("plan", "Plan"), I("next_visit", "Next Visit")],
+  },
+  {
+    key: "cardio_admission_note", label: "Cardiac Admission Note", specialty: "cardiology",
+    fields: [T("admission_reason", "Reason for Admission"), T("hpi", "History of Present Illness"), T("pmh", "Past Medical History"), T("cardiac_history", "Cardiac History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("admission_diagnosis", "Admission Diagnosis"), T("exam_findings", "Examination Findings"), T("vitals", "Vital Signs on Admission"), T("investigations_ordered", "Investigations Ordered"), T("admission_plan", "Admission Plan")],
+  },
+  {
+    key: "cardio_progress_note", label: "Cardiac Progress Note", specialty: "cardiology",
+    fields: [T("overnight_events", "Overnight Events"), T("symptoms", "Symptoms"), T("vitals", "Vital Signs"), T("exam_findings", "Examination Findings"), T("telemetry", "Telemetry / Monitoring Findings"), T("investigations", "Investigations"), T("medications_review", "Medications Review"), T("plan", "Plan")],
+  },
+  {
+    key: "cardio_discharge_summary", label: "Cardiac Discharge Summary", specialty: "cardiology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("procedures_performed", "Procedures Performed"), T("discharge_condition", "Condition at Discharge"), T("discharge_medications", "Discharge Medications"), T("follow_up", "Follow-Up"), T("instructions", "Instructions"), T("pending_results", "Pending Results")],
+  },
+  {
+    key: "cardio_procedure_note", label: "Cardiac Procedure Note", specialty: "cardiology",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), I("access_site", "Access Site"), T("complications", "Complications"), T("patient_condition", "Patient Condition"), T("post_procedure_plan", "Post-Procedure Plan")],
+  },
+  {
+    key: "cardio_ecg_report", label: "ECG Report", specialty: "cardiology",
+    fields: [T("indication", "Indication"), I("heart_rate", "Heart Rate (bpm)"), S("rhythm", "Rhythm", ["Sinus", "Atrial Fibrillation", "SVT", "Atrial Flutter", "Ventricular Tachycardia", "Other"]), I("pr_interval", "PR Interval (ms)"), I("qrs_duration", "QRS Duration (ms)"), I("qt_qtc", "QT / QTc (ms)"), I("axis", "Axis"), T("st_t_changes", "ST-Segment / T-Wave Changes"), T("ecg_findings", "Findings"), T("ecg_interpretation", "Interpretation"), T("clinical_comment", "Clinical Comment")],
+  },
+  {
+    key: "cardio_echo_report", label: "Echocardiography Report", specialty: "cardiology",
+    fields: [T("indication", "Indication"), I("lvef", "LVEF (%)"), S("lv_function", "LV Systolic Function", ["Normal", "Mildly Reduced", "Moderately Reduced", "Severely Reduced"]), T("lv_dimensions", "LV Dimensions"), T("wall_motion_abnormalities", "Wall Motion Abnormalities"), T("valve_findings", "Valve Findings"), T("la_size", "Left Atrium Size"), T("aortic_root", "Aortic Root"), T("pericardium", "Pericardium"), T("diastolic_function", "Diastolic Function"), T("echo_findings", "Findings"), T("echo_conclusion", "Conclusion"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "cardio_holter_report", label: "Holter Report", specialty: "cardiology",
+    fields: [T("indication", "Indication"), I("monitoring_duration", "Monitoring Duration (hours)"), I("total_beats", "Total Beats"), N("min_hr", "Minimum Heart Rate"), N("max_hr", "Maximum Heart Rate"), N("avg_hr", "Average Heart Rate"), T("pauses", "Pauses"), T("ectopy", "Ectopy / Premature Beats"), T("arrhythmias_detected", "Arrhythmias Detected"), T("st_segment_changes", "ST-Segment Changes"), T("hrv_analysis", "Heart Rate Variability Analysis"), T("conclusion", "Conclusion"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "cardio_stress_test_report", label: "Stress Test Report", specialty: "cardiology",
+    fields: [T("indication", "Indication"), I("protocol", "Protocol"), I("exercise_duration", "Exercise Duration (min)"), N("max_hr", "Maximum Heart Rate"), I("rest_bp", "Resting Blood Pressure"), I("peak_bp", "Peak Blood Pressure"), N("workload_mets", "Workload (METs)"), T("symptoms_during_test", "Symptoms During Test"), T("ecg_changes", "ECG Changes"), I("reason_for_termination", "Reason for Termination"), S("result", "Result", ["Negative", "Positive", "Inconclusive", "Equivocal"]), T("conclusion", "Conclusion")],
+  },
+  {
+    key: "cardio_cath_report", label: "Cardiac Catheterization Report", specialty: "cardiology",
+    fields: [T("indication", "Indication"), S("access_site", "Access Site", ["Femoral", "Radial", "Brachial"]), T("catheters_used", "Catheters Used"), T("coronary_anatomy", "Coronary Anatomy / Dominance"), T("lm", "Left Main"), T("lad", "LAD"), T("lcx", "LCx"), T("rca", "RCA"), T("grafts", "Grafts (if CABG)"), T("pressures", "Hemodynamic Pressures"), T("lv_function", "LV Function"), I("contrast_volume", "Contrast Volume (ml)"), T("complications", "Complications"), T("findings_summary", "Findings Summary"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "cardio_referral", label: "Cardiology Referral", specialty: "cardiology",
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const NEUROLOGY_DOCS = [
+  {
+    key: "neuro_consultation", label: "Neurology Consultation", specialty: "neurology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("cranial_nerves", "Cranial Nerve Examination"), T("motor_exam", "Motor Examination"), T("sensory_exam", "Sensory Examination"), T("reflexes", "Reflexes"), T("coordination", "Coordination / Cerebellar Examination"), T("gait", "Gait"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "neuro_followup", label: "Neurology Follow-Up", specialty: "neurology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("neuro_exam", "Neurological Examination"), T("investigations_reviewed", "Investigations Reviewed"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "neuro_admission_note", label: "Neurology Admission Note", specialty: "neurology",
+    fields: [T("admission_reason", "Reason for Admission"), T("hpi", "History of Present Illness"), T("neuro_exam", "Neurological Examination"), T("admission_diagnosis", "Admission Diagnosis"), T("vitals", "Vital Signs"), T("investigations_ordered", "Investigations Ordered"), T("admission_plan", "Admission Plan")],
+  },
+  {
+    key: "neuro_progress_note", label: "Neurology Progress Note", specialty: "neurology",
+    fields: [T("overnight_events", "Overnight Events"), T("neuro_exam", "Neurological Examination"), I("consciousness_level", "Level of Consciousness"), T("investigations", "Investigations"), T("imaging_review", "Imaging Review"), T("plan", "Plan")],
+  },
+  {
+    key: "neuro_discharge_summary", label: "Neurology Discharge Summary", specialty: "neurology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("discharge_neuro_status", "Neurological Status at Discharge"), T("discharge_medications", "Discharge Medications"), T("follow_up", "Follow-Up"), T("instructions", "Instructions")],
+  },
+  {
+    key: "neuro_procedure_note", label: "Neurologic Procedure Note", specialty: "neurology",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "neuro_eeg_report", label: "EEG Report", specialty: "neurology",
+    fields: [T("indication", "Indication"), I("recording_duration", "Recording Duration"), T("background_activity", "Background Activity"), T("sleep_stages", "Sleep Stages"), T("epileptiform_discharges", "Epileptiform Discharges"), T("focal_findings", "Focal Findings"), T("activation_procedures", "Activation Procedures (HV / Photic)"), T("eeg_findings", "Findings"), T("eeg_conclusion", "Conclusion")],
+  },
+  {
+    key: "neuro_emg_ncs_report", label: "EMG / NCS Report", specialty: "neurology",
+    fields: [T("indication", "Indication"), T("nerves_studied", "Nerves Studied"), T("motor_ncs", "Motor NCS Results"), T("sensory_ncs", "Sensory NCS Results"), T("emg_findings", "EMG Findings"), T("needle_exam", "Needle Examination"), T("conclusion", "Conclusion"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "neuro_stroke_record", label: "Stroke Assessment / Record", specialty: "neurology",
+    fields: [I("onset_time", "Symptom Onset Time"), I("last_known_well", "Last Known Well"), N("nihss_score", "NIHSS Score"), T("fast_symptoms", "FAST / Symptoms at Onset"), T("imaging_done", "Imaging Performed"), T("imaging_findings", "Imaging Findings"), S("thrombolysis", "Thrombolysis", ["Given", "Not Given — Outside Window", "Not Given — Contraindicated", "Considered"]), S("thrombectomy", "Thrombectomy", ["Performed", "Not Performed", "Referred"]), S("etiology", "Etiology", ["Large Artery Atherosclerosis", "Cardioembolic", "Small Vessel", "Other Determined", "Undetermined"]), T("deficits", "Residual Deficits"), T("management", "Management"), T("secondary_prevention", "Secondary Prevention Plan")],
+  },
+  {
+    key: "neuro_seizure_followup", label: "Seizure / Epilepsy Follow-Up", specialty: "neurology",
+    fields: [I("epilepsy_duration", "Epilepsy Duration"), T("seizure_frequency", "Current Seizure Frequency"), T("seizure_types", "Seizure Types"), T("triggers", "Triggers"), S("medication_adherence", "Medication Adherence", ["Good", "Partial", "Poor"]), T("side_effects", "Side Effects"), T("aed_levels", "Antiepileptic Drug Levels"), I("driving_status", "Driving Status"), T("investigation_results", "Investigation Results"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "neuro_referral", label: "Neurology Referral", specialty: "neurology",
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const PSYCHIATRY_DOCS = [
+  {
+    key: "psy_consultation", label: "Psychiatric Consultation", specialty: "psychiatry", confidential: true,
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("psychiatric_history", "Psychiatric History"), T("medical_history", "Medical History"), T("medications", "Current Medications"), T("substance_history", "Substance Use History"), T("family_psych_history", "Family Psychiatric History"), T("social_history", "Social History"), T("mental_status_exam", "Mental Status Examination"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "psy_assessment", label: "Psychiatric Assessment", specialty: "psychiatry", confidential: true,
+    fields: [T("presenting_problem", "Presenting Problem"), T("history_present_illness", "History of Present Illness"), T("psychiatric_history", "Psychiatric History"), T("medication_history", "Medication History"), T("risk_screening", "Risk Screening"), T("mse_appearance", "MSE — Appearance & Behavior"), T("mse_speech", "MSE — Speech"), T("mse_mood", "MSE — Mood"), T("mse_affect", "MSE — Affect"), T("mse_thought", "MSE — Thought Form & Content"), T("mse_perception", "MSE — Perception"), T("mse_cognition", "MSE — Cognition"), T("mse_insight", "MSE — Insight & Judgment"), T("diagnosis", "Diagnosis"), T("formulation", "Formulation"), T("plan", "Plan")],
+  },
+  {
+    key: "psy_followup", label: "Psychiatric Follow-Up", specialty: "psychiatry", confidential: true,
+    fields: [T("interval_history", "Interval History"), T("current_symptoms", "Current Symptoms"), S("adherence", "Medication Adherence", ["Good", "Partial", "Poor"]), T("side_effects", "Side Effects"), T("functioning", "Functioning"), T("mse_summary", "Mental Status Summary"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "psy_progress_note", label: "Psychiatric Progress Note", specialty: "psychiatry", confidential: true,
+    fields: [T("interval_events", "Interval Events"), T("mental_status", "Mental Status"), T("medication_response", "Medication Response"), T("risks_reviewed", "Risks Reviewed"), T("plan", "Plan")],
+  },
+  {
+    key: "psy_treatment_plan", label: "Mental Health Treatment Plan", specialty: "psychiatry", confidential: true,
+    fields: [T("diagnoses", "Diagnoses"), T("short_term_goals", "Short-Term Goals"), T("long_term_goals", "Long-Term Goals"), T("interventions", "Interventions"), T("therapy_modalities", "Therapy Modalities"), T("medication_plan", "Medication Plan"), I("session_frequency", "Session Frequency"), T("crisis_plan", "Crisis Plan"), I("review_date", "Review Date")],
+  },
+  {
+    key: "psy_medication_followup", label: "Medication Follow-Up", specialty: "psychiatry", confidential: true,
+    fields: [T("current_medications", "Current Medications & Doses"), T("response", "Response to Medication"), T("side_effects", "Side Effects"), T("labs_monitoring", "Laboratory Monitoring"), S("adherence", "Adherence", ["Good", "Partial", "Poor"]), T("adjustments_made", "Adjustments Made"), I("next_review", "Next Review")],
+  },
+  {
+    key: "psy_risk_assessment", label: "Risk Assessment", specialty: "psychiatry", confidential: true,
+    fields: [T("risk_domains", "Risk Domains (Suicide / Self-Harm / Violence / Neglect)"), T("ideation_screening", "Ideation Screening"), T("intent_plan_means", "Intent, Plan & Means"), T("protective_factors", "Protective Factors"), T("historical_risk", "Historical Risk Factors"), S("current_risk_level", "Current Risk Level", ["Low", "Moderate", "High", "Imminent"]), T("interventions", "Interventions"), T("crisis_plan", "Crisis / Safety Plan"), T("safety_contract", "Safety Agreement"), I("supervision_level", "Supervision Level")],
+  },
+  {
+    key: "psy_crisis_assessment", label: "Crisis Assessment", specialty: "psychiatry", confidential: true,
+    fields: [T("crisis_presenting", "Presenting Crisis"), T("crisis_context", "Context & Precipitants"), T("mental_status", "Mental Status"), T("risk_assessment", "Risk Assessment"), T("substances_involved", "Substances Involved"), T("supports_available", "Supports Available"), S("disposition", "Disposition", ["Outpatient Management", "Emergency Department Referral", "Voluntary Admission", "Involuntary Admission", "Intensive Follow-Up"]), T("safety_plan", "Safety Plan"), T("follow_up", "Follow-Up")],
+  },
+  {
+    key: "psy_discharge_summary", label: "Psychiatric Discharge Summary", specialty: "psychiatry", confidential: true,
+    fields: [T("admission_reason", "Reason for Admission"), T("diagnoses", "Diagnoses"), T("hospital_course", "Hospital Course"), T("medications_at_discharge", "Medications at Discharge"), T("risk_status_at_discharge", "Risk Status at Discharge"), T("follow_up", "Follow-Up"), T("crisis_plan", "Crisis Plan")],
+  },
+  {
+    key: "psy_referral", label: "Psychiatric Referral", specialty: "psychiatry", confidential: true,
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const OPHTHALMOLOGY_DOCS = [
+  {
+    key: "ophth_consultation", label: "Ophthalmology Consultation", specialty: "ophthalmology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ocular_history", "Ocular History"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), I("va_right", "Visual Acuity — Right Eye"), I("va_left", "Visual Acuity — Left Eye"), I("iop_right", "Intraocular Pressure — Right Eye"), I("iop_left", "Intraocular Pressure — Left Eye"), T("exam_findings", "Slit Lamp / Fundus Examination"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "ophth_followup", label: "Ophthalmology Follow-Up", specialty: "ophthalmology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), I("va_right", "Visual Acuity — Right Eye"), I("va_left", "Visual Acuity — Left Eye"), I("iop", "Intraocular Pressure"), T("exam_findings", "Examination Findings"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "ophth_procedure_note", label: "Eye Procedure Note", specialty: "ophthalmology",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "ophth_operative_note", label: "Ophthalmic Operative Note", specialty: "ophthalmology",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional (Peribulbar / Retrobulbar)", "Topical", "Other"]), T("indication", "Indication"), T("technique_details", "Technique Details"), T("findings", "Findings"), T("specimens", "Specimens"), T("implants", "Implants (e.g. IOL Details)"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("postop_plan", "Post-Operative Plan")],
+  },
+  {
+    key: "ophth_preop_assessment", label: "Pre-Operative Assessment (Ophthalmology)", specialty: "ophthalmology",
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("ocular_history", "Ocular History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs", "Laboratory Results"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+  },
+  {
+    key: "ophth_postop_note", label: "Post-Operative Note (Ophthalmology)", specialty: "ophthalmology",
+    fields: [I("procedure_date", "Procedure Date"), I("postop_day", "Post-Operative Day"), T("vision_status", "Vision Status"), I("iop", "Intraocular Pressure"), T("wound_condition", "Wound / Incision Condition"), T("medications", "Post-Operative Drops / Medications"), T("complications", "Complications"), T("plan", "Plan")],
+  },
+  {
+    key: "ophth_discharge_summary", label: "Ophthalmology Discharge Summary", specialty: "ophthalmology",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), T("procedure", "Procedure Performed"), T("hospital_course", "Hospital Course"), T("eye_status_discharge", "Eye Status at Discharge"), T("discharge_medications", "Discharge Medications"), T("eye_drops", "Eye Drop Regimen"), T("follow_up", "Follow-Up"), T("instructions", "Instructions")],
+  },
+  {
+    key: "ophth_diagnostic_report", label: "Visual / Diagnostic Test Report", specialty: "ophthalmology",
+    fields: [S("test_type", "Test Type", ["Visual Acuity", "Visual Fields", "OCT", "Fundus Photography", "Fluorescein Angiography", "Biometry", "Other"]), T("indication", "Indication"), T("results_right_eye", "Results — Right Eye"), T("results_left_eye", "Results — Left Eye"), T("findings", "Findings"), T("interpretation", "Interpretation"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "ophth_referral", label: "Ophthalmology Referral", specialty: "ophthalmology",
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const DERMATOLOGY_DOCS = [
+  {
+    key: "derm_consultation", label: "Dermatology Consultation", specialty: "dermatology", photos: true,
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("lesion_description", "Lesion Description"), T("distribution", "Distribution"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("family_history", "Family History"), T("exam_findings", "Examination Findings"), T("differential", "Differential Diagnosis"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "derm_followup", label: "Dermatology Follow-Up", specialty: "dermatology", photos: true,
+    fields: [T("interval_history", "Interval History"), T("response_to_treatment", "Response to Treatment"), T("current_exam", "Current Examination"), T("side_effects", "Side Effects"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "derm_lesion_assessment", label: "Lesion Assessment", specialty: "dermatology", photos: true,
+    fields: [I("lesion_location", "Lesion Location"), I("size", "Size"), I("morphology", "Morphology"), I("color", "Color"), I("borders", "Borders"), I("surface", "Surface"), T("symptoms", "Symptoms (Itch / Pain / Bleeding)"), I("duration", "Duration"), T("evolution", "Evolution / Change Over Time"), T("risk_factors", "Risk Factors (Sun Exposure etc.)"), T("dermoscopy_findings", "Dermoscopy Findings"), T("differential_diagnosis", "Differential Diagnosis"), T("assessment", "Assessment"), T("management", "Management")],
+  },
+  {
+    key: "derm_skin_procedure_note", label: "Skin Procedure Note", specialty: "dermatology", photos: true,
+    fields: [I("procedure", "Procedure"), I("lesion_location", "Lesion Location"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("anesthesia", "Anesthesia"), T("findings", "Findings"), T("specimens_sent", "Specimens Sent"), T("closure", "Closure"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "derm_biopsy_note", label: "Biopsy Procedure Note", specialty: "dermatology", photos: true,
+    fields: [S("biopsy_type", "Biopsy Type", ["Shave", "Punch", "Excisional", "Incisional", "Other"]), I("lesion_location", "Lesion Location"), T("anesthesia", "Anesthesia"), T("technique", "Technique"), T("specimens", "Specimens"), T("hemostasis", "Hemostasis"), I("sutures", "Sutures"), T("wound_care", "Wound Care Instructions"), T("complications", "Complications")],
+  },
+  {
+    key: "derm_operative_note", label: "Dermatologic Operative Note", specialty: "dermatology",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Sedation", "Other"]), T("technique_details", "Technique Details"), T("specimens", "Specimens"), T("flap_graft", "Flap / Graft Details"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("postop_plan", "Post-Operative Plan")],
+  },
+  {
+    key: "derm_pathology_request", label: "Pathology Request", specialty: "dermatology",
+    fields: [T("specimens_sent", "Specimens Sent"), T("clinical_history", "Clinical History"), T("lesion_descriptions", "Lesion Descriptions"), T("site_details", "Site Details"), T("suspected_diagnosis", "Suspected Diagnosis"), S("urgency", "Urgency", ["Routine", "Urgent"])],
+  },
+  {
+    key: "derm_discharge_followup", label: "Dermatology Discharge / Follow-Up", specialty: "dermatology", photos: true,
+    fields: [T("diagnoses", "Diagnoses"), T("treatment_summary", "Treatment Summary"), T("response", "Response"), T("home_care", "Home Skin Care"), T("discharge_medications", "Discharge Medications"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
+  },
+  {
+    key: "derm_referral", label: "Dermatology Referral", specialty: "dermatology",
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const ORTHOPEDICS_DOCS = [
+  {
+    key: "ortho_consultation", label: "Orthopedic Consultation", specialty: "orthopedics",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("injury_mechanism", "Injury Mechanism"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Examination Findings"), T("rom", "Range of Motion"), T("neurovascular_status", "Neurovascular Status"), T("imaging_reviewed", "Imaging Reviewed"), T("working_diagnosis", "Working Diagnosis"), T("plan", "Plan")],
+  },
+  {
+    key: "ortho_followup", label: "Orthopedic Follow-Up", specialty: "orthopedics",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("exam_findings", "Examination Findings"), T("imaging", "Imaging"), T("implant_hardware_status", "Implant / Hardware Status"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "ortho_fracture_assessment", label: "Fracture Assessment", specialty: "orthopedics",
+    fields: [T("injury_mechanism", "Injury Mechanism"), I("injury_datetime", "Date & Time of Injury"), I("fracture_location", "Fracture Location"), S("fracture_pattern", "Fracture Pattern", ["Transverse", "Oblique", "Spiral", "Comminuted", "Segmental", "Impacted", "Avulsion", "Compression", "Greenstick", "Other"]), S("open_closed", "Open / Closed", ["Closed", "Open Grade I", "Open Grade II", "Open Grade III"]), T("skin_condition", "Skin Condition Over Fracture"), T("neurovascular_status", "Neurovascular Status"), T("associated_injuries", "Associated Injuries"), T("imaging_findings", "Imaging Findings"), I("classification", "Classification (e.g. AO / Garden)"), T("treatment_plan", "Treatment Plan")],
+  },
+  {
+    key: "ortho_injury_assessment", label: "Injury Assessment", specialty: "orthopedics",
+    fields: [I("injury_datetime", "Date & Time of Injury"), T("mechanism", "Mechanism"), I("location", "Injury Location"), T("tissue_involvement", "Tissue Involvement (Bone / Ligament / Tendon / Muscle)"), T("neurovascular", "Neurovascular Assessment"), T("imaging", "Imaging"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "ortho_preop_assessment", label: "Pre-Operative Assessment (Orthopedics)", specialty: "orthopedics",
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("risk_assessment", "Risk Assessment (incl. DVT / Infection)"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+  },
+  {
+    key: "ortho_operative_note", label: "Operative Note (Orthopedics)", specialty: "orthopedics",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Sedation", "Other"]), T("indication", "Indication"), T("findings", "Findings"), T("procedure_details", "Procedure Details"), T("implants_hardware", "Implants / Hardware Used"), T("specimens", "Specimens"), I("estimated_blood_loss", "Estimated Blood Loss"), I("tourniquet_time", "Tourniquet Time"), T("complications", "Complications"), T("drains", "Drains"), T("patient_condition", "Patient Condition"), T("postop_plan", "Post-Operative Plan")],
+  },
+  {
+    key: "ortho_procedure_note", label: "Procedure Note (Orthopedics)", specialty: "orthopedics",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Sedation", "Other"]), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "ortho_postop_note", label: "Post-Operative Note (Orthopedics)", specialty: "orthopedics",
+    fields: [I("procedure_date", "Procedure Date"), I("postop_day", "Post-Operative Day"), T("vitals", "Vital Signs"), T("wound_condition", "Wound Condition"), T("drain_output", "Drain Output"), T("neurovascular_status", "Neurovascular Status"), T("xray_review", "Post-Operative X-Ray Review"), T("pain_control", "Pain Control"), T("mobilization", "Mobilization / Weight Bearing"), T("complications", "Complications"), T("plan", "Plan")],
+  },
+  {
+    key: "ortho_daily_progress", label: "Daily Orthopedic Progress Note", specialty: "orthopedics",
+    fields: [I("postop_day", "Post-Operative Day"), T("overnight_events", "Overnight Events"), T("wound_exam", "Wound Examination"), T("neurovascular", "Neurovascular Status"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("dvt_prophylaxis", "DVT Prophylaxis"), T("antibiotics", "Antibiotics"), T("plan", "Plan")],
+  },
+  {
+    key: "ortho_discharge_summary", label: "Discharge Summary (Orthopedics)", specialty: "orthopedics",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), T("procedure", "Procedure Performed"), T("hospital_course", "Hospital Course"), S("weight_bearing", "Weight Bearing Status", ["Non-Weight Bearing", "Partial / Toe-Touch", "Full Weight Bearing", "As Tolerated"]), T("immobilization", "Immobilization / Cast / Brace"), T("discharge_medications", "Discharge Medications"), T("physio_referral", "Physiotherapy Referral"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
+  },
+  {
+    key: "ortho_rehab_plan", label: "Rehabilitation Plan", specialty: "orthopedics",
+    fields: [T("diagnosis", "Diagnosis"), T("current_function", "Current Functional Status"), T("goals", "Rehabilitation Goals"), S("weight_bearing_status", "Weight Bearing Status", ["Non-Weight Bearing", "Partial / Toe-Touch", "Full Weight Bearing", "As Tolerated"]), T("physio_program", "Physiotherapy Program"), T("exercises", "Exercises"), T("assistive_devices", "Assistive Devices"), T("pain_management", "Pain Management"), I("expected_timeline", "Expected Timeline"), T("follow_up", "Follow-Up")],
+  },
+];
+
+const UROLOGY_DOCS = [
+  {
+    key: "uro_consultation", label: "Urology Consultation", specialty: "urology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("urinary_symptoms", "Urinary Symptoms (LUTS)"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Examination Findings"), T("urinalysis", "Urinalysis"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "uro_followup", label: "Urology Follow-Up", specialty: "urology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("exam_findings", "Examination Findings"), T("investigations", "Investigations"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "uro_procedure_note", label: "Urologic Procedure Note", specialty: "urology",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "uro_operative_note", label: "Operative Note (Urology)", specialty: "urology",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Sedation", "Other"]), T("indication", "Indication"), T("findings", "Findings"), T("procedure_details", "Procedure Details"), T("specimens", "Specimens"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("postop_plan", "Post-Operative Plan")],
+  },
+  {
+    key: "uro_preop_assessment", label: "Pre-Operative Assessment (Urology)", specialty: "urology",
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+  },
+  {
+    key: "uro_postop_note", label: "Post-Operative Note (Urology)", specialty: "urology",
+    fields: [I("procedure_date", "Procedure Date"), I("postop_day", "Post-Operative Day"), T("vitals", "Vital Signs"), T("catheter_status", "Catheter Status"), T("urine_output", "Urine Output"), T("wound", "Wound"), T("pain", "Pain Control"), T("complications", "Complications"), T("plan", "Plan")],
+  },
+  {
+    key: "uro_catheter_device_record", label: "Catheter / Device Record", specialty: "urology",
+    fields: [S("device_type", "Device Type", ["Urethral Catheter", "Suprapubic Catheter", "Ureteric Stent", "Nephrostomy Tube", "Penile Prosthesis", "Other"]), I("size", "Size (Fr / Ch)"), I("insertion_datetime", "Insertion Date & Time"), I("inserted_by", "Inserted By"), I("insertion_site", "Insertion Site"), T("indication", "Indication"), T("drainage", "Drainage / Function"), T("complications", "Complications"), T("removal_plan", "Removal / Change Plan")],
+  },
+  {
+    key: "uro_discharge_summary", label: "Discharge Summary (Urology)", specialty: "urology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("procedures", "Procedures Performed"), T("hospital_course", "Hospital Course"), T("catheter_instructions", "Catheter / Device Instructions"), T("discharge_medications", "Discharge Medications"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
+  },
+  {
+    key: "uro_referral", label: "Urology Referral", specialty: "urology",
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const ENT_DOCS = [
+  {
+    key: "ent_consultation", label: "ENT Consultation", specialty: "ent",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ent_history", "ENT History"), T("pmh", "Past Medical History"), T("exam_findings", "Examination — Ears / Nose / Throat / Neck"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "ent_followup", label: "ENT Follow-Up", specialty: "ent",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("exam_findings", "Examination Findings"), T("investigations", "Investigations"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "ent_procedure_note", label: "ENT Procedure Note", specialty: "ent",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "ent_operative_note", label: "Operative Note (ENT)", specialty: "ent",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Sedation", "Other"]), T("indication", "Indication"), T("findings", "Findings"), T("procedure_details", "Procedure Details"), T("specimens", "Specimens"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("postop_plan", "Post-Operative Plan")],
+  },
+  {
+    key: "ent_preop_assessment", label: "Pre-Operative Assessment (ENT)", specialty: "ent",
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("airway_assessment", "Airway Assessment"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+  },
+  {
+    key: "ent_postop_note", label: "Post-Operative Note (ENT)", specialty: "ent",
+    fields: [I("procedure_date", "Procedure Date"), I("postop_day", "Post-Operative Day"), T("vitals", "Vital Signs"), T("wound", "Wound"), T("airway_status", "Airway Status"), T("packing_status", "Nasal Packing / Packs Status"), T("pain", "Pain Control"), T("complications", "Complications"), T("plan", "Plan")],
+  },
+  {
+    key: "ent_audiology_report", label: "Audiology / Diagnostic Report", specialty: "ent",
+    fields: [S("test_type", "Test Type", ["Pure Tone Audiometry", "Tympanometry", "OAE", "ABR", "Speech Audiometry", "Nasal Endoscopy", "Other"]), T("indication", "Indication"), T("results_right", "Results — Right"), T("results_left", "Results — Left"), T("interpretation", "Interpretation"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "ent_discharge_summary", label: "Discharge Summary (ENT)", specialty: "ent",
+    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), T("procedure", "Procedure Performed"), T("hospital_course", "Hospital Course"), T("discharge_medications", "Discharge Medications"), T("wound_care", "Wound / Pack Care"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
+  },
+  {
+    key: "ent_referral", label: "ENT Referral", specialty: "ent",
+    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
+  },
+];
+
+const PULMONOLOGY_DOCS = [
+  {
+    key: "pulm_consultation", label: "Pulmonary Consultation", specialty: "pulmonology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("respiratory_symptoms", "Respiratory Symptoms (Cough / Sputum / Dyspnea / Wheeze / Hemoptysis)"), T("smoking_history", "Smoking History"), T("pmh", "Past Medical History"), T("occupational_exposure", "Occupational / Environmental Exposure"), T("exam_findings", "Examination Findings"), T("chest_imaging", "Chest Imaging"), T("pft_summary", "Pulmonary Function Summary"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "pulm_followup", label: "Pulmonary Follow-Up", specialty: "pulmonology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("exam_findings", "Examination Findings"), T("inhaler_technique", "Inhaler Technique Review"), S("adherence", "Adherence", ["Good", "Partial", "Poor"]), T("investigations", "Investigations"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "pulm_admission_note", label: "Respiratory Admission Note", specialty: "pulmonology",
+    fields: [T("admission_reason", "Reason for Admission"), T("hpi", "History of Present Illness"), T("exam_findings", "Examination Findings"), T("vitals", "Vital Signs"), T("oxygen_requirement", "Oxygen Requirement"), T("admission_diagnosis", "Admission Diagnosis"), T("admission_plan", "Admission Plan")],
+  },
+  {
+    key: "pulm_progress_note", label: "Respiratory Progress Note", specialty: "pulmonology",
+    fields: [T("overnight_events", "Overnight Events"), T("symptoms", "Symptoms"), T("vitals", "Vital Signs"), T("oxygen", "Oxygen Requirement"), T("abg", "Arterial Blood Gas"), T("exam_findings", "Examination Findings"), T("investigations", "Investigations"), T("nebulizers", "Nebulizers / Inhaled Therapy"), T("plan", "Plan")],
+  },
+  {
+    key: "pulm_discharge_summary", label: "Discharge Summary (Respiratory)", specialty: "pulmonology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("discharge_medications", "Discharge Medications"), T("inhaler_plan", "Inhaler Plan"), T("oxygen_at_home", "Home Oxygen Plan"), T("follow_up", "Follow-Up"), T("instructions", "Instructions")],
+  },
+  {
+    key: "pulm_procedure_note", label: "Pulmonary Procedure Note", specialty: "pulmonology",
+    fields: [I("procedure", "Procedure (e.g. Thoracentesis / Chest Drain)"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), I("fluid_volume", "Fluid Volume Removed"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "pulm_pft_report", label: "Pulmonary Function Test Report", specialty: "pulmonology",
+    fields: [T("indication", "Indication"), I("fev1", "FEV1 (L)"), I("fvc", "FVC (L)"), I("fev1_fvc_ratio", "FEV1/FVC Ratio (%)"), I("predicted_fev1", "Predicted FEV1 (%)"), T("tlc", "TLC"), T("rv", "Residual Volume"), T("dlco", "DLCO"), T("bronchodilator_response", "Bronchodilator Response"), S("interpretation", "Interpretation", ["Normal", "Obstructive", "Restrictive", "Mixed", "Non-Diagnostic"]), T("conclusion", "Conclusion"), T("recommendations", "Recommendations")],
+  },
+  {
+    key: "pulm_bronchoscopy_report", label: "Bronchoscopy Report", specialty: "pulmonology",
+    fields: [T("indication", "Indication"), I("scope_type", "Scope Type"), S("anesthesia", "Anesthesia", ["Local", "Sedation", "General"]), T("airway_findings", "Airway Findings"), T("lesions", "Lesions / Masses Seen"), T("washings_brushings", "Washings / Brushings"), T("biopsies", "Biopsies"), T("bal", "Bronchoalveolar Lavage"), T("specimens", "Specimens Sent"), T("complications", "Complications"), T("conclusion", "Conclusion")],
+  },
+  {
+    key: "pulm_care_plan", label: "Respiratory Care Plan", specialty: "pulmonology",
+    fields: [T("diagnoses", "Diagnoses"), T("control_assessment", "Current Control Assessment"), T("inhaler_regimen", "Inhaler / Medication Regimen"), T("technique_training", "Technique Training"), T("action_plan", "Exacerbation Action Plan"), T("vaccination", "Vaccination Status"), T("smoking_cessation", "Smoking Cessation Support"), I("review_interval", "Review Interval")],
+  },
+];
+
+const GASTROENTEROLOGY_DOCS = [
+  {
+    key: "gi_consultation", label: "GI Consultation", specialty: "gastroenterology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("gi_symptoms", "GI Symptoms"), T("bowel_habits", "Bowel Habits"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Examination Findings"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "gi_followup", label: "GI Follow-Up", specialty: "gastroenterology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("exam", "Examination Findings"), T("investigations", "Investigations"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "gi_admission_note", label: "GI Admission Note", specialty: "gastroenterology",
+    fields: [T("admission_reason", "Reason for Admission"), T("hpi", "History of Present Illness"), T("exam_findings", "Examination Findings"), T("labs", "Laboratory Results"), T("admission_diagnosis", "Admission Diagnosis"), T("admission_plan", "Admission Plan")],
+  },
+  {
+    key: "gi_progress_note", label: "GI Progress Note", specialty: "gastroenterology",
+    fields: [T("overnight_events", "Overnight Events"), T("symptoms", "Symptoms"), T("vitals", "Vital Signs"), T("exam", "Examination Findings"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("plan", "Plan")],
+  },
+  {
+    key: "gi_endoscopy_report", label: "Endoscopy Report", specialty: "gastroenterology",
+    fields: [S("procedure", "Procedure", ["EGD (Upper GI Endoscopy)", "Sigmoidoscopy", "Enteroscopy", "Other"]), T("indication", "Indication"), T("sedation", "Sedation"), T("esophagus_findings", "Esophagus Findings"), T("stomach_findings", "Stomach Findings"), T("duodenum_findings", "Duodenum Findings"), T("interventions_performed", "Interventions Performed"), T("specimens", "Biopsies / Specimens"), T("complications", "Complications"), T("tolerance", "Tolerance"), T("conclusion", "Conclusion")],
+  },
+  {
+    key: "gi_colonoscopy_report", label: "Colonoscopy Report", specialty: "gastroenterology",
+    fields: [T("indication", "Indication"), S("prep_quality", "Bowel Prep Quality", ["Excellent", "Good", "Fair", "Poor"]), T("sedation", "Sedation"), I("scope_reached", "Scope Reached (Cecum / Ileum)"), T("colon_findings", "Colon Findings"), N("polyps_found", "Number of Polyps"), T("polypectomy", "Polypectomy Details"), T("biopsy", "Biopsies"), T("hemostasis", "Hemostasis / Interventions"), T("complications", "Complications"), T("conclusions", "Conclusions"), I("follow_up_interval", "Recommended Follow-Up Interval")],
+  },
+  {
+    key: "gi_ercp_report", label: "ERCP Procedure Report", specialty: "gastroenterology",
+    fields: [T("indication", "Indication"), T("sedation", "Sedation"), T("duodenoscopy", "Duodenoscopy Findings"), T("papilla_cannulation", "Papilla & Cannulation"), T("bile_duct_findings", "Bile Duct Findings (Stones / Strictures)"), T("pancreatic_duct_findings", "Pancreatic Duct Findings"), T("sphincterotomy", "Sphincterotomy"), T("stent_placed", "Stent Placed"), I("stent_type", "Stent Type / Details"), T("stone_extraction", "Stone Extraction"), T("brushings", "Brushings / Cytology"), T("complications", "Complications"), T("conclusion", "Conclusion")],
+  },
+  {
+    key: "gi_procedure_note", label: "GI Procedure Note", specialty: "gastroenterology",
+    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "gi_pathology_request", label: "Biopsy / Pathology Request (GI)", specialty: "gastroenterology",
+    fields: [T("specimens_sent", "Specimens Sent"), T("clinical_history", "Clinical History"), T("sites_biopsied", "Sites Biopsied"), T("suspected_diagnosis", "Suspected Diagnosis"), S("urgency", "Urgency", ["Routine", "Urgent"])],
+  },
+  {
+    key: "gi_discharge_summary", label: "Discharge Summary (GI)", specialty: "gastroenterology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("procedures", "Procedures Performed"), T("discharge_medications", "Discharge Medications"), T("diet_instructions", "Diet Instructions"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
+  },
+];
+
+const NEPHROLOGY_DOCS = [
+  {
+    key: "neph_consultation", label: "Nephrology Consultation", specialty: "nephrology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("renal_history", "Renal History"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Examination Findings"), T("labs_creatinine_egfr", "Creatinine / eGFR"), T("urinalysis", "Urinalysis"), I("bp", "Blood Pressure"), T("volume_status", "Volume Status"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "neph_followup", label: "Nephrology Follow-Up", specialty: "nephrology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Symptoms"), T("labs", "Laboratory Results"), I("bp", "Blood Pressure"), T("fluid_balance", "Fluid Balance"), T("medication_review", "Medication Review"), T("dialysis_status", "Dialysis Status"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "neph_admission_note", label: "Renal Admission Note", specialty: "nephrology",
+    fields: [T("admission_reason", "Reason for Admission"), T("hpi", "History of Present Illness"), T("labs", "Laboratory Results"), T("exam", "Examination Findings"), T("admission_diagnosis", "Admission Diagnosis"), T("admission_plan", "Admission Plan")],
+  },
+  {
+    key: "neph_progress_note", label: "Renal Progress Note", specialty: "nephrology",
+    fields: [T("overnight_events", "Overnight Events"), T("vitals", "Vital Signs"), T("fluid_balance", "Fluid Balance"), T("urine_output", "Urine Output"), T("labs", "Laboratory Results"), T("dialysis_review", "Dialysis Review"), T("plan", "Plan")],
+  },
+  {
+    key: "neph_dialysis_record", label: "Dialysis Treatment Record", specialty: "nephrology",
+    fields: [S("dialysis_type", "Dialysis Type", ["Hemodialysis", "CAPD", "APD", "Other"]), I("session_datetime", "Session Date & Time"), N("duration_hours", "Duration (hours)"), T("machine_settings", "Machine Settings / Dialysate"), T("dialyzer", "Dialyzer"), N("blood_flow", "Blood Flow Rate (ml/min)"), I("uf_removed", "Ultrafiltration Removed (ml)"), I("pre_bp", "Pre-Dialysis Blood Pressure"), I("post_bp", "Post-Dialysis Blood Pressure"), I("access_site", "Access Site"), T("complications", "Complications (e.g. Hypotension / Cramps)"), T("tolerance", "Tolerance"), I("next_session", "Next Session")],
+  },
+  {
+    key: "neph_access_record", label: "Dialysis Access Record", specialty: "nephrology",
+    fields: [S("access_type", "Access Type", ["AV Fistula", "AV Graft", "Tunneled Catheter", "PD Catheter", "Other"]), I("location", "Location"), I("created_datetime", "Created / Inserted Date"), I("surgeon", "Created By"), T("maturation_status", "Maturation / Function Status"), T("flow_assessment", "Flow Assessment"), T("complications", "Complications (Stenosis / Infection / Thrombosis)"), T("access_plan", "Access Plan")],
+  },
+  {
+    key: "neph_procedure_note", label: "Renal Procedure Note", specialty: "nephrology",
+    fields: [I("procedure", "Procedure (e.g. Kidney Biopsy)"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("imaging_guidance", "Imaging Guidance"), T("specimens", "Specimens"), T("bleeding_check", "Post-Procedure Bleeding Check"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
+  },
+  {
+    key: "neph_discharge_summary", label: "Discharge Summary (Nephrology)", specialty: "nephrology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("dialysis_plan", "Dialysis Plan"), T("discharge_medications", "Discharge Medications"), I("fluid_restriction", "Fluid Restriction"), T("follow_up", "Follow-Up"), T("instructions", "Instructions")],
+  },
+  {
+    key: "neph_ckd_care_plan", label: "CKD Care Plan", specialty: "nephrology",
+    fields: [S("ckd_stage", "CKD Stage", ["Stage 1", "Stage 2", "Stage 3a", "Stage 3b", "Stage 4", "Stage 5"]), I("egfr", "Current eGFR"), T("management_goals", "Management Goals"), I("bp_target", "Blood Pressure Target"), T("diet_plan", "Diet Plan"), T("anemia_management", "Anemia Management"), T("bone_mineral_plan", "Bone & Mineral Plan"), T("acidosis_management", "Acidosis Management"), T("dialysis_planning", "Dialysis Planning"), T("transplant_referral", "Transplant Referral"), I("review_interval", "Review Interval")],
+  },
+];
+
+const ENDOCRINOLOGY_DOCS = [
+  {
+    key: "endo_consultation", label: "Endocrinology Consultation", specialty: "endocrinology",
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("family_history", "Family History"), T("exam_findings", "Examination Findings"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "endo_followup", label: "Endocrinology Follow-Up", specialty: "endocrinology",
+    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("labs", "Laboratory Results"), T("medication_review", "Medication Review"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "endo_diabetes_followup", label: "Diabetes Follow-Up", specialty: "endocrinology",
+    fields: [I("diabetes_type", "Diabetes Type"), I("diabetes_duration", "Duration"), T("glucose_log", "Glucose Log / CGM Summary"), I("hba1c", "HbA1c (%)"), T("hypo_episodes", "Hypoglycemic Episodes"), T("insulin_regimen", "Insulin Regimen"), T("oral_agents", "Oral Agents"), S("adherence", "Adherence", ["Good", "Partial", "Poor"]), T("diet", "Diet"), T("exercise", "Exercise"), T("complications_screening", "Complications Screening (Retinopathy / Nephropathy / Neuropathy / Foot)"), I("bp", "Blood Pressure"), T("lipids", "Lipid Profile"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "endo_thyroid_followup", label: "Thyroid Follow-Up", specialty: "endocrinology",
+    fields: [T("symptoms", "Symptoms (Hypo / Hyper)"), I("tsh", "TSH"), I("ft4", "Free T4"), T("thyroid_exam", "Thyroid Examination"), T("goiter", "Goiter / Nodules"), T("antibodies", "Thyroid Antibodies"), T("ultrasound", "Ultrasound Findings"), T("medications", "Thyroid Medications"), T("dose_adjustment", "Dose Adjustment"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "endo_progress_note", label: "Endocrine Progress Note", specialty: "endocrinology",
+    fields: [T("interval_events", "Interval Events"), T("symptoms", "Symptoms"), T("labs", "Laboratory Results"), T("medication_changes", "Medication Changes"), T("assessment", "Assessment"), T("plan", "Plan")],
+  },
+  {
+    key: "endo_care_plan", label: "Endocrine Care Plan", specialty: "endocrinology",
+    fields: [T("diagnoses", "Diagnoses"), T("targets", "Targets (HbA1c / TSH etc.)"), T("medication_plan", "Medication Plan"), T("monitoring_schedule", "Monitoring Schedule"), T("diet_lifestyle", "Diet & Lifestyle Plan"), T("education_given", "Education Given"), I("review_interval", "Review Interval")],
+  },
+  {
+    key: "endo_medication_adjustment", label: "Medication Adjustment Record", specialty: "endocrinology",
+    fields: [I("medication", "Medication"), I("previous_dose", "Previous Dose"), I("new_dose", "New Dose"), I("adjustment_datetime", "Adjustment Date & Time"), T("reason", "Reason"), T("monitoring_plan", "Monitoring Plan"), T("follow_up", "Follow-Up")],
+  },
+  {
+    key: "endo_discharge_summary", label: "Discharge Summary (Endocrinology)", specialty: "endocrinology",
+    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("discharge_medications", "Discharge Medications"), T("monitoring_instructions", "Monitoring Instructions"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
+  },
+];
+
 export const SPECIALTY_DOCUMENTS = [
   ...IM_DOCS, ...SURGERY_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
+  ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
+  ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
+  ...NEPHROLOGY_DOCS, ...ENDOCRINOLOGY_DOCS,
 ];
 
 export const getSpecialtyDocs = (specialization) => {
