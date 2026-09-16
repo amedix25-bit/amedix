@@ -29,8 +29,10 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">— select your specialty:</span>
-      <Select onValueChange={select} disabled={saving}>
+      {!profile.specialization && (
+        <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">— select your specialty:</span>
+      )}
+      <Select value={profile.specialization || undefined} onValueChange={select} disabled={saving}>
         <SelectTrigger className="h-7 w-56 text-xs border-amber-300 dark:border-amber-700">
           <SelectValue placeholder="Select specialty" />
         </SelectTrigger>

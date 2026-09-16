@@ -158,11 +158,7 @@ export default function DoctorDashboard() {
               <h1 className="text-2xl font-bold">{t(menuItems.find((n) => n.key === activeTab)?.label)}</h1>
               <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
                 {profile?.full_name}
-                {profile?.specialization ? (
-                  <span>· {profile.specialization}</span>
-                ) : profile ? (
-                  <DoctorSpecialtySelect profile={profile} onSelected={setProfile} />
-                ) : null}
+                {profile ? <DoctorSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
               </p>
             </div>
           </div>
