@@ -16,7 +16,7 @@ import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
-import SpecialtySelection from "@/components/doctor/SpecialtySelection";
+import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
 import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import EncountersSection from "@/components/doctor/encounters/EncountersSection";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
@@ -123,14 +123,6 @@ export default function DoctorDashboard() {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
-  // Select Your Specialty — first portal entry after login: the doctor picks
-  // their specialty from the predefined list instead of typing it. The
-  // selection is stored on the verified doctor profile and drives the
-  // specialty-specific clinical documentation (Surgeons get Surgical Records).
-  if (profile && !profile.specialization) {
-    return <SpecialtySelection profile={profile} onSelected={setProfile} />;
-  }
-
   // Hospital Code Gate — the portal stays closed until the doctor verifies the
   // AMedix Hospital Code of the hospital they are working at. Every hospital
   // switch afterwards is re-verified by the backend.
@@ -164,7 +156,14 @@ export default function DoctorDashboard() {
             {profile && <DoctorProfilePicture profile={profile} onUpdated={setProfile} />}
             <div>
               <h1 className="text-2xl font-bold">{t(menuItems.find((n) => n.key === activeTab)?.label)}</h1>
-              <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.specialization}</p>
+              <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
+                {profile?.full_name}
+                {profile?.specialization ? (
+                  <span>· {profile.specialization}</span>
+                ) : profile ? (
+                  <DoctorSpecialtySelect profile={profile} onSelected={setProfile} />
+                ) : null}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-4 shrink-0">
