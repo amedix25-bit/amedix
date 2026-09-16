@@ -26,7 +26,15 @@
       "description": "True once the doctor has set or confirmed their name \u2014 controls whether the one-time name edit is still available"
     },
     "specialization": {
-      "type": "string"
+      "type": "string",
+      "description": "The doctor's active primary specialty from the predefined list \u2014 drives the specialty-specific clinical documentation shown by default (Surgeons get Surgical Records)"
+    },
+    "specialties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "All of the doctor's verified specialties from the predefined list. A doctor with more than one verified specialty selects the specialty they are practicing for each encounter \u2014 the selection is saved to that encounter and applies to all documents created during it. The active specialty is mirrored in `specialization`."
     },
     "license_number": {
       "type": "string"

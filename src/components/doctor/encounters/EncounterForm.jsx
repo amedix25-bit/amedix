@@ -12,6 +12,14 @@ import { Loader2, Lock } from "lucide-react";
 // Opens a new patient encounter — the container every clinical document,
 // order and result attaches to. Enforces the hospital check-in gate.
 export default function EncounterForm({ doctorProfile, patient, onCreated, onCancel }) {
+  // The doctor's verified specialties — with more than one, the doctor picks
+  // which specialty they are practicing for THIS encounter; the selection is
+  // saved to the encounter and applies to all documents created during it.
+  const mySpecialties = (Array.isArray(doctorProfile.specialties) && doctorProfile.specialties.length
+    ? doctorProfile.specialties
+    : [doctorProfile.specialization]
+  ).filter(Boolean);
+  const [practicingSpecialty, setPracticingSpecialty] = useState(undefined);
   const [encounterType, setEncounterType] = useState(undefined);
   const [department, setDepartment] = useState("");
   const [chiefComplaint, setChiefComplaint] = useState("");
@@ -25,6 +33,10 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
 
   const submit = async (e) => {
     e.preventDefault();
+    if (mySpecialties.length > 1 && !practicingSpecialty) {
+      setError("Please select the specialty you are practicing for this encounter.");
+      return;
+    }
     if (!encounterType) {
       setError("Please select the encounter type.");
       return;
@@ -40,6 +52,7 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
         patient_id: patient.id,
         doctor_id: doctorProfile.id,
         encounter_type: encounterType,
+        practicing_specialty: practicingSpecialty || doctorProfile.specialization,
         department,
         chief_complaint: chiefComplaint,
       });
@@ -54,6 +67,22 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
   return (
     <form onSubmit={submit} className="rounded-xl border border-border bg-card p-5 space-y-4">
       <h3 className="font-semibold">New Encounter — {patient.full_name}</h3>
+      {mySpecialties.length > 1 && (
+        <div className="space-y-1.5">
+          <Label>Practicing Specialty (this encounter) *</Label>
+          <Select value={practicingSpecialty} onValueChange={setPracticingSpecialty}>
+            <SelectTrigger className="w-full"><SelectValue placeholder="Select the specialty you are practicing..." /></SelectTrigger>
+            <SelectContent>
+              {mySpecialties.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            This specialty is saved to the encounter and all documents created during it.
+          </p>
+        </div>
+      )}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Encounter Type *</Label>

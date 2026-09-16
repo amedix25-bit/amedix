@@ -2,23 +2,31 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { SPECIALTIES } from "@/lib/specialties";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 
-// Compact specialty picker shown next to the doctor's name in the Doctor
-// Portal header — used by accounts that were created before specialty
-// selection was introduced, so they pick their specialty from the predefined
-// list without leaving the portal. Saved to the verified doctor profile.
+// Specialty manager shown next to the doctor's name — the doctor's verified
+// specialties are stored on the profile. The active specialty is used by
+// default; a doctor with more than one verified specialty picks the
+// practicing specialty when opening each encounter, and that selection is
+// saved to the encounter and all its documents.
 export default function DoctorSpecialtySelect({ profile, onSelected }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
-  const select = async (specialization) => {
+  const verified = (Array.isArray(profile.specialties) && profile.specialties.length
+    ? profile.specialties
+    : [profile.specialization]
+  ).filter(Boolean);
+  const active = profile.specialization || "";
+  const remaining = SPECIALTIES.filter((s) => !verified.includes(s));
+
+  const save = async (specialization, specialties) => {
     if (saving) return;
     setSaving(true);
     setError(false);
     try {
-      await base44.entities.DoctorProfile.update(profile.id, { specialization });
-      onSelected({ ...profile, specialization });
+      await base44.entities.DoctorProfile.update(profile.id, { specialization, specialties });
+      onSelected({ ...profile, specialization, specialties });
     } catch (err) {
       console.error(err);
       setError(true);
@@ -27,24 +35,62 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
     }
   };
 
+  const makeActive = (s) => {
+    if (s !== active) save(s, verified);
+  };
+  const addSpecialty = (s) => {
+    if (s && !verified.includes(s)) save(s, [...verified, s]);
+  };
+  const removeSpecialty = (s) => {
+    if (s === active) return;
+    const next = verified.filter((v) => v !== s);
+    if (next.length > 0) save(next[0], next);
+  };
+
   return (
-    <span className="inline-flex items-center gap-1.5">
-      {!profile.specialization && (
-        <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">— select your specialty:</span>
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {!active && (
+        <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">
+          — select your specialty:
+        </span>
       )}
-      <Select value={profile.specialization || undefined} onValueChange={select} disabled={saving}>
-        <SelectTrigger className="h-7 w-56 text-xs border-amber-300 dark:border-amber-700">
-          <SelectValue placeholder="Select specialty" />
-        </SelectTrigger>
-        <SelectContent>
-          {SPECIALTIES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+      {verified.map((s) => (
+        <span
+          key={s}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            s === active
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground border border-border"
+          }`}
+        >
+          <button type="button" onClick={() => makeActive(s)} title={s === active ? "Active specialty" : "Make active specialty"}>
+            {s}
+          </button>
+          {s !== active && (
+            <button
+              type="button"
+              onClick={() => removeSpecialty(s)}
+              aria-label={`Remove ${s}`}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </span>
+      ))}
+      {remaining.length > 0 && (
+        <Select onValueChange={addSpecialty} disabled={saving}>
+          <SelectTrigger className="h-7 w-auto gap-1 rounded-full border-dashed text-xs px-2.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            <SelectValue placeholder="Add specialty" />
+          </SelectTrigger>
+          <SelectContent>
+            {remaining.map((s) => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       {error && <span className="text-xs text-destructive">Could not save — try again</span>}
     </span>
   );

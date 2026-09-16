@@ -36,6 +36,22 @@ export default async function(req) {
       return Response.json({ error: "Doctor profile not found." }, { status: 403 });
     }
 
+    // The practicing specialty for THIS encounter — must be one of the
+    // doctor's verified specialties; defaults to the doctor's active one.
+    // It is saved on the encounter and drives the specialty-specific
+    // documentation offered for every document created during the encounter.
+    const verifiedSpecialties = (Array.isArray(doctor.specialties) && doctor.specialties.length
+      ? doctor.specialties
+      : [doctor.specialization]
+    ).filter(Boolean);
+    let practicingSpecialty = doctor.specialization || "";
+    if (payload.practicing_specialty) {
+      if (!verifiedSpecialties.includes(String(payload.practicing_specialty))) {
+        return Response.json({ error: "That specialty is not on your verified doctor profile." }, { status: 400 });
+      }
+      practicingSpecialty = String(payload.practicing_specialty);
+    }
+
     // Mandatory check-in security gate.
     const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
     if (!checkin) return gateBlocked();
@@ -58,7 +74,7 @@ export default async function(req) {
       doctor_id: doctor.id,
       doctor_user_id: user.id,
       doctor_name: doctor.full_name || "",
-      doctor_specialty: doctor.specialization || "",
+      doctor_specialty: practicingSpecialty,
       encounter_type: String(payload.encounter_type),
       status: "active",
       chief_complaint: String(payload.chief_complaint || ""),

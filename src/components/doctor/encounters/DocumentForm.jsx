@@ -39,8 +39,14 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
     fetchCheckInStatus(patient.id).then(setCheckIn);
   }, [patient.id]);
 
-  const myDocs = doctorProfile ? getSpecialtyDocs(doctorProfile.specialization) : [];
-  const mySpecialtyKey = doctorProfile ? SPECIALTY_KEYS[doctorProfile.specialization] : null;
+  // Specialty-aware documentation — the PRACTICING specialty of this
+  // encounter (chosen by the doctor when they hold more than one verified
+  // specialty, otherwise their profile specialty) decides which specialty's
+  // paperwork is offered. Surgeons keep their dedicated Surgical Records
+  // system exactly as it is.
+  const practicingSpecialty = (encounter && encounter.doctor_specialty) || (doctorProfile && doctorProfile.specialization) || "";
+  const myDocs = practicingSpecialty ? getSpecialtyDocs(practicingSpecialty) : [];
+  const mySpecialtyKey = practicingSpecialty ? SPECIALTY_KEYS[practicingSpecialty] : null;
   const activeType = amendOf ? amendOf.document_type : documentType;
   const def = getDocDef(activeType);
   const hasFields = !!(def && def.fields && def.fields.length > 0);
@@ -194,6 +200,14 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
           <Select value={documentType} onValueChange={setDocumentType}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Select a document type..." /></SelectTrigger>
             <SelectContent className="max-h-80">
+              {mySpecialtyKey && myDocs.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>{getSpecialtyLabel(mySpecialtyKey)} — Your Specialty Documents</SelectLabel>
+                  {myDocs.map((d) => (
+                    <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
               <SelectGroup>
                 <SelectLabel>General Documents</SelectLabel>
                 {DOCUMENT_TYPES.filter((d) => !CERTIFICATE_KEYS.includes(d.key)).map((d) => (
@@ -206,14 +220,6 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
               </SelectGroup>
-              {mySpecialtyKey && myDocs.length > 0 && (
-                <SelectGroup>
-                  <SelectLabel>{getSpecialtyLabel(mySpecialtyKey)} — Specialty Documents</SelectLabel>
-                  {myDocs.map((d) => (
-                    <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
-                  ))}
-                </SelectGroup>
-              )}
             </SelectContent>
           </Select>
         </div>
