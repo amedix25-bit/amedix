@@ -2,28 +2,32 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { SPECIALTIES } from "@/lib/specialties";
 
-// Specialty switcher shown next to the doctor's name. The doctor's verified
-// specialties are stored on the profile — this control only switches the
-// ACTIVE specialty between them (new ones are never added here). The active
+// Specialty selector shown next to the doctor's name. Accounts that already
+// have verified specialties only switch the ACTIVE specialty between them.
+// Doctors who made their account before the specialties list existed have no
+// verified list yet — they select their specialty once here from the full
+// predefined list, and it becomes their verified specialty. The active
 // specialty drives the specialty-specific clinical documentation.
 export default function DoctorSpecialtySelect({ profile, onSelected }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
-  const verified = (Array.isArray(profile.specialties) && profile.specialties.length
-    ? profile.specialties
-    : [profile.specialization]
-  ).filter(Boolean);
+  const hasVerifiedList = Array.isArray(profile.specialties) && profile.specialties.length > 0;
+  const verified = (hasVerifiedList ? profile.specialties : [profile.specialization]).filter(Boolean);
   const active = profile.specialization || "";
+  // Existing accounts without a verified list choose from the full catalog.
+  const options = hasVerifiedList ? verified : SPECIALTIES;
 
   const makeActive = async (s) => {
     if (!s || s === active || saving) return;
     setSaving(true);
     setError(false);
     try {
-      await base44.entities.DoctorProfile.update(profile.id, { specialization: s, specialties: verified });
-      onSelected({ ...profile, specialization: s, specialties: verified });
+      const specialties = hasVerifiedList ? verified : [s];
+      await base44.entities.DoctorProfile.update(profile.id, { specialization: s, specialties });
+      onSelected({ ...profile, specialization: s, specialties });
     } catch (err) {
       console.error(err);
       setError(true);
@@ -48,7 +52,7 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
           <SelectValue placeholder="Select specialty" />
         </SelectTrigger>
         <SelectContent>
-          {verified.map((s) => (
+          {options.map((s) => (
             <SelectItem key={s} value={s}>{s}</SelectItem>
           ))}
         </SelectContent>
