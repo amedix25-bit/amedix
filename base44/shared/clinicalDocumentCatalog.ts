@@ -15,6 +15,9 @@ export const GENERAL_DOCUMENT_TYPES = [
   "social_history", "medication_list", "diagnosis_history", "care_plan",
   "follow_up_plan", "admission_note", "daily_progress_note", "transfer_note",
   "transfer_of_care_note", "discharge_instructions",
+  "fitness_certificate", "return_to_work_certificate",
+  "school_medical_certificate", "disability_functional_certificate",
+  "medical_summary", "medical_history_summary", "fitness_for_procedure",
 ];
 
 export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
@@ -123,6 +126,47 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "endo_consultation", "endo_followup", "endo_diabetes_followup",
     "endo_thyroid_followup", "endo_progress_note", "endo_care_plan",
     "endo_medication_adjustment", "endo_discharge_summary",
+  ],
+  oncology: [
+    "onc_consultation", "onc_treatment_plan", "onc_followup", "onc_progress_note",
+    "onc_chemo_record", "onc_infusion_record", "onc_radiation_record",
+    "onc_staging_record", "onc_tumor_board_record", "onc_discharge_summary",
+    "onc_treatment_summary", "onc_surveillance_record",
+  ],
+  infectious_disease: [
+    "id_consultation", "id_followup", "id_infection_assessment",
+    "id_antimicrobial_plan", "id_antibiotic_review", "id_progress_note",
+    "id_isolation_record", "id_discharge_summary", "id_referral",
+  ],
+  rheumatology: [
+    "rheum_consultation", "rheum_followup", "rheum_activity_followup",
+    "rheum_therapy_record", "rheum_infusion_record", "rheum_progress_note",
+    "rheum_discharge_summary",
+  ],
+  hematology: [
+    "hema_consultation", "hema_followup", "hema_progress_note",
+    "hema_transfusion_record", "hema_infusion_record", "hema_bone_marrow_record",
+    "hema_treatment_plan", "hema_discharge_summary",
+  ],
+  family_medicine: [
+    "fm_general_consultation", "fm_preventive_visit", "fm_chronic_followup",
+    "fm_acute_visit", "fm_followup", "fm_referral", "fm_procedure_note",
+    "fm_medication_review", "fm_health_maintenance",
+  ],
+  dentistry: [
+    "dental_consultation", "dental_history", "dental_treatment_plan",
+    "dental_procedure_note", "dental_followup", "dental_operative_note",
+    "dental_imaging_report", "dental_referral", "dental_completion",
+  ],
+  physiotherapy: [
+    "physio_initial_assessment", "physio_functional_assessment",
+    "physio_treatment_plan", "physio_session_note", "physio_progress_note",
+    "physio_exercise_plan", "physio_discharge", "physio_followup_assessment",
+  ],
+  nutrition: [
+    "nutr_assessment", "nutr_dietary_history", "nutr_diagnosis",
+    "nutr_care_plan", "nutr_diet_prescription", "nutr_followup",
+    "nutr_progress_note", "nutr_completion",
   ],
 };
 

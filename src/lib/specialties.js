@@ -30,6 +30,8 @@ export const SPECIALTIES = [
   "Hematology",
   "Infectious Diseases",
   "Physical Medicine & Rehabilitation",
+  "Dentistry",
+  "Nutrition & Dietetics",
 ];
 
 export const isSurgicalSpecialty = (specialization) => specialization === "Surgeon";
