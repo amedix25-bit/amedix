@@ -201,6 +201,26 @@ const SURGERY_DOCS = [
 
 const EM_DOCS = [
   {
+    // The default Emergency Medicine note — one note that follows the full
+    // AMedix emergency workflow: Arrival → Triage → Assessment →
+    // Investigations → Treatment → Reassessment → Disposition.
+    key: "em_emergency_note", label: "Emergency Note", specialty: "emergency_medicine",
+    workflow: EMERGENCY_WORKFLOW,
+    fields: [
+      I("arrival_time", "Arrival — Time"),
+      S("arrival_mode", "Arrival Mode", ["Walk-In", "Ambulance", "Private Vehicle", "Other"]),
+      S("triage_category", "Triage Category", ["1 — Immediate (Resuscitation)", "2 — Emergent", "3 — Urgent", "4 — Less Urgent", "5 — Non-Urgent"]),
+      N("pain_score", "Triage Pain Score (0–10)"),
+      T("triage_note", "Triage — Chief Complaint & Initial Vitals"),
+      T("assessment", "Assessment — History & Examination"),
+      T("investigations", "Investigations & Results"),
+      T("treatment", "Treatment Given"),
+      T("reassessment", "Reassessment — Response to Treatment"),
+      DISPO(),
+      T("follow_up", "Follow-Up / Instructions"),
+    ],
+  },
+  {
     key: "em_triage", label: "Triage Record", specialty: "emergency_medicine",
     fields: [I("arrival_time", "Arrival Time"), S("arrival_mode", "Arrival Mode", ["Walk-In", "Ambulance", "Private Vehicle", "Other"]), S("triage_category", "Triage Category", ["1 — Immediate (Resuscitation)", "2 — Emergent", "3 — Urgent", "4 — Less Urgent", "5 — Non-Urgent"]), T("chief_complaint", "Chief Complaint"), T("vitals", "Vital Signs"), N("pain_score", "Pain Score (0–10)"), T("allergies", "Allergies"), T("medications", "Current Medications"), T("triage_note", "Triage Note")],
   },
@@ -253,7 +273,7 @@ const EM_DOCS = [
 const PEDIATRICS_DOCS = [
   {
     key: "peds_consultation", label: "Pediatric Consultation", specialty: "pediatrics",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("birth_history", "Birth History"), T("feeding", "Feeding / Nutrition"), S("immunizations_uptodate", "Immunizations Up to Date", ["Yes", "No", "Partially"]), T("development", "Development"), T("school_performance", "School / Nursery Performance"), N("weight_kg", "Weight (kg)"), N("height_cm", "Height / Length (cm)"), T("exam_findings", "Physical Examination Findings"), T("assessment", "Assessment"), T("plan", "Plan")],
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("birth_history", "Birth History"), T("feeding", "Feeding / Nutrition"), S("immunizations_uptodate", "Immunizations Up to Date", ["Yes", "No", "Partially"]), T("immunization_history", "Immunization History"), T("development", "Developmental Milestones"), T("school_performance", "School / Nursery Performance"), N("weight_kg", "Weight (kg)"), N("height_cm", "Height / Length (cm)"), N("head_circumference_cm", "Head Circumference (cm)"), T("exam_findings", "Pediatric Examination Findings"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
   },
   {
     key: "peds_followup", label: "Pediatric Follow-Up", specialty: "pediatrics",
@@ -332,7 +352,7 @@ const PEDIATRICS_DOCS = [
 const OBGYN_DOCS = [
   {
     key: "obgyn_initial_antenatal", label: "Initial Antenatal Visit", specialty: "obstetrics_gynecology",
-    fields: [I("lmp", "Last Menstrual Period"), I("edd", "Estimated Due Date"), N("gravidity", "Gravidity"), N("parity", "Parity"), N("abortions", "Abortions / Miscarriages"), N("living_children", "Living Children"), I("gestational_age", "Gestational Age"), T("ob_history", "Obstetric History"), T("medical_history", "Medical History"), T("surgical_history", "Surgical History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("exam_findings", "Physical Examination Findings"), T("dating_scan", "Dating Scan"), T("initial_labs", "Initial Laboratory Results"), T("risk_assessment", "Risk Assessment"), T("plan", "Plan")],
+    fields: [I("lmp", "Last Menstrual Period"), I("edd", "Estimated Due Date"), N("gravidity", "Gravidity"), N("parity", "Parity"), N("abortions", "Abortions / Miscarriages"), N("living_children", "Living Children"), I("gestational_age", "Gestational Age"), T("ob_history", "Obstetric History"), T("previous_c_sections", "Previous C-Sections"), T("pregnancy_complications", "Pregnancy Complications"), T("medical_history", "Medical History"), T("surgical_history", "Surgical History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("exam_findings", "Physical Examination Findings"), T("dating_scan", "Dating Scan"), T("initial_labs", "Initial Laboratory Results"), T("risk_assessment", "Risk Assessment"), T("plan", "Plan")],
   },
   {
     key: "obgyn_antenatal_followup", label: "Antenatal Follow-Up", specialty: "obstetrics_gynecology",
@@ -376,7 +396,7 @@ const OBGYN_DOCS = [
   },
   {
     key: "obgyn_gyn_consultation", label: "Gynecology Consultation", specialty: "obstetrics_gynecology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ob_history", "Obstetric History"), T("menstrual_history", "Menstrual History"), T("contraceptive_history", "Contraceptive History"), T("pmh", "Past Medical History"), T("exam_findings", "Physical Examination Findings"), T("assessment", "Assessment"), T("plan", "Plan")],
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ob_history", "Obstetric History"), N("gravidity", "Gravidity"), N("parity", "Parity"), T("menstrual_history", "Menstrual / Gynecological History"), T("contraceptive_history", "Contraceptive History"), T("pmh", "Past Medical History"), T("exam_findings", "Physical Examination Findings"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
   },
   {
     key: "obgyn_gyn_followup", label: "Gynecology Follow-Up", specialty: "obstetrics_gynecology",
@@ -603,7 +623,7 @@ const PSYCHIATRY_DOCS = [
 const OPHTHALMOLOGY_DOCS = [
   {
     key: "ophth_consultation", label: "Ophthalmology Consultation", specialty: "ophthalmology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ocular_history", "Ocular History"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), I("va_right", "Visual Acuity — Right Eye"), I("va_left", "Visual Acuity — Left Eye"), I("iop_right", "Intraocular Pressure — Right Eye"), I("iop_left", "Intraocular Pressure — Left Eye"), T("exam_findings", "Slit Lamp / Fundus Examination"), T("assessment", "Assessment"), T("plan", "Plan")],
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ocular_history", "Ocular History"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), I("va_right", "Visual Acuity — Right Eye"), I("va_left", "Visual Acuity — Left Eye"), T("pupils", "Pupils"), T("ocular_motility", "Ocular Motility"), T("anterior_segment", "Anterior Segment"), T("posterior_segment", "Posterior Segment / Fundus Findings"), I("iop_right", "Intraocular Pressure — Right Eye"), I("iop_left", "Intraocular Pressure — Left Eye"), T("investigations", "Ophthalmic Investigations"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
   },
   {
     key: "ophth_followup", label: "Ophthalmology Follow-Up", specialty: "ophthalmology",
@@ -806,7 +826,7 @@ const ENT_DOCS = [
 const PULMONOLOGY_DOCS = [
   {
     key: "pulm_consultation", label: "Pulmonary Consultation", specialty: "pulmonology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("respiratory_symptoms", "Respiratory Symptoms (Cough / Sputum / Dyspnea / Wheeze / Hemoptysis)"), T("smoking_history", "Smoking History"), T("pmh", "Past Medical History"), T("occupational_exposure", "Occupational / Environmental Exposure"), T("exam_findings", "Examination Findings"), T("chest_imaging", "Chest Imaging"), T("pft_summary", "Pulmonary Function Summary"), T("assessment", "Assessment"), T("plan", "Plan")],
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "Respiratory History — History of Present Illness"), T("respiratory_symptoms", "Cough / Sputum / Dyspnea / Wheeze / Hemoptysis"), N("spo2", "Oxygen Saturation (%)"), T("smoking_history", "Smoking History"), T("pmh", "Past Medical History"), T("occupational_exposure", "Occupational / Environmental Exposure"), T("exam_findings", "Chest Examination Findings"), T("chest_imaging", "Respiratory Imaging"), T("pft_summary", "Pulmonary Function Testing"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
   },
   {
     key: "pulm_followup", label: "Pulmonary Follow-Up", specialty: "pulmonology",
@@ -845,7 +865,7 @@ const PULMONOLOGY_DOCS = [
 const GASTROENTEROLOGY_DOCS = [
   {
     key: "gi_consultation", label: "GI Consultation", specialty: "gastroenterology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("gi_symptoms", "GI Symptoms"), T("bowel_habits", "Bowel Habits"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Examination Findings"), T("assessment", "Assessment"), T("plan", "Plan")],
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "Gastrointestinal History — History of Present Illness"), T("gi_symptoms", "GI / Abdominal Symptoms"), T("bowel_habits", "Bowel Habits"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "GI Examination Findings"), T("investigations", "Relevant Investigations"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
   },
   {
     key: "gi_followup", label: "GI Follow-Up", specialty: "gastroenterology",
@@ -888,7 +908,7 @@ const GASTROENTEROLOGY_DOCS = [
 const NEPHROLOGY_DOCS = [
   {
     key: "neph_consultation", label: "Nephrology Consultation", specialty: "nephrology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("renal_history", "Renal History"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Examination Findings"), T("labs_creatinine_egfr", "Creatinine / eGFR"), T("urinalysis", "Urinalysis"), I("bp", "Blood Pressure"), T("volume_status", "Volume Status"), T("assessment", "Assessment"), T("plan", "Plan")],
+    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("renal_history", "Renal History"), T("urinary_symptoms", "Urinary Symptoms"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Renal Examination Findings"), T("labs_creatinine_egfr", "Renal Function Investigations (Creatinine / eGFR)"), T("urinalysis", "Urinalysis"), I("bp", "Blood Pressure"), T("volume_status", "Fluid Status / Volume Status"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
   },
   {
     key: "neph_followup", label: "Nephrology Follow-Up", specialty: "nephrology",

@@ -35,6 +35,7 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "surg_referral", "surg_consent_documentation", "surg_implant_device",
   ],
   emergency_medicine: [
+    "em_emergency_note",
     "em_triage", "em_ed_assessment", "em_physician_note", "em_progress",
     "em_trauma_assessment", "em_procedure_note", "em_resuscitation_code",
     "em_consultation", "em_observation_note", "em_transfer_note",

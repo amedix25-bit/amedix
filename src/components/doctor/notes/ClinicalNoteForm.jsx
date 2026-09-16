@@ -53,7 +53,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const myDocs = mySpecialty ? getSpecialtyDocs(mySpecialty) : [];
   const mySpecialtyKey = mySpecialty ? SPECIALTY_KEYS[mySpecialty] : "";
   const [docType, setDocType] = useState(
-    () => (myDocs.find((d) => d.key.includes("consultation")) || myDocs[0] || { key: GENERAL_KEY }).key
+    // Emergency Medicine defaults to the unified workflow note; every other
+    // specialty defaults to its consultation template.
+    () => (myDocs.find((d) => d.workflow) || myDocs.find((d) => d.key.includes("consultation")) || myDocs[0] || { key: GENERAL_KEY }).key
   );
   const [dataValues, setDataValues] = useState({});
   const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
@@ -373,6 +375,18 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       {hasSpecialtyFields && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <p className="text-sm font-semibold">{activeDef.label}</p>
+          {activeDef.workflow && (
+            <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-card border border-border p-2">
+              {activeDef.workflow.map((stage, i) => (
+                <span key={stage} className="flex items-center gap-1.5">
+                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                    {stage}
+                  </span>
+                  {i < activeDef.workflow.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                </span>
+              ))}
+            </div>
+          )}
           <DocumentFields
             defs={activeDef.fields}
             values={dataValues}
