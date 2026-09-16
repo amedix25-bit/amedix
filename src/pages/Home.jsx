@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Stethoscope, ScanLine, User, ArrowRight, Loader2, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import AboutAmedix from "@/components/home/AboutAmedix";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -198,8 +199,7 @@ export default function Home() {
         <div className="w-full max-w-4xl">
           <div className="text-center mb-12">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{t("Welcome to AMedix")}</h1>
-            <p className="text-muted-foreground mt-3 text-lg">{t("Connected Care. Better Health.")}</p>
-            <p className="text-muted-foreground mt-1">{t("Choose your account type to get started")}</p>
+            <AboutAmedix />
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
