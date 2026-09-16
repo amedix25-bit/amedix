@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Lab request creation with the mandatory check-in gate. The backend
 // independently verifies that an active check-in exists for this patient at
@@ -28,6 +29,19 @@ export default async function(req) {
     // Written with the service role — doctors cannot create lab requests
     // directly through the client API (Row Level Security blocks it).
     const lab_request = await base44.asServiceRole.entities.LabRequest.create(payload);
+
+    await logClinicalAudit(base44, {
+      actor_user_id: user.id,
+      actor_name: doctor.full_name,
+      actor_role: "doctor",
+      action: "requested_laboratory_study",
+      action_label: "requested a laboratory study",
+      patient_id: String(payload.patient_id),
+      patient_cin: payload.patient_cin || "",
+      patient_name: payload.patient_name || "",
+      hospital: doctor.hospital || "",
+    });
+
     return Response.json({ lab_request, checkin_id: checkin.id });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
