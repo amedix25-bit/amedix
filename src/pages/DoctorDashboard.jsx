@@ -18,14 +18,16 @@ import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLe
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import SpecialtySelection from "@/components/doctor/SpecialtySelection";
 import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
+import EncountersSection from "@/components/doctor/encounters/EncountersSection";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2 } from "lucide-react";
+import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, ClipboardList } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
+  { key: "encounters", label: "Encounters", icon: ClipboardList },
   { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "referrals", label: "Referral Letters", icon: Mail },
   { key: "hospitals", label: "My Hospitals", icon: Building2 },
@@ -198,6 +200,7 @@ export default function DoctorDashboard() {
           />
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
+        {activeTab === "encounters" && profile && <EncountersSection doctorProfile={profile} />}
         {activeTab === "colleagues" && profile && <DoctorColleagues doctorProfile={profile} />}
         {activeTab === "referrals" && profile && <DoctorReferralLetters doctorProfile={profile} />}
         {activeTab === "hospitals" && profile && user && (
