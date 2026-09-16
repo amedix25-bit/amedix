@@ -1,0 +1,182 @@
+{
+  "name": "ClinicalDocument",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "description": "Unique AMedix Document ID, e.g. AMD-20260916-8F3K. Shared by all versions of the same document (amendments keep the same document_id and increment version)."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the document belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_dob": {
+      "type": "string",
+      "description": "Patient date of birth \u2014 automatically attached to every completed document"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Encounter this document is permanently associated with"
+    },
+    "hospital": {
+      "type": "string",
+      "description": "Hospital / clinic of the encounter"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department of the encounter"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the authoring doctor"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Doctor name \u2014 automatically attached to every completed document"
+    },
+    "doctor_specialty": {
+      "type": "string",
+      "description": "Doctor specialty \u2014 automatically attached to every completed document"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "initial_consultation_note",
+        "follow_up_note",
+        "progress_note",
+        "problem_oriented_progress_note",
+        "assessment_and_plan",
+        "procedure_note",
+        "clinical_summary",
+        "discharge_summary",
+        "referral_note",
+        "consultation_request",
+        "consultation_response",
+        "medical_certificate",
+        "medical_report",
+        "sick_leave_certificate",
+        "patient_instructions",
+        "medication_reconciliation",
+        "allergy_reaction_record",
+        "active_problem_list",
+        "past_medical_history",
+        "surgical_history",
+        "family_history",
+        "social_history",
+        "medication_list",
+        "diagnosis_history",
+        "care_plan",
+        "follow_up_plan",
+        "admission_note",
+        "daily_progress_note",
+        "transfer_note",
+        "transfer_of_care_note",
+        "discharge_instructions"
+      ],
+      "description": "Type of clinical document \u2014 determines its purpose in the patient record"
+    },
+    "document_type_label": {
+      "type": "string",
+      "description": "Display name of the document type"
+    },
+    "content": {
+      "type": "string",
+      "description": "Clinical content of this document version"
+    },
+    "version": {
+      "type": "integer",
+      "default": 1,
+      "description": "Version number \u2014 originals are version 1; an amendment creates a new version. Signed versions are never overwritten."
+    },
+    "previous_version_id": {
+      "type": "string",
+      "description": "Id of the version this amendment corrects \u2014 empty for originals"
+    },
+    "is_amendment": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this version is an amendment of a previously signed version"
+    },
+    "amendment_reason": {
+      "type": "string",
+      "description": "Reason for the amendment, entered by the doctor"
+    },
+    "amendment_status": {
+      "type": "string",
+      "enum": [
+        "original",
+        "amendment"
+      ],
+      "default": "original",
+      "description": "Whether this version is the original document or an amendment"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "signed"
+      ],
+      "default": "draft",
+      "description": "DRAFT: editable/not yet finalized. SIGNED: digitally signed \u2014 immutable; corrections require a new version."
+    },
+    "signed_by_name": {
+      "type": "string",
+      "description": "Doctor who electronically signed this version"
+    },
+    "signed_datetime": {
+      "type": "string",
+      "description": "Date and time the document was electronically signed (ISO datetime)"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "PDF version of the completed, signed document \u2014 stored in the patient's Clinical Notes/Documents"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time this version was created (ISO datetime) \u2014 automatically recorded"
+    },
+    "created_by_name": {
+      "type": "string",
+      "description": "Doctor who created this version \u2014 automatically recorded"
+    }
+  },
+  "required": [
+    "document_id",
+    "patient_id",
+    "doctor_id",
+    "document_type",
+    "version",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

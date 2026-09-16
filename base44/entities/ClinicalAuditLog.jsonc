@@ -1,0 +1,77 @@
+{
+  "name": "ClinicalAuditLog",
+  "type": "object",
+  "properties": {
+    "actor_user_id": {
+      "type": "string",
+      "description": "User id of the person who performed the action"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Name of the person who performed the action, e.g. Dr. Ahmed"
+    },
+    "actor_role": {
+      "type": "string",
+      "description": "Role of the actor \u2014 doctor / patient / laboratory / radiologist / receptionist / hospital / admin"
+    },
+    "action": {
+      "type": "string",
+      "description": "Machine-readable action, e.g. viewed_patient_record, created_encounter, created_clinical_document, signed_clinical_document, amended_clinical_document, recorded_consent, requested_laboratory_study, requested_imaging, viewed_results, approved_access, rejected_access, uploaded_document"
+    },
+    "action_label": {
+      "type": "string",
+      "description": "Human-readable description of the action, e.g. 'viewed patient record'"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the action concerns"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Encounter the action relates to, when applicable"
+    },
+    "document_id": {
+      "type": "string",
+      "description": "AMedix Document ID the action relates to, when applicable"
+    },
+    "hospital": {
+      "type": "string",
+      "description": "Hospital / clinic where the action took place"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department where the action took place"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the action (ISO datetime)"
+    }
+  },
+  "required": [
+    "action",
+    "datetime"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

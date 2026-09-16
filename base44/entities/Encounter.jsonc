@@ -1,0 +1,126 @@
+{
+  "name": "Encounter",
+  "type": "object",
+  "properties": {
+    "encounter_id": {
+      "type": "string",
+      "description": "Unique encounter reference, e.g. ENC-20260916-8F3K. The foundation of the clinical system \u2014 every clinical document, order and result attaches to an encounter."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the encounter belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_dob": {
+      "type": "string"
+    },
+    "hospital": {
+      "type": "string",
+      "description": "Hospital / clinic where the encounter takes place \u2014 the doctor's verified active hospital at creation time"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator account the doctor's active association belongs to"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department / unit of the encounter, e.g. General Surgery, Internal Medicine, Emergency"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor who opened the encounter"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_specialty": {
+      "type": "string",
+      "description": "Doctor's specialty at encounter time"
+    },
+    "encounter_type": {
+      "type": "string",
+      "enum": [
+        "consultation",
+        "follow_up",
+        "emergency",
+        "procedure",
+        "admission",
+        "telemedicine",
+        "other"
+      ],
+      "description": "Type of clinical encounter"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the patient encounter is open for documentation. COMPLETED: the encounter is closed. CANCELLED: the encounter was voided."
+    },
+    "chief_complaint": {
+      "type": "string",
+      "description": "Reason for the visit / chief complaint"
+    },
+    "encounter_datetime": {
+      "type": "string",
+      "description": "Date and time the encounter was opened (ISO datetime)"
+    },
+    "encounter_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "encounter_time": {
+      "type": "string",
+      "description": "Time the encounter was opened (HH:MM)"
+    },
+    "completed_datetime": {
+      "type": "string",
+      "description": "Date and time the encounter was completed (ISO datetime)"
+    },
+    "completed_by_name": {
+      "type": "string",
+      "description": "Doctor who completed the encounter"
+    }
+  },
+  "required": [
+    "patient_id",
+    "hospital",
+    "doctor_id",
+    "doctor_user_id",
+    "encounter_type",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

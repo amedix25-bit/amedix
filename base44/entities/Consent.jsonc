@@ -1,0 +1,111 @@
+{
+  "name": "Consent",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the consent belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "consent_type": {
+      "type": "string",
+      "enum": [
+        "general_treatment",
+        "procedure",
+        "surgical",
+        "anesthesia",
+        "blood_transfusion",
+        "imaging_contrast",
+        "research",
+        "privacy_data_sharing",
+        "patient_access_authorization",
+        "withdrawal_revocation"
+      ],
+      "description": "Type of consent recorded"
+    },
+    "consent_type_label": {
+      "type": "string",
+      "description": "Display name of the consent type"
+    },
+    "obtained_by_name": {
+      "type": "string",
+      "description": "Person who obtained the consent (doctor / healthcare professional)"
+    },
+    "obtained_by_user_id": {
+      "type": "string",
+      "description": "User id of the person who obtained the consent"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor who obtained the consent"
+    },
+    "hospital": {
+      "type": "string",
+      "description": "Facility where the consent was obtained"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department where the consent was obtained"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Encounter the consent is associated with"
+    },
+    "consent_datetime": {
+      "type": "string",
+      "description": "Date and time the consent was recorded (ISO datetime)"
+    },
+    "consent_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "given",
+        "declined",
+        "withdrawn"
+      ],
+      "description": "GIVEN: the patient consented. DECLINED: the patient refused. WITHDRAWN: a previously given consent was revoked."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Details / scope of the consent"
+    },
+    "signature": {
+      "type": "string",
+      "description": "Record of the patient's signature (e.g. electronically confirmed in person)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "consent_type",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
