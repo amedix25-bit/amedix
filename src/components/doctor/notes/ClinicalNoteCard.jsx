@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
-import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2 } from "lucide-react";
+import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature } from "lucide-react";
+import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -58,10 +59,26 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
         </div>
         <span className="text-xs text-muted-foreground">{note.date}</span>
       </div>
-      <div className="rounded-lg bg-muted/60 border border-border p-3 mb-3 text-sm grid sm:grid-cols-3 gap-2">
+      <div className="rounded-lg bg-muted/60 border border-border p-3 mb-3 text-sm grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Patient</p>
+          <p className="font-medium">{note.patient_name}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">CIN</p>
+          <p className="font-medium">{note.patient_cin || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Date of Birth</p>
+          <p className="font-medium">{note.patient_dob || "—"}</p>
+        </div>
         <div>
           <p className="text-xs text-muted-foreground">Doctor</p>
           <p className="font-medium">{note.doctor_name || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Specialty</p>
+          <p className="font-medium">{note.specialty ? getSpecialtyLabel(note.specialty) : "—"}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Date/Time Seen</p>
@@ -70,6 +87,34 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
         <div>
           <p className="text-xs text-muted-foreground">Location</p>
           <p className="font-medium">{note.location || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Hospital / Clinic</p>
+          <p className="font-medium">{note.hospital || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Department</p>
+          <p className="font-medium">{note.department || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Encounter ID</p>
+          <p className="font-medium">{note.encounter_id || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Note Reference</p>
+          <p className="font-medium">{note.note_reference || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Allergies</p>
+          <p className="font-medium">{note.allergies || "None recorded"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Current Medications</p>
+          <p className="font-medium">{(note.current_medications || []).join(", ") || "None"}</p>
+        </div>
+        <div className="sm:col-span-2">
+          <p className="text-xs text-muted-foreground">Previous History</p>
+          <p className="font-medium">{note.previous_history || "No recorded history"}</p>
         </div>
       </div>
       <div className="space-y-3">
@@ -176,6 +221,20 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
           <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
             <p className="text-xs font-semibold text-primary uppercase tracking-wide">Doctor's Recommendations</p>
             <p className="text-sm whitespace-pre-wrap mt-1">{note.recommendations}</p>
+          </div>
+        )}
+
+        {note.signed_by_name && (
+          <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+            <p className="text-sm font-semibold text-primary flex items-center gap-1.5">
+              <FileSignature className="w-4 h-4" />
+              Electronically signed by Dr. {note.signed_by_name}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {note.signed_datetime ? new Date(note.signed_datetime).toLocaleString() : ""}
+              {note.note_reference ? ` · ${note.note_reference}` : ""}
+              {note.encounter_id ? ` · Encounter: ${note.encounter_id}` : ""}
+            </p>
           </div>
         )}
       </div>

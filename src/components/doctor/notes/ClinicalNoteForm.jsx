@@ -68,6 +68,25 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const isGeneralNote = !activeDef;
   const [photoUris, setPhotoUris] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  // Universal AMedix record context — allergies, active medications and
+  // previous history pulled automatically from the patient's unified record
+  // and attached to the note; the doctor never re-enters any of it.
+  const [recordContext, setRecordContext] = useState(null);
+  const loadRecordContext = async (p) => {
+    try {
+      const [meds, conditions] = await Promise.all([
+        base44.entities.Medication.filter({ patient_id: p.id, is_active: true }),
+        base44.entities.MedicalCondition.filter({ patient_id: p.id }),
+      ]);
+      setRecordContext({
+        meds: meds.map((m) => m.name).filter(Boolean),
+        conditions: conditions.map((c) => c.name).filter(Boolean),
+      });
+    } catch (err) {
+      console.error(err);
+      setRecordContext(null);
+    }
+  };
   // Backend-verified check-in gate — the clinical functions stay locked until
   // the patient is checked in at the doctor's hospital.
   const [checkedIn, setCheckedIn] = useState(false);
@@ -111,6 +130,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     };
     loadDraft();
     loadGate(preselectedPatient.id);
+    loadRecordContext(preselectedPatient);
   }, [preselectedPatient, doctorProfile]);
 
   const findPatient = async () => {
@@ -130,6 +150,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       const p = patients[0];
       setPatient(p);
       loadGate(p.id);
+      loadRecordContext(p);
       const drafts = await base44.entities.ClinicalNoteDraft.filter({ patient_id: p.id, doctor_id: doctorProfile.id });
       if (drafts.length > 0) restoreDraft(drafts[0]);
     } catch (err) {
@@ -323,16 +344,28 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               Find Patient
             </Button>
           </div>
-          {patient && (
-            <p className="text-sm text-muted-foreground">
-              Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
-            </p>
-          )}
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Patient: <span className="font-medium text-foreground">{patient.full_name}</span> · CIN: {patient.cin}
-        </p>
+      ) : null}
+
+      {patient && (
+        <div className="rounded-xl border border-border bg-muted/40 p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            AMedix Patient &amp; Encounter Information — attached automatically from the unified Patient Record
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 text-xs text-muted-foreground">
+            <p>Patient: <span className="text-foreground font-medium">{patient.full_name}</span></p>
+            <p>CIN: <span className="text-foreground font-medium">{patient.cin}</span></p>
+            <p>Date of Birth: <span className="text-foreground font-medium">{patient.date_of_birth || "—"}</span></p>
+            <p>Doctor: <span className="text-foreground font-medium">Dr. {doctorProfile.full_name}</span></p>
+            <p>Specialty: <span className="text-foreground font-medium">{mySpecialty}</span></p>
+            <p>Hospital / Clinic: <span className="text-foreground font-medium">{doctorProfile.hospital || "—"}</span></p>
+            <p>Department: <span className="text-foreground font-medium">{mySpecialty}</span></p>
+            <p>Encounter: <span className="text-foreground font-medium">Linked automatically on save</span></p>
+            <p>Allergies: <span className="text-foreground font-medium">{patient.allergies || "None recorded"}</span></p>
+            <p>Current Medications: <span className="text-foreground font-medium">{recordContext && recordContext.meds.length > 0 ? recordContext.meds.join(", ") : "None"}</span></p>
+            <p className="sm:col-span-2">Previous History: <span className="text-foreground font-medium">{recordContext && recordContext.conditions.length > 0 ? recordContext.conditions.join("; ") : "No recorded history"}</span></p>
+          </div>
+        </div>
       )}
 
       {patient && (

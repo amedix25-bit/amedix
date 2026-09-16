@@ -14,6 +14,10 @@
     "patient_name": {
       "type": "string"
     },
+    "patient_dob": {
+      "type": "string",
+      "description": "Patient date of birth \u2014 automatically attached to every note from the unified AMedix Patient Record at save time; never entered manually"
+    },
     "doctor_name": {
       "type": "string"
     },
@@ -40,6 +44,45 @@
         "type": "string"
       },
       "description": "Clinical photographs attached to the note (e.g. dermatology lesion photos) \u2014 private storage URIs, only viewable via backend-issued signed URLs after permission checks. Follows the same permission, access control and audit rules as other clinical information."
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Encounter the note automatically belongs to \u2014 resolved server-side at save time: the doctor's active encounter for the patient, or a new encounter opened automatically. The note always stays connected to the unified Patient Record and its encounter."
+    },
+    "hospital": {
+      "type": "string",
+      "description": "Hospital / clinic of the encounter \u2014 automatically attached from the doctor's verified active hospital"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department of the encounter \u2014 automatically attached (the doctor's practicing specialty)"
+    },
+    "note_reference": {
+      "type": "string",
+      "description": "Unique AMedix clinical note reference, e.g. CN-20260916-8F3K \u2014 generated automatically at save time"
+    },
+    "allergies": {
+      "type": "string",
+      "description": "Patient allergies snapshot \u2014 automatically attached from the unified AMedix Patient Record at note time"
+    },
+    "current_medications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Active medications snapshot (medication names only) \u2014 automatically attached from the unified AMedix Patient Record at note time"
+    },
+    "previous_history": {
+      "type": "string",
+      "description": "Relevant previous history snapshot \u2014 the patient's recorded known conditions, automatically attached from the unified AMedix Patient Record at note time"
+    },
+    "signed_by_name": {
+      "type": "string",
+      "description": "Doctor who electronically signed the note \u2014 saving the note applies the doctor's electronic signature automatically"
+    },
+    "signed_datetime": {
+      "type": "string",
+      "description": "Date and time the electronic signature was applied (ISO datetime)"
     },
     "date": {
       "type": "string",
