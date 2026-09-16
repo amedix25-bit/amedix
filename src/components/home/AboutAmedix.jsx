@@ -31,7 +31,7 @@ export default function AboutAmedix() {
         organized, and accessible for both patients and healthcare professionals.
       </p>
       <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-        At the heart of AMedix is the idea that a patient's healthcare information
+        At the heart of AMedix is the idea that a patient’s healthcare information
         should be securely organized and readily accessible whenever and wherever
         it is needed. The platform brings essential health information together in
         one place, including medical appointments, laboratory results, diagnostic
