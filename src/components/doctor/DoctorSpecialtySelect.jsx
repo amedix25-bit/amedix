@@ -4,28 +4,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { SPECIALTIES } from "@/lib/specialties";
 
-// Specialty selector shown next to the doctor's name. Accounts that already
-// have verified specialties only switch the ACTIVE specialty between them.
-// Doctors who made their account before the specialties list existed have no
-// verified list yet — they select their specialty once here from the full
-// predefined list, and it becomes their verified specialty. The active
-// specialty drives the specialty-specific clinical documentation.
+// Specialty selector shown next to the doctor's name. Existing accounts can
+// change their specialty right here — the dropdown offers the complete
+// predefined specialty catalog (plus any verified specialties already on the
+// profile). Selecting a specialty immediately makes it the doctor's CURRENTLY
+// ACTIVE specialty, which is the source of truth for the Clinical Note system:
+// Create New Note automatically opens the template for this specialty. The
+// doctor is never asked to pick the specialty again inside Clinical Note, and
+// old notes keep the specialty they were created under.
 export default function DoctorSpecialtySelect({ profile, onSelected }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
-  const hasVerifiedList = Array.isArray(profile.specialties) && profile.specialties.length > 0;
-  const verified = (hasVerifiedList ? profile.specialties : [profile.specialization]).filter(Boolean);
+  const verified = (Array.isArray(profile.specialties) ? profile.specialties : []).filter(Boolean);
   const active = profile.specialization || "";
-  // Existing accounts without a verified list choose from the full catalog.
-  const options = hasVerifiedList ? verified : SPECIALTIES;
+  const options = [...new Set([...SPECIALTIES, ...verified, active].filter(Boolean))];
 
   const makeActive = async (s) => {
     if (!s || s === active || saving) return;
     setSaving(true);
     setError(false);
     try {
-      const specialties = hasVerifiedList ? verified : [s];
+      const specialties = [...new Set([...verified, s])];
       await base44.entities.DoctorProfile.update(profile.id, { specialization: s, specialties });
       onSelected({ ...profile, specialization: s, specialties });
     } catch (err) {

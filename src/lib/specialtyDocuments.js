@@ -41,6 +41,16 @@ export const SPECIALTY_KEYS = {
   "Radiology": "radiology",
   "Pathology": "pathology",
   "Laboratory Medicine": "laboratory",
+  "Neurosurgery": "surgery",
+  "Cardiothoracic Surgery": "surgery",
+  "Pediatric Surgery": "surgery",
+  "Trauma Surgery": "surgery",
+  "Critical Care / ICU": "internal_medicine",
+  "Pain Medicine": "anesthesiology",
+  "Allergy & Immunology": "internal_medicine",
+  "Geriatrics": "internal_medicine",
+  "Palliative Care": "family_medicine",
+  "Sports Medicine": "orthopedics",
 };
 
 export const SPECIALTY_LABELS = {
