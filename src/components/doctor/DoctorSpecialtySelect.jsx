@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { SPECIALTIES } from "@/lib/specialties";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 // Specialty manager shown next to the doctor's name — the doctor's verified
 // specialties are stored on the profile. The active specialty is used by
@@ -18,7 +16,6 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
     : [profile.specialization]
   ).filter(Boolean);
   const active = profile.specialization || "";
-  const remaining = SPECIALTIES.filter((s) => !verified.includes(s));
 
   const save = async (specialization, specialties) => {
     if (saving) return;
@@ -35,11 +32,10 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
     }
   };
 
+  // The doctor only switches BETWEEN their verified specialties — new ones
+  // are never added from here.
   const makeActive = (s) => {
     if (s !== active) save(s, verified);
-  };
-  const addSpecialty = (s) => {
-    if (s && !verified.includes(s)) save(s, [...verified, s]);
   };
   const removeSpecialty = (s) => {
     if (s === active) return;
@@ -78,19 +74,6 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
           )}
         </span>
       ))}
-      {remaining.length > 0 && (
-        <Select onValueChange={addSpecialty} disabled={saving}>
-          <SelectTrigger className="h-7 w-auto gap-1 rounded-full border-dashed text-xs px-2.5">
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            <SelectValue placeholder="Add specialty" />
-          </SelectTrigger>
-          <SelectContent>
-            {remaining.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
       {error && <span className="text-xs text-destructive">Could not save — try again</span>}
     </span>
   );
