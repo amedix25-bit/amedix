@@ -192,7 +192,6 @@ export default function DoctorDashboard() {
             loading={loading}
             recentActivity={recentActivity}
             onNavigateTab={setActiveTab}
-            onProfileUpdated={setProfile}
           />
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}

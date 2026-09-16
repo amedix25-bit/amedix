@@ -1,18 +1,16 @@
 import React from "react";
-import { Clock, Stethoscope } from "lucide-react";
+import { Clock } from "lucide-react";
 import WelcomeBanner from "@/components/doctor/overview/WelcomeBanner";
 import StatCards from "@/components/doctor/overview/StatCards";
 import RecentActivity from "@/components/doctor/overview/RecentActivity";
 import QuickActions from "@/components/doctor/overview/QuickActions";
-import ActiveSpecialtyCard from "@/components/doctor/overview/ActiveSpecialtyCard";
 
-export default function DoctorOverview({ profile, hospitalSession, onSwitchHospital, stats, loading, recentActivity, onNavigateTab, onProfileUpdated }) {
+export default function DoctorOverview({ profile, hospitalSession, onSwitchHospital, stats, loading, recentActivity, onNavigateTab }) {
   if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
 
   return (
     <div className="space-y-6">
       <WelcomeBanner profile={profile} hospitalSession={hospitalSession} onSwitchHospital={onSwitchHospital} />
-      <ActiveSpecialtyCard profile={profile} onUpdated={onProfileUpdated} />
       <StatCards stats={stats} onNavigate={onNavigateTab} />
       <div className="grid lg:grid-cols-2 gap-4">
         <RecentActivity activity={recentActivity} />
