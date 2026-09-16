@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
+import { AR_PARAGRAPHS, AR_VISION_HEADING, AR_VISION_LINE } from "@/lib/amedixStoryArabic";
 
 // Welcome screen — the first screen anyone sees when opening AMedix.
 // The AMedix logo sits behind the message as a large, low-opacity watermark
@@ -14,7 +15,7 @@ import { useAppLanguage } from "@/lib/appLanguage";
 // before any login or registration.
 export default function Welcome() {
   const navigate = useNavigate();
-  const { t } = useAppLanguage();
+  const { t, isArabic } = useAppLanguage();
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden flex items-center justify-center">
@@ -39,23 +40,35 @@ export default function Welcome() {
       <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold">{t("Welcome to AMedix")}</h1>
 
-        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
-          <p>
-            {t(
-              "AMedix was created by two medical students, Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a simple vision: to make healthcare easier for patients and healthcare professionals."
-            )}
-          </p>
-          <p>
-            {t(
-              "Our goal is to bring the patient's healthcare journey into one place, connecting patients, doctors, and laboratories through one simple platform."
-            )}
-          </p>
-          <p>
-            {t(
-              "From medical information and doctors' notes to laboratory requests and results, AMedix is designed to make healthcare more organized, accessible, and connected."
-            )}
-          </p>
-        </div>
+        {isArabic ? (
+          // Official, manually provided Arabic version — displayed verbatim,
+          // never auto-translated, with the same design as the English
+          // version and proper RTL alignment.
+          <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold" dir="rtl">
+            {AR_PARAGRAPHS.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+            <p className="font-semibold">{AR_VISION_HEADING}</p>
+            <p className="text-primary text-lg sm:text-xl">{AR_VISION_LINE}</p>
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
+            <p>
+              AMedix was created by two medical students, Ayatallah Abed Elallegy and
+              Mohammed Saad Alsaba, with a simple vision: to make healthcare easier for
+              patients and healthcare professionals.
+            </p>
+            <p>
+              Our goal is to bring the patient's healthcare journey into one place,
+              connecting patients, doctors, and laboratories through one simple platform.
+            </p>
+            <p>
+              From medical information and doctors' notes to laboratory requests and
+              results, AMedix is designed to make healthcare more organized, accessible,
+              and connected.
+            </p>
+          </div>
+        )}
 
         <p className="mt-8 text-xl font-bold">
           {t("AMedix — Your Healthcare, All in One Place.")}
