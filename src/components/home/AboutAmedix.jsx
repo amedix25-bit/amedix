@@ -16,7 +16,7 @@ export default function AboutAmedix() {
 
   if (isArabic) {
     return (
-      <div className="max-w-2xl mx-auto mt-6 space-y-4">
+      <div dir="rtl" className="max-w-2xl mx-auto mt-6 space-y-4">
         {AR_PARAGRAPHS.map((p, i) => (
           <p key={i} className="text-muted-foreground text-sm sm:text-base leading-relaxed">
             {p}
