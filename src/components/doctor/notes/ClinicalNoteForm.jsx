@@ -10,7 +10,13 @@ import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
+import DocumentFields from "@/components/doctor/encounters/DocumentFields";
+import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
+
+// "General Clinical Note" — the universal free-text note with no
+// specialty-specific structured template.
+const GENERAL_KEY = "__general__";
 
 const EMPTY = {
   patient_cin: "",
@@ -38,6 +44,20 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [draftId, setDraftId] = useState(null);
   const [showDraftConfirm, setShowDraftConfirm] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+
+  // Specialty-aware note structure — AMedix automatically detects the
+  // doctor's verified specialty from their profile; the doctor is NEVER
+  // asked to select it again. Only the doctor's own specialty's note types
+  // are offered, and choosing one loads its structured template.
+  const mySpecialty = doctorProfile?.specialization || "";
+  const myDocs = mySpecialty ? getSpecialtyDocs(mySpecialty) : [];
+  const mySpecialtyKey = mySpecialty ? SPECIALTY_KEYS[mySpecialty] : "";
+  const [docType, setDocType] = useState(
+    () => (myDocs.find((d) => d.key.includes("consultation")) || myDocs[0] || { key: GENERAL_KEY }).key
+  );
+  const [dataValues, setDataValues] = useState({});
+  const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
+  const hasSpecialtyFields = !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
   // Backend-verified check-in gate — the clinical functions stay locked until
   // the patient is checked in at the doctor's hospital.
   const [checkedIn, setCheckedIn] = useState(false);
@@ -52,6 +72,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
 
   const restoreDraft = (d) => {
     setDraftId(d.id);
+    if (d.specialty_doc_type) setDocType(d.specialty_doc_type);
+    if (d.specialty_data_values) setDataValues(d.specialty_data_values);
     if (d.form_data)
       setForm((f) => {
         const merged = { ...f, ...d.form_data };
@@ -114,6 +136,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       patient_cin: patient.cin,
       patient_name: patient.full_name,
       form_data: { ...form },
+      specialty_doc_type: docType,
+      specialty_data_values: dataValues,
       medications,
       selected_lab_request_ids: [...selectedLabs],
       selected_imaging_request_ids: [...selectedImaging],
@@ -185,6 +209,18 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       v.respiratory_rate ? `RR: ${v.respiratory_rate} breaths/min` : "",
       v.spo2 ? `SpO₂: ${v.spo2}%` : "",
     ].filter(Boolean).join(" · ");
+    // The specialty-specific structured fields captured by the loaded
+    // template — saved with the note so it stays linked to the specialty
+    // note type that produced it.
+    const specialtyData = {};
+    if (activeDef && activeDef.fields) {
+      activeDef.fields.forEach((f) => {
+        const val = dataValues[f.key];
+        if (val !== undefined && val !== null && val !== "") {
+          specialtyData[f.key] = { label: f.label, value: String(val) };
+        }
+      });
+    }
     setSaving(true);
     try {
       // The backend independently verifies the active check-in before creating
@@ -209,6 +245,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         lab_request_ids: [...selectedLabs],
         imaging_request_ids: [...selectedImaging],
         recommendations: form.recommendations,
+        specialty: mySpecialtyKey,
+        document_type: docType !== GENERAL_KEY ? docType : "",
+        document_type_label: docType !== GENERAL_KEY ? activeDef?.label || docType : "",
+        data: specialtyData,
       });
       if (meds.length > 0) {
         await base44.entities.Medication.bulkCreate(
@@ -277,6 +317,35 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             {LOCKED_MESSAGE}
           </div>
         )
+      )}
+
+      {myDocs.length > 0 && (
+        <div className="space-y-2">
+          <Label>Note Type — {mySpecialty} (auto-detected)</Label>
+          <Select value={docType} onValueChange={(v) => { setDocType(v); setDataValues({}); }}>
+            <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
+            <SelectContent className="max-h-80">
+              <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
+              {myDocs.map((d) => (
+                <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            AMedix detected your verified specialty and loaded its note types and template — no need to select a specialty.
+          </p>
+        </div>
+      )}
+
+      {hasSpecialtyFields && (
+        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <p className="text-sm font-semibold">{activeDef.label}</p>
+          <DocumentFields
+            defs={activeDef.fields}
+            values={dataValues}
+            onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
+          />
+        </div>
       )}
 
       <div className="grid sm:grid-cols-2 gap-4">

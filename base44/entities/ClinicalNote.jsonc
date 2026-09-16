@@ -17,6 +17,23 @@
     "doctor_name": {
       "type": "string"
     },
+    "specialty": {
+      "type": "string",
+      "description": "Specialty key of the note's template, e.g. cardiology, neurology \u2014 automatically detected from the doctor's verified specialty when the note was created; the doctor is never asked to select it again"
+    },
+    "document_type": {
+      "type": "string",
+      "description": "Specialty-specific note type key that was loaded, e.g. cardio_consultation \u2014 empty for general free-text notes"
+    },
+    "document_type_label": {
+      "type": "string",
+      "description": "Display name of the specialty-specific note type, e.g. Cardiology Consultation"
+    },
+    "data": {
+      "type": "object",
+      "description": "Structured specialty-specific field values keyed by field key \u2014 each value is { label, value } so the note carries its own field labels. The note structure changes dynamically with the doctor's verified specialty; empty for general free-text notes.",
+      "additionalProperties": true
+    },
     "date": {
       "type": "string",
       "format": "date"
