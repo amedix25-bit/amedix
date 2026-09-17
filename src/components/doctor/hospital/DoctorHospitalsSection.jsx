@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SpecialtyDepartmentSelect from "@/components/doctor/hospital/SpecialtyDepartmentSelect";
 import { Loader2, Building2, ArrowLeft } from "lucide-react";
 
 // My Hospitals — the doctor's verified hospital associations. A doctor joins a
@@ -134,16 +135,13 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
               <p className="font-semibold">{hospitalName}</p>
               {hospitalLocation && <p className="text-xs text-muted-foreground mt-0.5">{hospitalLocation}</p>}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">{t("Your specialty / department at this hospital")}</Label>
-              <Input value={department} onChange={(e) => setDepartment(e.target.value)} />
-            </div>
+            <SpecialtyDepartmentSelect value={department} onChange={setDepartment} />
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep("code")} disabled={busy}>
                 <ArrowLeft className="w-4 h-4 mr-1.5" />
                 {t("Cancel")}
               </Button>
-              <Button onClick={join} disabled={busy}>
+              <Button onClick={join} disabled={busy || !department}>
                 {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t("Confirm Join")}
               </Button>

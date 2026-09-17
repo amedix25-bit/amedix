@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SpecialtyDepartmentSelect from "@/components/doctor/hospital/SpecialtyDepartmentSelect";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { Building2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 
@@ -132,15 +133,12 @@ export default function DoctorHospitalGate({ profile, user, onVerified }) {
                 <p className="font-semibold">{hospitalName}</p>
                 {hospitalLocation && <p className="text-xs text-muted-foreground mt-0.5">{hospitalLocation}</p>}
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">{t("Your specialty / department at this hospital")}</Label>
-                <Input value={department} onChange={(e) => setDepartment(e.target.value)} />
-              </div>
+              <SpecialtyDepartmentSelect value={department} onChange={setDepartment} />
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setJoinStep("code")} disabled={busy}>
                   {t("Cancel")}
                 </Button>
-                <Button className="flex-1" onClick={confirmJoin} disabled={busy}>
+                <Button className="flex-1" onClick={confirmJoin} disabled={busy || !department}>
                   {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   {t("Join & Continue")}
                 </Button>
