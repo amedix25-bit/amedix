@@ -23,6 +23,8 @@ export default function ReceptionistWorkspace({ session }) {
   const [patient, setPatient] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [alreadyCheckedIn, setAlreadyCheckedIn] = useState(false);
+  const [activeCheckIn, setActiveCheckIn] = useState(null);
+  const [checkOutOpen, setCheckOutOpen] = useState(false);
   const [error, setError] = useState("");
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -57,7 +59,9 @@ export default function ReceptionistWorkspace({ session }) {
       setPatient(res.data.patient);
       setPaymentMethods(res.data.payment_methods);
       setAlreadyCheckedIn(res.data.already_checked_in);
+      setActiveCheckIn(res.data.active_checkin || null);
       setCheckInOpen(false);
+      setCheckOutOpen(false);
       setAmount("");
       setMethod("");
     } catch (err) {
@@ -100,6 +104,32 @@ export default function ReceptionistWorkspace({ session }) {
     }
   };
 
+  const handleCheckOut = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await base44.functions.invoke("hospitalCheckOutPatient", {
+        receptionist_id: session.receptionist_id,
+        session_token: session.session_token,
+        patient_id: patient.patient_id,
+      });
+      setSuccess({ ...res.data.checkout, checked_out: true });
+      setPatient(null);
+      setCin("");
+      setAlreadyCheckedIn(false);
+      setActiveCheckIn(null);
+      setCheckOutOpen(false);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setError(err.response?.data?.error || "Check-out failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div>
@@ -136,7 +166,9 @@ export default function ReceptionistWorkspace({ session }) {
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <p className="font-semibold text-emerald-800">Patient Checked In ✓</p>
+            <p className="font-semibold text-emerald-800">
+              {success.checked_out ? "Patient Checked Out ✓" : "Patient Checked In ✓"}
+            </p>
           </div>
           <p className="text-xs text-emerald-700 mt-1">
             {success.patient_name} · {success.checkin_time} · {success.payment_amount} LYD via {success.payment_method}
@@ -204,12 +236,35 @@ export default function ReceptionistWorkspace({ session }) {
           </div>
 
           {alreadyCheckedIn ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
-              <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-800">
-                This patient is already checked in at your hospital. The hospital administrator must end the active visit before a new check-in.
-              </p>
-            </div>
+            checkOutOpen ? (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 space-y-3">
+                <p className="text-sm font-semibold text-amber-800">End this visit and check the patient out?</p>
+                <p className="text-xs text-amber-700">
+                  Checking out ends the active visit at your hospital. A new check-in (with visit payment) is required before clinical functions unlock again.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="destructive" onClick={handleCheckOut} disabled={submitting}>
+                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    Confirm Check Out
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setCheckOutOpen(false)} disabled={submitting}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm text-amber-800">
+                    Checked in at {activeCheckIn?.checkin_time || "—"} · {activeCheckIn?.payment_amount || "—"} LYD via {activeCheckIn?.payment_method || "—"}
+                  </p>
+                  <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => setCheckOutOpen(true)}>
+                    Check Out
+                  </Button>
+                </div>
+              </div>
+            )
           ) : checkInOpen ? (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
               <p className="text-sm font-semibold flex items-center gap-1.5">

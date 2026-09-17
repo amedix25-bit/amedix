@@ -41,7 +41,7 @@ export default async function(req) {
         : ["Cash", "Card", "Bank Transfer"];
 
     // Duplicate check-in prevention — an active visit at this hospital blocks a
-    // new one until a hospital administrator ends it.
+    // new one until the active visit is ended (receptionist check-out).
     const active = await base44.asServiceRole.entities.HospitalCheckIn.filter({
       patient_id: p.id,
       hospital_id: rec.hospital_id,

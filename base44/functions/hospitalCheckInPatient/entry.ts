@@ -46,8 +46,8 @@ export default async function(req) {
     }
 
     // Duplicate check-ins for the same patient and hospital visit are
-    // prevented — only a hospital administrator can end the active visit to
-    // allow a new one.
+    // prevented — the active visit must be ended (receptionist check-out)
+    // before a new one is allowed.
     const active = await base44.asServiceRole.entities.HospitalCheckIn.filter({
       patient_id: p.id,
       hospital_id: rec.hospital_id,
@@ -55,7 +55,7 @@ export default async function(req) {
     });
     if (active.length > 0) {
       return Response.json(
-        { error: "This patient is already checked in at your hospital. The hospital administrator must end the active visit before a new check-in." },
+        { error: "This patient is already checked in at your hospital. Check the patient out before starting a new visit." },
         { status: 409 }
       );
     }
@@ -91,7 +91,7 @@ export default async function(req) {
     if (activeNow.length > 1) {
       await base44.asServiceRole.entities.HospitalCheckIn.delete(record.id);
       return Response.json(
-        { error: "This patient is already checked in at your hospital. The hospital administrator must end the active visit before a new check-in." },
+        { error: "This patient is already checked in at your hospital. Check the patient out before starting a new visit." },
         { status: 409 }
       );
     }
