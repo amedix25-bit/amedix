@@ -185,6 +185,15 @@ export default function DocumentVerificationCard({
                   ? t("The front and back photos do not belong to the same card. Please upload both sides of your Personal Card.")
                   : t("The information you entered does not match the document. Please correct your information or upload the correct document.")}
             </p>
+            {result.reason === "mismatch" && result.read && (
+              <p className="text-xs text-muted-foreground mt-1 break-words">
+                {t("Read from your document")}:{" "}
+                {fields
+                  .filter((f) => result.read[f.key])
+                  .map((f) => `${f.label}: ${result.read[f.key]}`)
+                  .join(" · ")}
+              </p>
+            )}
           </div>
         )}
       </div>

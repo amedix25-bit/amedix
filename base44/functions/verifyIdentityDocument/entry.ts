@@ -24,12 +24,26 @@ const DOC_TYPES = {
 };
 
 // What the OCR extraction is asked to read from each document type.
+// Field descriptions guide the OCR extraction: values are read exactly as
+// printed, and names are read in BOTH the document's script and its Latin
+// transliteration — so the user's entered name can be in either language.
 const EXTRACT_SCHEMAS = {
-  birth_certificate: { date_of_birth: { type: 'string' }, national_id_number: { type: 'string' } },
-  national_id: { national_id_number: { type: 'string' } },
-  medical_license: { license_number: { type: 'string' } },
-  personal_card: { full_name: { type: 'string' }, personal_card_number: { type: 'string' } },
-  passport: { full_name: { type: 'string' }, passport_number: { type: 'string' } },
+  birth_certificate: {
+    date_of_birth: { type: 'string', description: 'The date of birth exactly as printed on the certificate' },
+    national_id_number: { type: 'string', description: 'The national ID / certificate number exactly as printed, every digit, no spaces or separators' },
+  },
+  national_id: { national_id_number: { type: 'string', description: 'The national ID number exactly as printed, every digit, no spaces or separators' } },
+  medical_license: { license_number: { type: 'string', description: 'The medical license number exactly as printed' } },
+  personal_card: {
+    full_name: { type: 'string', description: 'The full name exactly as printed on the card, in the script it is printed in' },
+    full_name_latin: { type: 'string', description: 'The same full name transliterated into the Latin alphabet, as printed on the card if present' },
+    personal_card_number: { type: 'string', description: 'The personal card number exactly as printed, every digit and letter, no spaces or separators' },
+  },
+  passport: {
+    full_name: { type: 'string', description: 'The full name exactly as printed on the passport, in the script it is printed in' },
+    full_name_latin: { type: 'string', description: 'The same full name transliterated into the Latin alphabet (e.g. from the MRZ line)' },
+    passport_number: { type: 'string', description: 'The passport number exactly as printed, every digit and letter, no spaces, fill characters or separators' },
+  },
 };
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -47,9 +61,9 @@ function normalizeDigits(value) {
 function normalizeDate(raw) {
   if (raw === undefined || raw === null) return null;
   const s = normalizeDigits(raw).trim();
-  const iso = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  const iso = s.match(/^(\d{4})[-/. ](\d{1,2})[-/. ](\d{1,2})$/);
   if (iso) return `${iso[1]}-${pad(iso[2])}-${pad(iso[3])}`;
-  const split = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  const split = s.match(/^(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{4})$/);
   if (split) {
     let d = parseInt(split[1], 10);
     let m = parseInt(split[2], 10);
@@ -61,12 +75,12 @@ function normalizeDate(raw) {
     if (m < 1 || m > 12 || d < 1 || d > 31) return null;
     return `${split[3]}-${pad(m)}-${pad(d)}`;
   }
-  const dayMonthYear = s.match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
+  const dayMonthYear = s.match(/^(\d{1,2})[-\s]+([A-Za-z]+),?[-\s]+(\d{4})$/);
   if (dayMonthYear) {
     const m = MONTHS[dayMonthYear[2].slice(0, 3).toLowerCase()];
     if (m) return `${dayMonthYear[3]}-${m}-${pad(dayMonthYear[1])}`;
   }
-  const monthDayYear = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  const monthDayYear = s.match(/^([A-Za-z]+)[-\s]+(\d{1,2}),?[-\s]+(\d{4})$/);
   if (monthDayYear) {
     const m = MONTHS[monthDayYear[1].slice(0, 3).toLowerCase()];
     if (m) return `${monthDayYear[3]}-${m}-${pad(monthDayYear[2])}`;
@@ -74,19 +88,48 @@ function normalizeDate(raw) {
   return null;
 }
 
-// Identifiers must match character-for-character — only whitespace is ignored,
-// digits are converted from Arabic-Indic numerals, and nothing else is changed.
+// Identifiers are compared after converting Arabic-Indic digits, mapping the
+// common OCR letter/digit confusions (O→0, I→1) on both sides, and removing
+// every space, separator and MRZ fill character — so '1990/123.456' on the
+// document matches '1990123456' as entered.
 function normalizeId(raw) {
   if (raw === undefined || raw === null) return '';
-  return normalizeDigits(raw).replace(/\s+/g, '');
+  return normalizeDigits(String(raw))
+    .toUpperCase()
+    .replace(/O/g, '0')
+    .replace(/I/g, '1')
+    .replace(/[^A-Z0-9]/g, '');
 }
 
-// Full names must match exactly. The comparison is case-insensitive and
-// ignores spacing differences (documents print names in many layouts); the
-// entered information is never modified — it is only compared.
+// Names are normalized for comparison: Arabic-Indic digits converted, Arabic
+// diacritics and tatweel removed, alef variants unified, MRZ '<' fill
+// characters treated as spaces, case and spacing differences ignored.
 function normalizeName(raw) {
   if (raw === undefined || raw === null) return '';
-  return normalizeDigits(String(raw)).toLowerCase().replace(/\s+/g, ' ').trim();
+  return normalizeDigits(String(raw))
+    .replace(/[\u0640\u064B-\u065F]/g, '')
+    .replace(/[\u0622\u0623\u0625\u0627\u0671]/g, '\u0627')
+    .replace(/\u0649/g, '\u064A')
+    .replace(/</g, ' ')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Name matching is order-insensitive: documents print names in many layouts
+// (surname first, MRZ), so every part of the entered name must appear among
+// the document's name parts. The entered name may be in the document's own
+// script or in its Latin transliteration.
+function nameMatches(extractedCandidates, expectedValue) {
+  const expected = normalizeName(expectedValue);
+  if (!expected) return false;
+  const expectedTokens = expected.split(' ').filter(Boolean);
+  if (expectedTokens.length === 0) return false;
+  const candidates = Array.isArray(extractedCandidates) ? extractedCandidates : [extractedCandidates];
+  return candidates.some((raw) => {
+    const docTokens = new Set(normalizeName(raw).split(' ').filter(Boolean));
+    return docTokens.size > 0 && expectedTokens.every((tok) => docTokens.has(tok));
+  });
 }
 
 function fieldMatches(key, raw, expectedValue) {
@@ -94,7 +137,7 @@ function fieldMatches(key, raw, expectedValue) {
     const d = normalizeDate(raw);
     return d !== null && d === normalizeDate(expectedValue);
   }
-  if (key === 'full_name') return normalizeName(raw) === normalizeName(expectedValue);
+  if (key === 'full_name') return nameMatches(raw, expectedValue);
   return normalizeId(raw) === normalizeId(expectedValue);
 }
 
@@ -173,7 +216,14 @@ export default async function(req) {
         reason,
         verified_datetime: status === 'verified' ? new Date().toISOString() : '',
       });
-      return Response.json({ status, reason, verification_id: record.id });
+      // 'read' echoes back what the document actually said, so a mismatch
+      // shows the user exactly what to correct instead of failing blindly.
+      const readRecord = {};
+      for (const key of requiredFields) {
+        const v = extractedValues[key];
+        readRecord[key] = v !== undefined && v !== null ? String(v) : '';
+      }
+      return Response.json({ status, reason, verification_id: record.id, read: readRecord });
     };
 
     // The document stays in private storage — the backend issues a
@@ -182,7 +232,7 @@ export default async function(req) {
       const signed = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 300 });
       const res = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
         file_url: signed.signed_url,
-        json_schema: { type: 'object', properties: schema, required: Object.keys(schema) },
+        json_schema: { type: 'object', properties: schema, required: Object.keys(schema).filter((k) => !k.endsWith('_latin')) },
       });
       if (res.status !== 'success' || !res.output) return null;
       const out = Array.isArray(res.output) ? res.output[0] : res.output;
@@ -218,12 +268,15 @@ export default async function(req) {
 
     let anyExtracted = false;
     for (const key of requiredFields) {
-      const raw = front[key];
+      const raw = key === 'full_name' ? `${front.full_name || ''} ${front.full_name_latin || ''}` : front[key];
       if (raw !== undefined && raw !== null && String(raw).trim() !== '') anyExtracted = true;
     }
-    // Every required field must match exactly — the entered information is
-    // never modified, so a mismatch fails verification instead of passing it.
-    const verified = requiredFields.every((key) => fieldMatches(key, front[key], expected[key]));
+    // Every required field must match the document — the entered information
+    // is never modified, so a mismatch fails verification instead of passing
+    // it. Names match in either the document's script or its Latin form.
+    const verified = requiredFields.every((key) =>
+      fieldMatches(key, key === 'full_name' ? [front.full_name, front.full_name_latin] : front[key], expected[key])
+    );
 
     if (verified) return saveRecord('verified', '', front);
     return saveRecord('failed', !anyExtracted ? 'unreadable' : 'mismatch', front);
