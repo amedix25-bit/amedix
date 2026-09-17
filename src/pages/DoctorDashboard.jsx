@@ -17,6 +17,7 @@ import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
+import { ensureRadiologistProfile } from "@/lib/radiologyAccess";
 import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import EncountersSection from "@/components/doctor/encounters/EncountersSection";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
@@ -96,6 +97,13 @@ export default function DoctorDashboard() {
         return;
       }
       const p = profiles[0];
+      // A doctor whose specialty is Radiology works in the Radiologist
+      // Portal — the same portal dedicated radiologists use.
+      if (p.specialization === "Radiology") {
+        await ensureRadiologistProfile(p, user);
+        navigate("/radiologist");
+        return;
+      }
       setProfile(p);
       // A stored session is only reused while it still matches the doctor's
       // current working hospital — otherwise the code gate is shown again.

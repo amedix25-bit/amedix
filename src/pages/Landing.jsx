@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, ScanLine, Building2 } from "lucide-react";
+import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, Building2 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
@@ -18,12 +18,6 @@ const ROLE_CONTENT = {
     title: "I am a Doctor",
     description:
     "Log in to manage your patients, appointments, and clinical records — or register your professional account to get started."
-  },
-  radiologist: {
-    icon: ScanLine,
-    title: "I am a Radiologist",
-    description:
-    "Log in to your Radiologist Portal to manage your authorized patients and radiology records — or register your professional account to get started."
   },
   lab: {
     icon: FlaskConical,
@@ -111,7 +105,7 @@ export default function Landing() {
                 </button>
 
                 <button
-                onClick={() => setRole("doctor-choice")}
+                onClick={() => selectRole("doctor")}
                 className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
                   <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative">
@@ -186,57 +180,8 @@ export default function Landing() {
                 </div>
               </div>
             </> :
-          role === "doctor-choice" ?
-          <div className="max-w-2xl mx-auto mt-10">
-              <p className="text-sm text-muted-foreground font-medium">{t("I am a Doctor — choose your role")}</p>
-              <div className="grid sm:grid-cols-2 gap-6 mt-6 text-left rtl:text-right">
-                <button
-                onClick={() => selectRole("doctor")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <Stethoscope className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Doctor")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Manage patients, appointments, clinical notes, and test requests.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
 
-                <button
-                onClick={() => selectRole("radiologist")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <ScanLine className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Radiologist")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Manage authorized patients and radiology records in the Radiologist Portal.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-              </div>
-              <button
-              onClick={() => setRole(null)}
-              className="mt-6 mx-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-                {t("Back")}
-              </button>
-            </div> :
-
-          <div className="max-w-md mx-auto mt-10">
+            <div className="max-w-md mx-auto mt-10">
               <div className="rounded-2xl border border-border bg-card p-8 text-left rtl:text-right">
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   {RoleIcon && <RoleIcon className="w-7 h-7 text-primary" />}

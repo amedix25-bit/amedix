@@ -1,5 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { ensureRadiologistProfile, RADIOLOGY_SPECIALTY } from "@/lib/radiologyAccess";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { SPECIALTIES } from "@/lib/specialties";
@@ -13,6 +16,8 @@ import { SPECIALTIES } from "@/lib/specialties";
 // doctor is never asked to pick the specialty again inside Clinical Note, and
 // old notes keep the specialty they were created under.
 export default function DoctorSpecialtySelect({ profile, onSelected }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -27,6 +32,14 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
     try {
       const specialties = [...new Set([...verified, s])];
       await base44.entities.DoctorProfile.update(profile.id, { specialization: s, specialties });
+      if (s === RADIOLOGY_SPECIALTY) {
+        // A doctor who chooses Radiology works in the Radiologist Portal —
+        // the same portal dedicated radiologists use.
+        await ensureRadiologistProfile({ ...profile, specialization: s }, user);
+        onSelected({ ...profile, specialization: s, specialties });
+        navigate("/radiologist");
+        return;
+      }
       onSelected({ ...profile, specialization: s, specialties });
     } catch (err) {
       console.error(err);

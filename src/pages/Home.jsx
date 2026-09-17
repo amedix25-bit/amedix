@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { Stethoscope, ScanLine, User, ArrowRight, Loader2, X } from "lucide-react";
+import { Stethoscope, User, ArrowRight, Loader2, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AboutAmedix from "@/components/home/AboutAmedix";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showDoctorForm, setShowDoctorForm] = useState(false);
   const [showPatientForm, setShowPatientForm] = useState(false);
-  const [showRadiologistForm, setShowRadiologistForm] = useState(false);
-  const [doctorSplit, setDoctorSplit] = useState(false);
+
   const [creating, setCreating] = useState(false);
   const [doctorForm, setDoctorForm] = useState({
     first_name: "",
@@ -39,12 +38,6 @@ export default function Home() {
   // license verification.
   const [doctorVerification, setDoctorVerification] = useState({ identity: null, medical_license: null });
   const [doctorVerError, setDoctorVerError] = useState("");
-  const [radiologistForm, setRadiologistForm] = useState({
-    specialization: "",
-    license_number: "",
-    hospital: "",
-    phone: "",
-  });
 
   useEffect(() => {
     checkProfile();
@@ -92,8 +85,6 @@ export default function Home() {
         setShowPatientForm(true);
       } else if (selectedRole === "doctor") {
         setShowDoctorForm(true);
-      } else if (selectedRole === "radiologist") {
-        setShowRadiologistForm(true);
       }
       setLoading(false);
     } catch (err) {
@@ -102,29 +93,6 @@ export default function Home() {
   };
 
   const handlePatientSelect = () => setShowPatientForm(true);
-
-  const handleRadiologistSubmit = async (e) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      await base44.entities.RadiologistProfile.create({
-        user_id: user.id,
-        full_name: user.full_name || user.email,
-        specialization: radiologistForm.specialization,
-        license_number: radiologistForm.license_number,
-        hospital: radiologistForm.hospital,
-        phone: radiologistForm.phone,
-        status: "active",
-        doctor_portal_access: false,
-      });
-      localStorage.removeItem("amh_selected_role");
-      navigate("/radiologist");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const handleDoctorSubmit = async (e) => {
     e.preventDefault();
@@ -224,7 +192,7 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setDoctorSplit(true)}
+              onClick={() => setShowDoctorForm(true)}
               className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -244,44 +212,6 @@ export default function Home() {
             </button>
           </div>
 
-          {doctorSplit && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setDoctorSplit(false)}>
-              <div className="bg-card rounded-2xl shadow-xl border border-border p-8 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">{t("I am a Doctor")}</h2>
-                  <button onClick={() => setDoctorSplit(false)} className="text-muted-foreground hover:text-foreground">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <button
-                    onClick={() => { setDoctorSplit(false); setShowDoctorForm(true); }}
-                    className="rounded-xl border border-border p-5 text-left rtl:text-right hover:border-primary/40 hover:bg-accent/40 transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                      <Stethoscope className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="font-semibold">{t("I am a Doctor")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t("Manage patients, appointments, clinical notes, and test requests.")}
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => { setDoctorSplit(false); setShowRadiologistForm(true); }}
-                    className="rounded-xl border border-border p-5 text-left rtl:text-right hover:border-primary/40 hover:bg-accent/40 transition-colors"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                      <ScanLine className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="font-semibold">{t("I am a Radiologist")}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t("Manage authorized patients and radiology records in the Radiologist Portal.")}
-                    </p>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
 
@@ -354,43 +284,6 @@ export default function Home() {
               {doctorVerError && <p className="text-sm text-destructive">{doctorVerError}</p>}
               <Button type="submit" className="w-full" disabled={creating}>
                 {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Doctor Account")}
-              </Button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showRadiologistForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowRadiologistForm(false)}>
-          <div className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold">{t("Radiologist Registration")}</h2>
-                <p className="text-sm text-muted-foreground mt-1">{t("Enter your professional details")}</p>
-              </div>
-              <button onClick={() => setShowRadiologistForm(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleRadiologistSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="rad-specialization">{t("Specialization *")}</Label>
-                <Input id="rad-specialization" placeholder={t("e.g. Diagnostic Radiology")} value={radiologistForm.specialization} onChange={(e) => setRadiologistForm({ ...radiologistForm, specialization: e.target.value })} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rad-license">{t("License Number *")}</Label>
-                <Input id="rad-license" placeholder={t("Medical license number")} value={radiologistForm.license_number} onChange={(e) => setRadiologistForm({ ...radiologistForm, license_number: e.target.value })} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rad-hospital">{t("Hospital / Imaging Center")}</Label>
-                <Input id="rad-hospital" placeholder={t("Hospital or imaging center name")} value={radiologistForm.hospital} onChange={(e) => setRadiologistForm({ ...radiologistForm, hospital: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rad-phone">{t("Phone")}</Label>
-                <Input id="rad-phone" placeholder={t("Contact number")} value={radiologistForm.phone} onChange={(e) => setRadiologistForm({ ...radiologistForm, phone: e.target.value })} />
-              </div>
-              <Button type="submit" className="w-full" disabled={creating}>
-                {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Radiologist Account")}
               </Button>
             </form>
           </div>
