@@ -364,9 +364,15 @@ export async function buildPdfFromImages(pages) {
   return doc.output("blob");
 }
 
-// Clear, consistent document filename: Passport_[Patient Name]_[CIN].pdf —
-// the CIN segment is included only when a CIN is available.
-export function passportFileName(patientName, cin) {
+// Clear, consistent document filename: [Document]_[Patient Name]_[CIN].pdf —
+// the document prefix follows the verification category; the CIN segment is
+// included only when a CIN is available.
+export function documentFileName(documentType, patientName, cin) {
+  const PREFIXES = {
+    passport: "Passport",
+    personal_card: "PersonalCard",
+    birth_certificate: "BirthCertificate",
+  };
   const clean = (s) =>
     String(s || "")
       .trim()
@@ -374,5 +380,5 @@ export function passportFileName(patientName, cin) {
       .replace(/[^\p{L}\p{N}_-]/gu, "");
   const name = clean(patientName);
   const id = clean(cin);
-  return `Passport_${name || "Scan"}${id ? `_${id}` : ""}.pdf`;
+  return `${PREFIXES[documentType] || "Document"}_${name || "Scan"}${id ? `_${id}` : ""}.pdf`;
 }

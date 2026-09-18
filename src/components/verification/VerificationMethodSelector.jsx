@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
-import PassportScanUpload from "@/components/verification/PassportScanUpload";
+import DocumentScanUpload from "@/components/verification/DocumentScanUpload";
 
 // The Verification Process section: the user chooses exactly ONE identity
 // verification method — Birth Certificate, Personal Card or Passport. A
@@ -8,13 +8,13 @@ import PassportScanUpload from "@/components/verification/PassportScanUpload";
 // account; the other methods are not required. The backend re-validates the
 // chosen method — this UI never decides the verdict.
 const METHODS = [
-  { key: "birth_certificate", title: "Birth Certificate", description: "Upload a clear photo or PDF", twoSided: false },
-  { key: "personal_card", title: "Personal Card", description: "Upload clear photos of both sides, or one PDF containing both sides", twoSided: true },
-  { key: "passport", title: "Passport", description: "Scan your passport or upload an existing document", twoSided: false },
+  { key: "birth_certificate", title: "Birth Certificate", description: "Scan your document or upload an existing document", twoSided: false },
+  { key: "personal_card", title: "Personal Card", description: "Scan your document or upload an existing document", twoSided: true },
+  { key: "passport", title: "Passport", description: "Scan your document or upload an existing document", twoSided: false },
 ];
 
 export default function VerificationMethodSelector({
-  profileType, fullName = "", cin = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t,
+  profileType, fullName = "", fullNameAr = "", cin = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t,
 }) {
   const [method, setMethod] = useState("");
   // Identity values entered inside this section (doctor registration). For
@@ -34,12 +34,29 @@ export default function VerificationMethodSelector({
     onResult(null);
   };
 
+  // One unified scanning acquisition for every verification document type —
+  // the same document scanner, changing only the document type (and thus
+  // the filename/category the resulting PDF is stored under).
+  const scanSlot = (documentType, hint = "") => ({ file, setFile }) => (
+    <DocumentScanUpload
+      documentType={documentType}
+      patientName={fullName}
+      cin={cin}
+      hint={hint}
+      file={file}
+      onFile={setFile}
+      t={t}
+    />
+  );
+  const scanDescription = t("Scan your document or upload an existing document");
+
   const configs = {
     birth_certificate: {
       documentType: "birth_certificate",
       title: t("Birth Certificate"),
-      description: t("Upload a clear photo or PDF"),
+      description: scanDescription,
       twoSided: false,
+      frontSlot: scanSlot("birth_certificate"),
       fields: [
         { key: "date_of_birth", label: t("Date of Birth"), readOnly: birthCertificateReadOnly, type: "date" },
         { key: "national_id_number", label: t("National ID Number"), readOnly: birthCertificateReadOnly },
@@ -52,22 +69,29 @@ export default function VerificationMethodSelector({
     personal_card: {
       documentType: "personal_card",
       title: t("Personal Card"),
-      description: t("Upload clear photos of both sides, or one PDF containing both sides"),
+      description: scanDescription,
       twoSided: true,
+      // Both sides are scanned as pages of one document (front first, then
+      // back) — the resulting single PDF satisfies the both-sides rule.
+      frontSlot: scanSlot(
+        "personal_card",
+        t("Scan both sides of the card — front side first, then the back side, using Add Page.")
+      ),
       fields: [
         { key: "full_name", label: t("Full Name"), readOnly: true },
         { key: "personal_card_number", label: t("Personal Card Number"), placeholder: t("Personal Card Number") },
       ],
-      values: { full_name: fullName, personal_card_number: entered.personal_card_number },
+      // The Personal Card is printed in Arabic — the Arabic name is compared
+      // when available (the existing AMedix matching rules still apply).
+      values: { full_name: fullNameAr || fullName, personal_card_number: entered.personal_card_number },
     },
     passport: {
       documentType: "passport",
       title: t("Passport"),
-      description: t("Passport — Scan your passport or upload an existing document"),
+      description: scanDescription,
       twoSided: false,
-      frontSlot: ({ file, setFile }) => (
-        <PassportScanUpload patientName={fullName} cin={cin} file={file} onFile={setFile} t={t} />
-      ),
+      // The passport's identification page carries the Latin/English name.
+      frontSlot: scanSlot("passport"),
       fields: [
         { key: "full_name", label: t("Full Name"), readOnly: true },
         { key: "passport_number", label: t("Passport Number"), placeholder: t("Passport Number") },

@@ -35,8 +35,13 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     first_name: nameParts[0] || "",
-    middle_name: "",
+    father_name: "",
+    grandfather_name: "",
     last_name: nameParts.length > 1 ? nameParts[nameParts.length - 1] : "",
+    first_name_ar: "",
+    father_name_ar: "",
+    grandfather_name_ar: "",
+    last_name_ar: "",
     date_of_birth: "",
     gender: "",
     phone: "",
@@ -69,7 +74,11 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     // The entered identity information is part of the verification — editing
     // it invalidates any previous verdict.
-    if (["date_of_birth", "identification_number", "first_name", "middle_name", "last_name"].includes(field)) setVerification(null);
+    if ([
+      "date_of_birth", "identification_number",
+      "first_name", "father_name", "grandfather_name", "last_name",
+      "first_name_ar", "father_name_ar", "grandfather_name_ar", "last_name_ar",
+    ].includes(field)) setVerification(null);
     setError("");
   };
   const setL = (field) => (e) => setLifestyle((s) => ({ ...s, [field]: e.target.value }));
@@ -120,14 +129,22 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     const isPregnant = marriedFemale && lifestyle.pregnancy_status === "pregnant";
     try {
       const newCin = await generateUniqueCIN();
-      const fullName = [form.first_name, form.middle_name, form.last_name].filter(Boolean).join(" ");
+      const fullName = [form.first_name, form.father_name, form.grandfather_name, form.last_name].filter(Boolean).join(" ");
+      const fullNameAr = [form.first_name_ar, form.father_name_ar, form.grandfather_name_ar, form.last_name_ar].filter(Boolean).join(" ");
       const profile = await base44.entities.PatientProfile.create({
         user_id: user.id,
         cin: newCin,
         full_name: fullName,
         first_name: form.first_name,
-        middle_name: form.middle_name,
+        father_name: form.father_name,
+        grandfather_name: form.grandfather_name,
         last_name: form.last_name,
+        middle_name: form.father_name,
+        first_name_ar: form.first_name_ar,
+        father_name_ar: form.father_name_ar,
+        grandfather_name_ar: form.grandfather_name_ar,
+        last_name_ar: form.last_name_ar,
+        full_name_ar: fullNameAr,
         date_of_birth: form.date_of_birth,
         gender: form.gender,
         phone: form.phone,
@@ -276,18 +293,53 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                 <form onSubmit={nextFromStep0} className="p-6 space-y-6">
                   <section>
                     <h3 className="text-sm font-semibold text-primary mb-3">{t("Personal Information")}</h3>
-                    <div className="grid sm:grid-cols-3 gap-3">
+                    {/* The full name is required in BOTH Arabic and English.
+                        The interface language only changes the labels — it
+                        never removes either name block. */}
+                    <h4 className="text-xs font-semibold">{t("Name (English)")}</h4>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
+                      {t("Exactly as it appears on your Passport or official English identification document, including the same spelling and order.")}
+                    </p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="first_name">{t("First name")} *</Label>
+                        <Label htmlFor="first_name">{t("First Name")} *</Label>
                         <Input id="first_name" value={form.first_name} onChange={set("first_name")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="middle_name">{t("Middle name")}</Label>
-                        <Input id="middle_name" value={form.middle_name} onChange={set("middle_name")} />
+                        <Label htmlFor="father_name">{t("Father's Name")} *</Label>
+                        <Input id="father_name" value={form.father_name} onChange={set("father_name")} required />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="last_name">{t("Last name")} *</Label>
+                        <Label htmlFor="grandfather_name">{t("Grandfather's Name")} *</Label>
+                        <Input id="grandfather_name" value={form.grandfather_name} onChange={set("grandfather_name")} required />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="last_name">{t("Last Name")} *</Label>
                         <Input id="last_name" value={form.last_name} onChange={set("last_name")} required />
+                      </div>
+                    </div>
+                    <div className="mt-4" dir="rtl">
+                      <h4 className="text-xs font-semibold">{t("Name (Arabic)")}</h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
+                        {t("Exactly as it appears on your official Arabic document.")}
+                      </p>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="first_name_ar">الاسم الأول *</Label>
+                          <Input id="first_name_ar" value={form.first_name_ar} onChange={set("first_name_ar")} required />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="father_name_ar">اسم الأب *</Label>
+                          <Input id="father_name_ar" value={form.father_name_ar} onChange={set("father_name_ar")} required />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="grandfather_name_ar">اسم الجد *</Label>
+                          <Input id="grandfather_name_ar" value={form.grandfather_name_ar} onChange={set("grandfather_name_ar")} required />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="last_name_ar">اللقب *</Label>
+                          <Input id="last_name_ar" value={form.last_name_ar} onChange={set("last_name_ar")} required />
+                        </div>
                       </div>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-3 mt-3">
@@ -370,7 +422,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     <h3 className="text-sm font-semibold text-primary mb-3">{t("Verification Process")} *</h3>
                     <VerificationMethodSelector
                       profileType="patient"
-                      fullName={[form.first_name, form.middle_name, form.last_name].filter(Boolean).join(" ")}
+                      fullName={[form.first_name, form.father_name, form.grandfather_name, form.last_name].filter(Boolean).join(" ")}
+                      fullNameAr={[form.first_name_ar, form.father_name_ar, form.grandfather_name_ar, form.last_name_ar].filter(Boolean).join(" ")}
                       birthCertificateReadOnly
                       dateOfBirth={form.date_of_birth}
                       nationalIdNumber={form.identification_number}

@@ -17,7 +17,7 @@ export default function ScanReview({ pages, onRetake, onAddPage, onRemovePage, o
           <img src={pages[active]} alt={t("Scanned page")} className="w-full" />
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground text-center py-6">{t("No scanned pages yet. Tap Add Page to scan the passport page.")}</p>
+        <p className="text-xs text-muted-foreground text-center py-6">{t("No scanned pages yet. Tap Add Page to scan the document.")}</p>
       )}
 
       {pages.length > 0 && (

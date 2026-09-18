@@ -4,11 +4,11 @@ import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrC
 import QrCodeCard from "@/components/QrCodeCard";
 import InfoRow from "@/components/patient/medical/InfoRow";
 import { Button } from "@/components/ui/button";
-import { calcAge, capitalize, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
+import { calcAge, capitalize, patientDisplayName, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientOverview({ profile, stats, loading }) {
-  const { t } = usePatientLanguage();
+  const { t, lang } = usePatientLanguage();
   const [showQr, setShowQr] = useState(false);
   const [med, setMed] = useState({ conditions: [], medications: [], allergies: [] });
 
@@ -118,7 +118,7 @@ export default function PatientOverview({ profile, stats, loading }) {
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="font-semibold text-sm mb-4">{t("Personal Information")}</h3>
           <div className="space-y-3">
-            <InfoRow label={t("Full Name")} value={profile?.full_name} />
+            <InfoRow label={t("Full Name")} value={patientDisplayName(profile, lang) || null} />
             <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth} />
             <InfoRow label={t("Age")} value={age === null ? null : t("{age} years", { age })} />
             <InfoRow label={t("Sex")} value={profile?.gender ? t(capitalize(profile.gender)) : null} />

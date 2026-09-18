@@ -33,3 +33,11 @@ export const PREGNANCY_LABELS = {
   not_pregnant: "Not pregnant",
   pregnant: "Pregnant",
 };
+
+// The patient's display name for the given interface language — the Arabic
+// version of the name is shown when the patient uses the Arabic interface
+// (when one was saved at registration), the English version otherwise.
+export function patientDisplayName(profile, lang) {
+  if (!profile) return "";
+  return lang === "ar" && profile.full_name_ar ? profile.full_name_ar : profile.full_name;
+}

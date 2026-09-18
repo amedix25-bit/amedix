@@ -10,16 +10,48 @@
       "description": "Clinical Identification Number - unique permanent patient identifier"
     },
     "full_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Patient's full name in English \u2014 First, Father's, Grandfather's and Last Name joined. Used in clinical documents and wherever the English name is required."
     },
     "first_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Patient's first name in English \u2014 exactly as printed on the Passport or official English identification document"
     },
-    "middle_name": {
-      "type": "string"
+    "father_name": {
+      "type": "string",
+      "description": "Patient's father's name in English \u2014 exactly as printed on the Passport or official English identification document"
+    },
+    "grandfather_name": {
+      "type": "string",
+      "description": "Patient's grandfather's name in English \u2014 exactly as printed on the Passport or official English identification document"
     },
     "last_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Patient's last name in English \u2014 exactly as printed on the Passport or official English identification document"
+    },
+    "middle_name": {
+      "type": "string",
+      "description": "Legacy field \u2014 kept in sync with father_name for older views; new registration uses father_name"
+    },
+    "full_name_ar": {
+      "type": "string",
+      "description": "Patient's full name in Arabic \u2014 \u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644\u060c \u0627\u0633\u0645 \u0627\u0644\u0623\u0628\u060c \u0627\u0633\u0645 \u0627\u0644\u062c\u062f\u060c \u0627\u0644\u0644\u0642\u0628 joined, exactly as printed on the official Arabic document. Displayed when the patient uses the Arabic Patient Portal; stored in the same profile as the English name."
+    },
+    "first_name_ar": {
+      "type": "string",
+      "description": "Patient's first name in Arabic \u2014 \u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644\u060c exactly as printed on the official Arabic document"
+    },
+    "father_name_ar": {
+      "type": "string",
+      "description": "Patient's father's name in Arabic \u2014 \u0627\u0633\u0645 \u0627\u0644\u0623\u0628\u060c exactly as printed on the official Arabic document"
+    },
+    "grandfather_name_ar": {
+      "type": "string",
+      "description": "Patient's grandfather's name in Arabic \u2014 \u0627\u0633\u0645 \u0627\u0644\u062c\u062f\u060c exactly as printed on the official Arabic document"
+    },
+    "last_name_ar": {
+      "type": "string",
+      "description": "Patient's last name in Arabic \u2014 \u0627\u0644\u0644\u0642\u0628\u060c exactly as printed on the official Arabic document"
     },
     "date_of_birth": {
       "type": "string",

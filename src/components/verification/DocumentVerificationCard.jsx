@@ -32,7 +32,10 @@ export default function DocumentVerificationCard({
 
   const allFieldsFilled = fields.every((f) => (values?.[f.key] || "").toString().trim() !== "");
   const frontIsPdf = !!file && /\.pdf$/i.test(file.name);
-  const backRequired = twoSided && !frontIsPdf;
+  // With the unified scanner the document is always a single multi-page PDF
+  // (a Personal Card's two sides are scanned as its pages), so the separate
+  // back-side slot only applies to the legacy two-photo upload path.
+  const backRequired = twoSided && !frontSlot && !frontIsPdf;
   const readyToVerify = !!file && (!backRequired || !!fileBack) && allFieldsFilled;
 
   const handleFile = (slot) => async (e) => {

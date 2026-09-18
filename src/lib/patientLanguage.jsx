@@ -508,7 +508,49 @@ const AR = {
   "Lifestyle & Pregnancy": "نمط الحياة والحمل",
   "First name": "الاسم الأول",
   "Middle name": "الاسم الأوسط",
-  "Last name": "اسم العائلة",
+  "Last name": "اللقب",
+  "First Name": "الاسم الأول",
+  "Father's Name": "اسم الأب",
+  "Grandfather's Name": "اسم الجد",
+  "Last Name": "اللقب",
+  "Name (English)": "الاسم (بالإنجليزية)",
+  "Name (Arabic)": "الاسم (بالعربية)",
+  "Exactly as it appears on your Passport or official English identification document, including the same spelling and order.":
+    "كما يظهر تماماً في جواز السفر أو وثيقة الهوية الرسمية بالإنجليزية، بنفس التهجئة والترتيب.",
+  "Exactly as it appears on your official Arabic document.":
+    "كما يظهر تماماً في الوثيقة الرسمية بالعربية.",
+  // ─── Document scanner (unified verification scanning) ───
+  "Scan Document": "مسح المستند",
+  "Upload Document": "رفع مستند",
+  "Scan your document or upload an existing document": "امسح مستندك ضوئياً أو ارفع مستنداً موجوداً",
+  "Scan both sides of the card — front side first, then the back side, using Add Page.":
+    "امسح وجهي البطاقة — الوجه الأمامي أولاً ثم الوجه الخلفي، باستخدام «إضافة صفحة».",
+  "Starting camera…": "جارٍ تشغيل الكاميرا…",
+  "Camera access is required for scanning. Allow camera access and try again, or use Upload Document instead.":
+    "المسح الضوئي يتطلب الوصول إلى الكاميرا. اسمح بالوصول إلى الكاميرا وحاول مجدداً، أو استخدم «رفع مستند» بدلاً من ذلك.",
+  "Document scanning is not supported on this device. Please use Upload Document instead.":
+    "المسح الضوئي للمستندات غير مدعوم على هذا الجهاز. يرجى استخدام «رفع مستند» بدلاً من ذلك.",
+  "Scanning is not supported on this device — please use Upload Document.":
+    "المسح غير مدعوم على هذا الجهاز — يرجى استخدام «رفع مستند».",
+  "Position the document inside the frame": "ضع المستند داخل الإطار",
+  "Hold steady…": "ابقَ ثابتاً…",
+  "Hold steady… capturing": "ابقَ ثابتاً… جارٍ الالتقاط",
+  "Capturing…": "جارٍ الالتقاط…",
+  "The document is captured automatically when it is stable and correctly positioned.":
+    "يتم التقاط المستند تلقائياً عندما يكون ثابتاً وفي الوضع الصحيح.",
+  "Flash": "الفلاش",
+  "Capture": "التقاط",
+  "Back to Upload Document": "العودة إلى «رفع مستند»",
+  "Scanned page": "الصفحة الممسوحة",
+  "No scanned pages yet. Tap Add Page to scan the document.":
+    "لا توجد صفحات ممسوحة بعد. اضغط «إضافة صفحة» لمسح المستند.",
+  "Retake": "إعادة الالتقاط",
+  "Add Page": "إضافة صفحة",
+  "Confirm Scan": "تأكيد المسح",
+  "Remove page": "إزالة الصفحة",
+  "Confirm Scan combines the pages into one PDF and securely attaches it to your verification. Retaken pages are never saved.":
+    "يجمع «تأكيد المسح» الصفحات في ملف PDF واحد ويرفقه بأمان إلى عملية التحقق. الصفحات المعاد التقاطها لا تُحفظ أبداً.",
+  "Please select a PDF or a photo of the document.": "يرجى اختيار ملف PDF أو صورة للمستند.",
   "Date of birth": "تاريخ الميلاد",
   "Phone number": "رقم الهاتف",
   "Email": "البريد الإلكتروني",

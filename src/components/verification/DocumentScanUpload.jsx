@@ -4,22 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ScanLine, UploadCloud } from "lucide-react";
 import DocumentScannerCamera from "@/components/verification/DocumentScannerCamera";
 import ScanReview from "@/components/verification/ScanReview";
-import { buildPdfFromImages, passportFileName } from "@/lib/documentScanner";
+import { buildPdfFromImages, documentFileName } from "@/lib/documentScanner";
 
-// Passport acquisition for identity verification — a true document scanner
-// (edge detection → auto capture → perspective correction → crop/enhance →
-// review → PDF) or an upload of an existing document. Only the confirmed
-// result is uploaded to private storage; failed and retaken scans stay
-// temporary. The verdict itself is decided by the backend verification
-// process, never here.
-export default function PassportScanUpload({ patientName = "", cin = "", file, onFile, t }) {
-  const [mode, setMode] = useState("idle"); // idle | scan | review | processing
+// THE unified document acquisition flow for identity verification — one
+// scanner used by every verification document type (Birth Certificate,
+// Personal Card, Passport); only the document type and the resulting
+// filename change. True scanning: edge detection → automatic capture →
+// perspective correction → crop/enhance → review (Retake / Add Page /
+// Confirm Scan) → one clean PDF saved under the correct verification
+// category. Or upload an existing document — a PDF stays a PDF, photos
+// are combined into one PDF. Only the confirmed result is uploaded to
+// private storage; failed and retaken scans stay temporary. The verdict is
+// decided by the backend verification process, never here.
+export default function DocumentScanUpload({ documentType, patientName = "", cin = "", hint = "", file, onFile, t }) {
+  const [mode, setMode] = useState("idle"); // idle | scan | review
   const [pages, setPages] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef(null);
   const scanSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-  const fileName = passportFileName(patientName, cin);
+  const fileName = documentFileName(documentType, patientName, cin);
 
   const deliver = async (blob, name) => {
     setBusy(true);
@@ -41,7 +45,8 @@ export default function PassportScanUpload({ patientName = "", cin = "", file, o
   };
 
   const confirmScan = async () => {
-    setMode("processing");
+    setBusy(true);
+    setError("");
     try {
       const pdf = await buildPdfFromImages(pages);
       await deliver(pdf, fileName);
@@ -49,6 +54,8 @@ export default function PassportScanUpload({ patientName = "", cin = "", file, o
       console.error(err);
       setError(t("Something went wrong during verification. Please try again."));
       setMode("review");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -106,7 +113,7 @@ export default function PassportScanUpload({ patientName = "", cin = "", file, o
       <div className="grid grid-cols-2 gap-2">
         <Button type="button" variant="outline" disabled={!scanSupported || busy} onClick={() => { setPages([]); setMode("scan"); }}>
           <ScanLine className="w-4 h-4 rtl:ml-2 rtl:mr-0 ltr:mr-2" />
-          {t("Scan Passport")}
+          {t("Scan Document")}
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" /> : <UploadCloud className="w-4 h-4 rtl:ml-2 rtl:mr-0 ltr:mr-2" />}
@@ -114,6 +121,7 @@ export default function PassportScanUpload({ patientName = "", cin = "", file, o
         </Button>
       </div>
       <input ref={inputRef} type="file" accept="image/*,application/pdf" multiple className="hidden" onChange={handleUpload} />
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {!scanSupported && (
         <p className="text-xs text-muted-foreground">
           {t("Scanning is not supported on this device — please use Upload Document.")}

@@ -179,12 +179,12 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
         ? stable
           ? t("Hold steady… capturing")
           : t("Hold steady…")
-        : t("Position the passport page inside the frame");
+        : t("Position the document inside the frame");
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
       <div className="flex items-center justify-between p-4">
-        <p className="text-white font-semibold">{t("Scan Passport")}</p>
+        <p className="text-white font-semibold">{t("Scan Document")}</p>
         <button type="button" onClick={onClose} className="p-2 -mr-2" aria-label={t("Close")}>
           <X className="w-6 h-6 text-white" />
         </button>
