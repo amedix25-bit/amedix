@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
+import PassportScanUpload from "@/components/verification/PassportScanUpload";
 
 // The Verification Process section: the user chooses exactly ONE identity
 // verification method — Birth Certificate, Personal Card or Passport. A
@@ -9,11 +10,11 @@ import DocumentVerificationCard from "@/components/verification/DocumentVerifica
 const METHODS = [
   { key: "birth_certificate", title: "Birth Certificate", description: "Upload a clear photo or PDF", twoSided: false },
   { key: "personal_card", title: "Personal Card", description: "Upload clear photos of both sides, or one PDF containing both sides", twoSided: true },
-  { key: "passport", title: "Passport", description: "Upload a clear photo or PDF of the identification page", twoSided: false },
+  { key: "passport", title: "Passport", description: "Scan your passport or upload an existing document", twoSided: false },
 ];
 
 export default function VerificationMethodSelector({
-  profileType, fullName = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t,
+  profileType, fullName = "", cin = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t,
 }) {
   const [method, setMethod] = useState("");
   // Identity values entered inside this section (doctor registration). For
@@ -62,8 +63,11 @@ export default function VerificationMethodSelector({
     passport: {
       documentType: "passport",
       title: t("Passport"),
-      description: t("Upload a clear photo or PDF of the identification page"),
+      description: t("Passport — Scan your passport or upload an existing document"),
       twoSided: false,
+      frontSlot: ({ file, setFile }) => (
+        <PassportScanUpload patientName={fullName} cin={cin} file={file} onFile={setFile} t={t} />
+      ),
       fields: [
         { key: "full_name", label: t("Full Name"), readOnly: true },
         { key: "passport_number", label: t("Passport Number"), placeholder: t("Passport Number") },
@@ -110,6 +114,7 @@ export default function VerificationMethodSelector({
           fields={config.fields}
           values={config.values}
           onValueChange={setValue}
+          frontSlot={config.frontSlot}
           result={result}
           onResult={onResult}
           t={t}

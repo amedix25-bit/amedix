@@ -20,7 +20,7 @@ import { UploadCloud, Loader2, CheckCircle2, XCircle } from "lucide-react";
 // result: { status: "verified" | "failed", reason? } | null (backend verdict)
 // onResult: called with the backend result, or null when state is reset.
 export default function DocumentVerificationCard({
-  profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t, twoSided = false,
+  profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t, twoSided = false, frontSlot = null,
 }) {
   const [file, setFile] = useState(null);
   const [fileBack, setFileBack] = useState(null);
@@ -137,7 +137,11 @@ export default function DocumentVerificationCard({
           </div>
         ))}
 
-        {renderSlot("front", t("Front side"), twoSided ? t("Upload a clear photo or PDF of the front side") : t("Upload a clear photo or PDF"))}
+        {frontSlot ? (
+          frontSlot({ file, setFile: (f) => { setFile(f); onResult(null); } })
+        ) : (
+          renderSlot("front", t("Front side"), twoSided ? t("Upload a clear photo or PDF of the front side") : t("Upload a clear photo or PDF"))
+        )}
         {twoSided && !frontIsPdf && renderSlot("back", t("Back side"), t("Upload a clear photo or PDF of the back side"))}
         {twoSided && frontIsPdf && (
           <p className="text-xs text-muted-foreground">{t("One PDF containing both sides")}</p>
