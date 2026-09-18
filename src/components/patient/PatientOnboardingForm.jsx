@@ -300,7 +300,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
                       {t("Exactly as it appears on your Passport or official English identification document, including the same spelling and order.")}
                     </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="first_name">{t("First Name")} *</Label>
                         <Input id="first_name" value={form.first_name} onChange={set("first_name")} required />
@@ -308,10 +308,6 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                       <div className="space-y-1.5">
                         <Label htmlFor="father_name">{t("Father's Name")} *</Label>
                         <Input id="father_name" value={form.father_name} onChange={set("father_name")} required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="grandfather_name">{t("Grandfather's Name")} *</Label>
-                        <Input id="grandfather_name" value={form.grandfather_name} onChange={set("grandfather_name")} required />
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="last_name">{t("Last Name")} *</Label>
@@ -323,7 +319,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                       <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
                         {t("Exactly as it appears on your official Arabic document.")}
                       </p>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="space-y-1.5">
                           <Label htmlFor="first_name_ar">الاسم الأول *</Label>
                           <Input id="first_name_ar" value={form.first_name_ar} onChange={set("first_name_ar")} required />
@@ -331,10 +327,6 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         <div className="space-y-1.5">
                           <Label htmlFor="father_name_ar">اسم الأب *</Label>
                           <Input id="father_name_ar" value={form.father_name_ar} onChange={set("father_name_ar")} required />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="grandfather_name_ar">اسم الجد *</Label>
-                          <Input id="grandfather_name_ar" value={form.grandfather_name_ar} onChange={set("grandfather_name_ar")} required />
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor="last_name_ar">اللقب *</Label>
