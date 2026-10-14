@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Search, ChevronDown, Star, Plus, Trash2, X,
+  Search, ChevronDown, Star, Plus, Trash2, X, Pencil, SquarePen, Copy, Globe,
 } from "lucide-react";
+import FavoriteEditorDialog from "@/components/doctor/lab/FavoriteEditorDialog";
 import { LAB_CATEGORIES, CATALOG_ENTRIES, searchLabTests, entryById } from "@/lib/labTestCatalog";
 
 const ALL_TEST_IDS = CATALOG_ENTRIES.map((t) => t.id);
@@ -136,15 +137,25 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
   const [activeCategory, setActiveCategory] = useState(LAB_CATEGORIES[0].id);
   const [openPanels, setOpenPanels] = useState(new Set());
   const [favorites, setFavorites] = useState([]);
-  const [showSaveFav, setShowSaveFav] = useState(false);
-  const [favName, setFavName] = useState("");
-  const [savingFav, setSavingFav] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorFavorite, setEditorFavorite] = useState(null);
+  const [renamingFav, setRenamingFav] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
     if (!doctorId) return;
     let cancelled = false;
-    base44.entities.DoctorLabFavorite.filter({ doctor_id: doctorId }, "-created_date")
-      .then((favs) => { if (!cancelled) setFavorites(favs); })
+    // Personal favorites for this doctor + shared standardized panels for everyone.
+    Promise.all([
+      base44.entities.DoctorLabFavorite.filter({ doctor_id: doctorId }, "-created_date"),
+      base44.entities.DoctorLabFavorite.filter({ is_shared: true }, "favorite_name"),
+    ])
+      .then(([own, shared]) => {
+        if (cancelled) return;
+        const map = new Map();
+        [...own, ...shared].forEach((fav) => map.set(fav.id, fav));
+        setFavorites([...map.values()]);
+      })
       .catch((err) => console.error(err));
     return () => { cancelled = true; };
   }, [doctorId]);
@@ -172,28 +183,15 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
       return n;
     });
 
-  const saveFavorite = async () => {
-    const name = favName.trim();
-    if (!name || selected.size === 0 || savingFav) return;
-    setSavingFav(true);
-    try {
-      const existing = favorites.find((f) => f.favorite_name.toLowerCase() === name.toLowerCase());
-      if (existing) {
-        const updated = await base44.entities.DoctorLabFavorite.update(existing.id, { test_ids: [...selected] });
-        setFavorites((f) => f.map((x) => (x.id === existing.id ? updated : x)));
-      } else {
-        const created = await base44.entities.DoctorLabFavorite.create({
-          doctor_id: doctorId,
-          favorite_name: name,
-          test_ids: [...selected],
-        });
-        setFavorites((f) => [created, ...f]);
-      }
-      setFavName("");
-      setShowSaveFav(false);
-    } finally {
-      setSavingFav(false);
-    }
+  const onSavedFavorite = (saved) =>
+    setFavorites((f) => [saved, ...f.filter((x) => x.id !== saved.id)]);
+
+  const renameFavorite = async (fav) => {
+    const name = renameValue.trim();
+    if (!name) return;
+    const updated = await base44.entities.DoctorLabFavorite.update(fav.id, { favorite_name: name });
+    setFavorites((f) => f.map((x) => (x.id === fav.id ? updated : x)));
+    setRenamingFav(null);
   };
 
   const deleteFavorite = async (fav) => {
@@ -203,8 +201,19 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
 
   const applyFavorite = (fav) => {
     // Merge into the current selection — duplicates are impossible because it is a Set.
+    // This only preselects tests; the doctor always reviews and confirms before submitting.
     onSetMany(fav.test_ids || [], true);
     setQuery("");
+  };
+
+  const duplicateFavorite = async (fav) => {
+    const created = await base44.entities.DoctorLabFavorite.create({
+      doctor_id: doctorId,
+      favorite_name: `${fav.favorite_name} (copy)`,
+      test_ids: fav.test_ids || [],
+      is_shared: false,
+    });
+    setFavorites((f) => [created, ...f]);
   };
 
   const searchInput = (
@@ -264,65 +273,107 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
           {searchInput}
 
           <div className="rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <p className="text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5">
                 <Star className="w-3.5 h-3.5 text-amber-500" />
                 My Lab Favorites
               </p>
-              <button
+              <Button
                 type="button"
-                title={selected.size === 0 ? "Select tests first, then save them as a favorite" : "Save current selection as a favorite"}
-                onClick={() => { if (selected.size > 0) setShowSaveFav(!showSaveFav); }}
-                disabled={selected.size === 0}
-                className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                size="sm"
+                variant="outline"
+                className="h-7"
+                onClick={() => { setEditorFavorite(null); setEditorOpen(true); }}
               >
-                <Plus className="w-4 h-4" />
-              </button>
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Create New Favorite
+              </Button>
             </div>
-
-            {showSaveFav && (
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Favorite name, e.g. Anemia Panel"
-                  value={favName}
-                  onChange={(e) => setFavName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveFavorite()}
-                  className="h-8 text-xs"
-                  autoFocus
-                />
-                <Button type="button" size="sm" className="h-8" onClick={saveFavorite} disabled={savingFav || !favName.trim()}>
-                  Save
-                </Button>
-              </div>
-            )}
 
             {favorites.length === 0 ? (
               <p className="text-xs text-muted-foreground mt-2">
-                Select tests, then save them here to apply the whole set with one click.
+                Create a reusable collection of tests from the catalog, then apply it with one click.
               </p>
             ) : (
               <div className="space-y-1 mt-2">
-                {favorites.map((fav) => (
-                  <div key={fav.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2 py-1.5">
-                    <button
-                      type="button"
-                      onClick={() => applyFavorite(fav)}
-                      className="min-w-0 flex-1 text-left"
-                      title="Apply this favorite — selects its tests in addition to any current selection"
-                    >
-                      <p className="text-sm font-medium truncate hover:text-primary">{fav.favorite_name}</p>
-                      <p className="text-xs text-muted-foreground">{(fav.test_ids || []).length} test(s)</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteFavorite(fav)}
-                      className="rounded-md p-1 text-muted-foreground hover:text-destructive shrink-0"
-                      title="Delete favorite"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                {favorites.map((fav) => {
+                  const shared = !!fav.is_shared;
+                  const renaming = renamingFav === fav.id;
+                  return (
+                    <div key={fav.id} className="rounded-lg border border-border px-2 py-1.5">
+                      {renaming ? (
+                        <div className="flex gap-1.5">
+                          <Input
+                            autoFocus
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && renameFavorite(fav)}
+                            className="h-8 text-xs"
+                          />
+                          <Button type="button" size="sm" className="h-8" onClick={() => renameFavorite(fav)}>Save</Button>
+                          <Button type="button" size="sm" variant="outline" className="h-8" onClick={() => setRenamingFav(null)}>Cancel</Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => applyFavorite(fav)}
+                            className="min-w-0 flex-1 text-left"
+                            title={shared ? "Apply this shared panel — adds its tests to the current selection" : "Apply this favorite — adds its tests to the current selection"}
+                          >
+                            <p className="text-sm font-medium truncate hover:text-primary flex items-center gap-1.5">
+                              {shared && <Globe className="w-3 h-3 text-sky-600 shrink-0" />}
+                              <span className="truncate">{fav.favorite_name}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(fav.test_ids || []).length} test(s){shared ? " · shared panel" : ""}
+                            </p>
+                          </button>
+                          <div className="flex items-center shrink-0">
+                            {!shared && (
+                              <button
+                                type="button"
+                                onClick={() => { setRenamingFav(fav.id); setRenameValue(fav.favorite_name); }}
+                                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent"
+                                title="Rename favorite"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {!shared && (
+                              <button
+                                type="button"
+                                onClick={() => { setEditorFavorite(fav); setEditorOpen(true); }}
+                                className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent"
+                                title="Edit tests in this favorite"
+                              >
+                                <SquarePen className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => duplicateFavorite(fav)}
+                              className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent"
+                              title="Duplicate as a personal favorite"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            {!shared && (
+                              <button
+                                type="button"
+                                onClick={() => deleteFavorite(fav)}
+                                className="rounded-md p-1.5 text-muted-foreground hover:text-destructive"
+                                title="Delete favorite"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -424,6 +475,15 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
           />
         </div>
       </div>
+
+      <FavoriteEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        favorite={editorFavorite}
+        initialTestIds={[...selected]}
+        doctorId={doctorId}
+        onSaved={onSavedFavorite}
+      />
     </div>
   );
 }
