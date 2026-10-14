@@ -38,7 +38,7 @@ export default async function(req) {
         if (dupes.length > 0) {
           return Response.json({ error: "Duplicate submission — this request was already saved.", duplicate: true }, { status: 409 });
         }
-      } catch (e) { /* non-fatal */ }
+      } catch (e) { console.log("DUPCHECK-ERROR:", e && e.message); }
     }
 
     // Written with the service role — doctors cannot create lab requests
