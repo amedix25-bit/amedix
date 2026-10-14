@@ -17,7 +17,10 @@ export default async function(req) {
       return Response.json({ error: "Patient and doctor are required." }, { status: 400 });
     }
 
-    const doctors = await base44.asServiceRole.entities.DoctorProfile.filter({ id: String(payload.doctor_id) });
+    let doctors = [];
+    try {
+      doctors = await base44.asServiceRole.entities.DoctorProfile.filter({ id: String(payload.doctor_id) });
+    } catch (e) { doctors = []; }
     if (doctors.length === 0 || doctors[0].user_id !== user.id) {
       return Response.json({ error: "Doctor profile not found." }, { status: 403 });
     }
