@@ -65,6 +65,13 @@ export default async function(req) {
       const m = await base44.asServiceRole.entities.Medication.filter({ patient_id: patientId, is_active: true }, { limit: 100 });
       activeMeds = m.items || m;
     } catch (e) { activeMeds = []; }
+    let adverseReactions = [];
+    try {
+      const f = await base44.asServiceRole.entities.MedicationFeedback.filter(
+        { patient_id: patientId, category: 'side_effect' }, { limit: 100 }
+      );
+      adverseReactions = f.items || f;
+    } catch (e) { adverseReactions = []; }
 
     const norm = (s) => String(s || '').toLowerCase().trim();
     const termMatches = (proposed, recorded) => {
@@ -138,6 +145,25 @@ export default async function(req) {
       });
     }
 
+    // 2b. Recorded adverse drug reactions (patient-reported, advisory).
+    for (const fb of adverseReactions) {
+      const hit = proposed.some((t) => termMatches(t, fb.medication_name));
+      if (!hit) continue;
+      const severe = fb.severity === 'severe';
+      alerts.push({
+        type: 'adverse_reaction',
+        severity: severe ? 'high' : 'moderate',
+        blocked: false,
+        ai_assisted: false,
+        title: `Patient-reported reaction to ${fb.medication_name}`,
+        explanation: `The patient previously reported a ${fb.severity || 'unspecified'} side effect while taking ${fb.medication_name}${fb.details ? `: "${fb.details}"` : ''}. The proposed medication matches it.`,
+        guidance: severe
+          ? 'Review the reported reaction with the patient before issuing; consider an alternative. Acknowledgment required to proceed.'
+          : 'Review the reported reaction with the patient before issuing.',
+        source: 'patient_reported',
+      });
+    }
+
     // 3. Interaction / contraindication review (AI-assisted, advisory only).
     let ai_error = '';
     if (activeMeds.length > 0 || allergies.length > 0) {
@@ -205,9 +231,12 @@ export default async function(req) {
       checked_against: {
         allergies: allergies.length,
         active_medications: activeMeds.length,
+        adverse_reactions: adverseReactions.length,
         active_medications_list: activeMeds.map((m) => ({ name: m.name, source: m.source || 'patient_reported' })),
       },
       ai_error,
+      limitations:
+        'Checks cover only what is recorded in AMedix: documented allergy records, the allergy summary, active medication entries and patient-reported reactions. A clear result does not mean the medication is safe — missing or unrecorded information is not checked. The interaction review is AI-assisted and advisory only; it never decides safety on its own.',
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

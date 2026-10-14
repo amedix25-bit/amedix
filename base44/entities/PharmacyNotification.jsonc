@@ -48,6 +48,10 @@
       "type": "string",
       "description": "Prescription reference, e.g. PR-20261014-8F3K"
     },
+    "recall_id": {
+      "type": "string",
+      "description": "MedicationRecall reference for recall notifications \u2014 used to acknowledge the recall from the notification"
+    },
     "target": {
       "type": "string",
       "enum": [

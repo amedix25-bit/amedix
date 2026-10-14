@@ -31,6 +31,7 @@ const SEVERITY = {
 const TYPE_LABELS = {
   allergy_conflict: "Allergy Conflict",
   duplicate_therapy: "Duplicate Therapy",
+  adverse_reaction: "Reported Adverse Reaction",
   interaction_review: "Interaction Review",
 };
 
@@ -52,12 +53,20 @@ export default function MedicationSafetyAlerts({ result, loading }) {
 
   if (alerts.length === 0) {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex items-start gap-2 text-sm text-emerald-900">
-        <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>
-          No safety conflicts found. Checked against {result.checked_against?.allergies ?? 0} documented
-          allergy record(s) and {result.checked_against?.active_medications ?? 0} active medication(s).
-        </span>
+      <div className="space-y-1.5">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex items-start gap-2 text-sm text-emerald-900">
+          <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            No safety conflicts found. Checked against {result.checked_against?.allergies ?? 0} documented
+            allergy record(s), {result.checked_against?.active_medications ?? 0} active medication(s)
+            {result.checked_against?.adverse_reactions
+              ? ` and ${result.checked_against.adverse_reactions} reported reaction(s)`
+              : ""}.
+          </span>
+        </div>
+        {result.limitations && (
+          <p className="text-[11px] text-muted-foreground px-1">{result.limitations}</p>
+        )}
       </div>
     );
   }
@@ -97,6 +106,9 @@ export default function MedicationSafetyAlerts({ result, loading }) {
       })}
       {result.ai_error && (
         <p className="text-[11px] text-muted-foreground">{result.ai_error}</p>
+      )}
+      {result.limitations && (
+        <p className="text-[11px] text-muted-foreground">{result.limitations}</p>
       )}
     </div>
   );

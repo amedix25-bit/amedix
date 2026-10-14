@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, ShieldCheck } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -32,11 +33,28 @@ const TYPE_LABELS = {
 export default function PharmacyNotificationsBell({ onOpenNotification }) {
   const { notifications, unreadCount, markRead, markAllRead } = usePharmacyNotifications();
   const [open, setOpen] = useState(false);
+  const [ackBusy, setAckBusy] = useState(null);
+  const [acked, setAcked] = useState({});
 
   const handleOpen = (n) => {
     markRead(n.id);
     setOpen(false);
     onOpenNotification?.(n);
+  };
+
+  // Records the pharmacy's acknowledgement of a recall in the recall's audit
+  // trail and the clinical audit log.
+  const acknowledgeRecall = async (n) => {
+    if (!n.recall_id) return;
+    setAckBusy(n.id);
+    try {
+      await base44.functions.invoke("pharmacyRecallManage", { action: "acknowledge", recall_id: n.recall_id });
+      setAcked((s) => ({ ...s, [n.id]: true }));
+    } catch (err) {
+      console.error("Failed to acknowledge recall:", err);
+    } finally {
+      setAckBusy(null);
+    }
   };
 
   return (
@@ -76,10 +94,13 @@ export default function PharmacyNotificationsBell({ onOpenNotification }) {
             <p className="text-sm text-muted-foreground text-center py-8">No notifications yet.</p>
           )}
           {notifications && notifications.map((n) => (
-            <button
+            <div
               key={n.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleOpen(n)}
-              className={`w-full text-left rounded-xl border p-3 transition-colors hover:bg-accent ${
+              onKeyDown={(e) => { if (e.key === "Enter") handleOpen(n); }}
+              className={`w-full text-left rounded-xl border p-3 transition-colors hover:bg-accent cursor-pointer ${
                 n.is_read ? "border-border bg-card" : "border-primary/30 bg-primary/5"
               }`}
             >
@@ -91,7 +112,23 @@ export default function PharmacyNotificationsBell({ onOpenNotification }) {
               <p className="text-[11px] text-muted-foreground mt-1">
                 {new Date(n.created_date).toLocaleString()}
               </p>
-            </button>
+              {n.type === "recall" && n.recall_id && (
+                acked[n.id] ? (
+                  <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Recall acknowledged
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); acknowledgeRecall(n); }}
+                    disabled={ackBusy === n.id}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    Acknowledge recall
+                  </button>
+                )
+              )}
+            </div>
           ))}
         </div>
       </SheetContent>

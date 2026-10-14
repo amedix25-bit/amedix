@@ -170,6 +170,13 @@ export default async function(req) {
             performed_by_name: recall.issued_by_name,
             performed_by_role: recall.issued_by_role,
           });
+          await logClinicalAudit(base44.asServiceRole, {
+            actor_user_id: recall.issued_by_user_id,
+            actor_name: recall.issued_by_name,
+            actor_role: recall.issued_by_role === 'admin' ? 'admin' : 'pharmacy',
+            action: 'recall_quarantine',
+            action_label: `Quarantined ${item.medication_name}${item.strength ? ` ${item.strength}` : ''}${item.batch_number ? ` (batch ${item.batch_number})` : ''} under recall ${recall.recall_id}`,
+          });
           quarantineActions.push(item);
         } else if (item.recall_id === recall.recall_id) {
           quarantineActions.push(item);
@@ -188,6 +195,7 @@ export default async function(req) {
               pharmacy_id: p.id,
               pharmacy_user_id: p.user_id,
               type: 'recall',
+              recall_id: recall.recall_id,
               title: urgency === 'immediate' ? 'URGENT — Medication Recall (Stop Dispensing)' : `Medication Recall (${urgency})`,
               message: `${medicationName}${recall.strength ? ` ${recall.strength}` : ''}${recall.batch_number ? ` batch ${recall.batch_number}` : ''} recalled: ${reason}. ${quarantineActions.filter((i) => i.pharmacy_id === p.id).length} batch(es) quarantined in your inventory — quarantine and dispose under Inventory.`,
               target: 'inventory',
@@ -291,6 +299,13 @@ export default async function(req) {
         performed_by_name: user.full_name || 'Pharmacy',
         performed_by_role: 'pharmacy',
       });
+      await logClinicalAudit(base44.asServiceRole, {
+        actor_user_id: user.id,
+        actor_name: user.full_name || 'Pharmacy',
+        actor_role: isAdmin ? 'admin' : 'pharmacy',
+        action: 'recall_disposal',
+        action_label: `Disposed quarantined ${item.medication_name}${item.strength ? ` ${item.strength}` : ''}${item.batch_number ? ` (batch ${item.batch_number})` : ''}`,
+      });
       if (item.recall_id) {
         try {
           const recall = await base44.asServiceRole.entities.MedicationRecall.filter({ recall_id: item.recall_id }, { limit: 1 });
@@ -332,7 +347,58 @@ export default async function(req) {
           details: 'Recall resolved. Quarantined batches remain blocked until disposed or explicitly released.',
         }],
       });
+      await logClinicalAudit(base44.asServiceRole, {
+        actor_user_id: user.id,
+        actor_name: user.full_name || 'AMedix',
+        actor_role: isAdmin ? 'admin' : 'pharmacy',
+        action: 'recall_resolved',
+        action_label: `Resolved recall ${rec.recall_id} (${rec.medication_name})`,
+      });
       return Response.json({ ok: true, resolved_datetime: now });
+    }
+
+    // ---- Acknowledge a recall --------------------------------------------
+    // The pharmacy (or an administrator) confirms it has seen the recall
+    // notification. The acknowledgement is recorded in the recall's action
+    // history and the clinical audit log.
+    if (action === 'acknowledge') {
+      const recallId = String(body?.recall_id || '');
+      if (!recallId) return Response.json({ error: 'Missing recall.' }, { status: 400 });
+      const page = await base44.asServiceRole.entities.MedicationRecall.filter({ recall_id: recallId }, { limit: 1 });
+      const rec = (page.items || page)[0];
+      if (!rec) return Response.json({ error: 'Recall not found.' }, { status: 404 });
+      if (rec.status !== 'active') {
+        return Response.json({ error: 'This recall is already resolved.' }, { status: 400 });
+      }
+      const isAdmin = user.role === 'admin';
+      let ackPharmacyName = '';
+      if (!isAdmin) {
+        const profiles = await base44.asServiceRole.entities.PharmacyProfile.filter({ user_id: user.id }, { limit: 1 });
+        const p = (profiles.items || profiles)[0] || null;
+        if (!p) return Response.json({ error: 'Pharmacy profile not found.' }, { status: 403 });
+        if (!(rec.pharmacy_ids || []).includes(p.id)) {
+          return Response.json({ error: 'This recall does not affect your pharmacy.' }, { status: 403 });
+        }
+        ackPharmacyName = p.pharmacy_name;
+      }
+      const now = new Date().toISOString();
+      const byName = user.full_name || 'Pharmacy';
+      await base44.asServiceRole.entities.MedicationRecall.update(rec.id, {
+        actions: [...(rec.actions || []), {
+          action: 'acknowledged',
+          by_name: byName,
+          datetime: now,
+          details: `Acknowledged by ${ackPharmacyName || 'an administrator'}. Affected stock is quarantined and blocked from dispensing.`,
+        }],
+      });
+      await logClinicalAudit(base44.asServiceRole, {
+        actor_user_id: user.id,
+        actor_name: byName,
+        actor_role: isAdmin ? 'admin' : 'pharmacy',
+        action: 'recall_acknowledged',
+        action_label: `Acknowledged recall ${rec.recall_id} (${rec.medication_name})`,
+      });
+      return Response.json({ ok: true, acknowledged_datetime: now });
     }
 
     return Response.json({ error: 'Unknown action.' }, { status: 400 });
