@@ -17,6 +17,14 @@
       "type": "string",
       "description": "Pharmacist's full name"
     },
+    "phone": {
+      "type": "string",
+      "description": "Pharmacist's contact phone number"
+    },
+    "registration_number": {
+      "type": "string",
+      "description": "Pharmacy registration / license number, where applicable"
+    },
     "username": {
       "type": "string",
       "description": "Unique pharmacist login username \u2014 every pharmacist has individual credentials"
@@ -32,6 +40,11 @@
       "type": "boolean",
       "default": true,
       "description": "Deactivated pharmacists cannot log in"
+    },
+    "notification_prefs": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Notification preferences chosen by the pharmacist \u2014 prescriptions, inventory, recalls, expiry alerts"
     },
     "session_token": {
       "type": "string",

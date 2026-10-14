@@ -32,6 +32,54 @@
       "type": "string",
       "description": "Pharmacy profile picture / logo"
     },
+    "operating_hours": {
+      "type": "string",
+      "description": "Pharmacy operating hours, e.g. 9:00 to 22:00 daily"
+    },
+    "payment_methods": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Payment methods the pharmacy accepts \u2014 cash, card, bank_transfer, insurance, mobile_wallet, other"
+    },
+    "receipt_note": {
+      "type": "string",
+      "description": "Custom note printed on the pharmacy's payment receipts"
+    },
+    "low_stock_threshold": {
+      "type": "number",
+      "default": 10,
+      "description": "Stock level at or below which an inventory item is flagged as low stock in the dashboard and reports"
+    },
+    "settings_history": {
+      "type": "array",
+      "description": "Traceable history of every important settings change \u2014 field, previous value, new value, who changed it and when",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "old_value": {
+            "type": "string"
+          },
+          "new_value": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "datetime"
+        ]
+      }
+    },
     "status": {
       "type": "string",
       "enum": [

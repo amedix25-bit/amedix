@@ -1,0 +1,128 @@
+{
+  "name": "PharmacyVisit",
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string",
+      "description": "Unique visit reference, e.g. PV-20261014-8F3K"
+    },
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the visit belongs to"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy account \u2014 used for Row Level Security"
+    },
+    "pharmacy_name": {
+      "type": "string",
+      "description": "Name of the pharmacy"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "checked_in",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "description": "CHECKED_IN: the pharmacist started the visit. IN_PROGRESS: the visit is being served. COMPLETED: the pharmacist ended the visit and its linked prescriptions and payments were collected. CANCELLED: the visit was cancelled with a reason. A visit exists only through an explicit staff check-in \u2014 searching a CIN, opening a record or dispensing never creates one"
+    },
+    "check_in_datetime": {
+      "type": "string",
+      "description": "Date and time the patient was checked in (ISO datetime)"
+    },
+    "completed_datetime": {
+      "type": "string",
+      "description": "Date and time the visit was completed (ISO datetime)"
+    },
+    "cancelled_datetime": {
+      "type": "string",
+      "description": "Date and time the visit was cancelled (ISO datetime)"
+    },
+    "cancelled_reason": {
+      "type": "string",
+      "description": "Reason the visit was cancelled \u2014 required"
+    },
+    "responsible_pharmacist_id": {
+      "type": "string",
+      "description": "Pharmacist record id responsible for the visit"
+    },
+    "responsible_pharmacist_name": {
+      "type": "string",
+      "description": "Name of the responsible pharmacist"
+    },
+    "prescription_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Prescription references dispensed during this visit \u2014 collected automatically at completion from the dispensing events in the visit window. One visit may include several prescriptions"
+    },
+    "payment_transaction_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "PaymentTransaction ids recorded during this visit \u2014 collected automatically at completion"
+    },
+    "dispensing_count": {
+      "type": "number",
+      "description": "Number of dispensing transactions recorded during the visit"
+    },
+    "payment_total": {
+      "type": "number",
+      "description": "Total amount paid in this visit's payment transactions"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional visit notes from the pharmacist"
+    }
+  },
+  "required": [
+    "visit_id",
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "patient_cin",
+    "status",
+    "check_in_datetime"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

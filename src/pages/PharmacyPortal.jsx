@@ -10,9 +10,10 @@ import PharmacyInventorySection from "@/components/pharmacy/portal/PharmacyInven
 import PharmacyPatientLookupSection from "@/components/pharmacy/portal/PharmacyPatientLookupSection";
 import PharmacyProfileSection from "@/components/pharmacy/portal/PharmacyProfileSection";
 import PharmacyPharmacistsSection from "@/components/pharmacy/portal/PharmacyPharmacistsSection";
+import PharmacyReportsSection from "@/components/pharmacy/portal/PharmacyReportsSection";
 import PharmacyNotificationsBell from "@/components/pharmacy/portal/PharmacyNotificationsBell";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, Pill, Package, ScanLine, Building2, UserCog } from "lucide-react";
+import { LayoutDashboard, Pill, Package, ScanLine, Building2, UserCog, BarChart3 } from "lucide-react";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +21,7 @@ const navItems = [
   { key: "inventory", label: "Inventory", icon: Package },
   { key: "patients", label: "Identify Patient", icon: ScanLine },
   { key: "pharmacists", label: "Pharmacists", icon: UserCog },
+  { key: "reports", label: "Reports", icon: BarChart3 },
   { key: "profile", label: "Profile", icon: Building2 },
 ];
 
@@ -80,6 +82,7 @@ export default function PharmacyPortal() {
         {activeTab === "inventory" && <PharmacyInventorySection profile={profile} />}
         {activeTab === "patients" && <PharmacyPatientLookupSection />}
         {activeTab === "pharmacists" && <PharmacyPharmacistsSection profile={profile} />}
+        {activeTab === "reports" && <PharmacyReportsSection profile={profile} />}
         {activeTab === "profile" && <PharmacyProfileSection profile={profile} onUpdate={setProfile} />}
       </div>
     </DashboardLayout>

@@ -7,10 +7,12 @@ import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBad
 import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
+import PharmacyVisitBar from "@/components/pharmacy/pharmacist/PharmacyVisitBar";
 
 function FoundPatient({ data, onReset, session }) {
   return (
     <div className="space-y-4">
+      <PharmacyVisitBar session={session} patient={data.patient} />
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
         <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <User className="w-5 h-5 text-primary" />
