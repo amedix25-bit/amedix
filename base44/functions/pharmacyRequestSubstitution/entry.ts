@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { remainingOf, parseQty, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
+import { remainingOf, parseQty, isItemDispensable, strengthMatches } from "../../shared/pharmacyPrescription.ts";
 
 // Substitution request — the pharmacist proposes an equivalent product (same
 // active ingredient and same strength, a different brand or generic) when the
@@ -75,7 +75,7 @@ export default async function(req) {
     if (!rxIngredient || !itemIngredient || rxIngredient !== itemIngredient) {
       return Response.json({ error: 'The proposed product must contain the same active ingredient as the prescription.' }, { status: 400 });
     }
-    if (rx.strength && item.strength && norm(rx.strength) !== norm(item.strength)) {
+    if (rx.strength && item.strength && !strengthMatches(rx.strength, item.strength)) {
       return Response.json({ error: 'The proposed product must be the same strength as the prescription.' }, { status: 400 });
     }
     if (norm(item.medication_name) === norm(rx.medication_name)) {

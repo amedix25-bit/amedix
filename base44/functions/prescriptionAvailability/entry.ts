@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { isItemDispensable } from "../../shared/pharmacyPrescription.ts";
+import { isItemDispensable, strengthMatches } from "../../shared/pharmacyPrescription.ts";
 
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -65,7 +65,7 @@ export default async function(req) {
     const matches = [];
     for (const [, item] of results) {
       // When a strength is prescribed, only stock of the same strength counts.
-      if (strength && item.strength && String(item.strength).toLowerCase() !== strength.toLowerCase()) continue;
+      if (strength && item.strength && !strengthMatches(strength, item.strength)) continue;
       matches.push(item);
     }
 
@@ -89,7 +89,7 @@ export default async function(req) {
           if (!isItemDispensable(item)) continue;
           if (norm(item.medication_name) === norm(medicationName)) continue;
           if (norm(item.active_ingredient) !== norm(activeIngredient)) continue;
-          if (strength && item.strength && norm(item.strength) !== norm(strength)) continue;
+          if (strength && item.strength && !strengthMatches(strength, item.strength)) continue;
           const prev = substMap.get(item.pharmacy_id);
           if (!prev || item.quantity_in_stock > prev.quantity_in_stock) substMap.set(item.pharmacy_id, item);
         }

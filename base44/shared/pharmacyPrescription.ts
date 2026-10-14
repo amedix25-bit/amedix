@@ -12,6 +12,27 @@ export function parseQty(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// Parses a strength like "20 mg", "500mg" or "500" into a comparable
+// { value, unit } pair — the unit is empty when only a number was recorded.
+export function parseStrength(value) {
+  const m = String(value || '').toLowerCase().trim().match(/(\d+(?:\.\d+)?)\s*(mg|mcg|ug|g|iu|ml|%|units?)?/);
+  if (!m) return null;
+  return { value: parseFloat(m[1]), unit: (m[2] || '').replace(/units?$/, 'unit') };
+}
+
+// Strengths match when the numbers are equal and the units are compatible —
+// a unit recorded on one side only ("500" vs "500 mg") still matches, since
+// pharmacies and doctors record the unit inconsistently.
+export function strengthMatches(a, b) {
+  const A = parseStrength(a);
+  const B = parseStrength(b);
+  if (!A && !B) return true;
+  if (!A || !B) return false;
+  if (A.value !== B.value) return false;
+  if (!A.unit || !B.unit) return true;
+  return A.unit === B.unit;
+}
+
 export function unitWord(qtyStr) {
   const m = String(qtyStr || '').replace(/[^0-9.]/g, ' ').trim().split(/\s+/)[1];
   return m || 'unit(s)';
@@ -67,7 +88,7 @@ export async function findInventoryItems(base44, pharmacy, prescription) {
     { limit: 50 }
   );
   const items = (page.items || page).filter(
-    (i) => !prescription.strength || !i.strength || String(i.strength).toLowerCase() === String(prescription.strength).toLowerCase()
+    (i) => !prescription.strength || !i.strength || strengthMatches(prescription.strength, i.strength)
   );
   items.sort((a, b) => {
     if (a.expiry_date && b.expiry_date) return a.expiry_date.localeCompare(b.expiry_date);
