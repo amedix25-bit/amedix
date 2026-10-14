@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import React from "react";
+import usePrescriptionAvailability from "@/components/pharmacy/usePrescriptionAvailability";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { Building2, Loader2, MapPin, RefreshCw } from "lucide-react";
@@ -13,39 +13,9 @@ import { Building2, Loader2, MapPin, RefreshCw } from "lucide-react";
 // held by pharmacies — flagged for professional review; they require the
 // prescriber's approval before any pharmacy dispenses them.
 export default function PrescriptionAvailability({ medicationName, strength, activeIngredient, onSelect, refreshKey, showSubstitutes }) {
-  const [pharmacies, setPharmacies] = useState(null);
-  const [substitutes, setSubstitutes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const check = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await base44.functions.invoke("prescriptionAvailability", {
-        medication_name: medicationName,
-        strength: strength || "",
-        active_ingredient: activeIngredient || "",
-      });
-      setPharmacies(res.data.pharmacies || []);
-      setSubstitutes(res.data.substitutes || []);
-    } catch (err) {
-      setError(err.response?.data?.error || err.message || "Availability check failed.");
-      setPharmacies([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    check();
-    // Live re-check — when any pharmacy updates its inventory (adds stock,
-    // reserves, dispenses), the availability search re-runs automatically so
-    // stocked medication appears without a manual refresh.
-    const unsubscribe = base44.entities.PharmacyInventory.subscribe(() => check());
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+  const { pharmacies, substitutes, loading, error, check } = usePrescriptionAvailability({
+    medicationName, strength, activeIngredient, refreshKey,
+  });
 
   return (
     <div className="mt-3 pt-3 border-t border-border">
@@ -69,7 +39,7 @@ export default function PrescriptionAvailability({ medicationName, strength, act
           No affiliated pharmacy currently has this medication in stock. You can refresh later — pharmacies update their inventory in real time.
         </p>
       )}
-      {!loading && pharmacies && pharmacies.length > 0 && (
+      {!loading && !error && pharmacies && pharmacies.length > 0 && (
         <div className="mt-2 space-y-2">
           {pharmacies.map((p) => (
             <div key={p.pharmacy_id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -102,7 +72,7 @@ export default function PrescriptionAvailability({ medicationName, strength, act
         </div>
       )}
       {error && <p className="text-xs text-destructive mt-2">{error}</p>}
-      {showSubstitutes && !loading && substitutes.length > 0 && (
+      {showSubstitutes && !loading && !error && substitutes.length > 0 && (
         <div className="mt-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Same Active Ingredient — Different Product (Substitution Candidates)
