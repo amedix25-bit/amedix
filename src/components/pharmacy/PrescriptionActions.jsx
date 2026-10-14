@@ -34,7 +34,9 @@ export function prescriptionRemaining(prescription) {
   if (events.length === 0 && prescription.status === "dispensed" && (prescription.dispensed_datetime || prescription.dispensed_quantity)) {
     dispensed = authorized;
   }
-  return Math.max(0, authorized - dispensed);
+  // Each consumed refill re-opens the full authorized quantity.
+  const capacity = authorized * (1 + (prescription.refills_used || 0));
+  return Math.max(0, capacity - dispensed);
 }
 
 // Reserve / Fill Prescription / Reject actions for a prescription authorized

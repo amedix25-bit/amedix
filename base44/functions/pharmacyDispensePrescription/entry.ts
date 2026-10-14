@@ -50,34 +50,39 @@ export default async function(req) {
     const unit = unitWord(prescription.quantity);
     const priorEvents = prescription.dispensing_events || [];
     const totalDispensed = totalDispensedOf(prescription);
-    let remaining = authorizedQty > 0 ? Math.max(0, authorizedQty - totalDispensed) : 0;
+    // Each consumed refill re-opens the full authorized quantity.
+    const capacity = authorizedQty > 0 ? authorizedQty * (1 + (prescription.refills_used || 0)) : 0;
+    let remaining = capacity > 0 ? Math.max(0, capacity - totalDispensed) : 0;
+
+    // Refill control: a fill that starts after the original authorized
+    // quantity was fully dispensed consumes one authorized refill — the
+    // refill re-opens the full original quantity for dispensing.
+    let consumedRefill = false;
+    let available = remaining;
+    if (authorizedQty > 0 && remaining <= 0) {
+      consumedRefill = true;
+      if ((prescription.refills_used || 0) >= (prescription.refills_authorized || 0)) {
+        return Response.json({ error: 'No authorized refills remaining on this prescription.' }, { status: 400 });
+      }
+      available = authorizedQty;
+    }
 
     // Requested quantity for this fill: the pharmacist can dispense less
-    // (partial dispensing) or the full remaining amount.
+    // (partial dispensing) or the full available amount.
     let dispenseQty = body?.dispensed_quantity === undefined || body?.dispensed_quantity === null || body?.dispensed_quantity === ''
-      ? (authorizedQty > 0 ? remaining : 0)
+      ? available
       : parseQty(body.dispensed_quantity);
     if (dispenseQty <= 0) {
       return Response.json({ error: 'Enter the quantity actually dispensed.' }, { status: 400 });
     }
 
-    // Refill control: a fill that starts after the original authorized
-    // quantity was fully dispensed consumes one authorized refill.
-    let consumedRefill = false;
-    if (authorizedQty > 0) {
-      if (remaining <= 0) {
-        consumedRefill = true;
-        if ((prescription.refills_used || 0) >= (prescription.refills_authorized || 0)) {
-          return Response.json({ error: 'No authorized refills remaining on this prescription.' }, { status: 400 });
-        }
-      }
-      if (dispenseQty > remaining) {
-        return Response.json(
-          { error: `Only ${remaining} ${unit} of the authorized quantity remain — dispense ${remaining} or less (partial dispensing is allowed).` },
-          { status: 400 }
-        );
-      }
-    } else if (prescription.status === 'dispensed' && (prescription.dispensed_datetime || prescription.dispensed_quantity)) {
+    if (authorizedQty > 0 && dispenseQty > available) {
+      return Response.json(
+        { error: `Only ${available} ${unit} of the authorized quantity remain — dispense ${available} or less (partial dispensing is allowed).` },
+        { status: 400 }
+      );
+    }
+    if (authorizedQty <= 0 && prescription.status === 'dispensed' && (prescription.dispensed_datetime || prescription.dispensed_quantity)) {
       // No numeric quantity on the prescription: every fill beyond the first
       // is treated as a refill.
       consumedRefill = true;
@@ -103,7 +108,7 @@ export default async function(req) {
     }
 
     const now = new Date();
-    remaining = authorizedQty > 0 ? Math.max(0, remaining - dispenseQty) : 0;
+    remaining = authorizedQty > 0 ? Math.max(0, available - dispenseQty) : 0;
     const medLabel = `${prescription.medication_name}${prescription.strength ? ` ${prescription.strength}` : ''}`;
     const quantityLabel = `${dispenseQty} ${unit}`;
 
