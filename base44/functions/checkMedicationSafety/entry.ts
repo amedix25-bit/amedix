@@ -38,11 +38,12 @@ export default async function(req) {
 
     // The caller must be the prescribing doctor.
     const doctorId = String(body?.doctor_id || '');
-    let doctors = [];
+    let doctor = null;
     try {
-      doctors = await base44.asServiceRole.entities.DoctorProfile.filter({ id: doctorId }, { limit: 1 });
-    } catch (e) { doctors = []; }
-    if (doctors.length === 0 || doctors[0].user_id !== user.id) {
+      const page = await base44.asServiceRole.entities.DoctorProfile.filter({ id: doctorId }, { limit: 1 });
+      doctor = (page.items || page)[0] || null;
+    } catch (e) { doctor = null; }
+    if (!doctor || doctor.user_id !== user.id) {
       return Response.json({ error: 'Doctor profile not found.' }, { status: 403 });
     }
 
