@@ -7,6 +7,7 @@ import PatientOverview from "@/components/patient/PatientOverview";
 import PatientAppointments from "@/components/patient/PatientAppointments";
 import PatientLabs from "@/components/patient/PatientLabs";
 import PatientLabResults from "@/components/patient/PatientLabResults";
+import PatientPrescriptions from "@/components/patient/PatientPrescriptions";
 import PatientImaging from "@/components/patient/PatientImaging";
 import PatientRadiologyRequests from "@/components/patient/PatientRadiologyRequests";
 import PatientDocuments from "@/components/patient/PatientDocuments";
@@ -20,7 +21,7 @@ import NotificationsBar from "@/components/patient/NotificationsBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User } from "lucide-react";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, ScrollText, Shield, User } from "lucide-react";
 
 const NAV_ITEMS = [
   { key: "overview", label: "Home", icon: HomeIcon },
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { key: "imaging", label: "Imaging", icon: ImageIcon },
   { key: "documents", label: "Documents", icon: FileText },
   { key: "medications", label: "Medications", icon: Pill },
+  { key: "prescriptions", label: "Prescriptions", icon: ScrollText },
   { key: "access", label: "Access & Privacy", icon: Shield },
   { key: "profile", label: "Profile", icon: User },
 ];
@@ -134,6 +136,7 @@ function PatientPortal() {
           {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
           {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
           {activeTab === "medications" && <PatientMedications patient={profile} />}
+          {activeTab === "prescriptions" && <PatientPrescriptions />}
           {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
           {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
           {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}

@@ -1,0 +1,227 @@
+{
+  "name": "Prescription",
+  "type": "object",
+  "properties": {
+    "prescription_id": {
+      "type": "string",
+      "description": "Unique AMedix prescription reference, e.g. PR-20261014-8F3K \u2014 generated at issue time, used for idempotent submission"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the prescription belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security, set server-side at issue time"
+    },
+    "patient_cin": {
+      "type": "string",
+      "description": "Patient's Clinical Identification Number \u2014 attached server-side from the unified AMedix Patient Record"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient full name \u2014 attached server-side from the unified AMedix Patient Record"
+    },
+    "patient_dob": {
+      "type": "string",
+      "description": "Patient date of birth \u2014 attached server-side from the unified AMedix Patient Record"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the prescribing doctor"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 used for Row Level Security, set server-side at issue time"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Prescribing doctor's name \u2014 attached server-side"
+    },
+    "doctor_specialization": {
+      "type": "string",
+      "description": "Prescribing doctor's specialization \u2014 attached server-side"
+    },
+    "doctor_hospital": {
+      "type": "string",
+      "description": "Hospital where the prescription was issued \u2014 attached server-side"
+    },
+    "encounter_id": {
+      "type": "string",
+      "description": "Encounter reference the prescription was issued during, when available"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Drug / medication name as prescribed, e.g. Panadol"
+    },
+    "active_ingredient": {
+      "type": "string",
+      "description": "Active ingredient (generic name), e.g. Paracetamol \u2014 used to match pharmacy inventory"
+    },
+    "strength": {
+      "type": "string",
+      "description": "Strength, e.g. 500 mg \u2014 used to match pharmacy inventory"
+    },
+    "dosage": {
+      "type": "string",
+      "description": "Dosage per administration, e.g. 1 tablet"
+    },
+    "route": {
+      "type": "string",
+      "enum": [
+        "oral",
+        "intravenous",
+        "intramuscular",
+        "subcutaneous",
+        "topical",
+        "inhalation",
+        "rectal",
+        "ophthalmic",
+        "otic",
+        "nasal",
+        "other"
+      ],
+      "description": "Route of administration"
+    },
+    "frequency": {
+      "type": "string",
+      "description": "How often the medication is taken, e.g. 3 times daily"
+    },
+    "duration": {
+      "type": "string",
+      "description": "Treatment duration, e.g. 7 days"
+    },
+    "quantity": {
+      "type": "string",
+      "description": "Quantity to dispense, e.g. 21 tablets"
+    },
+    "refills_authorized": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of authorized refills after the original dispense \u2014 set by the doctor at issue time"
+    },
+    "refills_used": {
+      "type": "integer",
+      "default": 0,
+      "description": "Refills already dispensed by pharmacies"
+    },
+    "special_instructions": {
+      "type": "string",
+      "description": "Special instructions from the prescribing doctor, e.g. take with food"
+    },
+    "date_prescribed": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the prescription was issued"
+    },
+    "prescribed_datetime": {
+      "type": "string",
+      "description": "Date and time the prescription was issued (ISO datetime)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "authorized",
+        "reserved",
+        "dispensed",
+        "cancelled"
+      ],
+      "default": "issued",
+      "description": "ISSUED: created by the doctor, the patient has not chosen a pharmacy yet. AUTHORIZED: the patient authorized a pharmacy to dispense this prescription. RESERVED: the pharmacy confirmed a reservation for the patient. DISPENSED: the medication was dispensed to the patient. CANCELLED: the prescription was voided."
+    },
+    "authorized_pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the patient authorized to dispense this prescription \u2014 the pharmacy only sees the prescription once this is set"
+    },
+    "authorized_pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the authorized pharmacy account \u2014 used for Row Level Security"
+    },
+    "authorized_pharmacy_name": {
+      "type": "string",
+      "description": "Name of the authorized pharmacy"
+    },
+    "authorized_pharmacy_number": {
+      "type": "string",
+      "description": "A&M Pharmacy Number of the authorized pharmacy"
+    },
+    "authorized_pharmacy_address": {
+      "type": "string",
+      "description": "Location / address of the authorized pharmacy"
+    },
+    "authorization_datetime": {
+      "type": "string",
+      "description": "Date and time the patient authorized the pharmacy (ISO datetime)"
+    },
+    "reservation_code": {
+      "type": "string",
+      "description": "Reservation reference shown to the patient when collecting the medication, e.g. RES-8F3K2M"
+    },
+    "reserved_datetime": {
+      "type": "string",
+      "description": "Date and time the pharmacy confirmed the reservation (ISO datetime)"
+    },
+    "reserved_by_name": {
+      "type": "string",
+      "description": "Pharmacy staff member who confirmed the reservation"
+    },
+    "dispensed_datetime": {
+      "type": "string",
+      "description": "Date and time the medication was dispensed (ISO datetime) \u2014 updated on each refill"
+    },
+    "dispensed_by_name": {
+      "type": "string",
+      "description": "Pharmacist who dispensed the medication"
+    },
+    "dispensed_pharmacy_name": {
+      "type": "string",
+      "description": "Name of the pharmacy that dispensed the medication"
+    },
+    "dispensed_quantity": {
+      "type": "string",
+      "description": "Quantity actually dispensed"
+    }
+  },
+  "required": [
+    "patient_id",
+    "doctor_id",
+    "medication_name",
+    "date_prescribed"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "data.authorized_pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

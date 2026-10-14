@@ -1,0 +1,107 @@
+{
+  "name": "PharmacyNotification",
+  "type": "object",
+  "properties": {
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the notification belongs to"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy owner account \u2014 set server-side, used for access control"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "new_authorized",
+        "reservation_confirmed",
+        "dispensed",
+        "other"
+      ],
+      "default": "other",
+      "description": "Category of the pharmacy notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short notification heading"
+    },
+    "message": {
+      "type": "string",
+      "description": "Summary shown to the pharmacy"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "prescription_id": {
+      "type": "string",
+      "description": "Prescription record id"
+    },
+    "prescription_ref": {
+      "type": "string",
+      "description": "Prescription reference, e.g. PR-20261014-8F3K"
+    },
+    "target": {
+      "type": "string",
+      "enum": [
+        "prescriptions",
+        "patients"
+      ],
+      "default": "prescriptions",
+      "description": "Where clicking the notification takes the pharmacy"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Read state of the notification"
+    },
+    "read_at": {
+      "type": "string",
+      "description": "ISO datetime when the notification was read"
+    }
+  },
+  "required": [
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.pharmacy_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, Building2 } from "lucide-react";
+import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, Building2, Pill } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
@@ -30,6 +30,12 @@ const ROLE_CONTENT = {
     title: "I am a Hospital",
     description:
       "Register your hospital, manage receptionists, patient check-ins, and visit payments — or sign in to your Hospital Portal."
+  },
+  pharmacy: {
+    icon: Pill,
+    title: "I am a Pharmacy",
+    description:
+      "Register your pharmacy, manage medication stock, and dispense authorized prescriptions — or sign in to your Pharmacy Portal."
   }
   };
 
@@ -160,6 +166,25 @@ export default function Landing() {
                     </div>
                   </div>
                 </button>
+
+                <button
+                onClick={() => selectRole("pharmacy")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
+                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                      <Pill className="w-7 h-7 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold">{t("I am a Pharmacy")}</h3>
+                    <p className="text-muted-foreground text-sm mt-2">
+                      {t("Manage medication stock, reserve prescriptions, and dispense to patients.")}
+                    </p>
+                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
+                      {t("Continue")}
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </button>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4 mt-14 text-left rtl:text-right">
@@ -190,11 +215,11 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mt-2">{t(roleContent.description)}</p>
 
                 <div className="flex flex-col gap-3 mt-6">
-                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : role === "hospital" ? "/hospital" : "/login?portal=" + role)}>
+                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : role === "hospital" ? "/hospital" : role === "pharmacy" ? "/pharmacy" : "/login?portal=" + role)}>
                     <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     {t("Log In")}
                   </Button>
-                  <Button size="lg" onClick={() => navigate(role === "lab" ? "/lab/register" : role === "hospital" ? "/hospital/register" : "/register")}>
+                  <Button size="lg" onClick={() => navigate(role === "lab" ? "/lab/register" : role === "hospital" ? "/hospital/register" : role === "pharmacy" ? "/pharmacy/register" : "/register")}>
                     {t("Create Account")}
                   </Button>
                 </div>

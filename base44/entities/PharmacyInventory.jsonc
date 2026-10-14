@@ -1,0 +1,84 @@
+{
+  "name": "PharmacyInventory",
+  "type": "object",
+  "properties": {
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id this inventory item belongs to"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy account \u2014 used for Row Level Security"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Drug / medication name as listed in the pharmacy's stock, e.g. Panadol"
+    },
+    "active_ingredient": {
+      "type": "string",
+      "description": "Active ingredient (generic name), e.g. Paracetamol \u2014 doctors and patients can also match on this"
+    },
+    "strength": {
+      "type": "string",
+      "description": "Strength, e.g. 500 mg"
+    },
+    "dosage_form": {
+      "type": "string",
+      "enum": [
+        "tablet",
+        "capsule",
+        "syrup",
+        "injection",
+        "cream",
+        "drops",
+        "other"
+      ],
+      "description": "Dosage form of the medication"
+    },
+    "quantity_in_stock": {
+      "type": "number",
+      "default": 0,
+      "description": "Units currently in stock \u2014 decreased when the pharmacy reserves or dispenses a prescription"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the stock level was last updated (ISO datetime) \u2014 shown as the latest inventory update"
+    }
+  },
+  "required": [
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "medication_name",
+    "quantity_in_stock"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "data.pharmacy_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

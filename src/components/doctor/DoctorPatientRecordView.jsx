@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { ArrowLeft, History, FileText } from "lucide-react";
+import { ArrowLeft, History, FileText, Pill } from "lucide-react";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorPatientHistorySection from "@/components/doctor/patients/DoctorPatientHistorySection";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
+import DoctorPatientPrescriptions from "@/components/doctor/pharmacy/DoctorPatientPrescriptions";
 import { DoctorTranslationsProvider } from "@/lib/doctorMedicalTranslations";
 
 // Patient profile page (Find My Patient → My Patients → patient). Shows the
@@ -37,6 +38,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
       <div className="flex rounded-xl border border-border bg-card p-1 gap-1 max-w-xl">
         {tabButton("history", "Patient History", History)}
         {tabButton("notes", "Clinical Notes", FileText)}
+        {tabButton("prescriptions", "Prescriptions", Pill)}
       </div>
 
       {activeTab === "history" && (
@@ -53,9 +55,16 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         </section>
       )}
 
+      {activeTab === "prescriptions" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Prescriptions</h3>
+          <DoctorPatientPrescriptions patient={patient} doctorProfile={doctorProfile} />
+        </section>
+      )}
+
       {!activeTab && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          Select Patient History or Clinical Notes above to view the patient's information.
+          Select Patient History, Clinical Notes or Prescriptions above to view the patient's information.
         </p>
       )}
     </div>

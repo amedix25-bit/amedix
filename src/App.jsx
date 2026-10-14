@@ -26,6 +26,9 @@ import Receptionist from '@/pages/Receptionist';
 import HospitalPortal from '@/pages/HospitalPortal';
 import LabPortal from '@/pages/LabPortal';
 import LabTechnician from '@/pages/LabTechnician';
+import PharmacyLogin from '@/pages/PharmacyLogin';
+import PharmacyRegister from '@/pages/PharmacyRegister';
+import PharmacyPortal from '@/pages/PharmacyPortal';
 import RadiologistDashboard from '@/pages/RadiologistDashboard';
 import { AppLanguageProvider } from '@/lib/appLanguage';
 
@@ -57,6 +60,8 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/lab" element={<LabLogin />} />
       <Route path="/lab/register" element={<LabRegister />} />
+      <Route path="/pharmacy" element={<PharmacyLogin />} />
+      <Route path="/pharmacy/register" element={<PharmacyRegister />} />
       <Route path="/hospital" element={<HospitalLogin />} />
       <Route path="/hospital/register" element={<HospitalRegister />} />
       <Route path="/hospital/receptionist" element={<Receptionist />} />
@@ -70,6 +75,7 @@ const AuthenticatedApp = () => {
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/lab-portal" element={<LabPortal />} />
+        <Route path="/pharmacy-portal" element={<PharmacyPortal />} />
         <Route path="/hospital-portal" element={<HospitalPortal />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

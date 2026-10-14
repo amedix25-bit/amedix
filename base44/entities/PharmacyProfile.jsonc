@@ -1,0 +1,89 @@
+{
+  "name": "PharmacyProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "pharmacy_name": {
+      "type": "string",
+      "description": "Pharmacy name"
+    },
+    "pharmacy_number": {
+      "type": "string",
+      "description": "A&M Pharmacy Number / ID \u2014 unique system-generated pharmacy identification number, e.g. AMP-2026-8F3K"
+    },
+    "address": {
+      "type": "string",
+      "description": "Pharmacy location / address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Pharmacy phone number"
+    },
+    "whatsapp_number": {
+      "type": "string",
+      "description": "Pharmacy WhatsApp number"
+    },
+    "email": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Pharmacy profile picture / logo"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "pending_approval"
+      ],
+      "default": "active",
+      "description": "Pharmacy account status \u2014 only 'active' pharmacies are shown to doctors and patients. An administrator can suspend a pharmacy to hide it from search and availability results."
+    }
+  },
+  "required": [
+    "user_id",
+    "pharmacy_name",
+    "pharmacy_number"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

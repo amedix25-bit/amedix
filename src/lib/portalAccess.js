@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 // checkPortalAccess backend function), and the selected login portal must
 // match one of those roles before access is granted.
 
-export const VALID_PORTALS = ["patient", "doctor", "radiologist", "lab", "hospital"];
+export const VALID_PORTALS = ["patient", "doctor", "radiologist", "lab", "hospital", "pharmacy"];
 
 export const ROLE_LABELS = {
   patient: "Patient",
@@ -13,6 +13,7 @@ export const ROLE_LABELS = {
   radiologist: "Radiologist",
   lab: "Laboratory",
   hospital: "Hospital",
+  pharmacy: "Pharmacy",
   admin: "Administrator",
 };
 
@@ -22,6 +23,7 @@ export const ROLE_LOGIN_LABELS = {
   radiologist: "Radiologist Login",
   lab: "Laboratory Login",
   hospital: "Hospital Login",
+  pharmacy: "Pharmacy Login",
   admin: "Administrator Login",
 };
 
@@ -31,6 +33,7 @@ export const PORTAL_DESTINATIONS = {
   radiologist: "/radiologist",
   lab: "/lab-portal",
   hospital: "/hospital-portal",
+  pharmacy: "/pharmacy-portal",
   admin: "/admin",
 };
 
