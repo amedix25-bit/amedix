@@ -29,6 +29,17 @@ export default async function(req) {
     const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
     if (!checkin) return gateBlocked();
 
+    // Idempotency: an identical request_id already persisted (replayed/retried
+    // submission) is rejected instead of creating a duplicate order.
+    if (payload.request_id) {
+      try {
+        const dupes = await base44.asServiceRole.entities.LabRequest.filter({ request_id: String(payload.request_id) }, { limit: 1 });
+        if (dupes.length > 0) {
+          return Response.json({ error: "Duplicate submission — this request was already saved.", duplicate: true }, { status: 409 });
+        }
+      } catch (e) { /* non-fatal */ }
+    }
+
     // Written with the service role — doctors cannot create lab requests
     // directly through the client API (Row Level Security blocks it).
     const lab_request = await base44.asServiceRole.entities.LabRequest.create(payload);
