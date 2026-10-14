@@ -166,9 +166,11 @@ export default async function(req) {
     const medicationRoutes = new Set([
       'oral', 'intravenous', 'intramuscular', 'subcutaneous', 'topical', 'inhalation', 'rectal', 'other',
     ]);
+    let medicationAdded = false;
     const existingMeds = await base44.asServiceRole.entities.Medication.filter({ prescription_id: prescription.id });
     if ((existingMeds.items || existingMeds).length === 0) {
-      await base44.asServiceRole.entities.Medication.create({
+      try {
+        await base44.asServiceRole.entities.Medication.create({
         patient_id: prescription.patient_id,
         patient_user_id: prescription.patient_user_id || '',
         patient_cin: prescription.patient_cin || '',
@@ -186,6 +188,10 @@ export default async function(req) {
         start_date: now.toISOString().slice(0, 10),
         is_active: true,
       });
+        medicationAdded = true;
+      } catch (e) {
+        console.error('Failed to sync the dispensed medication to the patient record:', e);
+      }
     }
 
     const fillNote = remaining > 0
@@ -249,7 +255,12 @@ export default async function(req) {
       document_id: prescription.prescription_id || '',
     });
 
-    return Response.json({ dispensed_datetime: now.toISOString(), remaining, consumed_refill: consumedRefill });
+    return Response.json({
+      dispensed_datetime: now.toISOString(),
+      remaining,
+      consumed_refill: consumedRefill,
+      medication_added: medicationAdded,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
