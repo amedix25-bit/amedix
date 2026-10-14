@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Plus, Pill, Trash2, ShieldAlert, PackageX, ArchiveX } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 
 const FORM_OPTIONS = [
   { value: "tablet", label: "Tablet" },
@@ -217,7 +218,18 @@ export default function PharmacyInventorySection({ profile }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Medication Name *</Label>
-                    <Input placeholder="e.g. Panadol" value={recallForm.medication_name} onChange={setRecall("medication_name")} required />
+                    <MedicationAutocomplete
+                      value={recallForm.medication_name}
+                      onChange={(name) => setRecallForm((s) => ({ ...s, medication_name: name }))}
+                      onSelect={(o) => setRecallForm((s) => ({
+                        ...s,
+                        medication_name: o.medication_name,
+                        active_ingredient: o.active_ingredient || s.active_ingredient,
+                        strength: o.strength || s.strength,
+                      }))}
+                      placeholder="e.g. Panadol"
+                      required
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Active Ingredient</Label>
@@ -273,7 +285,19 @@ export default function PharmacyInventorySection({ profile }) {
               <form onSubmit={handleAdd} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>Medication Name *</Label>
-                  <Input placeholder="e.g. Panadol" value={form.medication_name} onChange={set("medication_name")} required />
+                  <MedicationAutocomplete
+                    value={form.medication_name}
+                    onChange={(name) => setForm((s) => ({ ...s, medication_name: name }))}
+                    onSelect={(o) => setForm((s) => ({
+                      ...s,
+                      medication_name: o.medication_name,
+                      active_ingredient: o.active_ingredient || s.active_ingredient,
+                      strength: o.strength || s.strength,
+                      dosage_form: o.dosage_form || s.dosage_form,
+                    }))}
+                    placeholder="e.g. Panadol"
+                    required
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Active Ingredient</Label>

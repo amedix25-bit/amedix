@@ -9,6 +9,7 @@ import { Loader2, Pill, X, Lock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { LOCKED_MESSAGE } from "@/lib/checkInGate";
 import MedicationSafetyAlerts from "@/components/doctor/pharmacy/MedicationSafetyAlerts";
+import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 
 const ROUTES = [
   { value: "oral", label: "Oral" },
@@ -175,7 +176,18 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs">Medication Name <span className="text-destructive">*</span></Label>
-          <Input placeholder="e.g. Panadol" value={form.medication_name} onChange={set("medication_name")} required />
+          <MedicationAutocomplete
+            value={form.medication_name}
+            onChange={(name) => setForm((s) => ({ ...s, medication_name: name }))}
+            onSelect={(o) => setForm((s) => ({
+              ...s,
+              medication_name: o.medication_name,
+              active_ingredient: o.active_ingredient || s.active_ingredient,
+              strength: o.strength || s.strength,
+            }))}
+            placeholder="e.g. Panadol"
+            required
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Active Ingredient</Label>
