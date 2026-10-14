@@ -109,6 +109,11 @@
       "type": "string",
       "description": "Special instructions from the prescribing doctor, e.g. take with food"
     },
+    "safety_check": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Medication safety check recorded at issue time \u2014 the alerts raised against the patient's record (allergies, current medications, interactions), the doctor's decision (proceeded / modified), any justified-decision note and who acknowledged it. Advisory interaction notes are marked ai_assisted; hard blocks (allergy conflicts) come from deterministic rules"
+    },
     "date_prescribed": {
       "type": "string",
       "format": "date",
@@ -154,6 +159,10 @@
       "type": "string",
       "description": "Date and time the patient authorized the pharmacy (ISO datetime)"
     },
+    "reserved_inventory_id": {
+      "type": "string",
+      "description": "Id of the PharmacyInventory item (batch) whose stock the reservation holds \u2014 a rejection or cancellation returns the stock to this batch"
+    },
     "reservation_code": {
       "type": "string",
       "description": "Reservation reference shown to the patient when collecting the medication, e.g. RES-8F3K2M"
@@ -165,6 +174,10 @@
     "reserved_by_name": {
       "type": "string",
       "description": "Pharmacy staff member who confirmed the reservation"
+    },
+    "dispensed_batch_number": {
+      "type": "string",
+      "description": "Manufacturer batch / lot number of the stock the medication was last dispensed from \u2014 the key used to trace patients when a batch is recalled"
     },
     "dispensed_datetime": {
       "type": "string",
@@ -188,7 +201,7 @@
     },
     "dispensing_events": {
       "type": "array",
-      "description": "Dispensing history \u2014 one entry per Fill Prescription transaction, including partial fills, with pharmacist, pharmacy, quantity dispensed, quantity remaining and whether a refill was consumed. The permanent record of every dispensing transaction at the pharmacy.",
+      "description": "Dispensing history \u2014 one entry per Fill Prescription transaction, including partial fills, with pharmacist, pharmacy, batch number, quantity dispensed, quantity remaining and whether a refill was consumed. The permanent record of every dispensing transaction at the pharmacy.",
       "items": {
         "type": "object",
         "properties": {
@@ -203,6 +216,10 @@
           "quantity_number": {
             "type": "number",
             "description": "Quantity dispensed in this transaction as a number"
+          },
+          "batch_number": {
+            "type": "string",
+            "description": "Manufacturer batch / lot number the medication was dispensed from"
           },
           "pharmacist_name": {
             "type": "string",

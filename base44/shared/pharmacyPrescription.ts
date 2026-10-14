@@ -39,9 +39,26 @@ export function remainingOf(prescription) {
   return Math.max(0, authorizedQty - totalDispensedOf(prescription));
 }
 
-// Finds the pharmacy's inventory item matching the prescribed medication and
-// strength (case-insensitive name match, strength compared when both set).
-export async function findInventoryItem(base44, pharmacy, prescription) {
+// Today's date in Africa/Tripoli (the app's clinical timezone).
+export function todayStr() {
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Tripoli', year: 'numeric', month: '2-digit', day: '2-digit' });
+  return fmt.format(new Date());
+}
+
+// An inventory item (batch) is dispensable when it is not quarantined and not
+// past its expiry date. Items recorded before batch tracking have no expiry
+// date and remain dispensable.
+export function isItemDispensable(item) {
+  if (!item || item.is_quarantined) return false;
+  if (item.expiry_date && item.expiry_date < todayStr()) return false;
+  return true;
+}
+
+// Finds the pharmacy's inventory items matching the prescribed medication and
+// strength (case-insensitive name match, strength compared when both set),
+// sorted first-expiry-first-out so dispensing always consumes the batch that
+// expires soonest.
+export async function findInventoryItems(base44, pharmacy, prescription) {
   const page = await base44.asServiceRole.entities.PharmacyInventory.filter(
     {
       pharmacy_id: pharmacy.id,
@@ -52,16 +69,36 @@ export async function findInventoryItem(base44, pharmacy, prescription) {
   const items = (page.items || page).filter(
     (i) => !prescription.strength || !i.strength || String(i.strength).toLowerCase() === String(prescription.strength).toLowerCase()
   );
+  items.sort((a, b) => {
+    if (a.expiry_date && b.expiry_date) return a.expiry_date.localeCompare(b.expiry_date);
+    if (a.expiry_date) return -1;
+    if (b.expiry_date) return 1;
+    return 0;
+  });
+  return items;
+}
+
+// Finds the pharmacy's inventory item matching the prescribed medication and
+// strength (case-insensitive name match, strength compared when both set).
+export async function findInventoryItem(base44, pharmacy, prescription) {
+  const items = await findInventoryItems(base44, pharmacy, prescription);
   return items[0] || null;
 }
 
 // Returns the stock still held by a reservation (the full authorized quantity
 // minus what partial fills already dispensed) back to the pharmacy inventory.
+// The stock goes back to the exact batch it was reserved from.
 export async function restoreReservedStock(base44, pharmacy, prescription) {
   if (prescription.status !== 'reserved') return;
   const heldQty = remainingOf(prescription);
   if (heldQty <= 0) return;
-  const item = await findInventoryItem(base44, pharmacy, prescription);
+  let item = null;
+  if (prescription.reserved_inventory_id) {
+    try {
+      item = await base44.asServiceRole.entities.PharmacyInventory.get(prescription.reserved_inventory_id);
+    } catch (e) { item = null; }
+  }
+  if (!item) item = await findInventoryItem(base44, pharmacy, prescription);
   if (item) {
     await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
       quantity_in_stock: item.quantity_in_stock + heldQty,

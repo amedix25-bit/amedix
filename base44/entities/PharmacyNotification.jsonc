@@ -16,6 +16,8 @@
         "new_authorized",
         "reservation_confirmed",
         "dispensed",
+        "expiry_alert",
+        "recall",
         "other"
       ],
       "default": "other",
@@ -50,7 +52,8 @@
       "type": "string",
       "enum": [
         "prescriptions",
-        "patients"
+        "patients",
+        "inventory"
       ],
       "default": "prescriptions",
       "description": "Where clicking the notification takes the pharmacy"

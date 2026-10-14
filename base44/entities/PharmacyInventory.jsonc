@@ -35,10 +35,63 @@
       ],
       "description": "Dosage form of the medication"
     },
+    "batch_number": {
+      "type": "string",
+      "description": "Manufacturer batch / lot number of this stock entry \u2014 the key for expiry tracking, quarantine and recall tracing"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiry date of the batch \u2014 expired stock is blocked from dispensing and flagged by the daily safety scan"
+    },
     "quantity_in_stock": {
       "type": "number",
       "default": 0,
       "description": "Units currently in stock \u2014 decreased when the pharmacy reserves or dispenses a prescription"
+    },
+    "is_quarantined": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the batch is quarantined \u2014 expired, recalled or manually withdrawn. Quarantined stock is blocked from dispensing"
+    },
+    "quarantine_reason": {
+      "type": "string",
+      "description": "Why the batch was quarantined \u2014 e.g. expired, recalled (with the recall reference), damaged"
+    },
+    "quarantined_datetime": {
+      "type": "string",
+      "description": "Date and time the batch was quarantined (ISO datetime)"
+    },
+    "quarantine_action": {
+      "type": "string",
+      "enum": [
+        "pending_disposal",
+        "disposed",
+        "released"
+      ],
+      "description": "What is being done with quarantined stock \u2014 awaiting disposal, destroyed, or released back to stock after review"
+    },
+    "recall_id": {
+      "type": "string",
+      "description": "MedicationRecall id affecting this batch \u2014 set automatically when a recall is recorded"
+    },
+    "recall_urgency": {
+      "type": "string",
+      "description": "Urgency of the recall affecting this batch \u2014 immediate, urgent or routine"
+    },
+    "safety_status": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "expiring",
+        "expired"
+      ],
+      "default": "ok",
+      "description": "Expiry safety status computed by the daily scan \u2014 ok, expiring within 90 days, or expired"
+    },
+    "expiry_alerted_datetime": {
+      "type": "string",
+      "description": "Date and time the latest expiry alert was sent for this item (ISO datetime) \u2014 prevents duplicate alerts"
     },
     "updated_datetime": {
       "type": "string",

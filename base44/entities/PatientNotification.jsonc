@@ -13,6 +13,7 @@
         "lab_request",
         "lab_results",
         "medication_update",
+        "recall",
         "other"
       ],
       "default": "other",
@@ -33,7 +34,7 @@
     },
     "target": {
       "type": "string",
-      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications)"
+      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications / prescriptions)"
     },
     "related_id": {
       "type": "string",

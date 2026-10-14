@@ -1,0 +1,131 @@
+{
+  "name": "MedicationRecall",
+  "type": "object",
+  "properties": {
+    "recall_id": {
+      "type": "string",
+      "description": "Unique recall reference, e.g. REC-20261014-8F3K"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Medication being recalled"
+    },
+    "active_ingredient": {
+      "type": "string",
+      "description": "Active ingredient of the recalled medication \u2014 also matches stock entries that list only the ingredient"
+    },
+    "strength": {
+      "type": "string",
+      "description": "Strength of the recalled medication, e.g. 500 mg \u2014 empty matches all strengths"
+    },
+    "batch_number": {
+      "type": "string",
+      "description": "Recalled batch / lot number \u2014 empty matches all batches of the medication"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": [
+        "immediate",
+        "urgent",
+        "routine"
+      ],
+      "description": "IMMEDIATE: serious health hazard \u2014 stop dispensing and contact affected patients at once. URGENT: significant risk \u2014 act quickly. ROUTINE: minor defect \u2014 return or replace stock during normal operations"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Reason for the recall, e.g. contamination, mislabeling, stability failure"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source of the recall notice \u2014 manufacturer, medicines authority or supplier"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "resolved"
+      ],
+      "default": "active",
+      "description": "ACTIVE: recall in progress \u2014 affected stock is quarantined and blocked from dispensing. RESOLVED: recall completed"
+    },
+    "issued_by_user_id": {
+      "type": "string",
+      "description": "User id of the administrator or pharmacy staff who recorded the recall"
+    },
+    "issued_by_name": {
+      "type": "string",
+      "description": "Name of the person who recorded the recall"
+    },
+    "issued_by_role": {
+      "type": "string",
+      "description": "Role of who recorded the recall \u2014 admin or pharmacy"
+    },
+    "pharmacy_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids of the pharmacies whose stock was affected and quarantined by this recall"
+    },
+    "affected_prescription_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids of prescriptions whose dispensing transactions may have used the recalled batch \u2014 patients and prescribers were notified"
+    },
+    "actions": {
+      "type": "array",
+      "description": "Auditable history of every recall action \u2014 quarantine, notifications, disposal, resolution",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "created / quarantined / patients_notified / disposed / resolved"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      }
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the recall was recorded (ISO datetime)"
+    },
+    "resolved_datetime": {
+      "type": "string",
+      "description": "Date and time the recall was resolved (ISO datetime)"
+    },
+    "resolved_by_name": {
+      "type": "string",
+      "description": "Name of the person who resolved the recall"
+    }
+  },
+  "required": [
+    "medication_name",
+    "urgency",
+    "reason"
+  ],
+  "rls": {
+    "read": {},
+    "create": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
