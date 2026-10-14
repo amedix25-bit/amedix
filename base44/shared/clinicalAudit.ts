@@ -21,8 +21,11 @@ export function generateClinicalRef(prefix: string): string {
 // Records one audit entry. Written with the service role — clients can never
 // forge or delete audit records (Row Level Security allows admin writes only).
 export async function logClinicalAudit(base44: any, entry: any): Promise<void> {
+  // Accepts either the raw client or its service-role form — many call sites
+  // pass base44.asServiceRole, which has no further asServiceRole.
+  const sr = base44.asServiceRole || base44;
   try {
-    await base44.asServiceRole.entities.ClinicalAuditLog.create({
+    await sr.entities.ClinicalAuditLog.create({
       actor_user_id: entry.actor_user_id || "",
       actor_name: entry.actor_name || "",
       actor_role: entry.actor_role || "doctor",

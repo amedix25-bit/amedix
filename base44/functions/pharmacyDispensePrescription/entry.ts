@@ -53,6 +53,22 @@ export default async function(req) {
     const unit = unitWord(prescription.quantity);
     const priorEvents = prescription.dispensing_events || [];
     const totalDispensed = totalDispensedOf(prescription);
+
+    // Idempotency: a repeated submission carrying the same key returns the
+    // original transaction instead of dispensing again — duplicate clicks and
+    // retried requests can never create a second fill.
+    const idemKey = String(body?.idempotency_key || '').trim();
+    if (idemKey) {
+      const priorFill = priorEvents.find((ev) => ev.idempotency_key === idemKey);
+      if (priorFill) {
+        return Response.json({
+          duplicate: true,
+          dispensed_datetime: priorFill.datetime,
+          remaining: Number(priorFill.remaining_after) || 0,
+          consumed_refill: !!priorFill.consumed_refill,
+        });
+      }
+    }
     // Each consumed refill re-opens the full authorized quantity.
     const capacity = authorizedQty > 0 ? authorizedQty * (1 + (prescription.refills_used || 0)) : 0;
     let remaining = capacity > 0 ? Math.max(0, capacity - totalDispensed) : 0;
@@ -192,6 +208,7 @@ export default async function(req) {
       consumed_refill: consumedRefill,
       payment_amount: paymentAmount,
       payment_method: paymentMethod,
+      idempotency_key: idemKey || undefined,
     };
 
     const update = {
@@ -207,53 +224,78 @@ export default async function(req) {
     if (consumedRefill) {
       update.refills_used = (prescription.refills_used || 0) + 1;
     }
-    try {
-      await base44.asServiceRole.entities.Prescription.update(prescription.id, update);
-    } catch (updateErr) {
-      // Compensating action: return the deducted stock so the inventory never
-      // reflects a dispensing that failed to record.
-      if (deductedItem) {
-        try {
-          await base44.asServiceRole.entities.PharmacyInventory.updateMany(
-            { id: deductedItem.id },
-            { $inc: { quantity_in_stock: dispenseQty }, $set: { updated_datetime: new Date().toISOString() } }
-          );
-          await recordStockMovement(base44.asServiceRole, {
-            pharmacy_id: pharmacy.id,
-            pharmacy_user_id: user.id,
-            inventory_id: deductedItem.id,
-            medication_name: prescription.medication_name,
-            strength: deductedItem.strength || '',
-            batch_number: deductedItem.batch_number || '',
-            expiry_date: deductedItem.expiry_date || '',
-            movement_type: 'adjustment',
-            quantity_before: deductedItem.quantity_in_stock - dispenseQty,
-            quantity_change: dispenseQty,
-            quantity_after: deductedItem.quantity_in_stock,
-            reason: 'Stock returned — the dispensing record failed to save',
-            reference: prescription.prescription_id || '',
-            performed_by_user_id: user.id,
-            performed_by_name: pharmacistName,
-            performed_by_role: 'pharmacy',
-          });
-        } catch (rollbackErr) {
-          console.error('Failed to return deducted stock after dispensing failure:', rollbackErr);
-        }
+    // Compensating action: returns deducted stock so the inventory never
+    // reflects a dispensing that failed to record.
+    const rollbackStock = async () => {
+      if (!deductedItem) return;
+      try {
+        await base44.asServiceRole.entities.PharmacyInventory.updateMany(
+          { id: deductedItem.id },
+          { $inc: { quantity_in_stock: dispenseQty }, $set: { updated_datetime: new Date().toISOString() } }
+        );
+        await recordStockMovement(base44.asServiceRole, {
+          pharmacy_id: pharmacy.id,
+          pharmacy_user_id: user.id,
+          inventory_id: deductedItem.id,
+          medication_name: prescription.medication_name,
+          strength: deductedItem.strength || '',
+          batch_number: deductedItem.batch_number || '',
+          expiry_date: deductedItem.expiry_date || '',
+          movement_type: 'adjustment',
+          quantity_before: deductedItem.quantity_in_stock - dispenseQty,
+          quantity_change: dispenseQty,
+          quantity_after: deductedItem.quantity_in_stock,
+          reason: 'Stock returned — the dispensing record failed to save',
+          reference: prescription.prescription_id || '',
+          performed_by_user_id: user.id,
+          performed_by_name: pharmacistName,
+          performed_by_role: 'pharmacy',
+        });
+      } catch (rollbackErr) {
+        console.error('Failed to return deducted stock after dispensing failure:', rollbackErr);
       }
+    };
+
+    // Optimistic lock: the update only applies while no other dispensing
+    // transaction has been recorded on this prescription since it was read —
+    // two concurrent fills (including on a reserved prescription) can never
+    // both commit against the same prescription state.
+    const fillGuard = priorEvents.length === 0
+      ? { id: prescription.id, fill_count: null }
+      : { id: prescription.id, fill_count: priorEvents.length };
+    let committed = null;
+    try {
+      committed = await base44.asServiceRole.entities.Prescription.updateMany(
+        fillGuard,
+        { $set: { ...update, fill_count: priorEvents.length + 1 } }
+      );
+    } catch (updateErr) {
+      await rollbackStock();
       throw updateErr;
+    }
+    if (!committed || committed.updated !== 1) {
+      await rollbackStock();
+      return Response.json(
+        { error: 'The prescription changed during the fill — the fill was not recorded. Please retry.' },
+        { status: 409 }
+      );
     }
 
     // Payment ledger: when a payment was captured at the counter, record it in
     // the pharmacy's payment ledger. A failure never breaks the dispensing.
     if (paymentAmount && paymentAmount > 0) {
-      await recordDispensingPayment(base44.asServiceRole, {
-        pharmacy,
-        prescription,
-        pharmacistName,
-        event,
-        paymentAmount,
-        paymentMethod,
-      });
+      try {
+        await recordDispensingPayment(base44.asServiceRole, {
+          pharmacy,
+          prescription,
+          pharmacistName,
+          event,
+          paymentAmount,
+          paymentMethod,
+        });
+      } catch (ledgerErr) {
+        console.error('Failed to record the dispensing payment in the ledger:', ledgerErr);
+      }
     }
 
     // The dispensed medication is added automatically to the patient's
@@ -294,62 +336,73 @@ export default async function(req) {
       ? ` Partial fill — ${remaining} ${unit} remain to be dispensed.`
       : '';
 
-    await base44.asServiceRole.entities.PharmacyNotification.create({
-      pharmacy_id: pharmacy.id,
-      pharmacy_user_id: user.id,
-      type: 'dispensed',
-      title: 'Medication Dispensed',
-      message: `${quantityLabel} of ${medLabel} dispensed to ${prescription.patient_name}.${fillNote}`,
-      patient_id: prescription.patient_id,
-      patient_name: prescription.patient_name,
-      patient_cin: prescription.patient_cin,
-      prescription_id: prescription.id,
-      prescription_ref: prescription.prescription_id || null,
-      target: 'prescriptions',
-      is_read: false,
-    });
-
-    await createPatientNotification(base44.asServiceRole, {
-      patient_id: prescription.patient_id,
-      type: 'medication_update',
-      title: remaining > 0 ? 'Medication Partially Dispensed' : 'Medication Dispensed',
-      message:
-        `${pharmacy.pharmacy_name} dispensed ${quantityLabel} of ${medLabel}.${fillNote}` +
-        (remaining === 0 ? ` You can now start your treatment as instructed by ${prescription.doctor_name || 'your doctor'}. The medication was added to your Medication list.` : ''),
-      target: 'prescriptions',
-      related_id: prescription.id,
-    });
-
-    if (prescription.doctor_user_id) {
-      await base44.asServiceRole.entities.DoctorNotification.create({
-        doctor_user_id: prescription.doctor_user_id,
-        doctor_id: prescription.doctor_id || '',
-        type: 'prescription_dispensed',
-        title: remaining > 0 ? 'Prescription Partially Dispensed' : 'Prescription Dispensed',
-        message:
-          `${pharmacy.pharmacy_name} dispensed ${quantityLabel} of ${medLabel} for ${prescription.patient_name}.${fillNote}` +
-          ` (Ref ${prescription.prescription_id || ''})`,
+    // Notifications and audit are best-effort: a failed notification must
+    // never roll back, invalidate or duplicate the committed dispensing
+    // transaction, so it never turns into a duplicate-dispensing retry.
+    try {
+      await base44.asServiceRole.entities.PharmacyNotification.create({
+        pharmacy_id: pharmacy.id,
+        pharmacy_user_id: user.id,
+        type: 'dispensed',
+        title: 'Medication Dispensed',
+        message: `${quantityLabel} of ${medLabel} dispensed to ${prescription.patient_name}.${fillNote}`,
         patient_id: prescription.patient_id,
         patient_name: prescription.patient_name,
         patient_cin: prescription.patient_cin,
-        related_id: prescription.id,
-        target: 'find_patient',
-        datetime: now.toISOString(),
+        prescription_id: prescription.id,
+        prescription_ref: prescription.prescription_id || null,
+        target: 'prescriptions',
         is_read: false,
       });
+
+      await createPatientNotification(base44.asServiceRole, {
+        patient_id: prescription.patient_id,
+        type: 'medication_update',
+        title: remaining > 0 ? 'Medication Partially Dispensed' : 'Medication Dispensed',
+        message:
+          `${pharmacy.pharmacy_name} dispensed ${quantityLabel} of ${medLabel}.${fillNote}` +
+          (remaining === 0 ? ` You can now start your treatment as instructed by ${prescription.doctor_name || 'your doctor'}. The medication was added to your Medication list.` : ''),
+        target: 'prescriptions',
+        related_id: prescription.id,
+      });
+
+      if (prescription.doctor_user_id) {
+        await base44.asServiceRole.entities.DoctorNotification.create({
+          doctor_user_id: prescription.doctor_user_id,
+          doctor_id: prescription.doctor_id || '',
+          type: 'prescription_dispensed',
+          title: remaining > 0 ? 'Prescription Partially Dispensed' : 'Prescription Dispensed',
+          message:
+            `${pharmacy.pharmacy_name} dispensed ${quantityLabel} of ${medLabel} for ${prescription.patient_name}.${fillNote}` +
+            ` (Ref ${prescription.prescription_id || ''})`,
+          patient_id: prescription.patient_id,
+          patient_name: prescription.patient_name,
+          patient_cin: prescription.patient_cin,
+          related_id: prescription.id,
+          target: 'find_patient',
+          datetime: now.toISOString(),
+          is_read: false,
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Post-dispensing notification failure (the dispensing remains committed):', notifyErr);
     }
 
-    await logClinicalAudit(base44.asServiceRole, {
-      actor_user_id: user.id,
-      actor_name: pharmacistName,
-      actor_role: 'pharmacy',
-      action: 'dispensed_prescription',
-      action_label: `dispensed ${quantityLabel} of ${medLabel}`,
-      patient_id: prescription.patient_id,
-      patient_cin: prescription.patient_cin,
-      patient_name: prescription.patient_name,
-      document_id: prescription.prescription_id || '',
-    });
+    try {
+      await logClinicalAudit(base44.asServiceRole, {
+        actor_user_id: user.id,
+        actor_name: pharmacistName,
+        actor_role: 'pharmacy',
+        action: 'dispensed_prescription',
+        action_label: `dispensed ${quantityLabel} of ${medLabel}`,
+        patient_id: prescription.patient_id,
+        patient_cin: prescription.patient_cin,
+        patient_name: prescription.patient_name,
+        document_id: prescription.prescription_id || '',
+      });
+    } catch (auditErr) {
+      console.error('Failed to record the dispensing audit entry:', auditErr);
+    }
 
     return Response.json({
       dispensed_datetime: now.toISOString(),

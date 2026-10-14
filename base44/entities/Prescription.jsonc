@@ -201,7 +201,7 @@
     },
     "dispensing_events": {
       "type": "array",
-      "description": "Dispensing history \u2014 one entry per Fill Prescription transaction, including partial fills, with pharmacist, pharmacy, batch number, quantity dispensed, quantity remaining and whether a refill was consumed. The permanent record of every dispensing transaction at the pharmacy.",
+      "description": "Dispensing history \u2014 one immutable entry per Fill Prescription transaction, including partial fills, with pharmacist, pharmacy, batch number, quantity dispensed, quantity remaining, whether a refill was consumed and the submission's idempotency key. The permanent record of every dispensing transaction at the pharmacy.",
       "items": {
         "type": "object",
         "properties": {
@@ -236,6 +236,10 @@
           "consumed_refill": {
             "type": "boolean",
             "description": "True when this transaction consumed one authorized refill"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "description": "Key submitted by the client at fill time \u2014 resubmitting the same key returns the original transaction instead of dispensing again"
           }
         },
         "required": [
@@ -243,6 +247,10 @@
           "quantity"
         ]
       }
+    },
+    "fill_count": {
+      "type": "integer",
+      "description": "Internal counter of recorded dispensing transactions \u2014 used as an optimistic-lock guard so two concurrent fills can never both commit against the same prescription state"
     },
     "pending_substitution": {
       "type": "object",

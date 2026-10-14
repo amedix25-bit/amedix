@@ -5,8 +5,11 @@
 // are never edited or deleted, so stock changes can always be investigated and
 // reconciled. Recording never blocks the stock operation itself.
 export async function recordStockMovement(base44, m) {
+  // Accepts either the raw client or its service-role form — some call sites
+  // pass base44.asServiceRole, which has no further asServiceRole.
+  const sr = base44.asServiceRole || base44;
   try {
-    await base44.asServiceRole.entities.PharmacyInventoryMovement.create({
+    await sr.entities.PharmacyInventoryMovement.create({
       pharmacy_id: m.pharmacy_id || '',
       pharmacy_user_id: m.pharmacy_user_id || '',
       inventory_id: m.inventory_id || '',

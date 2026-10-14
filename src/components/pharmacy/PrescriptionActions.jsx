@@ -57,6 +57,7 @@ export default function PrescriptionActions({ prescription, onChanged, session }
   const [reason, setReason] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("");
+  const [fillKey, setFillKey] = useState("");
 
   const authorized = parseQty(prescription.quantity);
   const unit = unitWord(prescription.quantity);
@@ -87,6 +88,9 @@ export default function PrescriptionActions({ prescription, onChanged, session }
     setQty(remaining > 0 ? String(remaining) : "1");
     setPayAmount("");
     setPayMethod("");
+    // A fresh idempotency key per fill attempt — repeated submissions of the
+    // same fill (double clicks, retries) can never dispense twice.
+    setFillKey(`FIL-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
     setFillOpen(true);
   };
 
@@ -109,11 +113,17 @@ export default function PrescriptionActions({ prescription, onChanged, session }
       const res = await base44.functions.invoke("pharmacyDispensePrescription", {
         prescription_id: prescription.id,
         dispensed_quantity: n,
+        idempotency_key: fillKey,
         payment_amount: payAmount === "" ? undefined : Number(payAmount),
         payment_method: payMethod || undefined,
         ...staffAuth,
       });
       setFillOpen(false);
+      if (res.data.duplicate) {
+        toast({ title: t("Already dispensed"), description: t("This fill was already recorded — no duplicate was created.") });
+        onChanged?.();
+        return;
+      }
       toast({
         title: res.data.consumed_refill ? t("Refill dispensed") : t("Medication dispensed"),
         description: res.data.remaining > 0
