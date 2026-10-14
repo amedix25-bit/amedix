@@ -4,6 +4,7 @@ import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { parseQty, unitWord, totalDispensedOf, findInventoryItems, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
 import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
 import { recordStockMovement } from "../../shared/inventoryMovements.ts";
+import { recordDispensingPayment } from "../../shared/pharmacyPayments.ts";
 
 // The pharmacist fills a prescription: records the medication and quantity
 // actually dispensed. Supports partial dispensing (dispensing less than the
@@ -240,6 +241,19 @@ export default async function(req) {
         }
       }
       throw updateErr;
+    }
+
+    // Payment ledger: when a payment was captured at the counter, record it in
+    // the pharmacy's payment ledger. A failure never breaks the dispensing.
+    if (paymentAmount && paymentAmount > 0) {
+      await recordDispensingPayment(base44.asServiceRole, {
+        pharmacy,
+        prescription,
+        pharmacistName,
+        event,
+        paymentAmount,
+        paymentMethod,
+      });
     }
 
     // The dispensed medication is added automatically to the patient's

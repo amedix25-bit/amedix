@@ -1,0 +1,196 @@
+{
+  "name": "PaymentTransaction",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string",
+      "description": "Unique payment transaction reference, e.g. PT-20261014-8F3K"
+    },
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the transaction belongs to"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy account \u2014 used for Row Level Security"
+    },
+    "pharmacy_name": {
+      "type": "string",
+      "description": "Name of the pharmacy that recorded the transaction"
+    },
+    "prescription_id": {
+      "type": "string",
+      "description": "Prescription record id"
+    },
+    "prescription_ref": {
+      "type": "string",
+      "description": "Prescription reference, e.g. PR-20261014-8F3K"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "pharmacist_name": {
+      "type": "string",
+      "description": "Pharmacist who recorded the transaction"
+    },
+    "dispensing_datetime": {
+      "type": "string",
+      "description": "Date and time of the linked dispensing transaction (ISO) \u2014 empty for a payment recorded before dispensing"
+    },
+    "items": {
+      "type": "array",
+      "description": "Items supplied in the linked dispensing transaction \u2014 medication, strength and quantity",
+      "items": {
+        "type": "object",
+        "properties": {
+          "medication_name": {
+            "type": "string"
+          },
+          "strength": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "amount_due": {
+      "type": "number",
+      "description": "Total amount due for the transaction"
+    },
+    "amount_paid": {
+      "type": "number",
+      "description": "Net amount paid so far (payments plus adjustments minus refunds), recomputed by the backend from the payment history"
+    },
+    "outstanding_balance": {
+      "type": "number",
+      "description": "Amount still owed \u2014 amount due minus amount paid"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "unpaid",
+        "partial",
+        "paid",
+        "refunded"
+      ],
+      "description": "UNPAID: nothing recorded yet. PARTIAL: part of the amount is paid, the rest is an outstanding balance. PAID: fully settled. REFUNDED: the paid amount was refunded. Kept strictly separate from the dispensing status \u2014 a medication may be dispensed while payment is pending, and payment may be recorded before dispensing"
+    },
+    "payments": {
+      "type": "array",
+      "description": "Traceable history of every payment, refund and adjustment on this transaction \u2014 including who recorded it, when, with which method and its verification state. Card, transfer, insurance and other non-cash payments stay pending verification until a pharmacist confirms them",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entry_id": {
+            "type": "string"
+          },
+          "entry_type": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "refund",
+              "adjustment"
+            ]
+          },
+          "datetime": {
+            "type": "string",
+            "description": "Date and time the entry was recorded (ISO datetime)"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Entry amount \u2014 positive for payments and positive refunds, signed for adjustments"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "card",
+              "bank_transfer",
+              "insurance",
+              "mobile_wallet",
+              "other"
+            ],
+            "description": "Payment method \u2014 empty for refunds and adjustments"
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "pending_verification"
+            ],
+            "description": "Cash is confirmed immediately; card, transfer, insurance and other methods stay pending until a pharmacist verifies them"
+          },
+          "pharmacist_name": {
+            "type": "string",
+            "description": "Pharmacist who recorded this entry"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note, reason or verification detail for this entry"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "description": "Key submitted by the client at record time \u2014 resubmitting the same key never creates a duplicate payment"
+          }
+        },
+        "required": [
+          "entry_id",
+          "entry_type",
+          "datetime",
+          "amount"
+        ]
+      }
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the transaction was created (ISO datetime)"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the transaction was last changed (ISO datetime)"
+    }
+  },
+  "required": [
+    "transaction_id",
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "amount_due"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

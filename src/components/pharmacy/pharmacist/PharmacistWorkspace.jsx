@@ -158,7 +158,7 @@ export default function PharmacistWorkspace({ session, onSessionExpired }) {
       </div>
 
       <div className={tab === "payments" ? "" : "hidden"}>
-        <PharmacistTransactionsSection prescriptions={items || []} />
+        <PharmacistTransactionsSection prescriptions={items || []} session={session} onSessionExpired={onSessionExpired} />
       </div>
 
       <div className={tab === "profile" ? "" : "hidden"}>
