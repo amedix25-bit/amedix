@@ -7,12 +7,14 @@ import { useAppLanguage } from "@/lib/appLanguage";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminDoctorVerification from "@/components/admin/AdminDoctorVerification";
-import { LayoutDashboard, Users, ShieldCheck } from "lucide-react";
+import AdminLabPanels from "@/components/admin/AdminLabPanels";
+import { LayoutDashboard, Users, ShieldCheck, FlaskConical } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "users", label: "Users", icon: Users },
   { key: "verification", label: "Doctor Verification", icon: ShieldCheck },
+  { key: "lab_panels", label: "Lab Panels", icon: FlaskConical },
 ];
 
 export default function AdminDashboard() {
@@ -38,6 +40,7 @@ export default function AdminDashboard() {
         {activeTab === "overview" && <AdminOverview />}
         {activeTab === "users" && <AdminUsers />}
         {activeTab === "verification" && <AdminDoctorVerification />}
+        {activeTab === "lab_panels" && <AdminLabPanels />}
       </div>
     </DashboardLayout>
   );

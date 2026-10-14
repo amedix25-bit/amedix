@@ -4,23 +4,72 @@
   "properties": {
     "doctor_id": {
       "type": "string",
-      "description": "DoctorProfile id this favorite belongs to"
+      "description": "DoctorProfile id this personal favorite belongs to \u2014 for shared panels created by an administrator, the admin's user id"
     },
     "favorite_name": {
       "type": "string",
-      "description": "Name the doctor gave this favorite, e.g. Anemia Panel"
+      "description": "Name the owner gave this favorite, e.g. Routine Checkup, Diabetes Follow-up"
     },
     "test_ids": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Lab catalog test ids included in this favorite, across all categories"
+      "description": "Lab catalog test ids included in this favorite, across all categories \u2014 references the existing laboratory catalog, never duplicate test records"
+    },
+    "is_shared": {
+      "type": "boolean",
+      "default": false,
+      "description": "True for shared, standardized panels created by administrators \u2014 visible to every doctor, editable only by admins; false for a doctor's personal favorites."
     }
   },
   "required": [
     "doctor_id",
     "favorite_name",
     "test_ids"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.is_shared": true
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }
