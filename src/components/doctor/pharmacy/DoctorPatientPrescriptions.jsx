@@ -7,6 +7,7 @@ import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBad
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import PrescriptionCard from "@/components/doctor/pharmacy/PrescriptionCard";
+import PrescriptionStatusFilter, { prescriptionStatusGroup } from "@/components/doctor/pharmacy/PrescriptionStatusFilter";
 import { useToast } from "@/components/ui/use-toast";
 
 // The Prescriptions section of the patient's medical record — issue electronic
@@ -15,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function DoctorPatientPrescriptions({ patient, doctorProfile }) {
   const [items, setItems] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
 
   const load = async () => {
@@ -69,11 +71,23 @@ export default function DoctorPatientPrescriptions({ patient, doctorProfile }) {
           No prescriptions yet. Use New Prescription to issue one.
         </p>
       ) : (
-        <div className="space-y-3">
-          {items.map((p) => (
-            <PrescriptionCard key={p.id} prescription={p} onIssued={load} />
-          ))}
-        </div>
+        <>
+          <PrescriptionStatusFilter items={items} value={statusFilter} onChange={setStatusFilter} />
+          <div className="space-y-3">
+            {(statusFilter === "all"
+              ? items
+              : items.filter((p) => prescriptionStatusGroup(p) === statusFilter)
+            ).map((p) => (
+              <PrescriptionCard key={p.id} prescription={p} onIssued={load} />
+            ))}
+            {statusFilter !== "all" &&
+              items.every((p) => prescriptionStatusGroup(p) !== statusFilter) && (
+                <p className="text-sm text-muted-foreground text-center py-10 rounded-xl border border-border bg-card">
+                  No prescriptions in this category.
+                </p>
+              )}
+          </div>
+        </>
       )}
     </div>
   );

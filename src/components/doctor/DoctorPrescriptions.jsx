@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Loader2 } from "lucide-react";
 import PrescriptionCard from "@/components/doctor/pharmacy/PrescriptionCard";
+import PrescriptionStatusFilter, { prescriptionStatusGroup } from "@/components/doctor/pharmacy/PrescriptionStatusFilter";
 
 // Prescriptions tab of the Doctor Portal — every prescription the doctor has
 // issued across all patients, newest first, with live dispensing progress,
@@ -11,6 +12,7 @@ export default function DoctorPrescriptions() {
   const { user } = useAuth();
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const load = async () => {
     try {
@@ -46,11 +48,23 @@ export default function DoctorPrescriptions() {
           No prescriptions yet. Open a patient's record and use New Prescription to issue one.
         </p>
       ) : (
-        <div className="space-y-3">
-          {items.map((p) => (
-            <PrescriptionCard key={p.id} prescription={p} onIssued={load} showPatient />
-          ))}
-        </div>
+        <>
+          <PrescriptionStatusFilter items={items} value={statusFilter} onChange={setStatusFilter} />
+          <div className="space-y-3">
+            {(statusFilter === "all"
+              ? items
+              : items.filter((p) => prescriptionStatusGroup(p) === statusFilter)
+            ).map((p) => (
+              <PrescriptionCard key={p.id} prescription={p} onIssued={load} showPatient />
+            ))}
+            {statusFilter !== "all" &&
+              items.every((p) => prescriptionStatusGroup(p) !== statusFilter) && (
+                <p className="text-sm text-muted-foreground text-center py-10 rounded-xl border border-border bg-card">
+                  No prescriptions in this category.
+                </p>
+              )}
+          </div>
+        </>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
