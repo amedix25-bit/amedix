@@ -62,6 +62,10 @@ export default function PharmacyLogin() {
           <Link to="/pharmacy/register" className="text-primary font-medium hover:underline">
             {t("Create one")}
           </Link>
+          {" · "}
+          <Link to="/pharmacy/pharmacist" className="text-primary font-medium hover:underline">
+            {t("Pharmacist sign-in")}
+          </Link>
         </>
       }
     >

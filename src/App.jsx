@@ -29,6 +29,7 @@ import LabTechnician from '@/pages/LabTechnician';
 import PharmacyLogin from '@/pages/PharmacyLogin';
 import PharmacyRegister from '@/pages/PharmacyRegister';
 import PharmacyPortal from '@/pages/PharmacyPortal';
+import Pharmacist from '@/pages/Pharmacist';
 import RadiologistDashboard from '@/pages/RadiologistDashboard';
 import { AppLanguageProvider } from '@/lib/appLanguage';
 
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
       <Route path="/lab/register" element={<LabRegister />} />
       <Route path="/pharmacy" element={<PharmacyLogin />} />
       <Route path="/pharmacy/register" element={<PharmacyRegister />} />
+      <Route path="/pharmacy/pharmacist" element={<Pharmacist />} />
       <Route path="/hospital" element={<HospitalLogin />} />
       <Route path="/hospital/register" element={<HospitalRegister />} />
       <Route path="/hospital/receptionist" element={<Receptionist />} />

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { remainingOf, parseQty, isItemDispensable, strengthMatches } from "../../shared/pharmacyPrescription.ts";
+import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
 
 // Substitution request — the pharmacist proposes an equivalent product (same
 // active ingredient and same strength, a different brand or generic) when the
@@ -10,10 +11,10 @@ import { remainingOf, parseQty, isItemDispensable, strengthMatches } from "../..
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const body = await req.json().catch(() => ({}));
+    const user = await resolvePharmacyActor(base44, body);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json().catch(() => ({}));
     const prescriptionId = String(body?.prescription_id || '').trim();
     const inventoryId = String(body?.inventory_id || '').trim();
     const reason = String(body?.reason || '').trim();

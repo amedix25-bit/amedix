@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { findInventoryItems, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
+import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -22,7 +23,8 @@ function escapeRegex(value) {
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const body = await req.json().catch(() => ({}));
+    const user = await resolvePharmacyActor(base44, body);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const pharmacyProfiles = await base44.asServiceRole.entities.PharmacyProfile.filter({ user_id: user.id });
@@ -31,7 +33,6 @@ export default async function(req) {
     }
     const pharmacy = pharmacyProfiles[0];
 
-    const body = await req.json().catch(() => ({}));
     const prescriptionId = String(body?.prescription_id || '');
     const pharmacistName = String(body?.pharmacist_name || user.full_name || 'Pharmacy');
     if (!prescriptionId) {

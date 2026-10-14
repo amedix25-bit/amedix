@@ -61,7 +61,7 @@ function FoundPatient({ data, onReset }) {
                   <p className="text-xs text-muted-foreground mt-2">Instructions: {p.special_instructions}</p>
                 )}
                 <div className="mt-3">
-                  <PrescriptionActions prescription={p} onChanged={onReset} />
+                  <PrescriptionActions prescription={p} onChanged={onReset} session={session} />
                 </div>
               </div>
             ))}
@@ -74,7 +74,7 @@ function FoundPatient({ data, onReset }) {
 
 // Pharmacy counter identification: scan the patient's CIN QR code or type the
 // CIN, then work with the prescriptions authorized to this pharmacy.
-export default function PharmacyPatientLookupSection() {
+export default function PharmacyPatientLookupSection({ session }) {
   const [mode, setMode] = useState(null); // "scan" | "manual" | null
   const [cin, setCin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -88,7 +88,12 @@ export default function PharmacyPatientLookupSection() {
     setLoading(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("pharmacyFindPatientByCin", { cin: clean });
+      const res = await base44.functions.invoke("pharmacyFindPatientByCin", {
+        cin: clean,
+        ...(session
+          ? { pharmacist_id: session.pharmacist_id, pharmacist_session_token: session.session_token }
+          : {}),
+      });
       setFound(res.data);
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Patient lookup failed.");

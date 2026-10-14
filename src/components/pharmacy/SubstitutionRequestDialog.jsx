@@ -26,7 +26,7 @@ const norm = (v) => String(v || "").toLowerCase().trim();
 // and strength as the prescription (a different brand or generic). A
 // clinically different drug is never proposed. The original prescription is
 // unchanged until the doctor approves through AMedix.
-export default function SubstitutionRequestDialog({ prescription, onChanged }) {
+export default function SubstitutionRequestDialog({ prescription, onChanged, session }) {
   const { t } = useAppLanguage();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -79,6 +79,9 @@ export default function SubstitutionRequestDialog({ prescription, onChanged }) {
         prescription_id: prescription.id,
         inventory_id: selected.id,
         reason: reason.trim(),
+        ...(session
+          ? { pharmacist_id: session.pharmacist_id, pharmacist_session_token: session.session_token }
+          : {}),
       });
       setOpen(false);
       setReason("");

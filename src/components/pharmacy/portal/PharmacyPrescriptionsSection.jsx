@@ -7,7 +7,7 @@ import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 
-function PrescriptionRow({ prescription, onChanged }) {
+export function PrescriptionRow({ prescription, onChanged, session }) {
   const remaining = prescriptionRemaining(prescription);
   const isPartial = prescription.status === "dispensed" && (prescription.dispensing_events || []).length > 0 && remaining > 0;
   return (
@@ -60,7 +60,7 @@ function PrescriptionRow({ prescription, onChanged }) {
       )}
       <DispensingHistory prescription={prescription} />
       <div className="mt-3">
-        <PrescriptionActions prescription={prescription} onChanged={onChanged} />
+        <PrescriptionActions prescription={prescription} onChanged={onChanged} session={session} />
       </div>
     </div>
   );

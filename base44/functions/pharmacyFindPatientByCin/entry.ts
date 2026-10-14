@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
 
 // Pharmacy counter lookup. The pharmacist scans the patient's CIN QR code (or
 // types the CIN) and the backend resolves the patient, returning their basic
@@ -7,7 +8,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const body = await req.json().catch(() => ({}));
+    const user = await resolvePharmacyActor(base44, body);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const pharmacyProfiles = await base44.asServiceRole.entities.PharmacyProfile.filter({ user_id: user.id });
@@ -16,7 +18,6 @@ export default async function(req) {
     }
     const pharmacy = pharmacyProfiles[0];
 
-    const body = await req.json().catch(() => ({}));
     const cin = String(body?.cin || '').trim();
     if (!cin) {
       return Response.json({ error: 'Patient CIN is required.' }, { status: 400 });

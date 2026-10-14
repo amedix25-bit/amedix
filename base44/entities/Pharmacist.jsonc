@@ -1,0 +1,94 @@
+{
+  "name": "Pharmacist",
+  "type": "object",
+  "properties": {
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the pharmacist belongs to"
+    },
+    "pharmacy_name": {
+      "type": "string"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy administrator account \u2014 used for Row Level Security"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Pharmacist's full name"
+    },
+    "username": {
+      "type": "string",
+      "description": "Unique pharmacist login username \u2014 every pharmacist has individual credentials"
+    },
+    "password_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the pharmacist's password (salted)"
+    },
+    "salt": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Deactivated pharmacists cannot log in"
+    },
+    "session_token": {
+      "type": "string",
+      "description": "Active session token issued at login \u2014 required for all pharmacist actions"
+    },
+    "last_active_datetime": {
+      "type": "string",
+      "description": "Date and time of the pharmacist's last action (ISO datetime) \u2014 powers the online/offline status"
+    }
+  },
+  "required": [
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "full_name",
+    "username",
+    "password_hash",
+    "salt"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.pharmacy_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

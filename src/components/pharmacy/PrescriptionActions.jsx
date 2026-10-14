@@ -44,8 +44,11 @@ export function prescriptionRemaining(prescription) {
 // to a pharmacy. Fill Prescription records the medication and quantity
 // actually dispensed — full or partial. Used in the Pharmacy Portal
 // prescriptions queue and the patient lookup view.
-export default function PrescriptionActions({ prescription, onChanged }) {
+export default function PrescriptionActions({ prescription, onChanged, session }) {
   const { t } = useAppLanguage();
+  const staffAuth = session
+    ? { pharmacist_id: session.pharmacist_id, pharmacist_session_token: session.session_token }
+    : {};
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [fillOpen, setFillOpen] = useState(false);
@@ -67,6 +70,7 @@ export default function PrescriptionActions({ prescription, onChanged }) {
     try {
       const res = await base44.functions.invoke("pharmacyReservePrescription", {
         prescription_id: prescription.id,
+        ...staffAuth,
       });
       toast({ title: t("Reservation confirmed"), description: `${t("Code")} ${res.data.reservation_code} — ${t("the patient has been notified.")}` });
       onChanged?.();
@@ -101,6 +105,7 @@ export default function PrescriptionActions({ prescription, onChanged }) {
       const res = await base44.functions.invoke("pharmacyDispensePrescription", {
         prescription_id: prescription.id,
         dispensed_quantity: n,
+        ...staffAuth,
       });
       setFillOpen(false);
       toast({
@@ -123,6 +128,7 @@ export default function PrescriptionActions({ prescription, onChanged }) {
       await base44.functions.invoke("pharmacyRejectPrescription", {
         prescription_id: prescription.id,
         reason: reason.trim() || "Medication unavailable at this pharmacy",
+        ...staffAuth,
       });
       setRejectOpen(false);
       toast({ title: t("Prescription rejected"), description: t("The patient and the prescribing doctor have been notified.") });
@@ -159,7 +165,7 @@ export default function PrescriptionActions({ prescription, onChanged }) {
         </Button>
       )}
       {canFill && (
-        <SubstitutionRequestDialog prescription={prescription} onChanged={onChanged} />
+        <SubstitutionRequestDialog prescription={prescription} onChanged={onChanged} session={session} />
       )}
 
       <Dialog open={fillOpen} onOpenChange={setFillOpen}>
