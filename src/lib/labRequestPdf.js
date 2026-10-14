@@ -129,9 +129,17 @@ export function generateLabRequestPdf(req) {
   doc.setFontSize(10.5);
   doc.setTextColor(...DARK);
   doc.text(`${req.date_requested || "-"}   ${new Date().toLocaleTimeString()}`, RX, y + 19, { maxWidth: R - RX });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+  doc.text("PRIORITY", RX, y + 25);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
+  doc.setTextColor(...DARK);
+  doc.text(String(req.priority || "Routine"), RX, y + 30, { maxWidth: R - RX });
   doc.setFont("helvetica", "normal");
 
-  y += 26;
+  y += 33;
   doc.setDrawColor(215, 224, 226);
   doc.line(M, y, R, y);
 

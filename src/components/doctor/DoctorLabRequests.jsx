@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
+import LabRequestReview from "@/components/doctor/lab/LabRequestReview";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
 import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
-import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send, ArrowLeft, Search } from "lucide-react";
+import { FlaskConical, Plus, X, CheckCircle2, Loader2, ArrowLeft, ArrowRight, Search } from "lucide-react";
 
 // In-progress test selection survives leaving and returning to this page during
 // the same order workflow — it is cleared once the request is submitted.
@@ -40,6 +41,10 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [step, setStep] = useState("edit");
+  const [resolvedPatient, setResolvedPatient] = useState(null);
+  const [priority, setPriority] = useState("Routine");
+  const submitGuard = React.useRef(false);
 
   useEffect(() => {
     load();
@@ -127,8 +132,9 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
     return [...map.values()];
   }, [items, selectedPatient]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Step 1 → 2: resolve the patient identity and preview the check-in gate
+  // before showing the dedicated review screen.
+  const goToReview = async () => {
     setFormError("");
     if (selected.size === 0) {
       setFormError("Select at least one test.");
@@ -138,23 +144,50 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       setFormError("A clinical indication is required.");
       return;
     }
-    setSubmitting(true);
+    if (!form.patient_cin.trim()) {
+      setFormError("Enter the patient's CIN.");
+      return;
+    }
     try {
-      const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
-      if (patients.length === 0) {
+      const matches = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
+      if (matches.length === 0) {
         setFormError("Patient not found. Please check the CIN.");
-        setSubmitting(false);
         return;
       }
-      const p = patients[0];
-      // Check-in gate — the backend verifies it again at creation time.
+      const p = matches[0];
+      // Check-in gate preview — the backend verifies it again at creation time.
       const gate = await fetchCheckInStatus(p.id);
       if (!gate.checked_in) {
         setFormError(LOCKED_MESSAGE);
-        setSubmitting(false);
         return;
       }
-      const count = selectedEntries.length;
+      setResolvedPatient(p);
+      setStep("review");
+    } catch (err) {
+      console.error(err);
+      setFormError("Could not load the patient. Please try again.");
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (submitGuard.current || submitting) return; // double-click / retry protection
+    setFormError("");
+    if (!resolvedPatient) {
+      setFormError("Patient identity is missing — go back and re-enter the CIN.");
+      return;
+    }
+    if (selected.size === 0) {
+      setFormError("Select at least one test.");
+      return;
+    }
+    if (!form.indication.trim()) {
+      setFormError("A clinical indication is required.");
+      return;
+    }
+    setSubmitting(true);
+    submitGuard.current = true;
+    try {
+      const p = resolvedPatient;
       const today = new Date().toISOString().slice(0, 10);
       const payload = {
         request_id: makeRequestId(),
@@ -173,7 +206,9 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
           name: entry.name,
           category: entry.category,
           panel: entry.panel || "",
+          specimen: entry.specimen || "",
         })),
+        priority: priority || "Routine",
         indication: form.indication,
         clinical_info: form.clinical_info,
         instructions: form.instructions,
@@ -202,21 +237,25 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       }
       setSelected(new Set());
       setForm({ patient_cin: "", indication: "", clinical_info: "", instructions: "", lab_name: doctorProfile?.hospital || "" });
+      setResolvedPatient(null);
+      setStep("edit");
       setShowForm(false);
       setSuccessMsg(
-        `Consolidated lab request sent to ${payload.lab_name || "the laboratory"} — ${count} test(s) for ${p.full_name}. A PDF request form was generated.`
+        `Lab request ${created.request_id || payload.request_id} was saved — current status: ${created.status || "requested"}. A PDF request form was generated.`
       );
       load();
     } catch (err) {
       console.error(err);
+      // Retain the draft — stay on the review screen with the selection intact for a safe retry.
       setFormError("Failed to submit the request. Please try again.");
     } finally {
       setSubmitting(false);
+      submitGuard.current = false;
     }
   };
 
   const formSection = showForm && (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-5">
+    <form onSubmit={(e) => { e.preventDefault(); goToReview(); }} className="rounded-xl border border-border bg-card p-5 space-y-5">
       <div className="flex justify-between items-center">
         <div>
           <h3 className="font-semibold">Request Lab Investigations</h3>
@@ -224,7 +263,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             Select whole panels or individual tests — all selections are combined into one consolidated request with a single Request ID and PDF form.
           </p>
         </div>
-        <button type="button" onClick={() => setShowForm(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
+        <button type="button" onClick={() => { setShowForm(false); setStep("edit"); setFormError(""); }} className="text-muted-foreground"><X className="w-5 h-5" /></button>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -307,20 +346,11 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
         />
       </div>
 
-      {formError && <p className="text-sm text-destructive">{formError}</p>}
+      {formError && step === "edit" && <p className="text-sm text-destructive">{formError}</p>}
 
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
-        {submitting ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Submitting request...
-          </>
-        ) : (
-          <>
-            <Send className="w-4 h-4 mr-2" />
-            Submit Consolidated Lab Request
-          </>
-        )}
+      <Button type="button" size="lg" className="w-full sm:w-auto" onClick={goToReview} disabled={submitting}>
+        <ArrowRight className="w-4 h-4 mr-2" />
+        Review Lab Request
       </Button>
     </form>
   );
@@ -363,7 +393,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             >
               <ArrowLeft className="w-4 h-4" /> All patients
             </button>
-            <Button size="sm" onClick={() => { setSelectedPatient(null); setShowForm(true); }}>
+            <Button size="sm" onClick={() => { setSelectedPatient(null); setShowForm(true); setStep("edit"); }}>
               <Plus className="w-4 h-4 mr-2" />
               New Lab Request
             </Button>
@@ -381,13 +411,29 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       ) : (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <Button onClick={() => setShowForm(!showForm)}>
+            <Button onClick={() => { setShowForm(!showForm); setStep("edit"); setFormError(""); }}>
               <Plus className="w-4 h-4 mr-2" />
               New Lab Request
             </Button>
           </div>
 
-          {formSection}
+          {showForm && step === "edit" && formSection}
+
+          {showForm && step === "review" && (
+            <LabRequestReview
+              patient={resolvedPatient}
+              doctorProfile={doctorProfile}
+              form={form}
+              priority={priority}
+              onPriorityChange={setPriority}
+              selectedIds={[...selected]}
+              onRemoveTest={toggleTest}
+              onBack={() => { setStep("edit"); setFormError(""); }}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+              submitError={formError}
+            />
+          )}
 
           {loading ? (
             <div className="text-muted-foreground text-sm">Loading...</div>

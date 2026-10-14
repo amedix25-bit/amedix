@@ -10,7 +10,7 @@ import { Search, X } from "lucide-react";
 import { LAB_CATEGORIES, CATALOG_ENTRIES, searchLabTests, entryById } from "@/lib/labTestCatalog";
 
 export default function FavoriteEditorDialog({
-  open, onOpenChange, favorite = null, initialTestIds = [], doctorId, isShared = false, onSaved,
+  open, onOpenChange, favorite = null, initialTestIds = [], doctorId, isShared = false, hospital = null, onSaved,
 }) {
   const [name, setName] = useState("");
   const [picked, setPicked] = useState(new Set());
@@ -65,7 +65,16 @@ export default function FavoriteEditorDialog({
     try {
       const values = { favorite_name: trimmed, test_ids: [...picked] };
       let saved;
-      if (favorite) {
+      if (hospital) {
+        // Hospital panels go through the backend-enforced panel endpoint —
+        // membership and ownership are verified server-side.
+        const res = await base44.functions.invoke("hospitalPanelManage", {
+          action: favorite ? "update" : "create",
+          id: favorite ? favorite.id : undefined,
+          ...values,
+        });
+        saved = res.data.panel;
+      } else if (favorite) {
         saved = await base44.entities.DoctorLabFavorite.update(favorite.id, values);
       } else {
         saved = await base44.entities.DoctorLabFavorite.create({
@@ -102,9 +111,11 @@ export default function FavoriteEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>{favorite ? "Edit Favorite" : "Create New Favorite"}</DialogTitle>
+          <DialogTitle>{favorite ? (hospital ? "Edit Hospital Panel" : "Edit Favorite") : hospital ? "Create Hospital Panel" : "Create New Favorite"}</DialogTitle>
           <DialogDescription>
-            {isShared
+            {hospital
+              ? `Shared with the doctors of ${hospital.hospital_name} — they can apply it with one click; only this hospital's administrators can edit it.`
+              : isShared
               ? "A shared, standardized panel — every doctor will be able to apply it, and only administrators can edit it."
               : "A reusable collection of laboratory tests from the existing catalog — apply it later with one click."}
           </DialogDescription>
@@ -260,7 +271,7 @@ export default function FavoriteEditorDialog({
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button type="button" onClick={save} disabled={saving}>
-            {saving ? "Saving..." : favorite ? "Save Changes" : "Create Favorite"}
+            {saving ? "Saving..." : favorite ? "Save Changes" : hospital ? "Create Panel" : "Create Favorite"}
           </Button>
         </div>
       </DialogContent>

@@ -54,12 +54,26 @@
           },
           "panel": {
             "type": "string"
+          },
+          "specimen": {
+            "type": "string",
+            "description": "Specimen type from the laboratory catalog where defined (e.g. Urine, Stool) \u2014 empty when the catalog does not specify one"
           }
         },
         "required": [
           "name"
         ]
       }
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "Routine",
+        "Urgent",
+        "Stat"
+      ],
+      "default": "Routine",
+      "description": "Ordering priority set by the doctor on the review screen. ROUTINE: processed in the laboratory's standard order. URGENT: flagged to the laboratory for priority attention. STAT: highest urgency \u2014 collected and processed ahead of routine work. Priority is a flag for the laboratory and does not guarantee a turnaround time; changing priority after submission follows the existing laboratory workflow."
     },
     "indication": {
       "type": "string",

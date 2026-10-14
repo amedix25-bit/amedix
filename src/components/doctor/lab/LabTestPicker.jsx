@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  Search, ChevronDown, Star, Plus, Trash2, X, Pencil, SquarePen, Copy, Globe, Loader2, AlertTriangle,
+  Search, ChevronDown, Star, Plus, Trash2, X, Pencil, SquarePen, Copy, Globe, Loader2, AlertTriangle, Building2,
 } from "lucide-react";
 import FavoriteEditorDialog from "@/components/doctor/lab/FavoriteEditorDialog";
 import { LAB_CATEGORIES, CATALOG_ENTRIES, searchLabTests, entryById } from "@/lib/labTestCatalog";
@@ -157,6 +157,9 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
   const [favorites, setFavorites] = useState([]);
   const [favLoading, setFavLoading] = useState(true);
   const [favError, setFavError] = useState(false);
+  const [panels, setPanels] = useState([]);
+  const [panelsLoading, setPanelsLoading] = useState(true);
+  const [panelsError, setPanelsError] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorFavorite, setEditorFavorite] = useState(null);
   const [renamingFav, setRenamingFav] = useState(null);
@@ -168,17 +171,9 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
     if (!doctorId) return;
     setFavLoading(true);
     setFavError(false);
-    // Personal favorites for this doctor + shared standardized panels for everyone.
-    Promise.all([
-      base44.entities.DoctorLabFavorite.filter({ doctor_id: doctorId }, "-created_date"),
-      base44.entities.DoctorLabFavorite.filter({ is_shared: true }, "favorite_name"),
-    ])
-      .then(([own, shared]) => {
-        if (cancelledRef?.current) return;
-        const map = new Map();
-        [...own, ...shared].forEach((fav) => map.set(fav.id, fav));
-        setFavorites([...map.values()]);
-      })
+    // Personal favorites for this doctor — private, never anyone else's.
+    base44.entities.DoctorLabFavorite.filter({ doctor_id: doctorId }, "-created_date")
+      .then((own) => { if (!cancelledRef?.current) setFavorites(own); })
       .catch((err) => {
         console.error(err);
         if (!cancelledRef?.current) setFavError(true);
@@ -188,9 +183,25 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
       });
   };
 
+  const loadPanels = (cancelledRef) => {
+    setPanelsLoading(true);
+    setPanelsError(false);
+    // Hospital-wide panels — the backend enforces which panels this doctor may see.
+    base44.functions.invoke("hospitalPanelManage", { action: "list" })
+      .then((res) => { if (!cancelledRef?.current) setPanels((res.data && res.data.panels) || []); })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelledRef?.current) setPanelsError(true);
+      })
+      .finally(() => {
+        if (!cancelledRef?.current) setPanelsLoading(false);
+      });
+  };
+
   useEffect(() => {
     const cancelled = { current: false };
     loadFavorites(cancelled);
+    loadPanels(cancelled);
     return () => { cancelled.current = true; };
   }, [doctorId]);
 
@@ -244,14 +255,17 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
 
   const applyFavorite = (fav) => {
     const ids = fav.test_ids || [];
-    const already = ids.filter((id) => selected.has(id)).length;
+    const unknown = ids.filter((id) => !entryById(id));
+    const valid = ids.filter((id) => entryById(id));
+    const already = valid.filter((id) => selected.has(id)).length;
     // Merge into the current selection — duplicates are impossible because it is a Set.
+    // Retired/unavailable tests are flagged and never added, so no invalid order can be built.
     // This only preselects tests; the doctor always reviews and confirms before submitting.
-    onSetMany(ids, true);
+    onSetMany(valid, true);
     setQuery("");
     toast({
       title: `${fav.favorite_name} applied`,
-      description: `${ids.length - already} test(s) added${already > 0 ? `, ${already} already selected — kept as one instance` : ""}.`,
+      description: `${valid.length - already} test(s) added${already > 0 ? `, ${already} already selected — kept as one instance` : ""}${unknown.length > 0 ? ` — ${unknown.length} no longer in the catalog and not added` : ""}.`,
     });
   };
 
@@ -448,6 +462,65 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Hospital panels — shared, backend-enforced */}
+          <div className="rounded-xl border border-border bg-card p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-sky-600" />
+              Hospital Panels
+            </p>
+            {panelsLoading ? (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading panels...
+              </p>
+            ) : panelsError ? (
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="text-xs text-destructive flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  Couldn't load panels.
+                </p>
+                <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => loadPanels(null)}>
+                  Retry
+                </Button>
+              </div>
+            ) : panels.length === 0 ? (
+              <p className="text-xs text-muted-foreground mt-2">
+                No panels are shared with your hospitals yet.
+              </p>
+            ) : (
+              <div className="space-y-1 mt-2">
+                {panels.map((panel) => (
+                  <div key={panel.id} className="rounded-lg border border-border px-2 py-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => applyFavorite(panel)}
+                        className="min-w-0 flex-1 text-left"
+                        title="Apply this hospital panel — adds its tests to the current selection"
+                      >
+                        <p className="text-sm font-medium truncate hover:text-primary flex items-center gap-1.5">
+                          <Building2 className="w-3 h-3 text-sky-600 shrink-0" />
+                          <span className="truncate">{panel.favorite_name}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {(panel.test_ids || []).length} test(s) · {panel.hospital_name || "Standard panel"}
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => duplicateFavorite(panel)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent shrink-0"
+                        title="Duplicate as a personal favorite"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
