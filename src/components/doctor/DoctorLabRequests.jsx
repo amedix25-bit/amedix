@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
 import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import { entryById } from "@/lib/labTestCatalog";
@@ -254,6 +255,12 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             onChange={(e) => setForm({ ...form, indication: e.target.value })}
             required
           />
+          <MedicalDictationButton
+            value={form.indication}
+            onChange={(v) => setForm({ ...form, indication: v })}
+            specialty={doctorProfile?.specialization || ""}
+            contextLabel="Laboratory request — clinical indication / reason for testing"
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="lab_clinical">Relevant clinical information</Label>
@@ -263,6 +270,12 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             placeholder="e.g. Known hypertension, on metformin, recent fatigue"
             value={form.clinical_info}
             onChange={(e) => setForm({ ...form, clinical_info: e.target.value })}
+          />
+          <MedicalDictationButton
+            value={form.clinical_info}
+            onChange={(v) => setForm({ ...form, clinical_info: v })}
+            specialty={doctorProfile?.specialization || ""}
+            contextLabel="Laboratory request — relevant clinical information"
           />
         </div>
       </div>
@@ -275,6 +288,12 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
           placeholder="e.g. Fasting sample, morning draw"
           value={form.instructions}
           onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+        />
+        <MedicalDictationButton
+          value={form.instructions}
+          onChange={(v) => setForm({ ...form, instructions: v })}
+          specialty={doctorProfile?.specialization || ""}
+          contextLabel="Laboratory request — instructions"
         />
       </div>
 

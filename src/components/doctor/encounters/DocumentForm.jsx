@@ -12,6 +12,7 @@ import DocumentFields, { EmergencyWorkflowStrip } from "./DocumentFields";
 import ToothChart from "@/components/doctor/dental/ToothChart";
 import { CERTIFICATE_DEFS, CERTIFICATE_KEYS } from "@/lib/specialtyDocumentsPart4";
 import { Loader2, Lock, PenLine } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 
 // Creates a new clinical document in an encounter, or — in amend mode — a
 // new VERSION of a signed document (the original is never overwritten).
@@ -228,7 +229,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       {def && def.specialty === "emergency_medicine" && <EmergencyWorkflowStrip />}
 
       {hasFields && (
-        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} />
+        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} />
       )}
 
       {def && def.toothChart && (
@@ -290,6 +291,12 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       <div className="space-y-1.5">
         <Label>{hasFields ? "Additional Narrative (optional)" : "Content *"}</Label>
         <Textarea rows={8} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Document the clinical content..." />
+        <MedicalDictationButton
+          value={content}
+          onChange={setContent}
+          specialty={practicingSpecialty}
+          contextLabel="Clinical document content — progress notes, discharge summaries and specialty documentation"
+        />
       </div>
       {error && (
         <p className={`text-sm ${checkIn && !checkIn.checked_in ? "text-muted-foreground flex items-start gap-2" : "text-destructive"}`}>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { Loader2, Lock, ChevronDown, ChevronRight } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 
 // Structured documentation form for one surgical record type. The surgeon's
 // equivalent of a clinical note: the patient's medical information stays
@@ -96,11 +97,19 @@ export default function SurgicalRecordForm({ doctorProfile, patient, recordType,
       );
     }
     return (
-      <Textarea
-        rows={3}
-        value={values[f.key] || ""}
-        onChange={(e) => setField(f.key, e.target.value)}
-      />
+      <div className="space-y-1.5">
+        <Textarea
+          rows={3}
+          value={values[f.key] || ""}
+          onChange={(e) => setField(f.key, e.target.value)}
+        />
+        <MedicalDictationButton
+          value={values[f.key] || ""}
+          onChange={(v) => setField(f.key, v)}
+          specialty={doctorProfile?.specialization || ""}
+          contextLabel={f.label}
+        />
+      </div>
     );
   };
 

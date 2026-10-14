@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, FileText, Users } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import DoctorAvatar from "@/components/DoctorAvatar";
 import {
   makeReferralId,
@@ -82,6 +83,16 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
   const [selectedColleague, setSelectedColleague] = useState(null);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  // Medical dictation mic for the referral letter's clinical fields.
+  const dict = (key, label) => (
+    <MedicalDictationButton
+      value={form[key]}
+      onChange={(text) => setForm({ ...form, [key]: text })}
+      specialty={doctorProfile?.specialization || ""}
+      contextLabel={`Referral letter — ${label}`}
+    />
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -381,6 +392,7 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         </Field>
         <Field label="Reason for Referral" required>
           <Textarea rows={2} placeholder="Why the patient is being referred" value={form.reason_for_referral} onChange={set("reason_for_referral")} required />
+          {dict("reason_for_referral", "Reason for Referral")}
         </Field>
         <div className="space-y-1.5">
           <Label className="text-xs">Urgency Level *</Label>
@@ -401,47 +413,59 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         </div>
         <Field label="Primary / Working Diagnosis" required>
           <Input placeholder="Working diagnosis at the time of referral" value={form.working_diagnosis} onChange={set("working_diagnosis")} required />
+          {dict("working_diagnosis", "Working Diagnosis")}
         </Field>
       </Section>
 
       <Section title="Clinical Information">
         <Field label="Relevant Symptoms & Duration">
           <Textarea rows={2} value={form.symptoms_duration} onChange={set("symptoms_duration")} />
+          {dict("symptoms_duration", "Relevant Symptoms & Duration")}
         </Field>
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Past Medical History">
             <Textarea rows={2} value={form.past_medical_history} onChange={set("past_medical_history")} />
+            {dict("past_medical_history", "Past Medical History")}
           </Field>
           <Field label="Past Surgical History">
             <Textarea rows={2} value={form.past_surgical_history} onChange={set("past_surgical_history")} />
+            {dict("past_surgical_history", "Past Surgical History")}
           </Field>
           <Field label="Current Medications">
             <Textarea rows={2} value={form.current_medications} onChange={set("current_medications")} />
+            {dict("current_medications", "Current Medications")}
           </Field>
           <Field label="Allergies">
             <Textarea rows={2} value={form.allergies} onChange={set("allergies")} />
+            {dict("allergies", "Allergies")}
           </Field>
         </div>
         <Field label="Relevant Physical Examination Findings">
           <Textarea rows={2} value={form.physical_examination} onChange={set("physical_examination")} />
+          {dict("physical_examination", "Physical Examination Findings")}
         </Field>
         <Field label="Vital Signs (when appropriate)">
           <Textarea rows={2} placeholder="e.g. BP 120/80, HR 78, Temp 37.0°C" value={form.vital_signs} onChange={set("vital_signs")} />
+          {dict("vital_signs", "Vital Signs")}
         </Field>
       </Section>
 
       <Section title="Investigations">
         <Field label="Relevant Laboratory Results">
           <Textarea rows={2} value={form.lab_results} onChange={set("lab_results")} />
+          {dict("lab_results", "Relevant Laboratory Results")}
         </Field>
         <Field label="Imaging Results">
           <Textarea rows={2} value={form.imaging_results} onChange={set("imaging_results")} />
+          {dict("imaging_results", "Imaging Results")}
         </Field>
         <Field label="Pathology / Biopsy Results">
           <Textarea rows={2} value={form.pathology_results} onChange={set("pathology_results")} />
+          {dict("pathology_results", "Pathology / Biopsy Results")}
         </Field>
         <Field label="Other Relevant Investigations">
           <Textarea rows={2} value={form.other_investigations} onChange={set("other_investigations")} />
+          {dict("other_investigations", "Other Relevant Investigations")}
         </Field>
       </Section>
 
@@ -449,22 +473,27 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Medications">
             <Textarea rows={2} value={form.treatment_medications} onChange={set("treatment_medications")} />
+            {dict("treatment_medications", "Treatment — Medications")}
           </Field>
           <Field label="Procedures">
             <Textarea rows={2} value={form.treatment_procedures} onChange={set("treatment_procedures")} />
+            {dict("treatment_procedures", "Treatment — Procedures")}
           </Field>
         </div>
         <Field label="Previous Treatments">
           <Textarea rows={2} value={form.previous_treatments} onChange={set("previous_treatments")} />
+          {dict("previous_treatments", "Previous Treatments")}
         </Field>
         <Field label="Response to Treatment">
           <Textarea rows={2} value={form.treatment_response} onChange={set("treatment_response")} />
+          {dict("treatment_response", "Response to Treatment")}
         </Field>
       </Section>
 
       <Section title="Specific Request to Receiving Doctor">
         <Field label="Evaluation, investigation, specialist opinion or management being requested">
           <Textarea rows={5} placeholder="Clearly explain what you are asking the receiving doctor to do..." value={form.specific_request} onChange={set("specific_request")} />
+          {dict("specific_request", "Specific Request to Receiving Doctor")}
         </Field>
       </Section>
 

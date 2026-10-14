@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EMERGENCY_WORKFLOW } from "@/lib/specialtyDocuments";
 import { ArrowRight } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -25,17 +26,33 @@ export function EmergencyWorkflowStrip() {
   );
 }
 
-export default function DocumentFields({ defs = [], values = {}, onChange }) {
+export default function DocumentFields({ defs = [], values = {}, onChange, specialty = "" }) {
   return (
     <div className="space-y-4">
       {defs.map((f) => (
         <div key={f.key} className="space-y-1.5">
           <Label>{f.label}</Label>
           {f.type === "textarea" && (
-            <Textarea rows={2} value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+            <>
+              <Textarea rows={2} value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+              <MedicalDictationButton
+                value={values[f.key] ?? ""}
+                onChange={(v) => onChange(f.key, v)}
+                specialty={specialty}
+                contextLabel={f.label}
+              />
+            </>
           )}
           {f.type === "input" && (
-            <Input value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+            <>
+              <Input value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+              <MedicalDictationButton
+                value={values[f.key] ?? ""}
+                onChange={(v) => onChange(f.key, v)}
+                specialty={specialty}
+                contextLabel={f.label}
+              />
+            </>
           )}
           {f.type === "number" && (
             <Input type="number" value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />

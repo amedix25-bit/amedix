@@ -15,6 +15,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { X, Info } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import {
   IMAGING_TYPES,
   EXAMINATIONS,
@@ -134,11 +135,23 @@ export default function ImagingRequestForm({ doctorProfile, onSubmit, onCancel }
       <div className="space-y-2">
         <Label>Clinical Indication *</Label>
         <Textarea value={form.clinical_indication} onChange={(e) => set("clinical_indication")(e.target.value)} rows={2} placeholder="Briefly explain why the imaging is requested — e.g. Sudden onset chest pain and shortness of breath." />
+        <MedicalDictationButton
+          value={form.clinical_indication}
+          onChange={(v) => set("clinical_indication")(v)}
+          specialty={doctorProfile?.specialization || ""}
+          contextLabel="Imaging request — clinical indication"
+        />
       </div>
 
       <div className="space-y-2">
         <Label>Working Diagnosis / Clinical Question *</Label>
         <Textarea value={form.working_diagnosis} onChange={(e) => set("working_diagnosis")(e.target.value)} rows={2} placeholder="Suspected diagnosis or what you want the radiologist to assess — e.g. Suspected pulmonary embolism — assess for evidence of PE." />
+        <MedicalDictationButton
+          value={form.working_diagnosis}
+          onChange={(v) => set("working_diagnosis")(v)}
+          specialty={doctorProfile?.specialization || ""}
+          contextLabel="Imaging request — working diagnosis / clinical question"
+        />
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -239,6 +252,12 @@ export default function ImagingRequestForm({ doctorProfile, onSubmit, onCancel }
           <div className="space-y-2">
             <Label>Other MRI safety concern</Label>
             <Textarea value={form.mri_other_concern} onChange={(e) => set("mri_other_concern")(e.target.value)} rows={2} placeholder="Describe any other MRI safety concern" />
+            <MedicalDictationButton
+              value={form.mri_other_concern}
+              onChange={(v) => set("mri_other_concern")(v)}
+              specialty={doctorProfile?.specialization || ""}
+              contextLabel="MRI safety — other concern"
+            />
           </div>
         </div>
       )}

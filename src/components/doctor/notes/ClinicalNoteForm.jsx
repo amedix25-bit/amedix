@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
@@ -424,6 +425,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             defs={activeDef.fields}
             values={dataValues}
             onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
+            specialty={mySpecialty}
           />
         </div>
       )}
@@ -500,6 +502,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               rows={3}
               placeholder="Presenting complaint and history"
             />
+            <MedicalDictationButton
+              value={form.history}
+              onChange={(v) => setForm({ ...form, history: v })}
+              specialty={mySpecialty}
+              contextLabel="History — presenting complaint, review of systems and history of present illness"
+            />
           </div>
 
           <div className="space-y-2">
@@ -513,6 +521,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               value={form.physical_examination}
               onChange={(e) => setForm({ ...form, physical_examination: e.target.value })}
               rows={3}
+            />
+            <MedicalDictationButton
+              value={form.physical_examination}
+              onChange={(v) => setForm({ ...form, physical_examination: v })}
+              specialty={mySpecialty}
+              contextLabel="Physical examination findings"
             />
             {patient && (
               <div className="rounded-xl border border-border bg-muted/30 p-4">
@@ -536,6 +550,16 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               }}
               placeholder={i === 0 ? "Primary provisional diagnosis" : `Provisional diagnosis ${i + 1}`}
               required={i === 0}
+            />
+            <MedicalDictationButton
+              value={d}
+              onChange={(v) => {
+                const next = [...form.provisional_diagnoses];
+                next[i] = v;
+                setForm({ ...form, provisional_diagnoses: next });
+              }}
+              specialty={mySpecialty}
+              contextLabel="Provisional diagnosis"
             />
             {(form.provisional_diagnoses || []).length > 1 && (
               <Button
@@ -570,7 +594,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
           <p className="text-xs text-muted-foreground">
             Prescribed medications are automatically added to the patient's Medication History as active medications.
           </p>
-          <PrescriptionEditor medications={medications} onChange={setMedications} />
+          <PrescriptionEditor medications={medications} onChange={setMedications} specialty={mySpecialty} />
         </div>
 
         {isGeneralNote && (
@@ -582,6 +606,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 onChange={(e) => setForm({ ...form, interventions: e.target.value })}
                 rows={2}
               />
+              <MedicalDictationButton
+                value={form.interventions}
+                onChange={(v) => setForm({ ...form, interventions: v })}
+                specialty={mySpecialty}
+                contextLabel="Interventions — procedures and treatments performed"
+              />
             </div>
 
             <div className="space-y-2">
@@ -590,6 +620,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 value={form.biopsy}
                 onChange={(e) => setForm({ ...form, biopsy: e.target.value })}
                 rows={2}
+              />
+              <MedicalDictationButton
+                value={form.biopsy}
+                onChange={(v) => setForm({ ...form, biopsy: v })}
+                specialty={mySpecialty}
+                contextLabel="Biopsy details"
               />
             </div>
           </>
@@ -654,6 +690,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
             rows={3}
             placeholder="Recommendations, follow-up instructions, lifestyle advice, referrals..."
+          />
+          <MedicalDictationButton
+            value={form.recommendations}
+            onChange={(v) => setForm({ ...form, recommendations: v })}
+            specialty={mySpecialty}
+            contextLabel="Doctor's recommendations — follow-up and treatment instructions"
           />
         </div>
       )}

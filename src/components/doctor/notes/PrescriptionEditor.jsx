@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import { MED_ROUTES, MEAL_OPTIONS, todayStr, computeEndDate } from "@/lib/medicationUtils";
 
 const EMPTY_MED = {
@@ -24,7 +25,7 @@ const EMPTY_MED = {
   status: "active",
 };
 
-export default function PrescriptionEditor({ medications, onChange }) {
+export default function PrescriptionEditor({ medications, onChange, specialty = "" }) {
   const update = (i, field, value) =>
     onChange(medications.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)));
   const add = () => onChange([...medications, { ...EMPTY_MED }]);
@@ -51,6 +52,12 @@ export default function PrescriptionEditor({ medications, onChange }) {
                 onChange={(e) => update(i, "name", e.target.value)}
                 placeholder="e.g. Amoxicillin"
               />
+              <MedicalDictationButton
+                value={med.name}
+                onChange={(v) => update(i, "name", v)}
+                specialty={specialty}
+                contextLabel="Prescription — medication (drug) name"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Dose</Label>
@@ -58,6 +65,12 @@ export default function PrescriptionEditor({ medications, onChange }) {
                 value={med.dose}
                 onChange={(e) => update(i, "dose", e.target.value)}
                 placeholder="e.g. 500 mg"
+              />
+              <MedicalDictationButton
+                value={med.dose}
+                onChange={(v) => update(i, "dose", v)}
+                specialty={specialty}
+                contextLabel="Prescription — medication dose"
               />
             </div>
             <div className="space-y-1">
@@ -89,6 +102,12 @@ export default function PrescriptionEditor({ medications, onChange }) {
                 value={med.prn ? med.max_frequency : med.frequency}
                 onChange={(e) => update(i, med.prn ? "max_frequency" : "frequency", e.target.value)}
                 placeholder={med.prn ? "e.g. Max 3 times daily" : "e.g. 3 times daily"}
+              />
+              <MedicalDictationButton
+                value={med.prn ? med.max_frequency : med.frequency}
+                onChange={(v) => update(i, med.prn ? "max_frequency" : "frequency", v)}
+                specialty={specialty}
+                contextLabel="Prescription — medication frequency"
               />
             </div>
             <div className="space-y-1">
@@ -151,6 +170,12 @@ export default function PrescriptionEditor({ medications, onChange }) {
               onChange={(e) => update(i, "reason", e.target.value)}
               placeholder="e.g. Chest infection"
             />
+            <MedicalDictationButton
+              value={med.reason}
+              onChange={(v) => update(i, "reason", v)}
+              specialty={specialty}
+              contextLabel="Prescription — indication / reason"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Doctor's Instructions / Notes</Label>
@@ -160,6 +185,12 @@ export default function PrescriptionEditor({ medications, onChange }) {
               rows={2}
               placeholder="e.g. Complete the full course and take with water."
             />
+            <MedicalDictationButton
+              value={med.notes}
+              onChange={(v) => update(i, "notes", v)}
+              specialty={specialty}
+              contextLabel="Prescription — doctor's instructions"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Special Instructions</Label>
@@ -168,6 +199,12 @@ export default function PrescriptionEditor({ medications, onChange }) {
               onChange={(e) => update(i, "special_instructions", e.target.value)}
               rows={2}
               placeholder="Any special instructions for the patient to follow"
+            />
+            <MedicalDictationButton
+              value={med.special_instructions}
+              onChange={(v) => update(i, "special_instructions", v)}
+              specialty={specialty}
+              contextLabel="Prescription — special instructions"
             />
           </div>
         </div>

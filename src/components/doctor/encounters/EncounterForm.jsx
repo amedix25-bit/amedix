@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { ENCOUNTER_TYPES } from "@/lib/clinicalDocuments";
 import { Loader2, Lock } from "lucide-react";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 
 // Opens a new patient encounter — the container every clinical document,
 // order and result attaches to. Enforces the hospital check-in gate.
@@ -103,6 +104,12 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
       <div className="space-y-1.5">
         <Label>Chief Complaint / Reason for Visit</Label>
         <Textarea rows={2} value={chiefComplaint} onChange={(e) => setChiefComplaint(e.target.value)} />
+        <MedicalDictationButton
+          value={chiefComplaint}
+          onChange={setChiefComplaint}
+          specialty={practicingSpecialty || doctorProfile.specialization}
+          contextLabel="Chief complaint — reason for the visit"
+        />
       </div>
       {error && (
         <p className={`text-sm ${checkIn && !checkIn.checked_in ? "text-muted-foreground flex items-start gap-2" : "text-destructive"}`}>
