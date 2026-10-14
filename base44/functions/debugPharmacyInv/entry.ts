@@ -1,18 +1,16 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const sr = base44.asServiceRole;
-    const listed = await sr.entities.PharmacyInventory.filter({ medication_name: 'DebugTest' }, { limit: 10 });
-    const byId = await sr.entities.PharmacyInventory.get('6acfa330d3be20091e033073').catch((e) => ({ err: e.message }));
-    const listedUser = await sr.entities.PharmacyInventory.filter({ pharmacy_user_id: '6a9ea250809f9bb40f0d02c1' }, { limit: 10 });
+    const invOpts = await sr.entities.PharmacyInventory.filter({ pharmacy_id: '6acfa2ac2f0c28928ae8f7ec' }, { limit: 50 });
+    const profOpts = await sr.entities.PharmacyProfile.filter({ user_id: '6a9ea250809f9bb40f0d02c1' }, { limit: 50 });
     return Response.json({
-      byNameCount: (listed.items || listed).length,
-      byId: byId.err ? { err: byId.err } : { id: byId.id, name: byId.medication_name },
-      byUserCount: (listedUser.items || listedUser).length,
+      inv_opts: (invOpts.items || invOpts).length,
+      prof_opts: (profOpts.items || profOpts).length,
     });
   } catch (e) {
-    return Response.json({ error: e.message }, { status: 500 });
+    return Response.json({ error: e.message, stack: String(e.stack).split('\n').slice(0, 5) }, { status: 500 });
   }
 }
