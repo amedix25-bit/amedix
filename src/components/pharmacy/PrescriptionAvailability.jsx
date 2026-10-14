@@ -39,6 +39,11 @@ export default function PrescriptionAvailability({ medicationName, strength, act
 
   useEffect(() => {
     check();
+    // Live re-check — when any pharmacy updates its inventory (adds stock,
+    // reserves, dispenses), the availability search re-runs automatically so
+    // stocked medication appears without a manual refresh.
+    const unsubscribe = base44.entities.PharmacyInventory.subscribe(() => check());
+    return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
