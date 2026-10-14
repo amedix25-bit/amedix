@@ -4,8 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Search } from "lucide-react";
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
+import DispensingHistory from "@/components/pharmacy/DispensingHistory";
+import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 
 function PrescriptionRow({ prescription, onChanged }) {
+  const remaining = prescriptionRemaining(prescription);
+  const isPartial = prescription.status === "dispensed" && (prescription.dispensing_events || []).length > 0 && remaining > 0;
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -25,6 +29,11 @@ function PrescriptionRow({ prescription, onChanged }) {
             </span>
           )}
           <PrescriptionStatusBadge status={prescription.status} />
+          {isPartial && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              {remaining} remaining
+            </span>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-xs">
@@ -43,6 +52,13 @@ function PrescriptionRow({ prescription, onChanged }) {
         )}
         {" · "}Refills used {prescription.refills_used || 0}/{prescription.refills_authorized || 0}
       </p>
+      {prescription.status === "cancelled" && (prescription.rejected_reason || prescription.cancellation_reason) && (
+        <p className="text-xs text-destructive mt-2">
+          {prescription.rejected_by_pharmacy_name || prescription.cancelled_by_name || ""}:
+          {" "}{prescription.rejected_reason || prescription.cancellation_reason}
+        </p>
+      )}
+      <DispensingHistory prescription={prescription} />
       <div className="mt-3">
         <PrescriptionActions prescription={prescription} onChanged={onChanged} />
       </div>
@@ -100,6 +116,7 @@ export default function PharmacyPrescriptionsSection({ profile }) {
     { key: "authorized", label: "Awaiting Reservation" },
     { key: "reserved", label: "Reserved" },
     { key: "dispensed", label: "Dispensed" },
+    { key: "cancelled", label: "Cancelled" },
   ];
 
   return (

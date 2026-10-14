@@ -1,21 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
-
-function escapeRegex(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// Parses a quantity string like "21 tablets" into the numeric units (21).
-function parseQty(value) {
-  const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''));
-  return Number.isFinite(n) ? n : 0;
-}
-
-function unitWord(qtyStr) {
-  const m = String(qtyStr || '').replace(/[^0-9.]/g, ' ').trim().split(/\s+/)[1];
-  return m || 'unit(s)';
-}
+import { parseQty, unitWord, totalDispensedOf, findInventoryItem } from "../../shared/pharmacyPrescription.ts";
 
 // The pharmacist fills a prescription: records the medication and quantity
 // actually dispensed. Supports partial dispensing (dispensing less than the
@@ -59,15 +45,11 @@ export default async function(req) {
     }
 
     // Authorized quantity and how much has already been dispensed across
-    // previous fill transactions (legacy prescriptions without events count
-    // as fully dispensed once they carry a dispensed status).
+    // previous fill transactions.
     const authorizedQty = parseQty(prescription.quantity);
     const unit = unitWord(prescription.quantity);
     const priorEvents = prescription.dispensing_events || [];
-    let totalDispensed = priorEvents.reduce((sum, ev) => sum + (parseQty(ev.quantity) || Number(ev.quantity_number) || 0), 0);
-    if (priorEvents.length === 0 && prescription.status === 'dispensed' && (prescription.dispensed_datetime || prescription.dispensed_quantity)) {
-      totalDispensed = authorizedQty > 0 ? authorizedQty : 1;
-    }
+    const totalDispensed = totalDispensedOf(prescription);
     let remaining = authorizedQty > 0 ? Math.max(0, authorizedQty - totalDispensed) : 0;
 
     // Requested quantity for this fill: the pharmacist can dispense less
@@ -107,17 +89,7 @@ export default async function(req) {
     // Stock control: a reservation already held the full authorized quantity,
     // a walk-in fill decreases stock by the quantity dispensed now.
     if (prescription.status !== 'reserved') {
-      const inventoryPage = await base44.asServiceRole.entities.PharmacyInventory.filter(
-        {
-          pharmacy_id: pharmacy.id,
-          medication_name: { $regex: `^${escapeRegex(prescription.medication_name)}$`, $options: 'i' },
-        },
-        { limit: 50 }
-      );
-      const items = (inventoryPage.items || inventoryPage).filter(
-        (i) => !prescription.strength || !i.strength || String(i.strength).toLowerCase() === String(prescription.strength).toLowerCase()
-      );
-      const item = items[0];
+      const item = await findInventoryItem(base44, pharmacy, prescription);
       if (!item) {
         return Response.json({ error: 'This medication is not in your inventory list. Add it under Inventory first.' }, { status: 400 });
       }

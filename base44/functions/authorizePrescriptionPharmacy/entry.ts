@@ -30,10 +30,16 @@ export default async function(req) {
     if (prescription.patient_id !== profiles[0].id) {
       return Response.json({ error: 'You are not the owner of this prescription.' }, { status: 403 });
     }
-    if (prescription.authorized_pharmacy_id) {
+    // A prescription the pharmacy rejected can be re-authorized to a
+    // different pharmacy — the patient chooses a new one from their page.
+    const reauthorization = prescription.status === 'cancelled' && prescription.rejected_reason;
+    if (prescription.authorized_pharmacy_id && !reauthorization) {
       return Response.json({ error: 'This prescription has already been authorized.' }, { status: 400 });
     }
-    if (prescription.status !== 'issued') {
+    if (reauthorization && prescription.authorized_pharmacy_id === pharmacy_id) {
+      return Response.json({ error: 'This pharmacy already rejected the prescription. Choose another pharmacy.' }, { status: 400 });
+    }
+    if (prescription.status !== 'issued' && !reauthorization) {
       return Response.json({ error: 'Only prescriptions awaiting authorization can be authorized.' }, { status: 400 });
     }
 
@@ -48,7 +54,7 @@ export default async function(req) {
     }
 
     const authorizationDatetime = new Date().toISOString();
-    await base44.asServiceRole.entities.Prescription.update(prescription.id, {
+    const authorizationUpdate = {
       authorized_pharmacy_id: pharmacy.id,
       authorized_pharmacy_user_id: pharmacy.user_id || '',
       authorized_pharmacy_name: pharmacy.pharmacy_name,
@@ -56,7 +62,14 @@ export default async function(req) {
       authorized_pharmacy_address: pharmacy.address || '',
       authorization_datetime: authorizationDatetime,
       status: 'authorized',
-    });
+    };
+    if (reauthorization) {
+      authorizationUpdate.rejected_reason = '';
+      authorizationUpdate.rejected_by_name = '';
+      authorizationUpdate.rejected_by_pharmacy_name = '';
+      authorizationUpdate.rejected_datetime = '';
+    }
+    await base44.asServiceRole.entities.Prescription.update(prescription.id, authorizationUpdate);
 
     await base44.asServiceRole.entities.PharmacyNotification.create({
       pharmacy_id: pharmacy.id,

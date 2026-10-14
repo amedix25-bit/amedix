@@ -168,19 +168,96 @@
     },
     "dispensed_datetime": {
       "type": "string",
-      "description": "Date and time the medication was dispensed (ISO datetime) \u2014 updated on each refill"
+      "description": "Date and time the medication was last dispensed (ISO datetime)"
     },
     "dispensed_by_name": {
       "type": "string",
-      "description": "Pharmacist who dispensed the medication"
+      "description": "Pharmacist who dispensed the medication last"
     },
     "dispensed_pharmacy_name": {
       "type": "string",
-      "description": "Name of the pharmacy that dispensed the medication"
+      "description": "Name of the pharmacy that dispensed the medication last"
     },
     "dispensed_quantity": {
       "type": "string",
-      "description": "Quantity actually dispensed"
+      "description": "Quantity actually dispensed in the most recent dispense"
+    },
+    "total_dispensed_quantity": {
+      "type": "string",
+      "description": "Total quantity dispensed across all dispensing events, e.g. 14 tablets"
+    },
+    "dispensing_events": {
+      "type": "array",
+      "description": "Dispensing history \u2014 one entry per Fill Prescription transaction, including partial fills, with pharmacist, pharmacy, quantity dispensed, quantity remaining and whether a refill was consumed. The permanent record of every dispensing transaction at the pharmacy.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string",
+            "description": "Date and time of the dispensing transaction (ISO datetime)"
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Quantity dispensed in this transaction, e.g. 10 tablets"
+          },
+          "quantity_number": {
+            "type": "number",
+            "description": "Quantity dispensed in this transaction as a number"
+          },
+          "pharmacist_name": {
+            "type": "string",
+            "description": "Pharmacist who dispensed this transaction"
+          },
+          "pharmacy_name": {
+            "type": "string",
+            "description": "Pharmacy that dispensed this transaction"
+          },
+          "remaining_after": {
+            "type": "number",
+            "description": "Authorized quantity remaining after this transaction"
+          },
+          "consumed_refill": {
+            "type": "boolean",
+            "description": "True when this transaction consumed one authorized refill"
+          }
+        },
+        "required": [
+          "datetime",
+          "quantity"
+        ]
+      }
+    },
+    "rejected_reason": {
+      "type": "string",
+      "description": "Reason the pharmacy rejected or could not fill the prescription, e.g. medication unavailable \u2014 recorded by the pharmacist"
+    },
+    "rejected_by_name": {
+      "type": "string",
+      "description": "Pharmacist who rejected the prescription"
+    },
+    "rejected_by_pharmacy_name": {
+      "type": "string",
+      "description": "Pharmacy that rejected the prescription"
+    },
+    "rejected_datetime": {
+      "type": "string",
+      "description": "Date and time the pharmacy rejected the prescription (ISO datetime)"
+    },
+    "cancellation_reason": {
+      "type": "string",
+      "description": "Reason the prescription was cancelled \u2014 entered by the cancelling doctor"
+    },
+    "cancelled_by_name": {
+      "type": "string",
+      "description": "Name of the doctor who cancelled the prescription"
+    },
+    "cancelled_by_role": {
+      "type": "string",
+      "description": "Role of who cancelled the prescription \u2014 doctor / pharmacy"
+    },
+    "cancelled_datetime": {
+      "type": "string",
+      "description": "Date and time the prescription was cancelled (ISO datetime)"
     }
   },
   "required": [

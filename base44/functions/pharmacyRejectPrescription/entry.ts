@@ -1,15 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
-
-function escapeRegex(value) {
-  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function parseQty(value) {
-  const n = parseFloat(String(value || '').replace(/[^0-9.]/g, ''));
-  return Number.isFinite(n) ? n : 0;
-}
+import { restoreReservedStock } from "../../shared/pharmacyPrescription.ts";
 
 // The pharmacy rejects a prescription it cannot fill (e.g. the medication is
 // unavailable). Any stock still held by a reservation is returned to
@@ -51,30 +43,7 @@ export default async function(req) {
 
     // Return any stock still held by a reservation (the full quantity minus
     // what was already dispensed in partial fills).
-    if (prescription.status === 'reserved') {
-      const authorizedQty = parseQty(prescription.quantity);
-      const priorEvents = prescription.dispensing_events || [];
-      const totalDispensed = priorEvents.reduce((sum, ev) => sum + (parseQty(ev.quantity) || Number(ev.quantity_number) || 0), 0);
-      const heldQty = authorizedQty > 0 ? Math.max(0, authorizedQty - totalDispensed) : 0;
-      if (heldQty > 0) {
-        const inventoryPage = await base44.asServiceRole.entities.PharmacyInventory.filter(
-          {
-            pharmacy_id: pharmacy.id,
-            medication_name: { $regex: `^${escapeRegex(prescription.medication_name)}$`, $options: 'i' },
-          },
-          { limit: 50 }
-        );
-        const items = (inventoryPage.items || inventoryPage).filter(
-          (i) => !prescription.strength || !i.strength || String(i.strength).toLowerCase() === String(prescription.strength).toLowerCase()
-        );
-        if (items[0]) {
-          await base44.asServiceRole.entities.PharmacyInventory.update(items[0].id, {
-            quantity_in_stock: items[0].quantity_in_stock + heldQty,
-            updated_datetime: new Date().toISOString(),
-          });
-        }
-      }
-    }
+    await restoreReservedStock(base44, pharmacy, prescription);
 
     const now = new Date();
     await base44.asServiceRole.entities.Prescription.update(prescription.id, {

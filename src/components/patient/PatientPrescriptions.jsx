@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
+import DispensingHistory from "@/components/pharmacy/DispensingHistory";
+import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 import QrCodeCard from "@/components/QrCodeCard";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
@@ -180,7 +182,20 @@ export default function PatientPrescriptions() {
               )}
               <p className="text-xs text-muted-foreground mt-2">
                 {t("Refills")}: {p.refills_used || 0}/{p.refills_authorized || 0} {t("used")}
+                {p.total_dispensed_quantity ? ` · ${t("Dispensed")}: ${p.total_dispensed_quantity}` : ""}
               </p>
+              {p.status === "dispensed" && prescriptionRemaining(p) > 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  {t("Partially dispensed — {count} unit(s) still to collect at the pharmacy.", { count: prescriptionRemaining(p) })}
+                </p>
+              )}
+              {p.status === "cancelled" && (p.rejected_reason || p.cancellation_reason) && (
+                <p className="text-xs text-destructive mt-2">
+                  {p.rejected_by_pharmacy_name || p.cancelled_by_name || ""}: {p.rejected_reason || p.cancellation_reason}
+                  {p.status === "cancelled" && p.rejected_reason ? " · " + t("You can authorize another pharmacy, or contact your doctor.") : ""}
+                </p>
+              )}
+              <DispensingHistory prescription={p} />
 
               {p.authorized_pharmacy_name ? (
                 <div className="mt-3 pt-3 border-t border-border">
