@@ -13,13 +13,23 @@ import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/l
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import { FlaskConical, Plus, X, CheckCircle2, Loader2, Send, ArrowLeft, Search } from "lucide-react";
 
+// In-progress test selection survives leaving and returning to this page during
+// the same order workflow — it is cleared once the request is submitted.
+const SELECTION_KEY = "amedix_lab_request_selection";
+
 export default function DoctorLabRequests({ doctorProfile, draftContext, onNavigateTab }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [selected, setSelected] = useState(new Set());
+  const [selected, setSelected] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(SELECTION_KEY);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch (e) { console.error(e); }
+    return new Set();
+  });
   const [form, setForm] = useState({
     patient_cin: "",
     indication: "",
@@ -34,6 +44,14 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
   useEffect(() => {
     load();
   }, [doctorProfile]);
+
+  // Persist the in-progress selection so it survives returning to this page.
+  useEffect(() => {
+    try {
+      if (selected.size > 0) sessionStorage.setItem(SELECTION_KEY, JSON.stringify([...selected]));
+      else sessionStorage.removeItem(SELECTION_KEY);
+    } catch (e) { console.error(e); }
+  }, [selected]);
 
   useEffect(() => {
     if (draftContext?.patient) {

@@ -3,27 +3,45 @@ import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/components/ui/use-toast";
 import {
-  Search, ChevronDown, Star, Plus, Trash2, X, Pencil, SquarePen, Copy, Globe,
+  Search, ChevronDown, Star, Plus, Trash2, X, Pencil, SquarePen, Copy, Globe, Loader2, AlertTriangle,
 } from "lucide-react";
 import FavoriteEditorDialog from "@/components/doctor/lab/FavoriteEditorDialog";
 import { LAB_CATEGORIES, CATALOG_ENTRIES, searchLabTests, entryById } from "@/lib/labTestCatalog";
 
 const ALL_TEST_IDS = CATALOG_ENTRIES.map((t) => t.id);
 
-function TestRow({ entry, isSelected, onToggle }) {
+function TestRow({ entry, isSelected, onToggle, showDetails }) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onToggle}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle()}
-      className={`flex items-center gap-2 text-sm rounded-lg border px-3 py-2 cursor-pointer hover:bg-accent transition-colors ${
-        isSelected ? "border-primary/50 bg-primary/5" : "border-border bg-card"
-      }`}
-    >
-      <Checkbox checked={isSelected} className="pointer-events-none" tabIndex={-1} />
-      <span className="min-w-0 truncate">{entry.name}</span>
+    <div>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onToggle}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToggle()}
+        className={`flex items-center gap-2 text-sm rounded-lg border px-3 py-2 cursor-pointer hover:bg-accent transition-colors ${
+          isSelected ? "border-primary/50 bg-primary/5" : "border-border bg-card"
+        }`}
+      >
+        <Checkbox checked={isSelected} className="pointer-events-none" tabIndex={-1} />
+        <span className="min-w-0 truncate">{entry.name}</span>
+        {entry.abbrev && (
+          <span className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            {entry.abbrev}
+          </span>
+        )}
+      </div>
+      {showDetails && (
+        <p className="text-[11px] text-muted-foreground pl-9 truncate">
+          {[
+            entry.panel,
+            entry.category,
+            entry.specimen,
+            entry.abbrev && entry.abbrev.toLowerCase() !== entry.name.toLowerCase() ? entry.abbrev : null,
+          ].filter(Boolean).join(" · ")}
+        </p>
+      )}
     </div>
   );
 }
@@ -54,7 +72,7 @@ function PanelBlock({ panel, categoryId, selected, onToggle, onSetMany, open, on
       {open && (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 mt-3">
           {panel.tests.map((name) => {
-            const entry = { id: `${categoryId}:${panel.id}:${name}`, name };
+            const entry = entryById(`${categoryId}:${panel.id}:${name}`) || { id: `${categoryId}:${panel.id}:${name}`, name };
             return (
               <TestRow
                 key={entry.id}
@@ -137,27 +155,43 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
   const [activeCategory, setActiveCategory] = useState(LAB_CATEGORIES[0].id);
   const [openPanels, setOpenPanels] = useState(new Set());
   const [favorites, setFavorites] = useState([]);
+  const [favLoading, setFavLoading] = useState(true);
+  const [favError, setFavError] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorFavorite, setEditorFavorite] = useState(null);
   const [renamingFav, setRenamingFav] = useState(null);
   const [renameValue, setRenameValue] = useState("");
 
-  useEffect(() => {
+  const { toast } = useToast();
+
+  const loadFavorites = (cancelledRef) => {
     if (!doctorId) return;
-    let cancelled = false;
+    setFavLoading(true);
+    setFavError(false);
     // Personal favorites for this doctor + shared standardized panels for everyone.
     Promise.all([
       base44.entities.DoctorLabFavorite.filter({ doctor_id: doctorId }, "-created_date"),
       base44.entities.DoctorLabFavorite.filter({ is_shared: true }, "favorite_name"),
     ])
       .then(([own, shared]) => {
-        if (cancelled) return;
+        if (cancelledRef?.current) return;
         const map = new Map();
         [...own, ...shared].forEach((fav) => map.set(fav.id, fav));
         setFavorites([...map.values()]);
       })
-      .catch((err) => console.error(err));
-    return () => { cancelled = true; };
+      .catch((err) => {
+        console.error(err);
+        if (!cancelledRef?.current) setFavError(true);
+      })
+      .finally(() => {
+        if (!cancelledRef?.current) setFavLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    const cancelled = { current: false };
+    loadFavorites(cancelled);
+    return () => { cancelled.current = true; };
   }, [doctorId]);
 
   // Selected count per category, for the sidebar badges.
@@ -168,6 +202,15 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
     });
     return map;
   }, [selected]);
+
+  // Total test count per category, for the sidebar (reliable — from the catalog).
+  const totalsPerCategory = useMemo(() => {
+    const map = new Map();
+    CATALOG_ENTRIES.forEach((e) => {
+      map.set(e.categoryId, (map.get(e.categoryId) || 0) + 1);
+    });
+    return map;
+  }, []);
 
   const results = query.trim() ? searchLabTests(query) : [];
   const activeCat = LAB_CATEGORIES.find((c) => c.id === activeCategory) || LAB_CATEGORIES[0];
@@ -200,10 +243,16 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
   };
 
   const applyFavorite = (fav) => {
+    const ids = fav.test_ids || [];
+    const already = ids.filter((id) => selected.has(id)).length;
     // Merge into the current selection — duplicates are impossible because it is a Set.
     // This only preselects tests; the doctor always reviews and confirms before submitting.
-    onSetMany(fav.test_ids || [], true);
+    onSetMany(ids, true);
     setQuery("");
+    toast({
+      title: `${fav.favorite_name} applied`,
+      description: `${ids.length - already} test(s) added${already > 0 ? `, ${already} already selected — kept as one instance` : ""}.`,
+    });
   };
 
   const duplicateFavorite = async (fav) => {
@@ -240,6 +289,7 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
   const categoryButton = (cat, compact) => {
     const isActive = !query.trim() && cat.id === activeCategory;
     const count = selectedPerCategory.get(cat.id) || 0;
+    const total = totalsPerCategory.get(cat.id) || 0;
     return (
       <button
         key={cat.id}
@@ -256,11 +306,14 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
         }
       >
         <span className={compact ? "" : "truncate"}>{cat.name}</span>
-        {count > 0 && (
-          <span className={`text-xs rounded-full px-1.5 py-0.5 shrink-0 ${isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary font-semibold"}`}>
-            {count}
-          </span>
-        )}
+        <span className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-[11px] ${isActive ? "text-primary/70" : "text-muted-foreground"}`}>{total}</span>
+          {count > 0 && (
+            <span className={`text-xs rounded-full px-1.5 py-0.5 ${isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary font-semibold"}`}>
+              {count}
+            </span>
+          )}
+        </span>
       </button>
     );
   };
@@ -290,7 +343,28 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
               </Button>
             </div>
 
-            {favorites.length === 0 ? (
+            {favLoading ? (
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading favorites...
+              </p>
+            ) : favError ? (
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="text-xs text-destructive flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  Couldn't load favorites.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => loadFavorites(null)}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : favorites.length === 0 ? (
               <p className="text-xs text-muted-foreground mt-2">
                 Create a reusable collection of tests from the catalog, then apply it with one click.
               </p>
@@ -399,16 +473,13 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
               ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[28rem] overflow-y-auto">
                   {results.map((entry) => (
-                    <div key={entry.id} className="space-y-0.5">
-                      <TestRow
-                        entry={entry}
-                        isSelected={selected.has(entry.id)}
-                        onToggle={() => onToggle(entry.id)}
-                      />
-                      <p className="text-[11px] text-muted-foreground pl-9 truncate">
-                        {entry.panel ? `${entry.panel} · ` : ""}{entry.category}
-                      </p>
-                    </div>
+                    <TestRow
+                      key={entry.id}
+                      entry={entry}
+                      isSelected={selected.has(entry.id)}
+                      onToggle={() => onToggle(entry.id)}
+                      showDetails
+                    />
                   ))}
                 </div>
               )}
@@ -449,7 +520,7 @@ export default function LabTestPicker({ selected, onToggle, onSetMany, doctorId 
               {(activeCat.tests || []).length > 0 && (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
                   {activeCat.tests.map((name) => {
-                    const entry = { id: `${activeCat.id}:${name}`, name };
+                    const entry = entryById(`${activeCat.id}:${name}`) || { id: `${activeCat.id}:${name}`, name };
                     return (
                       <TestRow
                         key={entry.id}
