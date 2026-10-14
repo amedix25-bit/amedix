@@ -8,7 +8,7 @@ import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 
-function FoundPatient({ data, onReset }) {
+function FoundPatient({ data, onReset, session }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
@@ -110,7 +110,7 @@ export default function PharmacyPatientLookupSection({ session }) {
   };
 
   if (found) {
-    return <FoundPatient data={found} onReset={reset} />;
+    return <FoundPatient data={found} onReset={reset} session={session} />;
   }
 
   return (
