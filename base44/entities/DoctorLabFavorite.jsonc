@@ -1,0 +1,26 @@
+{
+  "name": "DoctorLabFavorite",
+  "type": "object",
+  "properties": {
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id this favorite belongs to"
+    },
+    "favorite_name": {
+      "type": "string",
+      "description": "Name the doctor gave this favorite, e.g. Anemia Panel"
+    },
+    "test_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lab catalog test ids included in this favorite, across all categories"
+    }
+  },
+  "required": [
+    "doctor_id",
+    "favorite_name",
+    "test_ids"
+  ]
+}

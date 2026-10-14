@@ -70,14 +70,6 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
     });
 
   const selectedEntries = useMemo(() => [...selected].map(entryById).filter(Boolean), [selected]);
-  const groupedSelection = useMemo(() => {
-    const map = new Map();
-    selectedEntries.forEach((e) => {
-      if (!map.has(e.category)) map.set(e.category, []);
-      map.get(e.category).push(e);
-    });
-    return [...map.entries()];
-  }, [selectedEntries]);
 
   // One row per patient — never one row per test.
   const patients = useMemo(() => {
@@ -241,7 +233,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
 
       <div className="space-y-2">
         <Label>Investigations *</Label>
-        <LabTestPicker selected={selected} onToggle={toggleTest} onSetMany={setMany} />
+        <LabTestPicker selected={selected} onToggle={toggleTest} onSetMany={setMany} doctorId={doctorProfile.id} />
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -296,34 +288,6 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
           contextLabel="Laboratory request — instructions"
         />
       </div>
-
-      {selectedEntries.length > 0 && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <p className="text-sm font-semibold mb-1">Review Consolidated Request ({selectedEntries.length} tests)</p>
-          <p className="text-xs text-muted-foreground mb-3">
-            Patient CIN: {form.patient_cin || "—"} · Laboratory: {form.lab_name || "—"} · One submission = one consolidated request and one PDF form.
-          </p>
-          {groupedSelection.map(([category, entries]) => (
-            <div key={category} className="mb-3 last:mb-0">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">{category}</p>
-              <div className="flex flex-wrap gap-2">
-                {entries.map((e) => (
-                  <span key={e.id} className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2.5 py-1 text-xs">
-                    {e.name}
-                    <button
-                      type="button"
-                      onClick={() => toggleTest(e.id)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {formError && <p className="text-sm text-destructive">{formError}</p>}
 
