@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

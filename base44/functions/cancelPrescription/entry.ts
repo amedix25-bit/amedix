@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { restoreReservedStock } from "../../shared/pharmacyPrescription.ts";

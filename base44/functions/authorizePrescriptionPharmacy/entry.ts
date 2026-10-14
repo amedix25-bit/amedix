@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 // Records the patient's explicit authorization allowing one pharmacy to
 // dispense a prescription. Only the patient who owns the prescription can

@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
 // Pharmacy counter lookup. The pharmacist scans the patient's CIN QR code (or
 // types the CIN) and the backend resolves the patient, returning their basic
