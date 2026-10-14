@@ -160,6 +160,34 @@ export default async function(req) {
     }
     await base44.asServiceRole.entities.Prescription.update(prescription.id, update);
 
+    // The dispensed medication is added automatically to the patient's
+    // Medication section on the first fill, linked to the prescription.
+    // Later partial fills and refills do not create a duplicate.
+    const medicationRoutes = new Set([
+      'oral', 'intravenous', 'intramuscular', 'subcutaneous', 'topical', 'inhalation', 'rectal', 'other',
+    ]);
+    const existingMeds = await base44.asServiceRole.entities.Medication.filter({ prescription_id: prescription.id });
+    if ((existingMeds.items || existingMeds).length === 0) {
+      await base44.asServiceRole.entities.Medication.create({
+        patient_id: prescription.patient_id,
+        patient_user_id: prescription.patient_user_id || '',
+        patient_cin: prescription.patient_cin || '',
+        patient_name: prescription.patient_name || '',
+        prescription_id: prescription.id,
+        name: prescription.medication_name,
+        active_ingredient: prescription.active_ingredient || '',
+        dose: prescription.dosage || '',
+        frequency: prescription.frequency || '',
+        route: medicationRoutes.has(prescription.route) ? prescription.route : 'other',
+        duration: prescription.duration || '',
+        special_instructions: prescription.special_instructions || '',
+        doctor_notes: prescription.special_instructions || '',
+        source: 'doctor_prescribed',
+        start_date: now.toISOString().slice(0, 10),
+        is_active: true,
+      });
+    }
+
     const fillNote = remaining > 0
       ? ` Partial fill — ${remaining} ${unit} remain to be dispensed.`
       : '';
@@ -185,7 +213,7 @@ export default async function(req) {
       title: remaining > 0 ? 'Medication Partially Dispensed' : 'Medication Dispensed',
       message:
         `${pharmacy.pharmacy_name} dispensed ${quantityLabel} of ${medLabel}.${fillNote}` +
-        (remaining === 0 ? ` You can now start your treatment as instructed by ${prescription.doctor_name || 'your doctor'}.` : ''),
+        (remaining === 0 ? ` You can now start your treatment as instructed by ${prescription.doctor_name || 'your doctor'}. The medication was added to your Medication list.` : ''),
       target: 'prescriptions',
       related_id: prescription.id,
     });
