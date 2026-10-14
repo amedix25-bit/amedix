@@ -59,7 +59,7 @@ function PrescriptionCard({ prescription, onIssued }) {
       )}
       <DispensingHistory prescription={prescription} />
       <div className="mt-2">
-        <CancelPrescriptionButton prescription={prescription} onDone={load} />
+        <CancelPrescriptionButton prescription={prescription} onDone={onIssued} />
       </div>
       {/* Automatic availability check across affiliated pharmacies */}
       <PrescriptionAvailability
