@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { escapeRegex, todayStr } from "../../shared/pharmacyPrescription.ts";
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { recordStockMovement } from "../../shared/inventoryMovements.ts";
 
 // Medication recall management. A recall is recorded by an administrator
 // (affects matching stock across ALL affiliated pharmacies) or by a pharmacy
@@ -151,6 +152,24 @@ export default async function(req) {
             recall_urgency: urgency,
             safety_status: 'ok',
           });
+          await recordStockMovement(base44.asServiceRole, {
+            pharmacy_id: item.pharmacy_id,
+            pharmacy_user_id: item.pharmacy_user_id,
+            inventory_id: item.id,
+            medication_name: item.medication_name,
+            strength: item.strength || '',
+            batch_number: item.batch_number || '',
+            expiry_date: item.expiry_date || '',
+            movement_type: 'quarantine',
+            quantity_before: item.quantity_in_stock ?? null,
+            quantity_change: 0,
+            quantity_after: item.quantity_in_stock ?? null,
+            reason: `Recalled (${recall.recall_id}): ${recall.reason}`,
+            reference: recall.recall_id,
+            performed_by_user_id: recall.issued_by_user_id,
+            performed_by_name: recall.issued_by_name,
+            performed_by_role: recall.issued_by_role,
+          });
           quarantineActions.push(item);
         } else if (item.recall_id === recall.recall_id) {
           quarantineActions.push(item);
@@ -253,6 +272,24 @@ export default async function(req) {
         quantity_in_stock: 0,
         quarantine_action: 'disposed',
         updated_datetime: new Date().toISOString(),
+      });
+      await recordStockMovement(base44.asServiceRole, {
+        pharmacy_id: item.pharmacy_id,
+        pharmacy_user_id: item.pharmacy_user_id,
+        inventory_id: item.id,
+        medication_name: item.medication_name,
+        strength: item.strength || '',
+        batch_number: item.batch_number || '',
+        expiry_date: item.expiry_date || '',
+        movement_type: 'disposal',
+        quantity_before: item.quantity_in_stock ?? null,
+        quantity_change: -(item.quantity_in_stock || 0),
+        quantity_after: 0,
+        reason: item.quarantine_reason || 'Quarantined stock disposed',
+        reference: item.recall_id || '',
+        performed_by_user_id: user.id,
+        performed_by_name: user.full_name || 'Pharmacy',
+        performed_by_role: 'pharmacy',
       });
       if (item.recall_id) {
         try {

@@ -2,6 +2,8 @@
 // inventory lookup and reservation stock return — used by the pharmacy
 // dispensing, rejection and doctor cancellation functions.
 
+import { recordStockMovement } from "./inventoryMovements.ts";
+
 export function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -109,7 +111,7 @@ export async function findInventoryItem(base44, pharmacy, prescription) {
 // Returns the stock still held by a reservation (the full authorized quantity
 // minus what partial fills already dispensed) back to the pharmacy inventory.
 // The stock goes back to the exact batch it was reserved from.
-export async function restoreReservedStock(base44, pharmacy, prescription) {
+export async function restoreReservedStock(base44, pharmacy, prescription, actor = {}) {
   if (prescription.status !== 'reserved') return;
   const heldQty = remainingOf(prescription);
   if (heldQty <= 0) return;
@@ -124,6 +126,24 @@ export async function restoreReservedStock(base44, pharmacy, prescription) {
     await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
       quantity_in_stock: item.quantity_in_stock + heldQty,
       updated_datetime: new Date().toISOString(),
+    });
+    await recordStockMovement(base44, {
+      pharmacy_id: pharmacy.id,
+      pharmacy_user_id: actor.user_id || pharmacy.user_id || '',
+      inventory_id: item.id,
+      medication_name: prescription.medication_name,
+      strength: prescription.strength || item.strength || '',
+      batch_number: item.batch_number || '',
+      expiry_date: item.expiry_date || '',
+      movement_type: 'reservation_release',
+      quantity_before: item.quantity_in_stock,
+      quantity_change: heldQty,
+      quantity_after: item.quantity_in_stock + heldQty,
+      reason: actor.reason || 'Reservation released — stock returned to inventory',
+      reference: prescription.prescription_id || '',
+      performed_by_user_id: actor.user_id || '',
+      performed_by_name: actor.name || '',
+      performed_by_role: actor.role || '',
     });
   }
 }

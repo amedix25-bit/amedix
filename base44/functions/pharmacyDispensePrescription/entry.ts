@@ -3,6 +3,7 @@ import { createPatientNotification } from "../../shared/patientNotifications.ts"
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { parseQty, unitWord, totalDispensedOf, findInventoryItems, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
 import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
+import { recordStockMovement } from "../../shared/inventoryMovements.ts";
 
 // The pharmacist fills a prescription: records the medication and quantity
 // actually dispensed. Supports partial dispensing (dispensing less than the
@@ -115,6 +116,7 @@ export default async function(req) {
     // (first-expiry-first-out). Expired, quarantined or recalled stock is
     // never dispensed.
     let batchNumber = '';
+    let deductedItem = null;
     if (prescription.status !== 'reserved') {
       const all = await findInventoryItems(base44, pharmacy, prescription);
       const item = all.find(isItemDispensable);
@@ -124,14 +126,39 @@ export default async function(req) {
         }
         return Response.json({ error: 'Matching stock is quarantined, expired or recalled and cannot be dispensed. Dispose of the affected batches under Inventory.' }, { status: 400 });
       }
-      if (item.quantity_in_stock < dispenseQty) {
-        return Response.json({ error: `Not enough dispensable stock — only ${item.quantity_in_stock} ${unit} available.` }, { status: 400 });
+      // Transaction-safe deduction: the update only applies while the stock is
+      // still at or above the requested quantity, so two concurrent users can
+      // never dispense the same units and stock can never go negative.
+      const deduct = await base44.asServiceRole.entities.PharmacyInventory.updateMany(
+        { id: item.id, quantity_in_stock: { $gte: dispenseQty } },
+        { $inc: { quantity_in_stock: -dispenseQty }, $set: { updated_datetime: new Date().toISOString() } }
+      );
+      if (!deduct || deduct.updated !== 1) {
+        return Response.json(
+          { error: `Stock just changed — only ${item.quantity_in_stock} ${unit} remain. The fill was not recorded; please retry.` },
+          { status: 409 }
+        );
       }
-      await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
-        quantity_in_stock: Math.max(0, item.quantity_in_stock - dispenseQty),
-        updated_datetime: new Date().toISOString(),
-      });
+      deductedItem = item;
       batchNumber = item.batch_number || '';
+      await recordStockMovement(base44.asServiceRole, {
+        pharmacy_id: pharmacy.id,
+        pharmacy_user_id: user.id,
+        inventory_id: item.id,
+        medication_name: prescription.medication_name,
+        strength: prescription.strength || item.strength || '',
+        batch_number: item.batch_number || '',
+        expiry_date: item.expiry_date || '',
+        movement_type: 'dispensing',
+        quantity_before: item.quantity_in_stock,
+        quantity_change: -dispenseQty,
+        quantity_after: item.quantity_in_stock - dispenseQty,
+        reason: `Dispensed for prescription ${prescription.prescription_id || ''} — ${prescription.patient_name || ''}`,
+        reference: prescription.prescription_id || '',
+        performed_by_user_id: user.id,
+        performed_by_name: pharmacistName,
+        performed_by_role: 'pharmacy',
+      });
     } else {
       // Reservation: verify the reserved batch is still safe to dispense.
       let reservedItem = null;
@@ -179,7 +206,41 @@ export default async function(req) {
     if (consumedRefill) {
       update.refills_used = (prescription.refills_used || 0) + 1;
     }
-    await base44.asServiceRole.entities.Prescription.update(prescription.id, update);
+    try {
+      await base44.asServiceRole.entities.Prescription.update(prescription.id, update);
+    } catch (updateErr) {
+      // Compensating action: return the deducted stock so the inventory never
+      // reflects a dispensing that failed to record.
+      if (deductedItem) {
+        try {
+          await base44.asServiceRole.entities.PharmacyInventory.updateMany(
+            { id: deductedItem.id },
+            { $inc: { quantity_in_stock: dispenseQty }, $set: { updated_datetime: new Date().toISOString() } }
+          );
+          await recordStockMovement(base44.asServiceRole, {
+            pharmacy_id: pharmacy.id,
+            pharmacy_user_id: user.id,
+            inventory_id: deductedItem.id,
+            medication_name: prescription.medication_name,
+            strength: deductedItem.strength || '',
+            batch_number: deductedItem.batch_number || '',
+            expiry_date: deductedItem.expiry_date || '',
+            movement_type: 'adjustment',
+            quantity_before: deductedItem.quantity_in_stock - dispenseQty,
+            quantity_change: dispenseQty,
+            quantity_after: deductedItem.quantity_in_stock,
+            reason: 'Stock returned — the dispensing record failed to save',
+            reference: prescription.prescription_id || '',
+            performed_by_user_id: user.id,
+            performed_by_name: pharmacistName,
+            performed_by_role: 'pharmacy',
+          });
+        } catch (rollbackErr) {
+          console.error('Failed to return deducted stock after dispensing failure:', rollbackErr);
+        }
+      }
+      throw updateErr;
+    }
 
     // The dispensed medication is added automatically to the patient's
     // Medication section on the first fill, linked to the prescription.

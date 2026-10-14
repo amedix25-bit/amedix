@@ -44,7 +44,12 @@ export default async function(req) {
 
     // Return any stock still held by a reservation (the full quantity minus
     // what was already dispensed in partial fills).
-    await restoreReservedStock(base44, pharmacy, prescription);
+    await restoreReservedStock(base44, pharmacy, prescription, {
+      user_id: user.id,
+      name: pharmacistName,
+      role: 'pharmacy',
+      reason: `Reservation released — prescription rejected (${reason})`,
+    });
 
     const now = new Date();
     await base44.asServiceRole.entities.Prescription.update(prescription.id, {

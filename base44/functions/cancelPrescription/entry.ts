@@ -46,7 +46,12 @@ export default async function(req) {
         ? await base44.asServiceRole.entities.PharmacyProfile.filter({ user_id: prescription.authorized_pharmacy_user_id })
         : [];
       if (pharmacyProfiles.length > 0) {
-        await restoreReservedStock(base44, pharmacyProfiles[0], prescription);
+        await restoreReservedStock(base44, pharmacyProfiles[0], prescription, {
+          user_id: user.id,
+          name: doctor.full_name,
+          role: 'doctor',
+          reason: `Reservation released — prescription cancelled by the doctor${reason ? ` (${reason})` : ''}`,
+        });
       }
     }
 

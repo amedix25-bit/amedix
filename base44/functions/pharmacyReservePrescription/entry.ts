@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { findInventoryItems, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
 import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
+import { recordStockMovement } from "../../shared/inventoryMovements.ts";
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -66,10 +67,36 @@ export default async function(req) {
     if (requestedQty > 0 && item.quantity_in_stock < requestedQty) {
       return Response.json({ error: `Not enough dispensable stock — only ${item.quantity_in_stock} unit(s) available.` }, { status: 400 });
     }
-    await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
-      quantity_in_stock: Math.max(0, item.quantity_in_stock - requestedQty),
-      updated_datetime: new Date().toISOString(),
-    });
+    if (requestedQty > 0) {
+      // Transaction-safe hold: the update only applies while the stock is
+      // still at or above the requested quantity, so concurrent users can
+      // never reserve the same units and stock can never go negative.
+      const deduct = await base44.asServiceRole.entities.PharmacyInventory.updateMany(
+        { id: item.id, quantity_in_stock: { $gte: requestedQty } },
+        { $inc: { quantity_in_stock: -requestedQty }, $set: { updated_datetime: new Date().toISOString() } }
+      );
+      if (!deduct || deduct.updated !== 1) {
+        return Response.json({ error: `Stock just changed — only ${item.quantity_in_stock} unit(s) available. Please retry.` }, { status: 409 });
+      }
+      await recordStockMovement(base44.asServiceRole, {
+        pharmacy_id: pharmacy.id,
+        pharmacy_user_id: user.id,
+        inventory_id: item.id,
+        medication_name: prescription.medication_name,
+        strength: prescription.strength || item.strength || '',
+        batch_number: item.batch_number || '',
+        expiry_date: item.expiry_date || '',
+        movement_type: 'reservation',
+        quantity_before: item.quantity_in_stock,
+        quantity_change: -requestedQty,
+        quantity_after: item.quantity_in_stock - requestedQty,
+        reason: `Reserved for prescription ${prescription.prescription_id || ''} — ${prescription.patient_name || ''}`,
+        reference: prescription.prescription_id || '',
+        performed_by_user_id: user.id,
+        performed_by_name: pharmacistName,
+        performed_by_role: 'pharmacy',
+      });
+    }
 
     const now = new Date();
     const reservation_code = `RES-${randomSuffix(6)}`;

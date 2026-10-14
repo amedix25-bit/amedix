@@ -27,6 +27,13 @@ export default function DispensingHistory({ prescription, title }) {
               {" · "}
               {ev.pharmacist_name || "—"}
               {ev.pharmacy_name ? `, ${ev.pharmacy_name}` : ""}
+              {typeof ev.payment_amount === "number" && (
+                <span className="ml-1 font-medium">
+                  {" · "}
+                  {t("Paid {amount}", { amount: ev.payment_amount })}
+                  {ev.payment_method ? ` (${ev.payment_method})` : ""}
+                </span>
+              )}
             </span>
             {typeof ev.remaining_after === "number" && (
               <span className={`shrink-0 ${ev.remaining_after > 0 ? "text-amber-600" : "text-emerald-600"}`}>

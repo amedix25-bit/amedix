@@ -1,0 +1,120 @@
+{
+  "name": "PharmacyInventoryMovement",
+  "type": "object",
+  "properties": {
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the movement belongs to"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy account \u2014 used for access control"
+    },
+    "inventory_id": {
+      "type": "string",
+      "description": "Id of the PharmacyInventory item (batch) this movement affected \u2014 empty when the item was removed"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Medication name at movement time \u2014 kept verbatim so history stays accurate even if the item is later removed"
+    },
+    "strength": {
+      "type": "string",
+      "description": "Strength of the medication, e.g. 500 mg"
+    },
+    "batch_number": {
+      "type": "string",
+      "description": "Manufacturer batch / lot number of the affected stock"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiry date of the affected batch"
+    },
+    "movement_type": {
+      "type": "string",
+      "enum": [
+        "receipt",
+        "adjustment",
+        "dispensing",
+        "reservation",
+        "reservation_release",
+        "quarantine",
+        "disposal",
+        "removal"
+      ],
+      "description": "RECEIPT: incoming stock registered. ADJUSTMENT: manual stock correction. DISPENSING: stock deducted for a walk-in fill. RESERVATION: stock held for an authorized prescription. RESERVATION_RELEASE: reserved stock returned (rejection or cancellation). QUARANTINE: stock blocked (expired, recalled or damaged). DISPOSAL: quarantined stock destroyed. REMOVAL: item deleted from inventory. Every movement records its reason, timestamp and responsible user."
+    },
+    "quantity_before": {
+      "type": "number",
+      "description": "Stock level before the movement"
+    },
+    "quantity_change": {
+      "type": "number",
+      "description": "Change applied by this movement \u2014 negative for deductions, positive for returns and receipts"
+    },
+    "quantity_after": {
+      "type": "number",
+      "description": "Stock level after the movement"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why the movement happened \u2014 e.g. stock adjustment reason, prescription reference, recall reference"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Related record reference, e.g. PR-20261014-8F3K for a dispensing deduction or REC-20261014-8F3K for a recall quarantine"
+    },
+    "performed_by_user_id": {
+      "type": "string",
+      "description": "User id of the responsible account"
+    },
+    "performed_by_name": {
+      "type": "string",
+      "description": "Name of the responsible user \u2014 the pharmacist, pharmacy administrator or doctor who caused the movement"
+    },
+    "performed_by_role": {
+      "type": "string",
+      "description": "Role of the responsible user \u2014 pharmacy, pharmacist or doctor"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Date and time of the movement (ISO datetime)"
+    }
+  },
+  "required": [
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "movement_type",
+    "reason"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

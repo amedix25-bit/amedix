@@ -35,6 +35,10 @@
       ],
       "description": "Dosage form of the medication"
     },
+    "supplier": {
+      "type": "string",
+      "description": "Supplier / distributor the stock was received from \u2014 recorded with incoming stock receipts"
+    },
     "batch_number": {
       "type": "string",
       "description": "Manufacturer batch / lot number of this stock entry \u2014 the key for expiry tracking, quarantine and recall tracing"

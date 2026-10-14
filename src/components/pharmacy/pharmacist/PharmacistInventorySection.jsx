@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pill, Trash2, ArchiveX, PackageX, Search } from "lucide-react";
+import { Loader2, Plus, Pill, Trash2, ArchiveX, PackageX, Search, History, PencilLine } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 
@@ -20,9 +20,31 @@ const FORM_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
+const MOVEMENT_LABELS = {
+  receipt: "Receipt",
+  adjustment: "Adjustment",
+  dispensing: "Dispensed",
+  reservation: "Reserved",
+  reservation_release: "Reservation Released",
+  quarantine: "Quarantined",
+  disposal: "Disposed",
+  removal: "Removed",
+};
+
+const MOVEMENT_BADGES = {
+  receipt: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  adjustment: "bg-amber-50 text-amber-700 border-amber-200",
+  dispensing: "bg-sky-50 text-sky-700 border-sky-200",
+  reservation: "bg-violet-50 text-violet-700 border-violet-200",
+  reservation_release: "bg-violet-50 text-violet-700 border-violet-200",
+  quarantine: "bg-red-50 text-red-700 border-red-200",
+  disposal: "bg-red-50 text-red-700 border-red-200",
+  removal: "bg-muted text-muted-foreground border-border",
+};
+
 const EMPTY = {
   medication_name: "", active_ingredient: "", strength: "", dosage_form: "tablet",
-  quantity_in_stock: "", batch_number: "", expiry_date: "",
+  quantity_in_stock: "", batch_number: "", expiry_date: "", supplier: "",
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -42,9 +64,9 @@ function expiryBadge(item) {
 }
 
 // The pharmacist's inventory, saved on the backend through their individual
-// session. Every action — adding a medication, adjusting stock, removing an
-// item, disposing quarantined stock — is validated server-side and scoped to
-// the pharmacist's own pharmacy.
+// session. Every action — receipts, adjustments, removals, disposals — is
+// validated server-side, requires a reason where one is due, and is recorded
+// in the pharmacy's permanent inventory movement history.
 export default function PharmacistInventorySection({ session, onSessionExpired }) {
   const [items, setItems] = useState(null);
   const [query, setQuery] = useState("");
@@ -54,6 +76,9 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
+  const [adjust, setAdjust] = useState(null); // { item, qty, reason }
+  const [removing, setRemoving] = useState(null); // { item, reason }
+  const [history, setHistory] = useState(null); // { loading, movements }
   const { toast } = useToast();
 
   const load = async () => {
@@ -104,34 +129,38 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
     }
   };
 
-  const setStock = async (item, next) => {
-    setBusyId(item.id);
+  const confirmAdjust = async () => {
+    setBusyId(adjust.item.id);
     try {
       await base44.functions.invoke("pharmacistInventoryManage", {
         action: "set_stock",
-        inventory_id: item.id,
-        quantity_in_stock: next,
+        inventory_id: adjust.item.id,
+        quantity_in_stock: Number(adjust.qty),
+        reason: adjust.reason.trim(),
         pharmacist_id: session.pharmacist_id,
         pharmacist_session_token: session.session_token,
       });
+      setAdjust(null);
       load();
     } catch (err) {
-      toast({ title: "Update failed", description: err.response?.data?.error || err.message, variant: "destructive" });
+      toast({ title: "Adjustment failed", description: err.response?.data?.error || err.message, variant: "destructive" });
     } finally {
       setBusyId(null);
     }
   };
 
-  const remove = async (item) => {
-    setBusyId(item.id);
+  const confirmRemove = async () => {
+    setBusyId(removing.item.id);
     try {
       await base44.functions.invoke("pharmacistInventoryManage", {
         action: "remove",
-        inventory_id: item.id,
+        inventory_id: removing.item.id,
+        reason: removing.reason.trim(),
         pharmacist_id: session.pharmacist_id,
         pharmacist_session_token: session.session_token,
       });
-      toast({ title: "Medication removed" });
+      toast({ title: "Medication removed", description: "The removal was recorded in the movement history." });
+      setRemoving(null);
       load();
     } catch (err) {
       toast({ title: "Delete failed", description: err.response?.data?.error || err.message, variant: "destructive" });
@@ -149,12 +178,28 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
         pharmacist_id: session.pharmacist_id,
         pharmacist_session_token: session.session_token,
       });
-      toast({ title: "Stock disposed", description: "The quarantined batch was marked as disposed." });
+      toast({ title: "Stock disposed", description: "The quarantined batch was marked as disposed and recorded in the movement history." });
       load();
     } catch (err) {
       toast({ title: "Dispose failed", description: err.response?.data?.error || err.message, variant: "destructive" });
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const openHistory = async (item) => {
+    setHistory({ loading: true, movements: [] });
+    try {
+      const res = await base44.functions.invoke("pharmacistInventoryManage", {
+        action: "movements",
+        inventory_id: item.id,
+        pharmacist_id: session.pharmacist_id,
+        pharmacist_session_token: session.session_token,
+      });
+      setHistory({ loading: false, movements: res.data.movements || [] });
+    } catch (err) {
+      setHistory(null);
+      toast({ title: "Could not load movement history", description: err.response?.data?.error || err.message, variant: "destructive" });
     }
   };
 
@@ -252,6 +297,10 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
                 </div>
               </div>
               <div className="space-y-1.5">
+                <Label>Supplier</Label>
+                <Input placeholder="e.g. National Medical Supply" value={form.supplier} onChange={set("supplier")} />
+              </div>
+              <div className="space-y-1.5">
                 <Label>Quantity in Stock *</Label>
                 <Input type="number" min="0" placeholder="e.g. 100" value={form.quantity_in_stock} onChange={set("quantity_in_stock")} required />
               </div>
@@ -297,30 +346,40 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
             const badge = expiryBadge(item);
             const quarantined = item.is_quarantined;
             const busy = busyId === item.id;
+            const low = !quarantined && (item.quantity_in_stock || 0) <= 10;
             return (
-              <div key={item.id} className={`flex items-center gap-3 rounded-xl border p-3 ${quarantined ? "border-red-300 bg-red-50" : "border-border bg-card"}`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${quarantined ? "bg-red-100" : "bg-primary/10"}`}>
-                  {quarantined ? <ArchiveX className="w-4 h-4 text-red-700" /> : <Pill className="w-4 h-4 text-primary" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold truncate">
-                      {item.medication_name}
-                      {item.strength ? ` ${item.strength}` : ""}
-                    </p>
-                    {badge && (
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
-                    )}
+              <div key={item.id} className={`rounded-xl border p-3 ${quarantined ? "border-red-300 bg-red-50" : "border-border bg-card"}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${quarantined ? "bg-red-100" : "bg-primary/10"}`}>
+                    {quarantined ? <ArchiveX className="w-4 h-4 text-red-700" /> : <Pill className="w-4 h-4 text-primary" />}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {item.active_ingredient || "—"} · {item.dosage_form || "—"}
-                    {item.batch_number ? ` · Batch ${item.batch_number}` : ""}
-                    {item.expiry_date ? ` · Expires ${item.expiry_date}` : ""}
-                    {quarantined && item.quarantine_reason ? ` · ${item.quarantine_reason}` : ""}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold truncate">
+                        {item.medication_name}
+                        {item.strength ? ` ${item.strength}` : ""}
+                      </p>
+                      {badge && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${badge.cls}`}>{badge.label}</span>
+                      )}
+                      {low && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-amber-100 text-amber-700 border-amber-200">Low Stock</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {item.active_ingredient || "—"} · {item.dosage_form || "—"}
+                      {item.batch_number ? ` · Batch ${item.batch_number}` : ""}
+                      {item.expiry_date ? ` · Expires ${item.expiry_date}` : ""}
+                      {item.supplier ? ` · Supplier: ${item.supplier}` : ""}
+                      {quarantined && item.quarantine_reason ? ` · ${item.quarantine_reason}` : ""}
+                    </p>
+                  </div>
+                  <span className={`text-sm font-bold shrink-0 ${low ? "text-amber-600" : ""}`}>
+                    {item.quantity_in_stock}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {quarantined && item.quarantine_action !== "disposed" && (
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  {quarantined && item.quarantine_action !== "disposed" ? (
                     <Button
                       variant="outline"
                       size="sm"
@@ -331,18 +390,20 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
                       {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PackageX className="w-3.5 h-3.5" />}
                       Dispose
                     </Button>
-                  )}
-                  {!quarantined && (
-                    <>
-                      <Button variant="outline" size="sm" disabled={busy} onClick={() => setStock(item, Math.max(0, (item.quantity_in_stock || 0) - 1))} className="w-8 h-8 p-0">−</Button>
-                      <span className={`text-sm font-bold w-12 text-center ${item.quantity_in_stock <= 10 ? "text-amber-600" : ""}`}>
-                        {item.quantity_in_stock}
-                      </span>
-                      <Button variant="outline" size="sm" disabled={busy} onClick={() => setStock(item, (item.quantity_in_stock || 0) + 1)} className="w-8 h-8 p-0">+</Button>
-                      <Button variant="ghost" size="sm" disabled={busy} onClick={() => remove(item)} className="w-8 h-8 p-0 text-destructive">
-                        <Trash2 className="w-4 h-4" />
+                  ) : (
+                    !quarantined && (
+                      <Button variant="outline" size="sm" disabled={busy} onClick={() => setAdjust({ item, qty: String(item.quantity_in_stock ?? 0), reason: "" })} className="gap-1 text-xs">
+                        <PencilLine className="w-3.5 h-3.5" /> Adjust Stock
                       </Button>
-                    </>
+                    )
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => openHistory(item)} className="gap-1 text-xs text-muted-foreground">
+                    <History className="w-3.5 h-3.5" /> History
+                  </Button>
+                  {!quarantined && (
+                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => setRemoving({ item, reason: "" })} className="gap-1 text-xs text-destructive ml-auto">
+                      <Trash2 className="w-3.5 h-3.5" /> Remove
+                    </Button>
                   )}
                 </div>
               </div>
@@ -350,6 +411,121 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
           })}
         </div>
       )}
+
+      {/* Stock adjustment — the reason is required and kept in the movement
+          history with the timestamp and the responsible user. */}
+      <Dialog open={!!adjust} onOpenChange={(open) => { if (!open) setAdjust(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Stock{adjust ? ` — ${adjust.item.medication_name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {adjust && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Current stock: <span className="font-semibold">{adjust.item.quantity_in_stock}</span>. Dispensing deductions are recorded automatically — use this for manual corrections.
+              </p>
+              <div className="space-y-1.5">
+                <Label>New Quantity *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={adjust.qty}
+                  onChange={(e) => setAdjust((s) => ({ ...s, qty: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Reason *</Label>
+                <Input
+                  placeholder="e.g. Stock count correction, damaged units, supplier delivery"
+                  value={adjust.reason}
+                  onChange={(e) => setAdjust((s) => ({ ...s, reason: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setAdjust(null)} disabled={busyId === adjust?.item?.id}>Cancel</Button>
+                <Button onClick={confirmAdjust} disabled={busyId === adjust?.item?.id || !adjust.qty || !adjust.reason.trim()} className="gap-1.5">
+                  {busyId === adjust?.item?.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Adjustment
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Removal — also requires a reason, recorded in the movement history. */}
+      <Dialog open={!!removing} onOpenChange={(open) => { if (!open) setRemoving(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Medication{removing ? ` — ${removing.item.medication_name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {removing && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                This removes {removing.item.medication_name} from your inventory list. The removal is kept permanently in the movement history.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Reason *</Label>
+                <Input
+                  placeholder="e.g. Discontinued product, entry created in error"
+                  value={removing.reason}
+                  onChange={(e) => setRemoving((s) => ({ ...s, reason: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setRemoving(null)} disabled={busyId === removing?.item?.id}>Cancel</Button>
+                <Button variant="destructive" onClick={confirmRemove} disabled={busyId === removing?.item?.id || !removing.reason.trim()} className="gap-1.5">
+                  {busyId === removing?.item?.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Remove Medication
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Movement history — every stock change for this item, permanently. */}
+      <Dialog open={!!history} onOpenChange={(open) => { if (!open) setHistory(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Movement History</DialogTitle>
+          </DialogHeader>
+          {history && (
+            history.loading ? (
+              <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading...
+              </div>
+            ) : history.movements.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-10">No movements recorded yet for this item.</p>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {history.movements.map((mv) => (
+                  <div key={mv.id} className="rounded-lg border border-border p-2.5 text-xs space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${MOVEMENT_BADGES[mv.movement_type] || "border-border"}`}>
+                        {MOVEMENT_LABELS[mv.movement_type] || mv.movement_type}
+                      </span>
+                      {typeof mv.quantity_change === "number" && mv.quantity_change !== 0 && (
+                        <span className={`font-semibold ${mv.quantity_change > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                          {mv.quantity_change > 0 ? `+${mv.quantity_change}` : mv.quantity_change}
+                        </span>
+                      )}
+                      {typeof mv.quantity_before === "number" && typeof mv.quantity_after === "number" && (
+                        <span className="text-muted-foreground">{mv.quantity_before} → {mv.quantity_after}</span>
+                      )}
+                      <span className="text-muted-foreground ml-auto">{new Date(mv.datetime).toLocaleString()}</span>
+                    </div>
+                    <p className="text-muted-foreground">{mv.reason}</p>
+                    <p className="text-muted-foreground">
+                      By {mv.performed_by_name || "—"}{mv.performed_by_role ? ` (${mv.performed_by_role})` : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
