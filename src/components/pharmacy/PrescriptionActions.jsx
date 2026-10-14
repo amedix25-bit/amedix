@@ -55,6 +55,8 @@ export default function PrescriptionActions({ prescription, onChanged, session }
   const [rejectOpen, setRejectOpen] = useState(false);
   const [qty, setQty] = useState("");
   const [reason, setReason] = useState("");
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("");
 
   const authorized = parseQty(prescription.quantity);
   const unit = unitWord(prescription.quantity);
@@ -83,6 +85,8 @@ export default function PrescriptionActions({ prescription, onChanged, session }
 
   const openFill = () => {
     setQty(remaining > 0 ? String(remaining) : "1");
+    setPayAmount("");
+    setPayMethod("");
     setFillOpen(true);
   };
 
@@ -105,6 +109,8 @@ export default function PrescriptionActions({ prescription, onChanged, session }
       const res = await base44.functions.invoke("pharmacyDispensePrescription", {
         prescription_id: prescription.id,
         dispensed_quantity: n,
+        payment_amount: payAmount === "" ? undefined : Number(payAmount),
+        payment_method: payMethod || undefined,
         ...staffAuth,
       });
       setFillOpen(false);
@@ -215,6 +221,36 @@ export default function PrescriptionActions({ prescription, onChanged, session }
                 </p>
               </div>
             )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="dispense-payment">{t("Payment Amount")}</Label>
+                <Input
+                  id="dispense-payment"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={t("Optional")}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dispense-payment-method">{t("Payment Method")}</Label>
+                <select
+                  id="dispense-payment-method"
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  <option value="">{t("Optional")}</option>
+                  <option value="Cash">{t("Cash")}</option>
+                  <option value="Card">{t("Card")}</option>
+                  <option value="Insurance">{t("Insurance")}</option>
+                  <option value="Mobile Wallet">{t("Mobile Wallet")}</option>
+                  <option value="Other">{t("Other")}</option>
+                </select>
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setFillOpen(false)} disabled={busy}>{t("Cancel")}</Button>
               <Button onClick={fill} disabled={busy} className="gap-1.5">

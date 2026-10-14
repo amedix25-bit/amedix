@@ -56,6 +56,18 @@ export default async function(req) {
         id: pharmacy.id,
         pharmacy_name: pharmacy.pharmacy_name,
         pharmacy_number: pharmacy.pharmacy_number,
+        address: pharmacy.address || '',
+        phone: pharmacy.phone || '',
+        email: pharmacy.email || '',
+        logo_url: pharmacy.logo_url || '',
+        status: pharmacy.status || 'active',
+      },
+      pharmacist: {
+        id: pharmacist.id,
+        full_name: pharmacist.full_name,
+        username: pharmacist.username || '',
+        is_active: pharmacist.is_active !== false,
+        last_active_datetime: pharmacist.last_active_datetime || '',
       },
       prescriptions,
     });

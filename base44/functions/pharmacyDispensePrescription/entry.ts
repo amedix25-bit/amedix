@@ -83,6 +83,24 @@ export default async function(req) {
         { status: 400 }
       );
     }
+    // Optional payment capture — recorded on this dispensing transaction and
+    // validated server-side so the transaction record stays trustworthy.
+    const PAYMENT_METHODS = ['Cash', 'Card', 'Insurance', 'Mobile Wallet', 'Other'];
+    let paymentAmount = null;
+    let paymentMethod = '';
+    if (body?.payment_amount !== undefined && body?.payment_amount !== null && body?.payment_amount !== '') {
+      const n = Number(body.payment_amount);
+      if (!Number.isFinite(n) || n < 0) {
+        return Response.json({ error: 'Enter a valid payment amount.' }, { status: 400 });
+      }
+      paymentAmount = n;
+    }
+    if (body?.payment_method) {
+      if (!PAYMENT_METHODS.includes(body.payment_method)) {
+        return Response.json({ error: 'Choose a valid payment method.' }, { status: 400 });
+      }
+      paymentMethod = body.payment_method;
+    }
     if (authorizedQty <= 0 && prescription.status === 'dispensed' && (prescription.dispensed_datetime || prescription.dispensed_quantity)) {
       // No numeric quantity on the prescription: every fill beyond the first
       // is treated as a refill.
@@ -144,6 +162,8 @@ export default async function(req) {
       pharmacy_name: pharmacy.pharmacy_name,
       remaining_after: remaining,
       consumed_refill: consumedRefill,
+      payment_amount: paymentAmount,
+      payment_method: paymentMethod,
     };
 
     const update = {
