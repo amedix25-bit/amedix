@@ -197,7 +197,7 @@ export default function PatientPrescriptions() {
               )}
               <DispensingHistory prescription={p} />
 
-              {p.authorized_pharmacy_name ? (
+              {p.authorized_pharmacy_name && !(p.status === "cancelled" && p.rejected_reason) ? (
                 <div className="mt-3 pt-3 border-t border-border">
                   <p className="text-sm font-semibold flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-primary" />
@@ -213,7 +213,7 @@ export default function PatientPrescriptions() {
                     </p>
                   )}
                 </div>
-              ) : p.status === "issued" ? (
+              ) : p.status === "issued" || (p.status === "cancelled" && p.rejected_reason) ? (
                 <AuthorizationFlow prescription={p} onAuthorized={() => {
                   const load = async () => {
                     const page = await base44.entities.Prescription.filter(

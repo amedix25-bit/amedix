@@ -5,6 +5,9 @@ import { Pill, Plus, Loader2 } from "lucide-react";
 import PrescriptionForm from "@/components/doctor/pharmacy/PrescriptionForm";
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
+import DispensingHistory from "@/components/pharmacy/DispensingHistory";
+import CancelPrescriptionButton from "@/components/doctor/pharmacy/CancelPrescriptionButton";
+import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 import { useToast } from "@/components/ui/use-toast";
 
 function PrescriptionCard({ prescription, onIssued }) {
@@ -43,6 +46,21 @@ function PrescriptionCard({ prescription, onIssued }) {
             : ""}
         </p>
       )}
+      {prescription.status === "dispensed" && prescriptionRemaining(prescription) > 0 && (
+        <p className="text-xs text-amber-600 mt-1">
+          Partially dispensed — {prescriptionRemaining(prescription)} unit(s) still to be collected.
+        </p>
+      )}
+      {prescription.status === "cancelled" && (prescription.rejected_reason || prescription.cancellation_reason) && (
+        <p className="text-xs text-destructive mt-2">
+          {prescription.rejected_by_pharmacy_name || prescription.cancelled_by_name || ""}:
+          {" "}{prescription.rejected_reason || prescription.cancellation_reason}
+        </p>
+      )}
+      <DispensingHistory prescription={prescription} />
+      <div className="mt-2">
+        <CancelPrescriptionButton prescription={prescription} onDone={load} />
+      </div>
       {/* Automatic availability check across affiliated pharmacies */}
       <PrescriptionAvailability
         medicationName={prescription.medication_name}
