@@ -68,8 +68,59 @@ export default async function(req) {
       if (strength && item.strength && String(item.strength).toLowerCase() !== strength.toLowerCase()) continue;
       matches.push(item);
     }
+
+    // Equivalent products for professional review: when the exact prescribed
+    // product cannot be found, look for a DIFFERENT product with the same
+    // active ingredient and strength (equivalent brand or generic). These are
+    // returned separately — they require the prescriber's approval before any
+    // pharmacy may dispense them. AMedix never proposes a clinically
+    // different drug.
+    const substitutes = [];
+    if (medicationName && activeIngredient) {
+      const norm = (v) => String(v || '').toLowerCase().trim();
+      const substMap = new Map();
+      try {
+        const byIngredient = await base44.asServiceRole.entities.PharmacyInventory.filter(
+          { active_ingredient: { $regex: `^${escapeRegex(activeIngredient)}$`, $options: 'i' } },
+          { limit: 200 }
+        );
+        for (const item of (byIngredient.items || byIngredient)) {
+          if (!item.quantity_in_stock || item.quantity_in_stock <= 0) continue;
+          if (!isItemDispensable(item)) continue;
+          if (norm(item.medication_name) === norm(medicationName)) continue;
+          if (norm(item.active_ingredient) !== norm(activeIngredient)) continue;
+          if (strength && item.strength && norm(item.strength) !== norm(strength)) continue;
+          const prev = substMap.get(item.pharmacy_id);
+          if (!prev || item.quantity_in_stock > prev.quantity_in_stock) substMap.set(item.pharmacy_id, item);
+        }
+      } catch (e) {
+        console.log('SUBSTITUTES-ERROR:', e && e.message);
+      }
+      for (const [, item] of substMap) {
+        let profile = null;
+        try {
+          const profiles = await base44.asServiceRole.entities.PharmacyProfile.filter({ id: item.pharmacy_id }, { limit: 1 });
+          profile = (profiles.items || profiles)[0] || null;
+        } catch (e) {
+          profile = null;
+        }
+        if (!profile || profile.status !== 'active') continue;
+        substitutes.push({
+          pharmacy_id: profile.id,
+          pharmacy_name: profile.pharmacy_name,
+          address: profile.address || '',
+          medication_name: item.medication_name,
+          active_ingredient: item.active_ingredient || '',
+          strength: item.strength || '',
+          dosage_form: item.dosage_form || '',
+          quantity_in_stock: item.quantity_in_stock,
+        });
+      }
+      substitutes.sort((a, b) => b.quantity_in_stock - a.quantity_in_stock);
+    }
+
     if (matches.length === 0) {
-      return Response.json({ pharmacies: [] });
+      return Response.json({ pharmacies: [], substitutes });
     }
 
     const pharmacies = [];
@@ -98,7 +149,7 @@ export default async function(req) {
     }
 
     pharmacies.sort((a, b) => b.quantity_in_stock - a.quantity_in_stock);
-    return Response.json({ pharmacies });
+    return Response.json({ pharmacies, substitutes });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

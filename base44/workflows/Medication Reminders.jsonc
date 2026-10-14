@@ -1,0 +1,44 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "10 * * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Tripoli",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Hourly medication adherence reminders: notifies patients of scheduled doses that just became due (optional, patient-managed)",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "medication_reminders",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_reminders": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "createMedicationReminders"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send due dose reminders",
+            "description": "Patient-managed optional reminders"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Medication Reminders"
+}

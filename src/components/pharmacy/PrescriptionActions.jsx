@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, PackageCheck, Pill, XCircle, ClipboardList } from "lucide-react";
 import { useAppLanguage } from "@/lib/appLanguage";
+import SubstitutionRequestDialog, { PendingSubstitutionNote } from "@/components/pharmacy/SubstitutionRequestDialog";
 
 function parseQty(value) {
   const n = parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
@@ -136,7 +137,9 @@ export default function PrescriptionActions({ prescription, onChanged }) {
   if (!canReserve && !canFill && !canReject) return null;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div>
+      <PendingSubstitutionNote prescription={prescription} />
+      <div className="flex items-center gap-2 flex-wrap">
       {canReserve && (
         <Button size="sm" onClick={reserve} disabled={busy} className="gap-1.5">
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PackageCheck className="w-3.5 h-3.5" />}
@@ -154,6 +157,9 @@ export default function PrescriptionActions({ prescription, onChanged }) {
           <XCircle className="w-3.5 h-3.5" />
           {t("Reject")}
         </Button>
+      )}
+      {canFill && (
+        <SubstitutionRequestDialog prescription={prescription} onChanged={onChanged} />
       )}
 
       <Dialog open={fillOpen} onOpenChange={setFillOpen}>
@@ -243,6 +249,7 @@ export default function PrescriptionActions({ prescription, onChanged }) {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

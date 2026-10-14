@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Pill, Loader2, Plus, CheckCircle2, Info } from "lucide-react";
 import MedicationCard from "@/components/patient/medications/MedicationCard";
 import PatientMedicationForm from "@/components/patient/medications/PatientMedicationForm";
+import AdherencePanel from "@/components/patient/medications/AdherencePanel";
 import { medicationStatus, todayStr } from "@/lib/medicationUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
@@ -152,12 +153,14 @@ export default function PatientMedications({ patient }) {
         ) : (
           <div className="space-y-3">
             {current.map((m) => (
-              <MedicationCard
-                key={m.id}
-                med={m}
-                today={today}
-                onEdit={m.source === "patient_reported" ? handleEditClick : undefined}
-              />
+              <div key={m.id}>
+                <MedicationCard
+                  med={m}
+                  today={today}
+                  onEdit={m.source === "patient_reported" ? handleEditClick : undefined}
+                />
+                <AdherencePanel med={m} patient={patient} onChanged={load} />
+              </div>
             ))}
           </div>
         )}

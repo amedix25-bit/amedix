@@ -1,0 +1,112 @@
+{
+  "name": "MedicationFeedback",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the feedback belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security. Set server-side at report time."
+    },
+    "medication_id": {
+      "type": "string",
+      "description": "Medication record id the feedback relates to"
+    },
+    "prescription_id": {
+      "type": "string",
+      "description": "Linked Prescription record id, when the medication came from a prescription"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Medication name the feedback relates to"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "side_effect",
+        "difficulty_following",
+        "problem_obtaining",
+        "treatment_changed",
+        "treatment_stopped"
+      ],
+      "description": "SIDE_EFFECT: the patient reports a side effect. DIFFICULTY_FOLLOWING: the patient finds the treatment plan hard to follow. PROBLEM_OBTAINING: the patient cannot get the medication. TREATMENT_CHANGED / TREATMENT_STOPPED: the patient reports their clinician changed or stopped the treatment."
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "mild",
+        "moderate",
+        "severe"
+      ],
+      "description": "Patient-reported severity of a side effect. Severe reports alert the prescribing doctor."
+    },
+    "details": {
+      "type": "string",
+      "description": "Free-text details from the patient"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "acknowledged",
+        "resolved"
+      ],
+      "default": "open",
+      "description": "OPEN: newly reported. ACKNOWLEDGED: reviewed by the care team. RESOLVED: handled."
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the prescribing doctor notified about this feedback \u2014 set server-side"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the prescribing doctor \u2014 set server-side"
+    },
+    "reported_datetime": {
+      "type": "string",
+      "description": "Date and time the patient reported this (ISO datetime)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_user_id",
+    "medication_name",
+    "category"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.patient_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

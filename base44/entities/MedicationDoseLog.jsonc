@@ -1,0 +1,103 @@
+{
+  "name": "MedicationDoseLog",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the dose log belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security. Set server-side at log time."
+    },
+    "medication_id": {
+      "type": "string",
+      "description": "Medication record id the dose belongs to"
+    },
+    "prescription_id": {
+      "type": "string",
+      "description": "Linked Prescription record id, when the medication came from a prescription"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Medication name at log time \u2014 kept verbatim so the log stays accurate even if the record is later changed"
+    },
+    "dose_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the dose was scheduled for"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "description": "Scheduled dose time (HH:MM), when the medication is taken on a fixed schedule"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "taken",
+        "missed",
+        "skipped"
+      ],
+      "description": "TAKEN: the patient reports the dose was taken. MISSED: the dose was not taken. SKIPPED: the dose was deliberately skipped. Patient-reported only \u2014 never inferred from dispensing."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional note from the patient about this dose"
+    },
+    "guidance": {
+      "type": "string",
+      "description": "Missed-dose guidance shown to the patient when the dose was missed \u2014 medication-specific, stored with the log so the doctor can review what the patient was told"
+    },
+    "reported_datetime": {
+      "type": "string",
+      "description": "Date and time the patient reported the dose (ISO datetime)"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_user_id",
+    "medication_name",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.patient_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

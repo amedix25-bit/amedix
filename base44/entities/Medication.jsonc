@@ -18,6 +18,14 @@
     "name": {
       "type": "string"
     },
+    "active_ingredient": {
+      "type": "string",
+      "description": "Active ingredient (generic name), when known \u2014 used for duplicate-therapy detection in medication reconciliation"
+    },
+    "prescription_id": {
+      "type": "string",
+      "description": "Prescription record id this medication entry was created from, when applicable \u2014 links the reported medication to its prescription and dispensing history"
+    },
     "dose": {
       "type": "string"
     },
@@ -104,6 +112,10 @@
       "type": "string",
       "format": "date",
       "description": "Date the medication was stopped"
+    },
+    "stop_reason": {
+      "type": "string",
+      "description": "Documented reason the medication was stopped \u2014 entered by the doctor during medication reconciliation or by the patient when reporting a change"
     }
   },
   "required": [

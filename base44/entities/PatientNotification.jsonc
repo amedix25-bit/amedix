@@ -13,11 +13,12 @@
         "lab_request",
         "lab_results",
         "medication_update",
+        "medication_reminder",
         "recall",
         "other"
       ],
       "default": "other",
-      "description": "Category of the notification"
+      "description": "Category of the notification. MEDICATION_REMINDER: an optional adherence reminder for a scheduled dose."
     },
     "title": {
       "type": "string",
@@ -34,7 +35,7 @@
     },
     "target": {
       "type": "string",
-      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications / prescriptions)"
+      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications / prescriptions / reminders)"
     },
     "related_id": {
       "type": "string",

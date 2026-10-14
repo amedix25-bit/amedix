@@ -195,6 +195,18 @@ export default function PatientPrescriptions() {
                   {p.status === "cancelled" && p.rejected_reason ? " · " + t("You can authorize another pharmacy, or contact your doctor.") : ""}
                 </p>
               )}
+              {(p.substitution_history || []).map((s, i) => (
+                <p key={i} className="text-xs text-muted-foreground mt-2">
+                  {t("Substituted")}: {s.original_medication_name}{s.original_strength ? ` ${s.original_strength}` : ""} → {s.replacement_medication_name}{s.replacement_strength ? ` ${s.replacement_strength}` : ""}
+                  {s.approved_by_name ? ` · ${t("approved by")} ${s.approved_by_name}` : ""}
+                  {s.approved_datetime ? ` · ${new Date(s.approved_datetime).toLocaleString()}` : ""}
+                </p>
+              ))}
+              {p.pending_substitution?.medication_name && (
+                <p className="text-xs text-amber-600 mt-2">
+                  {t("Your doctor is reviewing a substitution request from {pharmacy}. The prescription is unchanged until they approve.", { pharmacy: p.pending_substitution.requested_by_pharmacy || "the pharmacy" })}
+                </p>
+              )}
               <DispensingHistory prescription={p} />
 
               {p.authorized_pharmacy_name && !(p.status === "cancelled" && p.rejected_reason) ? (

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { ArrowLeft, History, FileText, Pill } from "lucide-react";
+import { ArrowLeft, History, FileText, Pill, ClipboardList } from "lucide-react";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorPatientHistorySection from "@/components/doctor/patients/DoctorPatientHistorySection";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
 import DoctorPatientPrescriptions from "@/components/doctor/pharmacy/DoctorPatientPrescriptions";
+import DoctorMedicationHistory from "@/components/doctor/medhistory/DoctorMedicationHistory";
 import { DoctorTranslationsProvider } from "@/lib/doctorMedicalTranslations";
 
 // Patient profile page (Find My Patient → My Patients → patient). Shows the
@@ -39,6 +40,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         {tabButton("history", "Patient History", History)}
         {tabButton("notes", "Clinical Notes", FileText)}
         {tabButton("prescriptions", "Prescriptions", Pill)}
+        {tabButton("medhistory", "Medication History", ClipboardList)}
       </div>
 
       {activeTab === "history" && (
@@ -62,9 +64,19 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         </section>
       )}
 
+      {activeTab === "medhistory" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Medication History</h3>
+          <DoctorMedicationHistory
+            patient={patient}
+            onReconciled={undefined}
+          />
+        </section>
+      )}
+
       {!activeTab && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          Select Patient History, Clinical Notes or Prescriptions above to view the patient's information.
+          Select Patient History, Clinical Notes, Prescriptions or Medication History above to view the patient's information.
         </p>
       )}
     </div>

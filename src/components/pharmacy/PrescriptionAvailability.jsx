@@ -8,9 +8,13 @@ import { Building2, Loader2, MapPin, RefreshCw } from "lucide-react";
 // Runs as soon as the component mounts (and on refresh) — shows stock levels,
 // pharmacy locations and the latest inventory update, closest available stock
 // first. Used by doctors right after issuing a prescription and by patients
-// choosing which pharmacy to authorize.
-export default function PrescriptionAvailability({ medicationName, strength, activeIngredient, onSelect, refreshKey }) {
+// choosing which pharmacy to authorize. With showSubstitutes, the doctor also
+// sees equivalent products (same active ingredient, different brand/generic)
+// held by pharmacies — flagged for professional review; they require the
+// prescriber's approval before any pharmacy dispenses them.
+export default function PrescriptionAvailability({ medicationName, strength, activeIngredient, onSelect, refreshKey, showSubstitutes }) {
   const [pharmacies, setPharmacies] = useState(null);
+  const [substitutes, setSubstitutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -24,6 +28,7 @@ export default function PrescriptionAvailability({ medicationName, strength, act
         active_ingredient: activeIngredient || "",
       });
       setPharmacies(res.data.pharmacies || []);
+      setSubstitutes(res.data.substitutes || []);
     } catch (err) {
       setError(err.response?.data?.error || err.message || "Availability check failed.");
       setPharmacies([]);
@@ -92,6 +97,34 @@ export default function PrescriptionAvailability({ medicationName, strength, act
         </div>
       )}
       {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+      {showSubstitutes && !loading && substitutes.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Same Active Ingredient — Different Product (Substitution Candidates)
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            The exact product above could not be found everywhere, but these pharmacies stock an equivalent product with the same
+            active ingredient and strength. Substitution requires your approval before the pharmacy may dispense it — the
+            prescription is never changed automatically.
+          </p>
+          <div className="mt-2 space-y-2">
+            {substitutes.map((s, i) => (
+              <div key={s.pharmacy_id + "-" + i} className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{s.medication_name}{s.strength ? ` ${s.strength}` : ""}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Building2 className="w-3 h-3" /> {s.pharmacy_name}{s.address ? ` · ${s.address}` : ""}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-amber-700">{s.quantity_in_stock} in stock</p>
+                  <p className="text-[11px] text-muted-foreground">{s.active_ingredient || ""}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

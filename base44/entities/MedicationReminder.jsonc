@@ -1,0 +1,97 @@
+{
+  "name": "MedicationReminder",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the reminder belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "medication_id": {
+      "type": "string",
+      "description": "Medication record id the reminder belongs to"
+    },
+    "prescription_id": {
+      "type": "string",
+      "description": "Linked Prescription record id, when the medication came from a prescription"
+    },
+    "medication_name": {
+      "type": "string",
+      "description": "Medication name the reminder is for"
+    },
+    "times": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Reminder times each day (HH:MM, 24h) \u2014 patient-managed, pre-filled from the prescribed frequency"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether reminders are on \u2014 the adherence system is optional, so the patient can turn reminders off at any time"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the reminder was created (ISO datetime)"
+    },
+    "notified_for": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Dose slots already notified as YYYY-MM-DDTHH:MM \u2014 deduplication key used by the reminder scheduler"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_user_id",
+    "medication_id",
+    "medication_name",
+    "times"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.patient_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

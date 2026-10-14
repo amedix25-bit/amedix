@@ -244,6 +244,56 @@
         ]
       }
     },
+    "pending_substitution": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Substitution awaiting the prescriber's decision \u2014 the pharmacy's proposed replacement product (same active ingredient and strength), the proposed batch and stock, the reason and who requested it. The original prescription is unchanged while this is pending; dispensing of the replacement is blocked until the doctor approves."
+    },
+    "substitution_history": {
+      "type": "array",
+      "description": "Permanent record of every approved substitution \u2014 the original medication, the replacement, the reason, the approving clinician and the timestamp. Prescriptions are never overwritten silently.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "original_medication_name": {
+            "type": "string",
+            "description": "Medication name as originally prescribed"
+          },
+          "original_strength": {
+            "type": "string",
+            "description": "Strength as originally prescribed"
+          },
+          "replacement_medication_name": {
+            "type": "string",
+            "description": "Replacement product dispensed after the approved substitution"
+          },
+          "replacement_strength": {
+            "type": "string",
+            "description": "Strength of the replacement product"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for the substitution, entered by the requesting pharmacy"
+          },
+          "approved_by_name": {
+            "type": "string",
+            "description": "Prescribing clinician who approved the substitution"
+          },
+          "approved_datetime": {
+            "type": "string",
+            "description": "Date and time the substitution was approved (ISO datetime)"
+          },
+          "pharmacy_name": {
+            "type": "string",
+            "description": "Pharmacy that requested and dispensed the substitution"
+          }
+        },
+        "required": [
+          "replacement_medication_name",
+          "approved_datetime"
+        ]
+      }
+    },
     "rejected_reason": {
       "type": "string",
       "description": "Reason the pharmacy rejected or could not fill the prescription, e.g. medication unavailable \u2014 recorded by the pharmacist"

@@ -7,6 +7,7 @@ import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBad
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import CancelPrescriptionButton from "@/components/doctor/pharmacy/CancelPrescriptionButton";
+import SubstitutionReview from "@/components/doctor/pharmacy/SubstitutionReview";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -61,11 +62,14 @@ function PrescriptionCard({ prescription, onIssued }) {
       <div className="mt-2">
         <CancelPrescriptionButton prescription={prescription} onDone={onIssued} />
       </div>
+      {/* Substitution request awaiting the prescriber's decision + history */}
+      <SubstitutionReview prescription={prescription} onChanged={onIssued} />
       {/* Automatic availability check across affiliated pharmacies */}
       <PrescriptionAvailability
         medicationName={prescription.medication_name}
         strength={prescription.strength}
         activeIngredient={prescription.active_ingredient}
+        showSubstitutes
       />
     </div>
   );
