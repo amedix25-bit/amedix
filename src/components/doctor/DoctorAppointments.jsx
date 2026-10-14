@@ -18,6 +18,7 @@ import DoctorPatientRecordView from "./DoctorPatientRecordView";
 import { getAppointmentStatus } from "./appointments/appointmentStatus";
 import { useToast } from "@/components/ui/use-toast";
 import PatientSearchSelect from "./patients/PatientSearchSelect";
+import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 
 const EMPTY = { patient: null, date: "", time: "", location: "", reason: "", notes: "" };
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -226,6 +227,14 @@ export default function DoctorAppointments({ doctorProfile }) {
   const confirmPatientSeen = async (apt) => {
     const now = new Date();
     const nowIso = now.toISOString();
+    // Check-in security gate — the patient's history entry can only be added
+    // while they are actively checked in at the doctor's hospital.
+    const gate = await fetchCheckInStatus(apt.patient_id);
+    if (!gate.checked_in) {
+      setSeenConfirm(null);
+      toast({ title: "Locked", description: LOCKED_MESSAGE, variant: "destructive" });
+      return;
+    }
     try {
       const patch = {
         status: "completed",

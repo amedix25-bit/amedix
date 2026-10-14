@@ -15,6 +15,7 @@ import {
   addReferralQr,
 } from "@/lib/referralLetterPdf";
 import { calcAge } from "@/lib/labRequestPdf";
+import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 
 const URGENCIES = ["Routine", "Urgent", "Emergency"];
 const URGENCY_CLASSES = {
@@ -154,6 +155,13 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
     }
     if (!form.reason_for_referral.trim() || !form.working_diagnosis.trim()) {
       setFormError("Reason for referral and working diagnosis are required.");
+      return;
+    }
+    // Check-in security gate — a referral can only be added for a patient who
+    // is actively checked in at the doctor's hospital (backend verdict).
+    const gate = await fetchCheckInStatus(patient.id);
+    if (!gate.checked_in) {
+      setFormError(LOCKED_MESSAGE);
       return;
     }
     setSubmitting(true);
