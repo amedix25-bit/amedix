@@ -9,6 +9,7 @@ import DoctorPatientSearch from "@/components/doctor/DoctorPatientSearch";
 import DoctorAppointments from "@/components/doctor/DoctorAppointments";
 import DoctorClinicalNotes from "@/components/doctor/DoctorClinicalNotes";
 import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
+import DoctorPrescriptions from "@/components/doctor/DoctorPrescriptions";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell";
 import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
@@ -23,7 +24,7 @@ import EncountersSection from "@/components/doctor/encounters/EncountersSection"
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, ClipboardList, Pill } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -34,6 +35,7 @@ const navItems = [
   { key: "hospitals", label: "My Hospitals", icon: Building2 },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "notes", label: "Clinical Notes", icon: FileText },
+  { key: "prescriptions", label: "Prescriptions", icon: Pill },
   { key: "labs", label: "Lab Requests", icon: FlaskConical },
   { key: "imaging", label: "Imaging", icon: Image },
 ];
@@ -217,6 +219,7 @@ export default function DoctorDashboard() {
         ))}
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
         {activeTab === "imaging" && profile && <DoctorImagingRequests doctorProfile={profile} />}
+        {activeTab === "prescriptions" && <DoctorPrescriptions />}
       </div>
     </DashboardLayout>
   );
