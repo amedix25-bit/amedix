@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Pill, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Pill, X, Lock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { LOCKED_MESSAGE } from "@/lib/checkInGate";
+import MedicationSafetyAlerts from "@/components/doctor/pharmacy/MedicationSafetyAlerts";
 
 const ROUTES = [
   { value: "oral", label: "Oral" },
@@ -39,13 +41,22 @@ const EMPTY = {
 };
 
 // Electronic prescription issue form — part of the patient's medical record.
-// Submitted through the secure createPrescription backend function, which
-// independently verifies the patient's active hospital check-in.
+// Every proposed medication is first checked against the patient's record
+// (allergies, current medications, interactions) through the secure
+// checkMedicationSafety function; critical warnings require the doctor's
+// acknowledgment and blocking conflicts prevent submission. Submitted through
+// the secure createPrescription backend function, which independently
+// verifies the patient's active hospital check-in.
 export default function PrescriptionForm({ patient, doctorProfile, encounterId, onCreated, onCancel }) {
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [safety, setSafety] = useState(null);
+  const [safetyLoading, setSafetyLoading] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [justification, setJustification] = useState("");
   const { toast } = useToast();
+  const checkSeq = useRef(0);
 
   // One prescription reference per form session — a retried submission
   // re-uses it so the backend can reject duplicates idempotently.
@@ -56,6 +67,45 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
 
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
 
+  // Run the safety check as the doctor types the medication.
+  useEffect(() => {
+    const med = form.medication_name.trim();
+    if (med.length < 3 || !patient?.id || !doctorProfile?.id) {
+      checkSeq.current++;
+      setSafety(null);
+      setSafetyLoading(false);
+      setAcknowledged(false);
+      setJustification("");
+      return;
+    }
+    const seq = ++checkSeq.current;
+    setSafetyLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await base44.functions.invoke("checkMedicationSafety", {
+          patient_id: patient.id,
+          doctor_id: doctorProfile.id,
+          medication_name: med,
+          active_ingredient: form.active_ingredient.trim(),
+        });
+        if (checkSeq.current !== seq) return;
+        setSafety(res.data);
+      } catch (err) {
+        if (checkSeq.current !== seq) return;
+        setSafety(null);
+      } finally {
+        if (checkSeq.current === seq) setSafetyLoading(false);
+      }
+    }, 700);
+    setAcknowledged(false);
+    setJustification("");
+    return () => clearTimeout(timer);
+  }, [form.medication_name, form.active_ingredient, patient?.id, doctorProfile?.id]);
+
+  const blocked = !!safety?.blocked;
+  const hasAlerts = (safety?.alerts || []).length > 0;
+  const needsAck = !!safety && !blocked && safety.has_critical;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -63,8 +113,24 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
     if (!form.frequency.trim()) return setError("Frequency is required.");
     if (!form.duration.trim()) return setError("Duration is required.");
     if (!form.quantity.trim()) return setError("Quantity to dispense is required.");
+    if (blocked) return setError("Prescription blocked by the medication safety check. Choose an alternative medication.");
+    if (needsAck && !acknowledged) return setError("A critical safety warning requires your acknowledgment before issuing.");
+    if (needsAck && acknowledged && !justification.trim()) return setError("Describe your clinical justification for proceeding.");
     setSubmitting(true);
     try {
+      const safety_check = safety
+        ? {
+            checked_datetime: new Date().toISOString(),
+            alerts: safety.alerts || [],
+            decision: !hasAlerts
+              ? "no_warnings"
+              : justification.trim()
+                ? "proceeded_with_justification"
+                : "acknowledged",
+            justification: justification.trim(),
+            acknowledged_by: doctorProfile?.full_name || "",
+          }
+        : undefined;
       const res = await base44.functions.invoke("createPrescription", {
         prescription_id: refId,
         patient_id: patient.id,
@@ -80,6 +146,7 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
         quantity: form.quantity.trim(),
         refills_authorized: Number(form.refills_authorized) || 0,
         special_instructions: form.special_instructions.trim(),
+        safety_check,
       });
       toast({ title: "Prescription issued", description: "Checking availability across affiliated pharmacies..." });
       setForm(EMPTY);
@@ -151,11 +218,41 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
           <Input type="number" min="0" value={form.refills_authorized} onChange={set("refills_authorized")} />
         </div>
       </div>
+      {(form.medication_name.trim().length >= 3 || safety) && (
+        <MedicationSafetyAlerts result={safety} loading={safetyLoading} />
+      )}
+      {needsAck && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 space-y-2.5">
+          <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+            <Checkbox checked={acknowledged} onCheckedChange={(v) => setAcknowledged(!!v)} className="mt-0.5" />
+            <span>
+              I have reviewed the safety warning(s) above against the patient's record and accept the clinical
+              responsibility for issuing this medication.
+            </span>
+          </label>
+          {acknowledged && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Clinical Justification *</Label>
+              <Textarea
+                placeholder="e.g. benefit outweighs risk, patient monitored, allergy record reviewed and not applicable..."
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label className="text-xs">Special Instructions</Label>
         <Textarea placeholder="e.g. take with food, avoid alcohol..." value={form.special_instructions} onChange={set("special_instructions")} />
       </div>
-      <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+      {blocked && (
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2">
+          <Lock className="w-4 h-4 shrink-0" />
+          The safety rules block this prescription. Choose an alternative medication or update the patient's allergy record.
+        </div>
+      )}
+      <Button type="submit" disabled={submitting || blocked || (needsAck && (!acknowledged || !justification.trim()))} className="w-full sm:w-auto">
         {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         Issue Prescription
       </Button>

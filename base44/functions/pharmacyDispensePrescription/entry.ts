@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
-import { parseQty, unitWord, totalDispensedOf, findInventoryItem } from "../../shared/pharmacyPrescription.ts";
+import { parseQty, unitWord, totalDispensedOf, findInventoryItems, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
 
 // The pharmacist fills a prescription: records the medication and quantity
 // actually dispensed. Supports partial dispensing (dispensing less than the
@@ -91,20 +91,42 @@ export default async function(req) {
       }
     }
 
-    // Stock control: a reservation already held the full authorized quantity,
-    // a walk-in fill decreases stock by the quantity dispensed now.
+    // Stock control: a reservation already held the full authorized quantity on
+    // its batch; a walk-in fill consumes the batch that expires soonest
+    // (first-expiry-first-out). Expired, quarantined or recalled stock is
+    // never dispensed.
+    let batchNumber = '';
     if (prescription.status !== 'reserved') {
-      const item = await findInventoryItem(base44, pharmacy, prescription);
+      const all = await findInventoryItems(base44, pharmacy, prescription);
+      const item = all.find(isItemDispensable);
       if (!item) {
-        return Response.json({ error: 'This medication is not in your inventory list. Add it under Inventory first.' }, { status: 400 });
+        if (all.length === 0) {
+          return Response.json({ error: 'This medication is not in your inventory list. Add it under Inventory first.' }, { status: 400 });
+        }
+        return Response.json({ error: 'Matching stock is quarantined, expired or recalled and cannot be dispensed. Dispose of the affected batches under Inventory.' }, { status: 400 });
       }
       if (item.quantity_in_stock < dispenseQty) {
-        return Response.json({ error: `Not enough stock — only ${item.quantity_in_stock} ${unit} available.` }, { status: 400 });
+        return Response.json({ error: `Not enough dispensable stock — only ${item.quantity_in_stock} ${unit} available.` }, { status: 400 });
       }
       await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
         quantity_in_stock: Math.max(0, item.quantity_in_stock - dispenseQty),
         updated_datetime: new Date().toISOString(),
       });
+      batchNumber = item.batch_number || '';
+    } else {
+      // Reservation: verify the reserved batch is still safe to dispense.
+      let reservedItem = null;
+      if (prescription.reserved_inventory_id) {
+        try {
+          reservedItem = await base44.asServiceRole.entities.PharmacyInventory.get(prescription.reserved_inventory_id);
+        } catch (e) { reservedItem = null; }
+      }
+      if (reservedItem) {
+        if (!isItemDispensable(reservedItem)) {
+          return Response.json({ error: 'The reserved batch is quarantined or expired and cannot be dispensed. Reject this prescription (the stock is returned) and reserve again from safe stock.' }, { status: 400 });
+        }
+        batchNumber = reservedItem.batch_number || '';
+      }
     }
 
     const now = new Date();
@@ -116,6 +138,7 @@ export default async function(req) {
       datetime: now.toISOString(),
       quantity: quantityLabel,
       quantity_number: dispenseQty,
+      batch_number: batchNumber,
       pharmacist_name: pharmacistName,
       pharmacy_name: pharmacy.pharmacy_name,
       remaining_after: remaining,
@@ -126,6 +149,7 @@ export default async function(req) {
       dispensed_datetime: now.toISOString(),
       dispensed_by_name: pharmacistName,
       dispensed_pharmacy_name: pharmacy.pharmacy_name,
+      dispensed_batch_number: batchNumber,
       dispensed_quantity: quantityLabel,
       total_dispensed_quantity: `${totalDispensed + dispenseQty} ${unit}`,
       status: 'dispensed',

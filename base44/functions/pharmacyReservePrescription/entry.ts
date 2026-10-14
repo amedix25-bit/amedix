@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
+import { findInventoryItems, isItemDispensable } from "../../shared/pharmacyPrescription.ts";
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -50,24 +51,19 @@ export default async function(req) {
       return Response.json({ error: 'Only authorized prescriptions that are not yet reserved can be reserved.' }, { status: 400 });
     }
 
-    // Hold stock: find the matching inventory item and decrease it.
+    // Hold stock on the batch that expires soonest (first-expiry-first-out).
+    // Quarantined, expired or recalled batches are never reserved.
     const requestedQty = parseFloat(String(prescription.quantity || '').replace(/[^0-9.]/g, '')) || 0;
-    const inventoryPage = await base44.asServiceRole.entities.PharmacyInventory.filter(
-      {
-        pharmacy_id: pharmacy.id,
-        medication_name: { $regex: `^${escapeRegex(prescription.medication_name)}$`, $options: 'i' },
-      },
-      { limit: 50 }
-    );
-    const items = (inventoryPage.items || inventoryPage).filter(
-      (i) => !prescription.strength || !i.strength || String(i.strength).toLowerCase() === String(prescription.strength).toLowerCase()
-    );
-    const item = items[0];
+    const all = await findInventoryItems(base44, pharmacy, prescription);
+    const item = all.find(isItemDispensable);
     if (!item) {
-      return Response.json({ error: 'This medication is not in your inventory list. Add it under Inventory first.' }, { status: 400 });
+      if (all.length === 0) {
+        return Response.json({ error: 'This medication is not in your inventory list. Add it under Inventory first.' }, { status: 400 });
+      }
+      return Response.json({ error: 'Matching stock is quarantined, expired or recalled and cannot be reserved. Dispose of the affected batches under Inventory.' }, { status: 400 });
     }
     if (requestedQty > 0 && item.quantity_in_stock < requestedQty) {
-      return Response.json({ error: `Not enough stock — only ${item.quantity_in_stock} unit(s) available.` }, { status: 400 });
+      return Response.json({ error: `Not enough dispensable stock — only ${item.quantity_in_stock} unit(s) available.` }, { status: 400 });
     }
     await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
       quantity_in_stock: Math.max(0, item.quantity_in_stock - requestedQty),
@@ -78,6 +74,7 @@ export default async function(req) {
     const reservation_code = `RES-${randomSuffix(6)}`;
     await base44.asServiceRole.entities.Prescription.update(prescription.id, {
       reservation_code,
+      reserved_inventory_id: item.id,
       reserved_datetime: now.toISOString(),
       reserved_by_name: pharmacistName,
       status: 'reserved',

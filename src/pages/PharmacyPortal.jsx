@@ -67,7 +67,7 @@ export default function PharmacyPortal() {
             </p>
           </div>
           <PharmacyNotificationsBell
-            onOpenNotification={(n) => setActiveTab(n.target === "patients" ? "patients" : "prescriptions")}
+            onOpenNotification={(n) => setActiveTab(n.target === "patients" ? "patients" : n.target === "inventory" ? "inventory" : "prescriptions")}
           />
         </div>
 

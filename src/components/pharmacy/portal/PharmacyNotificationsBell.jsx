@@ -14,6 +14,8 @@ const TYPE_STYLES = {
   new_authorized: "bg-sky-50 text-sky-700 border-sky-200",
   reservation_confirmed: "bg-amber-50 text-amber-700 border-amber-200",
   dispensed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  expiry_alert: "bg-orange-50 text-orange-700 border-orange-200",
+  recall: "bg-red-50 text-red-700 border-red-200",
   other: "bg-secondary text-secondary-foreground border-border",
 };
 
@@ -21,6 +23,8 @@ const TYPE_LABELS = {
   new_authorized: "New Prescription",
   reservation_confirmed: "Reservation",
   dispensed: "Dispensed",
+  expiry_alert: "Expiry Alert",
+  recall: "Recall",
   other: "Update",
 };
 

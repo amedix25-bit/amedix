@@ -69,6 +69,11 @@ export default async function(req) {
       doctor_hospital: doctor.hospital || "",
       date_prescribed: payload.date_prescribed || now.toISOString().slice(0, 10),
       prescribed_datetime: now.toISOString(),
+      // Medication safety check record: the alerts raised, the doctor's
+      // decision and any justified-decision note, stored verbatim.
+      ...(payload.safety_check && typeof payload.safety_check === "object"
+        ? { safety_check: payload.safety_check }
+        : {}),
       status: "issued",
     });
 

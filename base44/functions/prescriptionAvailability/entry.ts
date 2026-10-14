@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { isItemDispensable } from "../../shared/pharmacyPrescription.ts";
 
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -31,6 +32,9 @@ export default async function(req) {
     const addMatches = (items) => {
       for (const item of items) {
         if (!item.quantity_in_stock || item.quantity_in_stock <= 0) continue;
+        // Expired, quarantined or recalled stock is never offered to doctors
+        // or patients.
+        if (!isItemDispensable(item)) continue;
         const prev = results.get(item.pharmacy_id);
         if (!prev || item.quantity_in_stock > prev.quantity_in_stock) {
           results.set(item.pharmacy_id, item);

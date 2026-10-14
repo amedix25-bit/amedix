@@ -1,0 +1,44 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "30 1 * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Tripoli",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Daily inventory safety scan: auto-quarantines expired stock and alerts pharmacies about batches expiring within 90 days",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "pharmacy_expiry_alerts",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "scan_inventory": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "pharmacyExpiryCheck"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Scan pharmacy inventory",
+            "description": "Quarantine expired, alert expiring batches"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Pharmacy Expiry Alerts"
+}

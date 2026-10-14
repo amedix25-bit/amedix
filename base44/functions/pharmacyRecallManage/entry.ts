@@ -263,7 +263,7 @@ export default async function(req) {
               action: 'disposed',
               by_name: user.full_name || 'Pharmacy',
               datetime: new Date().toISOString(),
-              details: `${item.medication_name}${item.strength ? ` ${item.strength}` : ''}${item.batch_number ? ` (batch ${item.batch_number})` : ''} at ${item.pharmacy_id === '' ? '' : 'the pharmacy'} was disposed of.`,
+              details: `${item.medication_name}${item.strength ? ` ${item.strength}` : ''}${item.batch_number ? ` (batch ${item.batch_number})` : ''} was disposed of.`,
             }];
             await base44.asServiceRole.entities.MedicationRecall.update(rec.id, { actions });
           }
