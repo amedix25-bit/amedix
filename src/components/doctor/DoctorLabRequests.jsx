@@ -9,10 +9,11 @@ import LabRequestReview from "@/components/doctor/lab/LabRequestReview";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
 import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
+import DoctorLabHistory from "@/components/doctor/lab/DoctorLabHistory";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
-import { FlaskConical, Plus, X, CheckCircle2, Loader2, ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { FlaskConical, Plus, X, CheckCircle2, Loader2, ArrowLeft, ArrowRight, Search, ClipboardList, History } from "lucide-react";
 
 // In-progress test selection survives leaving and returning to this page during
 // the same order workflow — it is cleared once the request is submitted.
@@ -44,6 +45,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
   const [step, setStep] = useState("edit");
   const [resolvedPatient, setResolvedPatient] = useState(null);
   const [priority, setPriority] = useState("Routine");
+  const [view, setView] = useState("patients");
   const submitGuard = React.useRef(false);
 
   useEffect(() => {
@@ -408,8 +410,14 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             <LabHistoryList requests={patientRequests} showPdf />
           )}
         </div>
+      ) : view === "history" ? (
+        <div className="space-y-3">
+          <LabViewToggle view={view} onViewChange={setView} />
+          <DoctorLabHistory doctorProfile={doctorProfile} />
+        </div>
       ) : (
         <div className="space-y-3">
+          <LabViewToggle view={view} onViewChange={setView} />
           <div className="flex justify-end">
             <Button onClick={() => { setShowForm(!showForm); setStep("edit"); setFormError(""); }}>
               <Plus className="w-4 h-4 mr-2" />
@@ -466,6 +474,34 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Switch between the per-patient order workflow and the full request history.
+function LabViewToggle({ view, onViewChange }) {
+  return (
+    <div className="inline-flex rounded-lg border border-border p-1 bg-card">
+      <button
+        type="button"
+        onClick={() => onViewChange("patients")}
+        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          view === "patients" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <ClipboardList className="w-4 h-4" />
+        Patients
+      </button>
+      <button
+        type="button"
+        onClick={() => onViewChange("history")}
+        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          view === "history" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <History className="w-4 h-4" />
+        All Requests
+      </button>
     </div>
   );
 }
