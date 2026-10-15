@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import {
   planDefaults, loadPlanSettings, priceFor, publicPlans, intervalAdvanceMs,
   buildPaymentEntry, applyPaymentPatch, verifyPaymentPatch, findExistingPayment,

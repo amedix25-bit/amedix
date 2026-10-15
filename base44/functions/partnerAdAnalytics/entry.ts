@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { effectiveStatus, expectedPaymentAmount } from '../../shared/partnerBilling.ts';
 
 // Partner-side advertisement analytics. A partner may see analytics ONLY for

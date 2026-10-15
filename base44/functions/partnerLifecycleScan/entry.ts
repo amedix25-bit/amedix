@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import {
   loadPlanSettings, planDefaults, effectiveStatus, intervalAdvanceMs, DAY_MS,
 } from '../../shared/partnerBilling.ts';
