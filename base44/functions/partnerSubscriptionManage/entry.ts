@@ -183,19 +183,29 @@ export default async function(req) {
     // Submit for review: draft or rejected → pending_review. Only the
     // administrator can approve — a partner can never approve their own ad.
     if (action === 'submit_ad') {
-      const ad = await loadAd();
-      if (!ad) return Response.json({ error: 'Advertisement not found' }, { status: 404 });
+      if (sub.status === 'cancelled') return Response.json({ error: 'Subscription is cancelled' }, { status: 400 });
+      const ad = body.ad_id
+        ? await svc.entities.PartnerAdvertisement.get(body.ad_id)
+        : await loadAd();
+      if (!ad || ad.partner_user_id !== user.id || ad.subscription_id !== sub.id || ad.partner_type !== partnerType) {
+        return Response.json({ error: 'Advertisement not found' }, { status: 404 });
+      }
       if (!canTransition(ad.status, 'pending_review')) {
         return Response.json({ error: `An advertisement in status "${ad.status}" cannot be submitted for review` }, { status: 400 });
       }
-      const contentEdit = validateAdContent(body);
-      if (contentEdit.error) return Response.json({ error: contentEdit.error }, { status: 400 });
-      const content = validateAdContent({ ...ad, ...contentEdit.patch }, { requireContent: true });
-      if (content.error) return Response.json({ error: content.error }, { status: 400 });
+      // Merge before normalization: older open pages submit only the action.
+      // Normalizing that request alone would erase the already saved fields.
+      const content = validateAdContent({ ...ad, ...body }, { requireContent: true });
+      if (content.error) {
+        const unsaved = body.title === undefined && body.description === undefined && (!ad.title || !ad.description);
+        return Response.json({
+          error: unsaved ? 'Your changes have not been saved yet. Click Save, then Submit for review.' : content.error,
+        }, { status: 400 });
+      }
       const dates = validateCampaignDates(ad.campaign_start_date, ad.campaign_end_date);
       if (dates.error) return Response.json({ error: dates.error }, { status: 400 });
       const updated = await svc.entities.PartnerAdvertisement.update(ad.id, {
-        ...contentEdit.patch,
+        ...content.patch,
         status: 'pending_review',
         rejection_reason: null,
         updated_datetime: new Date().toISOString(),

@@ -59,6 +59,12 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
     setBusy(true);
     setError("");
     try {
+      // Persist the visible draft before requesting its review.
+      if (payload.action === "submit_ad") {
+        await base44.functions.invoke("partnerSubscriptionManage", {
+          partner_type: partnerType, ...payload, action: "update_ad",
+        });
+      }
       await base44.functions.invoke("partnerSubscriptionManage", {
         partner_type: partnerType, ...payload,
       });
@@ -73,25 +79,14 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
     }
   };
 
-  const save = () => call(
-    {
-      action: "update_ad", ad_id: advertisement?.id,
-      title, description, cover_url: coverUrl,
-      services: services.split(",").map((s) => s.trim()).filter(Boolean),
-      contact_phone: phone, hours,
-    },
-    "Advertisement saved"
-  );
-
-  const submit = () => call(
-    {
-      action: "submit_ad", ad_id: advertisement?.id,
-      title, description, cover_url: coverUrl,
-      services: services.split(",").map((s) => s.trim()).filter(Boolean),
-      contact_phone: phone, hours,
-    },
-    "Submitted for administrator review"
-  );
+  const contentPayload = {
+    ad_id: advertisement?.id,
+    title, description, cover_url: coverUrl,
+    services: services.split(",").map((s) => s.trim()).filter(Boolean),
+    contact_phone: phone, hours,
+  };
+  const save = () => call({ ...contentPayload, action: "update_ad" }, "Advertisement saved");
+  const submit = () => call({ ...contentPayload, action: "submit_ad" }, "Submitted for administrator review");
   const withdraw = () => call({ action: "withdraw_ad" }, "Returned to draft");
 
   const statusBadge = AD_STATUS[status] || AD_STATUS.draft;
@@ -168,12 +163,12 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
       {error && <p className="text-xs text-destructive">{error}</p>}
       {canEdit && (
         <div className="flex gap-2 flex-wrap">
-          <Button onClick={save} disabled={busy}>
+          <Button type="button" onClick={save} disabled={busy || uploading}>
             {busy && <Loader2 className="w-4 h-4 animate-spin" />}
             Save
           </Button>
           {canSubmit && (
-            <Button variant="outline" onClick={submit} disabled={busy || !title.trim() || !description.trim()}>
+            <Button type="button" variant="outline" onClick={submit} disabled={busy || uploading || !title.trim() || !description.trim()}>
               <SendHorizonal className="w-4 h-4" /> Submit for review
             </Button>
           )}
