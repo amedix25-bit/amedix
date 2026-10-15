@@ -139,6 +139,7 @@ export default async function(req) {
             cacheBySource.set(pending[i], translated);
             newCache.push({
               patient_id: patientId,
+              direction: 'patient_to_doctor',
               source_text: pending[i],
               translated_text: translated,
               created_datetime: new Date().toISOString(),

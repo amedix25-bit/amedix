@@ -13,6 +13,7 @@ import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 import QrCodeCard from "@/components/QrCodeCard";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 
 function AuthorizationFlow({ prescription, onAuthorized }) {
   const { t } = usePatientLanguage();
@@ -102,6 +103,10 @@ export default function PatientPrescriptions() {
   const [items, setItems] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [profile, setProfile] = useState(null);
+  const ar = useDoctorTextAr(
+    profile?.id,
+    (items || []).flatMap((p) => [p.dosage, p.frequency, p.duration, p.special_instructions])
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -172,13 +177,13 @@ export default function PatientPrescriptions() {
                 <PrescriptionStatusBadge status={p.status} />
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-xs">
-                <div><span className="text-muted-foreground">{t("Dosage")}:</span> {p.dosage || "—"}</div>
-                <div><span className="text-muted-foreground">{t("Frequency")}:</span> {p.frequency || "—"}</div>
-                <div><span className="text-muted-foreground">{t("Duration")}:</span> {p.duration || "—"}</div>
+                <div><span className="text-muted-foreground">{t("Dosage")}:</span> {p.dosage ? ar(p.dosage) : "—"}</div>
+                <div><span className="text-muted-foreground">{t("Frequency")}:</span> {p.frequency ? ar(p.frequency) : "—"}</div>
+                <div><span className="text-muted-foreground">{t("Duration")}:</span> {p.duration ? ar(p.duration) : "—"}</div>
                 <div><span className="text-muted-foreground">{t("Quantity")}:</span> {p.quantity || "—"}</div>
               </div>
               {p.special_instructions && (
-                <p className="text-xs text-muted-foreground mt-2">{t("Instructions")}: {p.special_instructions}</p>
+                <p className="text-xs text-muted-foreground mt-2">{t("Instructions")}: {ar(p.special_instructions)}</p>
               )}
               <p className="text-xs text-muted-foreground mt-2">
                 {t("Refills")}: {p.refills_used || 0}/{p.refills_authorized || 0} {t("used")}

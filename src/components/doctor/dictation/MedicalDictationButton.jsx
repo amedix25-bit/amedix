@@ -136,6 +136,7 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
     localStorage.setItem("amedix_dictation_lang", v);
   };
 
+  const spokenArabic = /[\u0600-\u06FF]/.test(review?.transcript || "");
   const flagged = (review?.corrections || []).filter((c) => c.flagged);
   const autoApplied = (review?.corrections || []).filter((c) => !c.flagged).length;
 
@@ -197,6 +198,12 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
           </DialogHeader>
 
           <Textarea rows={8} value={finalText} onChange={(e) => setFinalText(e.target.value)} />
+
+          {spokenArabic && (
+            <p className="text-xs text-muted-foreground">
+              Arabic dictation was translated into English — please verify the translation before inserting.
+            </p>
+          )}
 
           {autoApplied > 0 && (
             <p className="text-xs text-muted-foreground">

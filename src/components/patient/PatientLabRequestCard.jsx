@@ -4,8 +4,9 @@ import LabAuthorizationSection from "@/components/patient/lab/LabAuthorizationSe
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { Building2, FileText, ShieldCheck } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 
-export default function PatientLabRequestCard({ group, onRequestUpdated }) {
+export default function PatientLabRequestCard({ group, patientId, onRequestUpdated }) {
   const { t, locale } = usePatientLanguage();
   const first = group[0];
   const [auth, setAuth] = useState(
@@ -44,6 +45,7 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
     if (!byCategory.has(key)) byCategory.set(key, []);
     byCategory.get(key).push(tc.name);
   });
+  const ar = useDoctorTextAr(patientId, [...(first.indication ? [first.indication] : []), ...(first.instructions ? [first.instructions] : []), ...tests.map((tc) => tc.name)]);
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -69,14 +71,14 @@ export default function PatientLabRequestCard({ group, onRequestUpdated }) {
         {[...byCategory.entries()].map(([category, names]) => (
           <div key={category}>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t(category)}</p>
-            <p className="text-sm">{names.join(", ")}</p>
+            <p className="text-sm">{names.map((n) => ar(n)).join(", ")}</p>
           </div>
         ))}
         {first.indication && (
-          <p className="text-xs text-muted-foreground">{t("Indication:")} {first.indication}</p>
+          <p className="text-xs text-muted-foreground">{t("Indication:")} {ar(first.indication)}</p>
         )}
         {first.instructions && (
-          <p className="text-xs text-muted-foreground">{t("Instructions:")} {first.instructions}</p>
+          <p className="text-xs text-muted-foreground">{t("Instructions:")} {ar(first.instructions)}</p>
         )}
       </div>
 

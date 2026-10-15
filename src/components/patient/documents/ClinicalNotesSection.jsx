@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
 
 // Documents → Clinical Notes. Read-only list of every clinical note saved by
@@ -10,6 +11,7 @@ import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
 export default function ClinicalNotesSection({ patient }) {
   const { t, locale } = usePatientLanguage();
   const [notes, setNotes] = useState(null);
+  const ar = useDoctorTextAr(patient?.id, (notes || []).map((n) => n.diagnosis));
 
   useEffect(() => {
     const load = async () => {
@@ -67,7 +69,7 @@ export default function ClinicalNotesSection({ patient }) {
           <div className="min-w-0">
             <p className="font-medium truncate">{fmtDate(note.date)} — {t("Dr.")} {note.doctor_name}</p>
             <p className="text-xs text-muted-foreground line-clamp-1">
-              {t("Provisional Diagnosis")}: {note.diagnosis}
+              {t("Provisional Diagnosis")}: {ar(note.diagnosis)}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => openPdf(note)}>
