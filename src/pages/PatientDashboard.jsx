@@ -24,7 +24,9 @@ import NotificationsBar from "@/components/patient/NotificationsBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, ScrollText, Shield, User, Stethoscope, ChevronLeft } from "lucide-react";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User, Stethoscope, ChevronLeft } from "lucide-react";
+import DrugsEntry from "@/components/patient/DrugsEntry";
+import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
 
 const NAV_ITEMS = [
   { key: "overview", label: "Home", icon: HomeIcon },
@@ -34,8 +36,7 @@ const NAV_ITEMS = [
   { key: "labs", label: "Labs", icon: FlaskConical },
   { key: "imaging", label: "Imaging", icon: ImageIcon },
   { key: "documents", label: "Documents", icon: FileText },
-  { key: "medications", label: "Medications", icon: Pill },
-  { key: "prescriptions", label: "Prescriptions", icon: ScrollText },
+  { key: "drugs", label: "Drugs", icon: Pill },
   { key: "access", label: "Access & Privacy", icon: Shield },
   { key: "profile", label: "Profile", icon: User },
 ];
@@ -54,6 +55,7 @@ function PatientPortal() {
   const navigate = useNavigate();
   const [activeTab, setActiveTabRaw] = useState("overview");
   const [labsView, setLabsView] = useState("choose"); // "choose" | "requests" | "results"
+  const [drugsView, setDrugsView] = useState("choose"); // "choose" | "medications" | "prescriptions" | "advertisement"
   const setActiveTab = (tab) => {
     // Notifications may still point at the old "My Lab Results" tab.
     if (tab === "mylabresults") {
@@ -61,7 +63,14 @@ function PatientPortal() {
       setActiveTabRaw("labs");
       return;
     }
+    // Notifications may still point at the old Medications / Prescriptions tabs.
+    if (tab === "medications" || tab === "prescriptions") {
+      setDrugsView(tab);
+      setActiveTabRaw("drugs");
+      return;
+    }
     if (tab === "labs") setLabsView("choose");
+    if (tab === "drugs") setDrugsView("choose");
     setActiveTabRaw(tab);
   };
   const [profile, setProfile] = useState(null);
@@ -149,8 +158,21 @@ function PatientPortal() {
 
           {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
           {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
-          {activeTab === "medications" && <PatientMedications patient={profile} />}
-          {activeTab === "prescriptions" && <PatientPrescriptions />}
+          {activeTab === "drugs" && (
+            drugsView === "choose" ? (
+              <DrugsEntry onOpen={setDrugsView} />
+            ) : (
+              <div className="space-y-4">
+                <Button variant="ghost" size="sm" onClick={() => setDrugsView("choose")} className="rtl:flex-row-reverse">
+                  <ChevronLeft className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+                  {t("Back")}
+                </Button>
+                {drugsView === "medications" && <PatientMedications patient={profile} />}
+                {drugsView === "prescriptions" && <PatientPrescriptions />}
+                {drugsView === "advertisement" && <PartnerAdStrip section="pharmacy" />}
+              </div>
+            )
+          )}
           {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
           {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
           {activeTab === "doctorvisits" && <DoctorVisits patientId={profile?.id} />}

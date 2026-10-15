@@ -10,7 +10,6 @@ import {
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
-import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
 import QrCodeCard from "@/components/QrCodeCard";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -156,8 +155,6 @@ export default function PatientPrescriptions() {
           </p>
         </div>
       )}
-
-      <PartnerAdStrip section="pharmacy" />
 
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-10 rounded-xl border border-border bg-card">
