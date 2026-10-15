@@ -1,0 +1,109 @@
+{
+  "name": "PharmacyClinicalNote",
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "description": "Unique pharmacy note reference, e.g. PN-20261015-8F3K"
+    },
+    "pharmacy_id": {
+      "type": "string",
+      "description": "PharmacyProfile id the note belongs to"
+    },
+    "pharmacy_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy account \u2014 used for Row Level Security"
+    },
+    "pharmacy_name": {
+      "type": "string",
+      "description": "Name of the pharmacy that recorded the note"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "visit_id": {
+      "type": "string",
+      "description": "PharmacyVisit id the note was recorded during, when the patient was checked in"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "counseling",
+        "adverse_reaction",
+        "intervention",
+        "other"
+      ],
+      "default": "other",
+      "description": "COUNSELING: advice given to the patient at the counter. ADVERSE_REACTION: a side effect the patient reported. INTERVENTION: a pharmacist intervention such as a refused sale or dosage clarification. OTHER: anything else."
+    },
+    "content": {
+      "type": "string",
+      "description": "The note text"
+    },
+    "pharmacist_id": {
+      "type": "string",
+      "description": "Pharmacist record id of who recorded the note"
+    },
+    "pharmacist_name": {
+      "type": "string",
+      "description": "Name of the pharmacist who recorded the note"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the note was recorded (ISO datetime)"
+    }
+  },
+  "required": [
+    "pharmacy_id",
+    "pharmacy_user_id",
+    "patient_cin",
+    "content"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.pharmacy_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.pharmacy_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

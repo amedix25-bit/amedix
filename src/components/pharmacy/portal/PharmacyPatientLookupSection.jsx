@@ -8,6 +8,8 @@ import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import PharmacyVisitBar from "@/components/pharmacy/pharmacist/PharmacyVisitBar";
+import PharmacyPatientVisits from "@/components/pharmacy/pharmacist/PharmacyPatientVisits";
+import PharmacyPatientNotes from "@/components/pharmacy/pharmacist/PharmacyPatientNotes";
 
 function FoundPatient({ data, onReset, session }) {
   return (
@@ -70,6 +72,9 @@ function FoundPatient({ data, onReset, session }) {
           </div>
         )}
       </div>
+
+      {session && <PharmacyPatientVisits session={session} patient={data.patient} />}
+      {session && <PharmacyPatientNotes session={session} patient={data.patient} />}
     </div>
   );
 }

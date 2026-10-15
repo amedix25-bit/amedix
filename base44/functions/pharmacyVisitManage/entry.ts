@@ -49,6 +49,16 @@ export default async function(req) {
       return Response.json({ visits: page.items || page });
     }
 
+    if (action === 'list_by_patient') {
+      const cin = String(body?.cin || '').trim();
+      if (!cin) return Response.json({ error: 'A patient CIN is required.' }, { status: 400 });
+      const page = await base44.asServiceRole.entities.PharmacyVisit.filter(
+        { pharmacy_id: pharmacy.id, patient_cin: cin },
+        { sort: '-created_date', limit: 50 }
+      );
+      return Response.json({ visits: page.items || page });
+    }
+
     if (action === 'active') {
       const cin = String(body?.cin || '').trim();
       if (!cin) return Response.json({ error: 'A patient CIN is required.' }, { status: 400 });
