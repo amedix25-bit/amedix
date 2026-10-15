@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import PatientOverview from "@/components/patient/PatientOverview";
 import PatientAppointments from "@/components/patient/PatientAppointments";
+import DoctorVisits from "@/components/patient/DoctorVisits";
 import PatientLabs from "@/components/patient/PatientLabs";
 import PatientLabResults from "@/components/patient/PatientLabResults";
 import PatientPrescriptions from "@/components/patient/PatientPrescriptions";
@@ -21,12 +22,13 @@ import NotificationsBar from "@/components/patient/NotificationsBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, ScrollText, Shield, User } from "lucide-react";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, ScrollText, Shield, User, Stethoscope } from "lucide-react";
 
 const NAV_ITEMS = [
   { key: "overview", label: "Home", icon: HomeIcon },
   { key: "health", label: "My Health", icon: HeartPulse },
   { key: "appointments", label: "Appointments", icon: Calendar },
+  { key: "doctorvisits", label: "Doctor Visits", icon: Stethoscope },
   { key: "labs", label: "Laboratory", icon: FlaskConical },
   { key: "mylabresults", label: "My Lab Results", icon: ClipboardList },
   { key: "imaging", label: "Imaging", icon: ImageIcon },
@@ -139,6 +141,7 @@ function PatientPortal() {
           {activeTab === "prescriptions" && <PatientPrescriptions />}
           {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
           {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
+          {activeTab === "doctorvisits" && <DoctorVisits patientId={profile?.id} />}
           {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
           {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
           {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
