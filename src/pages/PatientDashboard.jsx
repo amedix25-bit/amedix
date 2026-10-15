@@ -8,6 +8,8 @@ import PatientAppointments from "@/components/patient/PatientAppointments";
 import DoctorVisits from "@/components/patient/DoctorVisits";
 import PatientLabs from "@/components/patient/PatientLabs";
 import PatientLabResults from "@/components/patient/PatientLabResults";
+import LabsEntry from "@/components/patient/LabsEntry";
+import { Button } from "@/components/ui/button";
 import PatientPrescriptions from "@/components/patient/PatientPrescriptions";
 import PatientImaging from "@/components/patient/PatientImaging";
 import PatientRadiologyRequests from "@/components/patient/PatientRadiologyRequests";
@@ -22,15 +24,14 @@ import NotificationsBar from "@/components/patient/NotificationsBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, ScrollText, Shield, User, Stethoscope } from "lucide-react";
+import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, ScrollText, Shield, User, Stethoscope, ChevronLeft } from "lucide-react";
 
 const NAV_ITEMS = [
   { key: "overview", label: "Home", icon: HomeIcon },
   { key: "health", label: "My Health", icon: HeartPulse },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "doctorvisits", label: "Doctor Visits", icon: Stethoscope },
-  { key: "labs", label: "Laboratory", icon: FlaskConical },
-  { key: "mylabresults", label: "My Lab Results", icon: ClipboardList },
+  { key: "labs", label: "Labs", icon: FlaskConical },
   { key: "imaging", label: "Imaging", icon: ImageIcon },
   { key: "documents", label: "Documents", icon: FileText },
   { key: "medications", label: "Medications", icon: Pill },
@@ -51,7 +52,18 @@ function PatientPortal() {
   const { user } = useAuth();
   const { t } = usePatientLanguage();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTabRaw] = useState("overview");
+  const [labsView, setLabsView] = useState("choose"); // "choose" | "requests" | "results"
+  const setActiveTab = (tab) => {
+    // Notifications may still point at the old "My Lab Results" tab.
+    if (tab === "mylabresults") {
+      setLabsView("results");
+      setActiveTabRaw("labs");
+      return;
+    }
+    if (tab === "labs") setLabsView("choose");
+    setActiveTabRaw(tab);
+  };
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ appointments: 0, labs: 0, imaging: 0, documents: 0, medications: 0 });
@@ -142,8 +154,19 @@ function PatientPortal() {
           {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
           {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
           {activeTab === "doctorvisits" && <DoctorVisits patientId={profile?.id} />}
-          {activeTab === "labs" && <PatientLabs patientId={profile?.id} />}
-          {activeTab === "mylabresults" && <PatientLabResults patient={profile} />}
+          {activeTab === "labs" && (
+            labsView === "choose" ? (
+              <LabsEntry onOpen={setLabsView} />
+            ) : (
+              <div className="space-y-4">
+                <Button variant="ghost" size="sm" onClick={() => setLabsView("choose")} className="rtl:flex-row-reverse">
+                  <ChevronLeft className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+                  {t("Back")}
+                </Button>
+                {labsView === "requests" ? <PatientLabs patientId={profile?.id} /> : <PatientLabResults patient={profile} />}
+              </div>
+            )
+          )}
           {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
           {activeTab === "documents" && <PatientDocuments patient={profile} />}
           {activeTab === "access" && (
