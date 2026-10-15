@@ -188,11 +188,14 @@ export default async function(req) {
       if (!canTransition(ad.status, 'pending_review')) {
         return Response.json({ error: `An advertisement in status "${ad.status}" cannot be submitted for review` }, { status: 400 });
       }
-      const content = validateAdContent(ad, { requireContent: true });
+      const contentEdit = validateAdContent(body);
+      if (contentEdit.error) return Response.json({ error: contentEdit.error }, { status: 400 });
+      const content = validateAdContent({ ...ad, ...contentEdit.patch }, { requireContent: true });
       if (content.error) return Response.json({ error: content.error }, { status: 400 });
       const dates = validateCampaignDates(ad.campaign_start_date, ad.campaign_end_date);
       if (dates.error) return Response.json({ error: dates.error }, { status: 400 });
       const updated = await svc.entities.PartnerAdvertisement.update(ad.id, {
+        ...contentEdit.patch,
         status: 'pending_review',
         rejection_reason: null,
         updated_datetime: new Date().toISOString(),

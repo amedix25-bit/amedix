@@ -83,7 +83,15 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
     "Advertisement saved"
   );
 
-  const submit = () => call({ action: "submit_ad" }, "Submitted for administrator review");
+  const submit = () => call(
+    {
+      action: "submit_ad", ad_id: advertisement?.id,
+      title, description, cover_url: coverUrl,
+      services: services.split(",").map((s) => s.trim()).filter(Boolean),
+      contact_phone: phone, hours,
+    },
+    "Submitted for administrator review"
+  );
   const withdraw = () => call({ action: "withdraw_ad" }, "Returned to draft");
 
   const statusBadge = AD_STATUS[status] || AD_STATUS.draft;
