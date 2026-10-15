@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PartnerAdForm from "@/components/partner/PartnerAdForm";
 import PartnerAdAnalytics from "@/components/partner/PartnerAdAnalytics";
+import PartnerAdLibraryPicker from "@/components/partner/PartnerAdLibraryPicker";
 import {
   Building2, CheckCircle2, Clock, FlaskConical, Loader2, Sparkles, AlertTriangle, XCircle,
   ArrowUpRight, ArrowDownRight, RefreshCw, Ban, FileCheck, BarChart3, Wallet, CalendarClock, Eye,
@@ -43,6 +44,7 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
   const [changeType, setChangeType] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [chosenTemplate, setChosenTemplate] = useState(null); // admin library ad chosen before subscribing
 
   const load = useCallback(async () => {
     try {
@@ -94,6 +96,15 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
   const fmt = (amount, currency) => `${amount} ${currency || plans?.currency || ""}`;
   const intervalLabel = plans?.billing_interval === "year" ? "year" : "month";
 
+  // Maps an administrator library advertisement onto the partner's own
+  // advertisement content (the offer text is folded into the description).
+  const templateAd = (t) => ({
+    title: t.title,
+    description: t.offer ? `${t.description || ""}\n\nOffer: ${t.offer}`.trim() : t.description || "",
+    cover_url: t.image_url || "",
+    services: t.services || [],
+  });
+
   if (sub === undefined) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
@@ -125,6 +136,12 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
         <p className="text-sm text-muted-foreground">
           Become an AMedix partner: an approved partner profile and an advertisement for patients, shown only inside your section of the Patient Portal.
         </p>
+        <PartnerAdLibraryPicker
+          partnerType={partnerType}
+          mode="choose"
+          selectedId={chosenTemplate?.id}
+          onSelect={setChosenTemplate}
+        />
         <div className="grid sm:grid-cols-2 gap-3">
           {["standard", "premium"].map((t) => {
             const p = plans?.[t];
@@ -187,7 +204,12 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
             </label>
             <Button
               disabled={busy || !confirmed}
-              onClick={() => act({ action: "subscribe", tier, confirmed: true }, "Subscription request submitted — awaiting administrator approval")}
+              onClick={() => act({
+                action: "subscribe",
+                tier,
+                confirmed: true,
+                ...(chosenTemplate ? { ad: templateAd(chosenTemplate) } : {}),
+              }, "Subscription request submitted — awaiting administrator approval")}
             >
               {busy && <Loader2 className="w-4 h-4 animate-spin" />}
               Submit subscription request
@@ -383,6 +405,19 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
         open={showDetails}
         onOpenChange={setShowDetails}
         sub={sub}
+      />
+
+      <PartnerAdLibraryPicker
+        partnerType={partnerType}
+        mode="use"
+        disabled={busy || sub.status === "cancelled"}
+        onUse={(t) => act({
+          action: "update_ad",
+          ad_id: ad?.id,
+          ...templateAd(t),
+          contact_phone: ad?.contact_phone || "",
+          hours: ad?.hours || "",
+        }, "Advertisement set from the library — submit it for review from the editor below")}
       />
 
       <PartnerAdForm subscription={sub} advertisement={ad} partnerType={partnerType} onSaved={load} />

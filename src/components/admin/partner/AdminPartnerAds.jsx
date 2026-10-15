@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import AdminPartnerPlans from "@/components/admin/partner/AdminPartnerPlans";
 import AdminPartnerSubscriptions from "@/components/admin/partner/AdminPartnerSubscriptions";
 import AdminPartnerAnalytics from "@/components/admin/partner/AdminPartnerAnalytics";
+import AdminAdTemplates from "@/components/admin/partner/AdminAdTemplates";
 import { Building2, FlaskConical, Loader2 } from "lucide-react";
 
 // Admin section for the partner advertising and subscription system. Two
@@ -42,6 +43,7 @@ export default function AdminPartnerAds() {
 
   const tabs = [
     { key: "plans", label: "Plans & Pricing" },
+    { key: "library", label: "Ad Library" },
     { key: "subs", label: "Subscriptions" },
     { key: "analytics", label: "Analytics" },
   ];
@@ -84,6 +86,7 @@ export default function AdminPartnerAds() {
       </div>
 
       {view === "plans" && <AdminPartnerPlans settings={settings} partnerType={partnerType} onSaved={load} />}
+      {view === "library" && <AdminAdTemplates key={partnerType} partnerType={partnerType} />}
       {view === "subs" && <AdminPartnerSubscriptions key={partnerType} settings={settings} fixedPartnerType={partnerType} onChanged={load} />}
       {view === "analytics" && <AdminPartnerAnalytics refreshKey={settings?.updated_datetime} partnerType={partnerType} />}
     </div>

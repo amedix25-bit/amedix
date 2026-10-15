@@ -1,0 +1,80 @@
+{
+  "name": "PartnerAdTemplate",
+  "type": "object",
+  "properties": {
+    "template_id": {
+      "type": "string",
+      "description": "Unique ad library reference, e.g. PAT-20261015-8F3K"
+    },
+    "partner_type": {
+      "type": "string",
+      "enum": [
+        "pharmacy",
+        "laboratory"
+      ],
+      "description": "Which partner portal library this advertisement appears in \u2014 pharmacies advertise only in the patient Prescriptions tab, laboratories only in the Labs tab"
+    },
+    "title": {
+      "type": "string",
+      "description": "Advertisement title \u2014 written by the administrator"
+    },
+    "description": {
+      "type": "string",
+      "description": "Advertisement description shown to partners and patients"
+    },
+    "offer": {
+      "type": "string",
+      "description": "Promotional offer shown with the advertisement, e.g. 20% off home sample collection"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Advertisement image \u2014 uploaded through the app's public storage (external image links are not accepted)"
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Available services listed in the advertisement, e.g. home sample collection, same-day results"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Only active advertisements appear in the partner portal library \u2014 deactivating hides it from partners without deleting it"
+    },
+    "created_by_name": {
+      "type": "string",
+      "description": "Administrator who created the advertisement"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the advertisement was created (ISO datetime)"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the advertisement was last changed (ISO datetime)"
+    }
+  },
+  "required": [
+    "partner_type",
+    "title"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
