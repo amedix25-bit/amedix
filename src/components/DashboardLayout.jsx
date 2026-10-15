@@ -73,7 +73,7 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
             <button
               key={item.key}
               onClick={() => onNavClick(item.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left leading-snug transition-colors ${
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent"
