@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Stethoscope, ChevronLeft, MapPin, Clock, FileText, ClipboardList, ChevronRight } from "lucide-react";
+import { Loader2, Stethoscope, ChevronLeft, MapPin, Clock, FileText, ChevronRight, ClipboardList } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
 import { Button } from "@/components/ui/button";
 
-// Patient Portal → Doctor Visits. Lists every doctor visit the patient had,
-// showing the doctor, the place they were seen and the visit time. Clicking a
-// visit opens its visit notes and the doctor's clinical notes.
+// Patient Portal → Doctor Visits. Lists every doctor visit (doctor, place,
+// time). Clicking a visit opens its visit notes plus the clinical documents
+// and notes the doctor wrote during that visit, viewable in full or as PDF.
 export default function DoctorVisits({ patientId }) {
   const { t } = usePatientLanguage();
   const [visits, setVisits] = useState(null);
@@ -80,28 +80,44 @@ export default function DoctorVisits({ patientId }) {
 }
 
 function DoctorVisitDetail({ visit, onBack }) {
-  const { t, locale } = usePatientLanguage();
-  const [notes, setNotes] = useState(null);
-  const ar = useDoctorTextAr(visit.patient_id, (notes || []).map((n) => n.diagnosis));
+  const { t } = usePatientLanguage();
+  const [items, setItems] = useState(null);
+  const [openId, setOpenId] = useState(null);
+  const ar = useDoctorTextAr(visit.patient_id, (items || []).map((i) => i.content || i.diagnosis || ""));
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await base44.entities.ClinicalNote.filter(
-          { patient_id: visit.patient_id, encounter_id: visit.id },
-          "-date"
-        );
-        setNotes(data);
+        const [docs, notes] = await Promise.all([
+          base44.entities.ClinicalDocument.filter(
+            { patient_id: visit.patient_id, encounter_id: visit.id, status: "signed" },
+            "-created_datetime"
+          ),
+          base44.entities.ClinicalNote.filter(
+            { patient_id: visit.patient_id, encounter_id: visit.id },
+            "-date"
+          ),
+        ]);
+        const list = [
+          ...docs.map((d) => ({ kind: "document", ...d })),
+          ...notes.map((n) => ({ kind: "note", ...n })),
+        ];
+        list.sort((a, b) => new Date(b.created_datetime || b.date || 0) - new Date(a.created_datetime || a.date || 0));
+        setItems(list);
       } catch (err) {
         console.error(err);
-        setNotes([]);
+        setItems([]);
       }
     };
     load();
   }, [visit.id]);
 
-  const openPdf = (note) => {
-    const doc = generateClinicalNotePdf(note);
+  const openPdf = (item) => {
+    if (item.kind === "document" && item.pdf_url) {
+      window.open(item.pdf_url, "_blank");
+      return;
+    }
+    const doc = generateClinicalNotePdf(item);
     window.open(doc.output("bloburl"), "_blank");
   };
 
@@ -124,7 +140,7 @@ function DoctorVisitDetail({ visit, onBack }) {
         </p>
         {visit.chief_complaint && (
           <div className="pt-2 border-t border-border">
-            <p className="text-xs font-medium text-muted-foreground">{t("Visit Notes")}</p>
+            <p className="text-xs font-medium text-muted-foreground">{t("Patient Visit Notes")}</p>
             <p className="text-sm mt-1">{ar(visit.chief_complaint)}</p>
           </div>
         )}
@@ -133,39 +149,96 @@ function DoctorVisitDetail({ visit, onBack }) {
       <div>
         <p className="text-sm font-semibold mb-2 flex items-center gap-1.5">
           <FileText className="w-4 h-4" />
-          {t("Doctor's Clinical Notes")}
+          {t("Clinical Notes")}
         </p>
-        {notes === null ? (
+        {items === null ? (
           <div className="flex items-center py-4 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin mr-2 rtl:ml-2 rtl:mr-0" />
             {t("Loading...")}
           </div>
-        ) : notes.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-4 text-center text-sm text-muted-foreground">
             {t("No clinical notes for this visit")}
           </div>
         ) : (
           <div className="space-y-3">
-            {notes.map((note) => (
-              <div key={note.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium text-sm">{note.document_type_label || t("Clinical Note")}</p>
-                  <Button variant="outline" size="sm" onClick={() => openPdf(note)}>
-                    <FileText className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                    {t("View PDF")}
-                  </Button>
-                </div>
-                {note.diagnosis && <NoteField label={t("Diagnosis")} value={ar(note.diagnosis)} />}
-                {note.history && <NoteField label={t("History")} value={ar(note.history)} />}
-                {note.physical_examination && <NoteField label={t("Physical Examination")} value={ar(note.physical_examination)} />}
-                {note.notes && <NoteField label={t("Notes")} value={ar(note.notes)} />}
-                {note.prescription && <NoteField label={t("Prescription")} value={ar(note.prescription)} />}
-                {note.recommendations && <NoteField label={t("Recommendations")} value={ar(note.recommendations)} />}
-              </div>
+            {items.map((item) => (
+              <ClinicalItemCard
+                key={item.id}
+                item={item}
+                ar={ar}
+                open={openId === item.id}
+                onToggle={() => setOpenId(openId === item.id ? null : item.id)}
+                onOpenPdf={() => openPdf(item)}
+              />
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ClinicalItemCard({ item, ar, open, onToggle, onOpenPdf }) {
+  const { t } = usePatientLanguage();
+  const isDoc = item.kind === "document";
+  const title = item.document_type_label || t("Clinical Note");
+  const when = item.signed_datetime || item.created_datetime || item.date;
+  const structured = isDoc && item.data ? Object.values(item.data) : [];
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button type="button" onClick={onToggle} className="w-full text-left p-4 hover:bg-muted/40 transition-colors">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-medium text-sm truncate">{title}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("Dr.")} {item.doctor_name}{when ? ` · ${formatVisitTime(when)}` : ""}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isDoc && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                {t("Signed")}
+              </span>
+            )}
+            <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform rtl:rotate-180 ${open ? "rotate-90 rtl:-rotate-90" : ""}`} />
+          </div>
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+          {item.content && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">{t("Content")}</p>
+              <p className="text-sm mt-1 whitespace-pre-wrap">{ar(item.content)}</p>
+            </div>
+          )}
+          {structured.map((f, i) =>
+            f && f.value ? (
+              <div key={i}>
+                <p className="text-xs font-medium text-muted-foreground">{f.label}</p>
+                <p className="text-sm mt-0.5 whitespace-pre-wrap">{ar(f.value)}</p>
+              </div>
+            ) : null
+          )}
+          {!isDoc && (
+            <>
+              {item.diagnosis && <NoteField label={t("Diagnosis")} value={ar(item.diagnosis)} />}
+              {item.history && <NoteField label={t("History")} value={ar(item.history)} />}
+              {item.physical_examination && <NoteField label={t("Physical Examination")} value={ar(item.physical_examination)} />}
+              {item.notes && <NoteField label={t("Notes")} value={ar(item.notes)} />}
+              {item.prescription && <NoteField label={t("Prescription")} value={ar(item.prescription)} />}
+              {item.recommendations && <NoteField label={t("Recommendations")} value={ar(item.recommendations)} />}
+            </>
+          )}
+          <Button variant="outline" size="sm" onClick={onOpenPdf}>
+            <FileText className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+            {t("View PDF")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
