@@ -14,7 +14,7 @@
         "year"
       ],
       "default": "month",
-      "description": "Billing interval for all partner subscriptions"
+      "description": "Billing interval for all partner subscriptions \u2014 renewal dates are calculated from this period"
     },
     "pharmacy_standard_price": {
       "type": "number",
@@ -76,11 +76,20 @@
     "grace_days": {
       "type": "number",
       "default": 7,
-      "description": "Grace period in days after the billing date before an unpaid subscription is treated as overdue \u2014 during the grace period the ad keeps running, past it the ad stops showing"
+      "description": "Grace period in days after the billing date before an unpaid subscription is treated as overdue \u2014 during the grace period the ad keeps running and the subscription is PAST_DUE; past it the paid advertising entitlement is suspended per the configured policy"
     },
     "overdue_policy": {
       "type": "string",
       "description": "Administrator-written description of the overdue-payment policy shown to partners"
+    },
+    "cancellation_policy": {
+      "type": "string",
+      "enum": [
+        "end_of_period",
+        "immediate"
+      ],
+      "default": "end_of_period",
+      "description": "Approved cancellation behavior \u2014 END_OF_PERIOD: the subscription remains active with its advertisement live until the end of the current paid period, then cancels automatically. IMMEDIATE: the cancellation follows the administrator's configured rule and takes effect as soon as it is approved"
     },
     "pharmacy_standard_available": {
       "type": "boolean",
@@ -101,6 +110,11 @@
       "type": "boolean",
       "default": true,
       "description": "Whether the laboratory Premium plan accepts new subscriptions"
+    },
+    "last_lifecycle_scan_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The last day the automatic lifecycle scan ran \u2014 a once-per-day guard so scheduled expiration and renewal checks never process the same transition repeatedly"
     },
     "updated_datetime": {
       "type": "string",
@@ -139,5 +153,6 @@
         "role": "admin"
       }
     }
-  }
+  },
+  "required": []
 }

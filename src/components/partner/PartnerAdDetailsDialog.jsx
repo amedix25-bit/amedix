@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
@@ -8,10 +9,16 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 // Full details dialog for one partner advertisement, opened from the
 // "View Details" action. Shows exactly the approved, administrator-reviewed
 // content: nothing about stock or tests is claimed here unless the partner
-// recorded it and it was approved.
+// recorded it and it was approved. A detail view counts at most once per
+// viewer per day.
 export default function PartnerAdDetailsDialog({ ad, premium = false }) {
   const { t } = usePatientLanguage();
   const [open, setOpen] = useState(false);
+
+  const openDialog = () => {
+    setOpen(true);
+    base44.functions.invoke("adAnalyticsEvent", { ad_id: ad.ad_id, event_type: "detail_view" }).catch(() => {});
+  };
   const phone = ad.ad_contact_phone || ad.partner_phone;
   const waNumber = (ad.partner_whatsapp || phone || "").replace(/\D/g, "");
   const mapsUrl = ad.partner_address
@@ -20,7 +27,7 @@ export default function PartnerAdDetailsDialog({ ad, premium = false }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>{t("View Details")}</Button>
+      <Button variant="outline" size="sm" onClick={openDialog}>{t("View Details")}</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>

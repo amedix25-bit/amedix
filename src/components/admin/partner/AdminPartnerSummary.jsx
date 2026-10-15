@@ -50,7 +50,7 @@ export default function AdminPartnerSummary({ refreshKey }) {
           <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /> Active subscriptions</p>
           <p className="text-2xl font-bold mt-1">{summary.counts.active}</p>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {summary.counts.pending_approval} pending · {summary.counts.suspended} suspended · {summary.counts.cancelled} cancelled
+            {summary.counts.pending_approval} approval · {summary.counts.pending_payment || 0} payment · {summary.counts.past_due || 0} past due · {summary.counts.suspended} suspended · {summary.counts.cancellation_pending || 0} cancelling
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">

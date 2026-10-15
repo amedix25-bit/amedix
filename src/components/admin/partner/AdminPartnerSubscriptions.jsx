@@ -13,10 +13,17 @@ import {
 
 const STATUS_STYLE = {
   active: "bg-emerald-100 text-emerald-700",
-  overdue: "bg-amber-100 text-amber-700",
+  pending_payment: "bg-blue-100 text-blue-700",
+  past_due: "bg-amber-100 text-amber-700",
   pending_approval: "bg-blue-100 text-blue-700",
   suspended: "bg-red-100 text-red-700",
+  cancellation_pending: "bg-indigo-100 text-indigo-700",
   cancelled: "bg-muted text-muted-foreground",
+};
+const STATUS_LABEL = {
+  pending_approval: "Pending approval", pending_payment: "Pending payment",
+  active: "Active", past_due: "Past due", suspended: "Suspended",
+  cancellation_pending: "Cancellation pending", cancelled: "Cancelled",
 };
 const AD_STATUS_LABEL = {
   draft: { label: "Draft", style: "bg-muted text-muted-foreground" },
@@ -139,9 +146,11 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
             className="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm">
             <option value="all">All statuses</option>
             <option value="pending_approval">Pending approval</option>
+            <option value="pending_payment">Pending payment</option>
             <option value="active">Active</option>
-            <option value="overdue">Overdue</option>
+            <option value="past_due">Past due</option>
             <option value="suspended">Suspended</option>
+            <option value="cancellation_pending">Cancellation pending</option>
             <option value="cancelled">Cancelled</option>
           </select>
           <Input type="date" value={filters.renewal_before}
@@ -206,7 +215,7 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
                   </span>
                 )}
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[effective] || STATUS_STYLE.cancelled}`}>
-                  {effective === "overdue" ? "Overdue" : effective === "pending_approval" ? "Pending approval" : effective.charAt(0).toUpperCase() + effective.slice(1)}
+                  {STATUS_LABEL[effective] || effective}
                 </span>
               </div>
             </div>
@@ -243,6 +252,16 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
             {(s.suspension_reason || s.admin_notes) && (
               <p className="text-xs text-muted-foreground">{s.suspension_reason ? `Reason: ${s.suspension_reason}` : ""}{s.admin_notes ? ` · Notes: ${s.admin_notes}` : ""}</p>
             )}
+            {s.status === "cancellation_pending" && s.cancellation_effective_datetime && (
+              <p className="text-xs text-indigo-700">
+                Cancellation approved — the subscription remains active until {new Date(s.cancellation_effective_datetime).toLocaleDateString()} (end of the paid period), then ends automatically.
+              </p>
+            )}
+            {s.price_effective_datetime && s.scheduled_tier && (
+              <p className="text-xs text-blue-700">
+                Scheduled plan change: {s.scheduled_tier === "premium" ? "Premium" : "Standard"} pricing of {s.scheduled_price_amount} {s.currency} applies from {new Date(s.price_effective_datetime).toLocaleDateString()} — the current paid period keeps its terms.
+              </p>
+            )}
 
             <div className="flex gap-2 flex-wrap">
               {s.status === "pending_approval" && (
@@ -270,7 +289,8 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
                   Cancel
                 </Button>
               )}
-              {s.status === "active" && (
+              {(["active", "pending_payment", "past_due"].includes(s.status)
+                || (s.status === "suspended" && String(s.suspension_reason || "").startsWith("Overdue"))) && (
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => setExpanded(open && expanded?.mode === "pay" ? null : { id: s.id, mode: "pay" })}>
                   Record payment
                 </Button>

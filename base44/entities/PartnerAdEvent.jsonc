@@ -1,0 +1,93 @@
+{
+  "name": "PartnerAdEvent",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "Unique analytics event reference"
+    },
+    "ad_id": {
+      "type": "string",
+      "description": "PartnerAdvertisement record id the event belongs to"
+    },
+    "subscription_id": {
+      "type": "string",
+      "description": "PartnerSubscription id linked to the advertisement"
+    },
+    "partner_type": {
+      "type": "string",
+      "enum": [
+        "pharmacy",
+        "laboratory"
+      ],
+      "description": "Portal section the advertisement runs in"
+    },
+    "partner_id": {
+      "type": "string",
+      "description": "PharmacyProfile / LaboratoryProfile id the event belongs to"
+    },
+    "partner_user_id": {
+      "type": "string",
+      "description": "User id of the partner organization \u2014 used to scope analytics reads to the partner's own data only"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "impression",
+        "detail_view",
+        "contact_click",
+        "direction_click"
+      ],
+      "description": "IMPRESSION: the advertisement card rendered in its Patient Portal tab \u2014 counted at most once per advertisement per signed-in app user per calendar day. DETAIL_VIEW: the details dialog was opened. CONTACT_CLICK: the contact/phone or WhatsApp action was used. DIRECTION_CLICK: the directions action was used"
+    },
+    "event_day": {
+      "type": "string",
+      "format": "date",
+      "description": "Calendar day (UTC) used for the impression definition and daily reporting"
+    },
+    "dedupe_key": {
+      "type": "string",
+      "description": "One-way hash of the advertisement, event type, day and app-user \u2014 prevents duplicate counting of the same event. Contains no patient identifiers, health information or reversible identity data"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the event was recorded (ISO datetime)"
+    }
+  },
+  "required": [
+    "event_id",
+    "ad_id",
+    "partner_type",
+    "partner_user_id",
+    "event_type"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.partner_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

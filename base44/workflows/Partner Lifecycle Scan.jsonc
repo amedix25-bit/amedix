@@ -1,0 +1,45 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 3 * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Tripoli",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "partner_lifecycle_scan",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_scan": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "partnerLifecycleScan",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Run lifecycle scan",
+            "description": "Renewals, grace period, cancellations, campaigns"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Runs the partner subscription and advertisement lifecycle daily: grace-period/overdue policy, cancellation effective dates, scheduled tier/price changes and campaign start/end transitions. Runs on the backend \u2014 never only when a page is opened \u2014 and is guarded so the same day is never processed twice.",
+  "name": "Partner Lifecycle Scan"
+}

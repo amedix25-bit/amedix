@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PartnerAdForm from "@/components/partner/PartnerAdForm";
+import PartnerAdAnalytics from "@/components/partner/PartnerAdAnalytics";
 import {
   Building2, CheckCircle2, Clock, FlaskConical, Loader2, Sparkles, AlertTriangle, XCircle,
-  ArrowUpRight, ArrowDownRight, RefreshCw, Ban, FileCheck,
+  ArrowUpRight, ArrowDownRight, RefreshCw, Ban, FileCheck, BarChart3, Wallet, CalendarClock,
 } from "lucide-react";
 
 const TIER_LABEL = { standard: "Standard Partner", premium: "Premium Partner" };
@@ -39,6 +40,7 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
   const [confirmed, setConfirmed] = useState(false);
   const [changeNote, setChangeNote] = useState("");
   const [changeType, setChangeType] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -197,6 +199,30 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
         </div>
       )}
 
+      {sub.status === "pending_payment" && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-start gap-2">
+          <Wallet className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-blue-900">Affiliation approved — awaiting first payment</p>
+            <p className="text-sm text-blue-800">
+              The administrator verified your organization and locked your billing terms. Your subscription becomes active, and your advertisement can go live, once the administrator records and verifies your first payment.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {sub.status === "cancellation_pending" && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-2">
+          <CalendarClock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-amber-900">Cancellation pending — active until {sub.cancellation_effective_datetime ? new Date(sub.cancellation_effective_datetime).toLocaleDateString() : "the end of the paid period"}</p>
+            <p className="text-sm text-amber-800">
+              Your cancellation was approved under the end-of-period policy: your subscription and advertisement remain active until the end of the current paid period, then end automatically.
+            </p>
+          </div>
+        </div>
+      )}
+
       {sub.status === "suspended" && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-2">
           <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -207,13 +233,13 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
         </div>
       )}
 
-      {status === "overdue" && (
+      {status === "past_due" && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-900">Payment overdue</p>
+            <p className="font-medium text-amber-900">Payment past due</p>
             <p className="text-sm text-amber-800">
-              Your billing date has passed. Contact the administrator to record the payment within the grace period ({plans?.grace_days} days) to keep your advertisement live.
+              Your billing date has passed. Your advertisement keeps running during the grace period ({plans?.grace_days} days); if it ends without a verified payment, the advertising entitlement is suspended per the configured policy.
             </p>
             {plans?.overdue_policy && <p className="text-xs text-amber-700 mt-1">{plans.overdue_policy}</p>}
           </div>
@@ -253,20 +279,27 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
           </div>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
             status === "active" ? "bg-emerald-100 text-emerald-700"
-            : status === "overdue" ? "bg-amber-100 text-amber-700"
-            : sub.status === "pending_approval" ? "bg-blue-100 text-blue-700"
+            : ["past_due"].includes(status) ? "bg-amber-100 text-amber-700"
+            : ["pending_approval", "pending_payment", "cancellation_pending"].includes(sub.status) ? "bg-blue-100 text-blue-700"
             : "bg-red-100 text-red-700"}`}
           >
-            {status === "overdue" ? "Overdue" : sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+            {status === "past_due" ? "Past due" : sub.status === "pending_payment" ? "Pending payment"
+              : sub.status === "cancellation_pending" ? "Cancellation pending"
+              : sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
           </span>
         </div>
-        {sub.status === "active" && (
+        {["active", "past_due"].includes(sub.status) && (
           <div className="grid sm:grid-cols-2 gap-2 text-sm">
             <p><span className="text-muted-foreground">Subscription:</span> {fmt(sub.price_amount, sub.currency)} /{sub.billing_interval === "year" ? "year" : "month"}</p>
             <p><span className="text-muted-foreground">Renewal date:</span> {sub.next_billing_datetime ? new Date(sub.next_billing_datetime).toLocaleDateString() : "—"}</p>
             {(sub.intro_months_remaining || 0) > 0 && (
               <p className="sm:col-span-2 text-xs text-amber-600">
                 Introductory offer active: {sub.intro_discount_percent}% off the next {sub.intro_months_remaining} payment(s).
+              </p>
+            )}
+            {sub.price_effective_datetime && sub.scheduled_tier && (
+              <p className="sm:col-span-2 text-xs text-blue-700">
+                Scheduled plan change: {sub.scheduled_tier === "premium" ? "Premium" : "Standard"} pricing of {fmt(sub.scheduled_price_amount, sub.currency)} takes effect on {new Date(sub.price_effective_datetime).toLocaleDateString()} — your current paid period keeps its terms.
               </p>
             )}
           </div>
@@ -276,8 +309,11 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
             Upgrade fee due: {fmt(sub.pending_upgrade_fee, sub.currency)} — the administrator records payments against the billing ledger.
           </p>
         )}
-        {sub.status === "active" && !pendingChange && (
+        {["active", "past_due"].includes(sub.status) && !pendingChange && (
           <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="ghost" onClick={() => setShowAnalytics((v) => !v)}>
+              <BarChart3 className="w-4 h-4" /> {showAnalytics ? "Hide analytics" : "Advertisement analytics"}
+            </Button>
             {!isPremium && (
               <Button size="sm" variant="outline" disabled={busy}
                 onClick={() => { setChangeType("upgrade"); setChangeNote(""); }}>
@@ -302,7 +338,7 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
         )}
       </div>
 
-      {changeType && sub.status === "active" && !pendingChange && (
+      {changeType && ["active", "past_due"].includes(sub.status) && !pendingChange && (
         <div className="rounded-xl border border-border bg-card p-5 space-y-3">
           <p className="font-semibold">{CHANGE_LABEL[changeType]}</p>
           <p className="text-xs text-muted-foreground">
@@ -325,6 +361,8 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
       )}
 
       <PartnerAdForm subscription={sub} advertisement={ad} partnerType={partnerType} onSaved={load} />
+
+      {showAnalytics && <PartnerAdAnalytics partnerType={partnerType} />}
 
       {(sub.payments || []).length > 0 && (
         <div className="rounded-xl border border-border bg-card p-5">

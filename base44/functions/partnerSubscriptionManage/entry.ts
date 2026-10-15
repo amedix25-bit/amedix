@@ -208,7 +208,11 @@ export default async function(req) {
     // Request an upgrade, downgrade, renewal or cancellation. Requests are
     // decided by the administrator; the partner cannot change payment status.
     if (action === 'request_change') {
-      if (sub.status !== 'active') return Response.json({ error: 'Only an active subscription can be changed' }, { status: 400 });
+      // A paid subscription in its grace period (past_due) can still request
+      // changes; pending, suspended and cancelled ones cannot.
+      if (!['active', 'past_due'].includes(sub.status)) {
+        return Response.json({ error: 'Only an active subscription can be changed' }, { status: 400 });
+      }
       if (sub.pending_change && sub.pending_change.status === 'pending') {
         return Response.json({ error: 'You already have a change request awaiting the administrator' }, { status: 400 });
       }

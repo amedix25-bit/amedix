@@ -1,10 +1,10 @@
 // Shared partner-advertising billing helpers used by partnerSubscriptionManage,
-// adminPartnerManage and patientPartnerAds. Billing is a manual, administrator-
-// verified ledger on the PartnerSubscription record until automated card
-// billing is connected. A submitted receipt never marks a transaction paid:
-// only cash is confirmed at record time; every other method stays pending
-// verification until an administrator confirms it, and only confirmed payments
-// advance the billing date.
+// adminPartnerManage, partnerLifecycleScan and patientPartnerAds. Billing is a
+// manual, administrator-verified ledger on the PartnerSubscription record until
+// automated card billing is connected. A submitted receipt never marks a
+// transaction paid: only cash is confirmed at record time; every other method
+// stays pending verification until an administrator confirms it, and only
+// confirmed payments advance the billing date.
 export const DAY_MS = 86400000;
 
 export function planDefaults() {
@@ -16,6 +16,7 @@ export function planDefaults() {
     intro_offer_enabled: false,
     intro_discount_percent: 0,
     intro_duration_months: 0,
+    cancellation_policy: "end_of_period",
     pharmacy_standard_available: true,
     pharmacy_premium_available: true,
     lab_standard_available: true,
@@ -38,16 +39,20 @@ export function isAvailable(settings, partnerType, tier) {
   return settings[`${partnerType}_${tier}_available`] !== false;
 }
 
-// Grace / overdue policy: an unpaid subscription keeps its ad running during
-// the grace period (effective 'overdue'); past the grace period the ad stops
-// showing (effective 'suspended'). Admin-suspended subs stay suspended.
+// Explicit subscription lifecycle. ACTIVE is the only entitlement state:
+// a subscription reaches it only after the affiliation and administrative
+// approval AND a verified payment. Renewal dates come from the configured
+// billing interval; an unpaid billing date is PAST_DUE during the configured
+// grace period (the ad keeps running) and SUSPENDED past it (the paid
+// advertising entitlement is suspended, so no Premium advertisement shows).
 export function effectiveStatus(sub, settings, now = new Date()) {
-  if (sub.status !== "active") return sub.status;
+  const st = sub.status;
+  if (st !== "active" && st !== "past_due") return st;
   if (!sub.next_billing_datetime) return "active";
   const overdueMs = now.getTime() - new Date(sub.next_billing_datetime).getTime();
   if (overdueMs <= 0) return "active";
   const grace = (settings.grace_days == null ? 7 : settings.grace_days) * DAY_MS;
-  return overdueMs > grace ? "suspended" : "overdue";
+  return overdueMs > grace ? "suspended" : "past_due";
 }
 
 export function intervalAdvanceMs(interval) {
@@ -99,9 +104,10 @@ export function buildPaymentEntry(sub, { amount, method, note, appliesTo, entryT
 
 // Appends a ledger entry and returns the entity update patch. Confirmed
 // subscription payments advance the next billing date from the later of now
-// and the current next billing date; upgrade-fee payments reduce the
-// outstanding fee only; pending-verification payments do not advance billing
-// until they are verified.
+// and the current next billing date (a verified renewal extends the
+// subscription according to the billing policy); upgrade-fee payments reduce
+// the outstanding fee only; pending-verification payments do not advance
+// billing until they are verified.
 export function applyPaymentPatch(sub, entry) {
   const payments = [...(sub.payments || []), entry];
   const patch = { payments };
@@ -154,6 +160,44 @@ export function verifyPaymentPatch(sub, paymentId, verifierName) {
   return patch;
 }
 
+// Applies an approved tier/price change that was scheduled for a future
+// effective date (the next renewal), so the terms of an already-paid period
+// are never changed mid-period. Returns the patch to merge, or null when
+// nothing is due yet.
+export function scheduledTierPatch(sub, adsEntity, now = new Date()) {
+  if (!sub.scheduled_tier || !sub.price_effective_datetime) return null;
+  if (now.getTime() < new Date(sub.price_effective_datetime).getTime()) return null;
+  return {
+    tier: sub.scheduled_tier,
+    price_amount: sub.scheduled_price_amount != null ? sub.scheduled_price_amount : sub.price_amount,
+    scheduled_tier: null,
+    scheduled_price_amount: null,
+    price_effective_datetime: null,
+  };
+}
+
+// The state transitions a verified subscription payment produces. A first
+// payment activates a PENDING_PAYMENT subscription; a renewal payment caught
+// up after the billing date clears PAST_DUE; an automatic overdue suspension
+// is lifted by a caught-up payment (an administrator suspension always
+// requires an explicit reinstatement).
+export function paymentStatusPatch(sub, patch) {
+  const paidNow = patch.next_billing_datetime;
+  if (!paidNow) return patch;
+  if (sub.status === "pending_payment") {
+    patch.status = "active";
+    if (!sub.start_datetime) patch.start_datetime = new Date().toISOString();
+    patch.suspension_reason = null;
+  } else if (sub.status === "past_due") {
+    patch.status = "active";
+    patch.suspension_reason = null;
+  } else if (sub.status === "suspended" && String(sub.suspension_reason || "").startsWith("Overdue")) {
+    patch.status = "active";
+    patch.suspension_reason = null;
+  }
+  return patch;
+}
+
 // Audit trail of payment-status changes kept on the subscription.
 export function auditEntry(action, byName, paymentId, details) {
   return {
@@ -176,6 +220,7 @@ export function publicPlans(settings, partnerType) {
     intro_discount_percent: settings.intro_discount_percent || 0,
     intro_duration_months: settings.intro_duration_months || 0,
     overdue_policy: settings.overdue_policy || "",
+    cancellation_policy: settings.cancellation_policy || "end_of_period",
     plan_features: settings.plan_features || [],
     standard: {
       price: priceFor(settings, partnerType, "standard"),

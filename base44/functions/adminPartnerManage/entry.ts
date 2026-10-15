@@ -2,17 +2,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
   planDefaults, loadPlanSettings, priceFor, publicPlans, intervalAdvanceMs,
   buildPaymentEntry, applyPaymentPatch, verifyPaymentPatch, findExistingPayment,
-  auditEntry, effectiveStatus,
+  auditEntry, effectiveStatus, paymentStatusPatch, scheduledTierPatch,
 } from '../../shared/partnerBilling.ts';
 import { canTransition, validateCampaignDates } from '../../shared/partnerAds.ts';
 
 // Administrator management of the partner advertising system: plan settings
-// (prices, currency, interval, intro offers, grace period, availability) and
-// the subscription ledger (affiliation approval, suspend, reinstate, cancel,
-// payments) plus advertisement review (approve, reject, schedule, publish,
-// pause, resume) and partner change requests. Admin-only — every call is
-// rejected for non-admin accounts. Only administrators approve advertisements;
-// partners can never approve their own.
+// (prices, currency, interval, intro offers, grace period, availability,
+// cancellation policy) and the subscription ledger. A subscription becomes
+// ACTIVE only when the affiliation and administrative approval AND a verified
+// payment are in place; upgrade/downgrade pricing applies at the next renewal
+// so an already-paid period's terms never change silently. Admin-only — every
+// call is rejected for non-admin accounts. Only administrators approve
+// advertisements; partners can never approve their own.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -60,6 +61,7 @@ export default async function(req) {
         intro_duration_months: num(input.intro_duration_months) ?? 0,
         grace_days: num(input.grace_days) ?? 7,
         overdue_policy: String(input.overdue_policy || '').slice(0, 500),
+        cancellation_policy: input.cancellation_policy === 'immediate' ? 'immediate' : 'end_of_period',
         pharmacy_standard_available: input.pharmacy_standard_available !== false,
         pharmacy_premium_available: input.pharmacy_premium_available !== false,
         lab_standard_available: input.lab_standard_available !== false,
@@ -82,6 +84,7 @@ export default async function(req) {
       const subs = await subsEntity.filter({}, { sort: '-created_date', limit: 200 });
       const ads = await adsEntity.filter({}, { sort: '-created_date', limit: 400 });
       const settings = await loadPlanSettings(base44);
+      const now = new Date();
       const adsBySub = {};
       for (const ad of (ads.items || ads)) {
         if (!adsBySub[ad.subscription_id]) adsBySub[ad.subscription_id] = ad;
@@ -89,6 +92,7 @@ export default async function(req) {
       return Response.json({
         subscriptions: (subs.items || subs).map((s) => ({
           ...s,
+          effective_status: effectiveStatus(s, settings, now),
           advertisement: adsBySub[s.id] || null,
         })),
         settings,
@@ -106,10 +110,14 @@ export default async function(req) {
       const cutoff30 = now.getTime() - 30 * 86400000;
       let outstandingUpgradeFees = 0;
       let overdueCount = 0;
-      const counts = { active: 0, pending_approval: 0, suspended: 0, cancelled: 0 };
+      const counts = {
+        pending_approval: 0, pending_payment: 0, active: 0, past_due: 0,
+        suspended: 0, cancellation_pending: 0, cancelled: 0,
+      };
       for (const s of all) {
-        if (counts[s.status] != null) counts[s.status] += 1;
-        if (s.status === 'active' && effectiveStatus(s, settings, now) === 'suspended') overdueCount += 1;
+        const effective = effectiveStatus(s, settings, now);
+        counts[s.status] = (counts[s.status] || 0) + 1;
+        if (effective === 'suspended' && ['active', 'past_due'].includes(s.status)) overdueCount += 1;
         outstandingUpgradeFees += s.pending_upgrade_fee || 0;
         for (const p of s.payments || []) {
           if (p.verification === 'pending_verification') revenue.pending_verification += p.amount;
@@ -133,6 +141,71 @@ export default async function(req) {
         summary: {
           counts, overdue_count: overdueCount, revenue, outstanding_upgrade_fees: outstandingUpgradeFees,
           ad_counts: adCounts, currency: settings.currency || 'LYD',
+        },
+      });
+    }
+
+    // Administrator-level analytics: aggregated advertisement performance per
+    // partner (impressions, detail views, contact and direction clicks),
+    // premium vs standard comparison, verified revenue and outstanding
+    // balances. Analytics events carry NO patient identities, health
+    // information or diagnoses — only one-way deduplication hashes.
+    if (action === 'analytics') {
+      const eventsEntity = base44.asServiceRole.entities.PartnerAdEvent;
+      const subs = await subsEntity.filter({}, { limit: 500 });
+      const settings = await loadPlanSettings(base44);
+      const now = new Date();
+      const all = subs.items || subs;
+      const byType = await eventsEntity.aggregate({ groupBy: 'event_type' });
+      const byPartner = await eventsEntity.aggregate({ groupBy: 'partner_id' });
+      const impressionsByPartner = await eventsEntity.aggregate({
+        query: { event_type: 'impression' }, groupBy: 'partner_id',
+      });
+      const totalsByType = {};
+      for (const row of byType.rows || []) totalsByType[row.event_type] = row.count;
+      const totalEventsByPartner = {};
+      for (const row of byPartner.rows || []) totalEventsByPartner[row.partner_id] = row.count;
+      const impressionsByPartnerMap = {};
+      for (const row of impressionsByPartner.rows || []) impressionsByPartnerMap[row.partner_id] = row.count;
+      const partners = all.map((s) => {
+        const effective = effectiveStatus(s, settings, now);
+        const verified = (s.payments || []).filter((p) => p.verification === 'confirmed');
+        const paid = verified.filter((p) => p.entry_type === 'payment').reduce((a, p) => a + p.amount, 0);
+        const refunded = verified.filter((p) => p.entry_type === 'refund').reduce((a, p) => a + p.amount, 0);
+        return {
+          partner_id: s.partner_id,
+          partner_name: s.partner_name,
+          partner_type: s.partner_type,
+          tier: s.tier,
+          status: s.status,
+          effective_status: effective,
+          impressions: impressionsByPartnerMap[s.partner_id] || 0,
+          total_events: totalEventsByPartner[s.partner_id] || 0,
+          verified_revenue: Math.round((paid - refunded) * 100) / 100,
+          outstanding_upgrade_fee: s.pending_upgrade_fee || 0,
+          next_billing_datetime: s.next_billing_datetime || null,
+        };
+      });
+      const agg = (list, pred) => {
+        const sel = list.filter(pred);
+        return {
+          partners: sel.length,
+          impressions: sel.reduce((a, p) => a + p.impressions, 0),
+          total_events: sel.reduce((a, p) => a + p.total_events, 0),
+          verified_revenue: Math.round(sel.reduce((a, p) => a + p.verified_revenue, 0) * 100) / 100,
+        };
+      };
+      return Response.json({
+        analytics: {
+          totals_by_type: totalsByType,
+          premium_vs_standard: {
+            premium: agg(partners, (p) => p.tier === 'premium'),
+            standard: agg(partners, (p) => p.tier !== 'premium'),
+          },
+          partners,
+          outstanding_upgrade_fees: partners.reduce((a, p) => a + p.outstanding_upgrade_fee, 0),
+          overdue_count: partners.filter((p) => p.effective_status === 'suspended' && ['active', 'past_due'].includes(p.status)).length,
+          currency: settings.currency || 'LYD',
         },
       });
     }
@@ -186,19 +259,19 @@ export default async function(req) {
       return Response.json({ advertisement: updated });
     }
 
+    // Publication conditions: an approved ad may go live only when the linked
+    // subscription is ACTIVE (affiliation approved AND a verified payment
+    // recorded). Approval, payment and publication are separate conditions.
     if (action === 'publish_ad') {
       const ad = await adsEntity.get(body.ad_id);
       if (!ad) return Response.json({ error: 'Advertisement not found' }, { status: 404 });
       if (!canTransition(ad.status, 'published')) {
         return Response.json({ error: `An advertisement in status "${ad.status}" cannot be published` }, { status: 400 });
       }
-      // Publication requires a verified, affiliated organization: the linked
-      // subscription must be active (affiliation approved). Ad approval alone
-      // says nothing about payment — the overdue/grace rules are applied at
-      // display time.
       const sub = await subsEntity.get(ad.subscription_id);
-      if (!sub || sub.status !== 'active') {
-        return Response.json({ error: 'The subscription must be approved and active before the advertisement can be published' }, { status: 400 });
+      const settings = await loadPlanSettings(base44);
+      if (!sub || effectiveStatus(sub, settings) !== 'active') {
+        return Response.json({ error: 'The subscription must be approved with a verified payment (active) before the advertisement can be published' }, { status: 400 });
       }
       if (ad.campaign_end_date) {
         const today = new Date().toISOString().slice(0, 10);
@@ -221,8 +294,9 @@ export default async function(req) {
       }
       if (action === 'resume_ad') {
         const sub = await subsEntity.get(ad.subscription_id);
-        if (!sub || sub.status !== 'active') {
-          return Response.json({ error: 'The subscription must be active to resume the advertisement' }, { status: 400 });
+        const settings = await loadPlanSettings(base44);
+        if (!sub || !['active', 'past_due'].includes(effectiveStatus(sub, settings))) {
+          return Response.json({ error: 'The subscription must be paid and active to resume the advertisement' }, { status: 400 });
         }
       }
       const updated = await adsEntity.update(ad.id, { ...reviewPatch(), status: to });
@@ -234,25 +308,27 @@ export default async function(req) {
     if (!body.subscription_id) return Response.json({ error: 'subscription_id is required' }, { status: 400 });
     const sub = await subsEntity.get(body.subscription_id);
     if (!sub) return Response.json({ error: 'Subscription not found' }, { status: 404 });
+    const settingsForSub = await loadPlanSettings(base44);
 
     // Affiliation / ownership verification: the administrator confirms the
-    // partner organization and its subscription terms before billing starts.
-    // This does NOT approve the advertisement — that is a separate review.
+    // partner organization and locks its subscription terms (price, currency,
+    // interval, intro offer). Billing has not started yet — the subscription
+    // enters PENDING_PAYMENT and becomes ACTIVE only once the first payment is
+    // verified. This does NOT approve the advertisement — that is a separate
+    // review, and publication additionally requires the active status.
     if (action === 'approve') {
       if (sub.status !== 'pending_approval') {
         return Response.json({ error: 'Only pending subscriptions can be approved' }, { status: 400 });
       }
-      const settings = await loadPlanSettings(base44);
+      const settings = settingsForSub;
       const price = priceFor(settings, sub.partner_type, sub.tier);
       if (!price) return Response.json({ error: 'Set the plan pricing first' }, { status: 400 });
       const now = new Date();
       const patch = {
-        status: 'active',
+        status: 'pending_payment',
         price_amount: price,
         currency: settings.currency || 'LYD',
         billing_interval: settings.billing_interval || 'month',
-        start_datetime: now.toISOString(),
-        next_billing_datetime: new Date(now.getTime() + intervalAdvanceMs(settings.billing_interval || 'month')).toISOString(),
         approved_by_name: user.full_name || user.email,
         approved_datetime: now.toISOString(),
         admin_notes: body.admin_notes ? String(body.admin_notes).slice(0, 500) : (sub.admin_notes || ''),
@@ -271,12 +347,31 @@ export default async function(req) {
         suspension_reason: String(body.reason || '').slice(0, 300) || 'Suspended by the administrator',
         admin_notes: body.admin_notes ? String(body.admin_notes).slice(0, 500) : (sub.admin_notes || ''),
       });
+      // A suspended subscription can never display a Premium advertisement:
+      // its live ad is paused immediately.
+      const ads = await adsEntity.filter({ subscription_id: sub.id });
+      for (const ad of (ads.items || ads)) {
+        if (['published', 'scheduled'].includes(ad.status)) {
+          await adsEntity.update(ad.id, { status: 'paused', updated_datetime: new Date().toISOString() });
+        }
+      }
       return Response.json({ subscription: { ...sub, status: 'suspended' } });
     }
 
     if (action === 'reinstate') {
       if (sub.status !== 'suspended') return Response.json({ error: 'Only suspended subscriptions can be reinstated' }, { status: 400 });
       await subsEntity.update(sub.id, { status: 'active', suspension_reason: null });
+      // Reinstate paused ads whose campaign window still permits display.
+      const ads = await adsEntity.filter({ subscription_id: sub.id });
+      const today = new Date().toISOString().slice(0, 10);
+      for (const ad of (ads.items || ads)) {
+        if (ad.status !== 'paused') continue;
+        const windowOk = (!ad.campaign_start_date || today >= ad.campaign_start_date)
+          && (!ad.campaign_end_date || today <= ad.campaign_end_date);
+        if (windowOk) {
+          await adsEntity.update(ad.id, { status: 'published', updated_datetime: new Date().toISOString() });
+        }
+      }
       return Response.json({ subscription: { ...sub, status: 'active' } });
     }
 
@@ -284,6 +379,7 @@ export default async function(req) {
       await subsEntity.update(sub.id, {
         status: 'cancelled',
         suspension_reason: String(body.reason || '').slice(0, 300),
+        cancellation_effective_datetime: null,
         cancelled_datetime: new Date().toISOString(),
       });
       // A cancelled subscription never retains its placement: its live or
@@ -298,9 +394,11 @@ export default async function(req) {
     }
 
     if (action === 'record_payment') {
-      const settings = await loadPlanSettings(base44);
-      if (effectiveStatus(sub, settings) === 'suspended' && sub.status === 'active' && sub.next_billing_datetime) {
-        return Response.json({ error: 'This subscription is overdue past its grace period — reinstate it first' }, { status: 400 });
+      // An administrator suspension always requires an explicit reinstatement
+      // first; an automatic overdue suspension is lifted by a caught-up
+      // payment, per the configured policy.
+      if (sub.status === 'suspended' && !String(sub.suspension_reason || '').startsWith('Overdue')) {
+        return Response.json({ error: 'This subscription is suspended — reinstate it first' }, { status: 400 });
       }
       // Duplicate protection: the same idempotency key never creates a second
       // payment record.
@@ -326,17 +424,24 @@ export default async function(req) {
         user.full_name || user.email,
         'admin'
       );
-      const patch = applyPaymentPatch(sub, entry);
-      // A caught-up payment clears an overdue state. A payment NEVER changes
-      // advertisement approval status — those are separate concepts.
-      if (sub.status === 'active' && patch.next_billing_datetime) {
-        patch.suspension_reason = null;
-      }
+      let patch = applyPaymentPatch(sub, entry);
+      patch = paymentStatusPatch(sub, patch);
+      // A scheduled tier/price change applies once its effective date (the
+      // renewal the payment just created) has arrived.
+      const tierPatch = scheduledTierPatch({ ...sub, ...patch }, adsEntity);
+      if (tierPatch) Object.assign(patch, tierPatch);
       patch.payment_audit = [
         ...(sub.payment_audit || []),
         auditEntry('recorded', user.full_name || user.email, entry.payment_id,
           `${entry.entry_type} · ${entry.verification}${entry.payment_reference ? ` · ref ${entry.payment_reference}` : ''}`),
       ];
+      if (patch.status === 'active' && tierPatch) {
+        const ads = await adsEntity.filter({ subscription_id: sub.id }, { sort: '-created_date', limit: 1 });
+        const ad = (ads.items || ads)[0];
+        if (ad) {
+          await adsEntity.update(ad.id, { placement: patch.tier, updated_datetime: new Date().toISOString() });
+        }
+      }
       await subsEntity.update(sub.id, patch);
       return Response.json({ subscription: { ...sub, ...patch }, payment: entry });
     }
@@ -346,12 +451,22 @@ export default async function(req) {
     // receipt is never treated as paid on its own.
     if (action === 'verify_payment') {
       if (!body.payment_id) return Response.json({ error: 'payment_id is required' }, { status: 400 });
-      const patch = verifyPaymentPatch(sub, body.payment_id, user.full_name || user.email);
+      let patch = verifyPaymentPatch(sub, body.payment_id, user.full_name || user.email);
       if (!patch) return Response.json({ error: 'This payment is not pending verification' }, { status: 400 });
+      patch = paymentStatusPatch(sub, patch);
+      const tierPatch = scheduledTierPatch({ ...sub, ...patch }, adsEntity);
+      if (tierPatch) Object.assign(patch, tierPatch);
       patch.payment_audit = [
         ...(sub.payment_audit || []),
         auditEntry('verified', user.full_name || user.email, body.payment_id, 'Payment confirmed by the administrator'),
       ];
+      if (patch.status === 'active' && tierPatch) {
+        const ads = await adsEntity.filter({ subscription_id: sub.id }, { sort: '-created_date', limit: 1 });
+        const ad = (ads.items || ads)[0];
+        if (ad) {
+          await adsEntity.update(ad.id, { placement: patch.tier, updated_datetime: new Date().toISOString() });
+        }
+      }
       await subsEntity.update(sub.id, patch);
       return Response.json({ subscription: { ...sub, ...patch } });
     }
@@ -376,6 +491,11 @@ export default async function(req) {
     }
 
     // Decide a partner change request (upgrade / downgrade / renewal / cancellation).
+    // Upgrade: Premium entitlement and placement start immediately, the new
+    // price applies at the next renewal (the paid period keeps its terms) and
+    // any configured upgrade fee becomes due now. Downgrade: Standard tier,
+    // placement and price all switch at the next renewal. Cancellation:
+    // follows the configured policy — end of paid period or immediate.
     if (action === 'approve_change' || action === 'reject_change') {
       const change = sub.pending_change;
       if (!change || change.status !== 'pending') {
@@ -393,30 +513,43 @@ export default async function(req) {
         const updated = await subsEntity.update(sub.id, { pending_change: decided });
         return Response.json({ subscription: updated });
       }
-      const settings = await loadPlanSettings(base44);
+      const settings = settingsForSub;
       const patch = { pending_change: decided };
       if (change.request_type === 'upgrade' || change.request_type === 'downgrade') {
         const price = priceFor(settings, sub.partner_type, change.requested_tier);
         if (!price) return Response.json({ error: 'Set the plan pricing first' }, { status: 400 });
-        patch.tier = change.requested_tier;
-        patch.price_amount = price;
-        if (sub.tier === 'standard' && change.requested_tier === 'premium' && (settings.premium_upgrade_fee || 0) > 0) {
-          patch.pending_upgrade_fee = settings.premium_upgrade_fee;
-        }
-        // Premium placement follows the subscription tier — never the other way.
-        const ads = await adsEntity.filter({ subscription_id: sub.id }, { sort: '-created_date', limit: 1 });
-        const ad = (ads.items || ads)[0];
-        if (ad) {
-          await adsEntity.update(ad.id, { placement: change.requested_tier, updated_datetime: new Date().toISOString() });
+        if (change.request_type === 'upgrade') {
+          // Premium starts now; the new price applies from the next renewal.
+          patch.tier = 'premium';
+          patch.scheduled_tier = 'premium';
+          patch.scheduled_price_amount = price;
+          patch.price_effective_datetime = sub.next_billing_datetime || new Date().toISOString();
+          if (sub.tier === 'standard' && (settings.premium_upgrade_fee || 0) > 0) {
+            patch.pending_upgrade_fee = settings.premium_upgrade_fee;
+          }
+        } else {
+          // Downgrade waits for the end of the paid period.
+          patch.scheduled_tier = 'standard';
+          patch.scheduled_price_amount = price;
+          patch.price_effective_datetime = sub.next_billing_datetime || new Date().toISOString();
         }
       } else if (change.request_type === 'cancellation') {
-        patch.status = 'cancelled';
-        patch.cancelled_datetime = new Date().toISOString();
-        const ads = await adsEntity.filter({ subscription_id: sub.id });
-        for (const ad of (ads.items || ads)) {
-          if (['published', 'scheduled', 'approved', 'paused', 'pending_review'].includes(ad.status)) {
-            await adsEntity.update(ad.id, { status: 'expired', updated_datetime: new Date().toISOString() });
+        const policy = settings.cancellation_policy === 'immediate' ? 'immediate' : 'end_of_period';
+        if (policy === 'immediate' || !sub.next_billing_datetime) {
+          patch.status = 'cancelled';
+          patch.cancellation_effective_datetime = new Date().toISOString();
+          patch.cancelled_datetime = new Date().toISOString();
+          const ads = await adsEntity.filter({ subscription_id: sub.id });
+          for (const ad of (ads.items || ads)) {
+            if (['published', 'scheduled', 'approved', 'paused', 'pending_review'].includes(ad.status)) {
+              await adsEntity.update(ad.id, { status: 'expired', updated_datetime: new Date().toISOString() });
+            }
           }
+        } else {
+          // End-of-period policy: the subscription remains active with its ad
+          // live until the end of the current paid period.
+          patch.status = 'cancellation_pending';
+          patch.cancellation_effective_datetime = sub.next_billing_datetime;
         }
       }
       // 'renewal' requests are satisfied by recording the renewal payment —

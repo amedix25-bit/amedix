@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import AdminPartnerPlans from "@/components/admin/partner/AdminPartnerPlans";
 import AdminPartnerSubscriptions from "@/components/admin/partner/AdminPartnerSubscriptions";
+import AdminPartnerAnalytics from "@/components/admin/partner/AdminPartnerAnalytics";
 import { Loader2 } from "lucide-react";
 
 // Admin section for the partner advertising and subscription system: plan
-// settings on one tab, subscription management on the other.
+// settings, subscription management and aggregated analytics.
 export default function AdminPartnerAds() {
   const [view, setView] = useState("plans");
   const [settings, setSettings] = useState(null);
@@ -49,9 +50,17 @@ export default function AdminPartnerAds() {
         >
           Subscriptions
         </button>
+        <button
+          type="button"
+          onClick={() => setView("analytics")}
+          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${view === "analytics" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
+        >
+          Analytics
+        </button>
       </div>
       {view === "plans" && <AdminPartnerPlans settings={settings} onSaved={load} />}
       {view === "subs" && <AdminPartnerSubscriptions settings={settings} onChanged={load} />}
+      {view === "analytics" && <AdminPartnerAnalytics refreshKey={settings?.updated_datetime} />}
     </div>
   );
 }

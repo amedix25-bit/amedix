@@ -1,8 +1,17 @@
 import React from "react";
+import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
 import PartnerAdDetailsDialog from "@/components/partner/PartnerAdDetailsDialog";
 import { Building2, Clock, MapPin, MessageCircle, Phone, Sparkles } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+
+// Fire-and-forget analytics event. The backend deduplicates (at most one
+// impression / detail view / contact click / direction click per viewer per
+// day) and stores no patient identity.
+const trackAdEvent = (adId, eventType) => {
+  base44.functions.invoke("adAnalyticsEvent", { ad_id: adId, event_type: eventType })
+    .catch(() => {});
+};
 
 // One sponsored partner advertisement card in the Patient Portal. Premium
 // partners get the large featured treatment (cover image, gold label, top
@@ -18,6 +27,12 @@ export default function PartnerAdCard({ ad, premium = false }) {
   const mapsUrl = ad.partner_address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ad.partner_address)}`
     : null;
+
+  // Impression: counted once per advertisement per viewer per day (the
+  // backend deduplicates).
+  React.useEffect(() => {
+    trackAdEvent(ad.ad_id, "impression");
+  }, [ad.ad_id]);
 
   const PremiumTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 text-amber-950 text-[10px] font-bold px-2 py-0.5">
@@ -87,6 +102,7 @@ export default function PartnerAdCard({ ad, premium = false }) {
           {phone && (
             <a
               href={`tel:${phone}`}
+              onClick={() => trackAdEvent(ad.ad_id, "contact_click")}
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 py-1.5 text-xs font-medium hover:bg-accent"
             >
               <Phone className="w-3.5 h-3.5" /> {t("Contact")}
@@ -97,6 +113,7 @@ export default function PartnerAdCard({ ad, premium = false }) {
               href={`https://wa.me/${waNumber}`}
               target="_blank"
               rel="noreferrer"
+              onClick={() => trackAdEvent(ad.ad_id, "contact_click")}
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 py-1.5 text-xs font-medium hover:bg-accent text-emerald-700"
             >
               <MessageCircle className="w-3.5 h-3.5" /> {t("WhatsApp")}
@@ -107,6 +124,7 @@ export default function PartnerAdCard({ ad, premium = false }) {
               href={mapsUrl}
               target="_blank"
               rel="noreferrer"
+              onClick={() => trackAdEvent(ad.ad_id, "direction_click")}
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-transparent px-2.5 py-1.5 text-xs font-medium hover:bg-accent"
             >
               <MapPin className="w-3.5 h-3.5" /> {t("Get Directions")}

@@ -72,14 +72,17 @@ export function partnerProfileSnapshot(partnerType, profile) {
 }
 
 // Whether an advertisement may be displayed to patients right now. Kept as a
-// pure function so the patient feed and the admin view agree. A scheduled ad
-// appears only from its start date; every ad stops after its end date; a
-// subscription overdue past grace, suspended or cancelled hides its ad
-// entirely (an expired subscription never retains paid Premium placement).
+// pure function so the patient feed, the lifecycle scan and the admin view
+// agree. A scheduled ad appears only from its start date; every ad stops after
+// its end date. ACTIVE, PAST_DUE (grace period still running) and
+// CANCELLATION_PENDING (still within the paid period under the end-of-period
+// policy) subscriptions keep their ad; SUSPENDED, PENDING_PAYMENT, CANCELLED
+// and pending-approval subscriptions hide it entirely — a suspended
+// subscription can never display a Premium advertisement.
 export function adDisplayEligible(ad, sub, settings, now = new Date()) {
-  if (!sub || sub.status !== 'active') return { eligible: false, reason: 'subscription_inactive' };
+  if (!sub) return { eligible: false, reason: 'subscription_inactive' };
   const effective = effectiveStatus(sub, settings, now);
-  if (effective !== 'active' && effective !== 'overdue') {
+  if (!['active', 'past_due', 'cancellation_pending'].includes(effective)) {
     return { eligible: false, reason: 'subscription_inactive', effective };
   }
   const today = now.toISOString().slice(0, 10);

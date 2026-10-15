@@ -31,7 +31,12 @@ export default async function(req) {
     const subsEntity = base44.asServiceRole.entities.PartnerSubscription;
 
     const ads = await adsEntity.filter({ partner_type: section }, { sort: '-created_date', limit: 200 });
-    const subs = await subsEntity.filter({ partner_type: section, status: 'active' });
+    // Ads keep running for active, past-due (grace period) and
+    // cancellation-pending (end of the paid period) subscriptions.
+    const subs = await subsEntity.filter({
+      partner_type: section,
+      status: { $in: ['active', 'past_due', 'cancellation_pending'] },
+    });
     const subById = {};
     for (const s of (subs.items || subs)) subById[s.id] = s;
 

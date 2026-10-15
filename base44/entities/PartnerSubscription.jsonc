@@ -54,12 +54,15 @@
       "type": "string",
       "enum": [
         "pending_approval",
+        "pending_payment",
         "active",
+        "past_due",
         "suspended",
+        "cancellation_pending",
         "cancelled"
       ],
       "default": "pending_approval",
-      "description": "PENDING_APPROVAL: awaiting administrator approval of the partner's affiliation and subscription terms. ACTIVE: approved \u2014 the advertisement may be published after its own content review. SUSPENDED: paused by the administrator, ad hidden. CANCELLED: subscription ended"
+      "description": "PENDING_APPROVAL: awaiting administrator approval of the partner's affiliation and subscription terms. PENDING_PAYMENT: affiliation and terms approved, awaiting the first verified payment \u2014 the subscription becomes ACTIVE only when affiliation, administrative approval, a verified payment and publication conditions are all met. ACTIVE: fully paid and entitled to display its advertisement. PAST_DUE: the billing date has passed but the grace period is still running \u2014 the ad keeps showing. SUSPENDED: entitlement paused \u2014 by the automatic overdue policy (grace period ended without payment) or by the administrator; a suspended subscription can never display a Premium advertisement. CANCELLATION_PENDING: a cancellation was approved and stays active until the cancellation effective date under the end-of-period policy. CANCELLED: subscription ended"
     },
     "pending_change": {
       "type": "object",
@@ -68,7 +71,7 @@
     },
     "price_amount": {
       "type": "number",
-      "description": "Recurring price per billing interval, locked from the plan settings at approval \u2014 shown to the partner in billing history"
+      "description": "Recurring price per billing interval, locked from the plan settings at approval \u2014 shown to the partner in billing history. Locked for the whole paid period: changing the plan settings never silently changes the terms of an existing paid period"
     },
     "currency": {
       "type": "string",
@@ -77,6 +80,18 @@
     "billing_interval": {
       "type": "string",
       "description": "Billing interval \u2014 locked from the plan settings at approval"
+    },
+    "scheduled_tier": {
+      "type": "string",
+      "description": "Tier change that takes effect at the next renewal \u2014 e.g. a downgrade keeps Premium placement until the end of the paid period, then switches to this tier"
+    },
+    "scheduled_price_amount": {
+      "type": "number",
+      "description": "Price that takes effect at price_effective_datetime (the next renewal) for an approved upgrade or downgrade \u2014 the terms of the currently paid period are never changed mid-period"
+    },
+    "price_effective_datetime": {
+      "type": "string",
+      "description": "Date and time the scheduled tier/price change takes effect (ISO datetime) \u2014 normally the next billing date, shown to the partner and the administrator"
     },
     "intro_months_remaining": {
       "type": "number",
@@ -92,11 +107,15 @@
     },
     "start_datetime": {
       "type": "string",
-      "description": "Date and time the subscription was approved and billing started (ISO datetime)"
+      "description": "Date and time billing started \u2014 set when the first verified payment activates the subscription (ISO datetime)"
     },
     "next_billing_datetime": {
       "type": "string",
-      "description": "Next billing date \u2014 advanced by the billing interval when a confirmed payment is recorded; ads stop showing after this date plus the grace period"
+      "description": "Next billing date, calculated from the configured billing interval \u2014 advanced by one interval for every verified renewal payment; ads stop showing after this date plus the grace period"
+    },
+    "cancellation_effective_datetime": {
+      "type": "string",
+      "description": "Date and time an approved cancellation takes effect (ISO datetime) \u2014 under the end-of-period policy this is the end of the current paid period; the subscription stays active with its ad live until then, and the scheduled scan finalizes the cancellation"
     },
     "payments": {
       "type": "array",
@@ -222,7 +241,7 @@
     },
     "suspension_reason": {
       "type": "string",
-      "description": "Reason the administrator suspended or cancelled the subscription"
+      "description": "Reason the subscription was suspended or cancelled \u2014 an automatic overdue suspension is marked as such; an administrator suspension requires a reason"
     },
     "approved_by_name": {
       "type": "string",

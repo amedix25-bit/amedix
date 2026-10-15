@@ -124,6 +124,15 @@ export default function AdminPartnerPlans({ settings, onSaved }) {
       </div>
 
       <div className="space-y-1.5">
+        <Label className="text-xs">Cancellation policy</Label>
+        <select value={form.cancellation_policy || "end_of_period"} onChange={(e) => set("cancellation_policy", e.target.value)}
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm">
+          <option value="end_of_period">End of paid period (subscription stays active until the renewal date)</option>
+          <option value="immediate">Immediate (cancellation takes effect as soon as it is approved)</option>
+        </select>
+      </div>
+
+      <div className="space-y-1.5">
         <Label className="text-xs">Overdue-payment policy</Label>
         <Textarea rows={2} value={form.overdue_policy || ""} onChange={(e) => set("overdue_policy", e.target.value)} />
       </div>
