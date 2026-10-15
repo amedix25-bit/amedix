@@ -86,7 +86,7 @@ export default function ExaminationHistory({ patient, reloadKey, onView, onAmend
               {e.clinical_location}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {e.examination_id} · Encounter {e.encounter_id}
+              {e.examination_id} · Visit {e.encounter_id}
             </p>
           </div>
           <div className="flex items-center gap-2">

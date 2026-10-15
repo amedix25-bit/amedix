@@ -97,7 +97,7 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
           <p className="font-medium">{note.department || "—"}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">Encounter ID</p>
+          <p className="text-xs text-muted-foreground">Visit ID</p>
           <p className="font-medium">{note.encounter_id || "—"}</p>
         </div>
         <div>
@@ -233,7 +233,7 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
             <p className="text-xs text-muted-foreground mt-1">
               {note.signed_datetime ? new Date(note.signed_datetime).toLocaleString() : ""}
               {note.note_reference ? ` · ${note.note_reference}` : ""}
-              {note.encounter_id ? ` · Encounter: ${note.encounter_id}` : ""}
+              {note.encounter_id ? ` · Visit: ${note.encounter_id}` : ""}
             </p>
           </div>
         )}

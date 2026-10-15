@@ -29,7 +29,7 @@ export default function EncounterWorkspace({ encounter, doctorProfile, patient, 
         encounter_record_id: encounter.id,
         status: "completed",
       });
-      toast({ title: "Encounter completed", description: `Encounter ${encounter.encounter_id} is now closed.` });
+      toast({ title: "Visit completed", description: `Patient visit ${encounter.encounter_id} is now closed.` });
       onRefresh();
     } catch (err) {
       toast({ title: "Could not complete the encounter", description: err.response?.data?.error || "", variant: "destructive" });
@@ -49,7 +49,7 @@ export default function EncounterWorkspace({ encounter, doctorProfile, patient, 
       <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Encounter ID</p>
+            <p className="text-xs text-muted-foreground">Visit ID</p>
             <p className="font-bold text-primary">{encounter.encounter_id}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -59,7 +59,7 @@ export default function EncounterWorkspace({ encounter, doctorProfile, patient, 
             {encounter.status === "active" && (
               <Button size="sm" variant="outline" onClick={completeEncounter} disabled={completing}>
                 {completing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                Complete Encounter
+                Complete Patient Visit
               </Button>
             )}
           </div>

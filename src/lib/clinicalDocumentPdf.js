@@ -94,7 +94,7 @@ export async function generateClinicalDocumentPdfUrl(doc) {
   pdf.roundedRect(M, y, boxW, 9, 1.5, 1.5, "FD");
   pdf.setFontSize(8);
   pdf.setTextColor(...GRAY);
-  pdf.text(`Encounter ID: ${doc.encounter_id || "-"}    Version: ${doc.version || 1}    Amendment status: ${doc.amendment_status === "amendment" ? "Amendment" : "Original"}    Status: ${doc.status === "signed" ? "Signed" : "Draft"}`, M + 3, y + 5.5);
+  pdf.text(`Visit ID: ${doc.encounter_id || "-"}    Version: ${doc.version || 1}    Amendment status: ${doc.amendment_status === "amendment" ? "Amendment" : "Original"}    Status: ${doc.status === "signed" ? "Signed" : "Draft"}`, M + 3, y + 5.5);
 
   // ===== Structured specialty fields =====
   if (doc.data && Object.keys(doc.data).length > 0) {

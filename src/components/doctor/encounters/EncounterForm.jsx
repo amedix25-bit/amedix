@@ -67,7 +67,7 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
 
   return (
     <form onSubmit={submit} className="rounded-xl border border-border bg-card p-5 space-y-4">
-      <h3 className="font-semibold">New Encounter — {patient.full_name}</h3>
+      <h3 className="font-semibold">New Patient Visit — {patient.full_name}</h3>
       {mySpecialties.length > 1 && (
         <div className="space-y-1.5">
           <Label>Practicing Specialty (this encounter) *</Label>
@@ -86,7 +86,7 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
       )}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Encounter Type *</Label>
+          <Label>Visit Type *</Label>
           <Select value={encounterType} onValueChange={setEncounterType}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
             <SelectContent>
@@ -119,7 +119,7 @@ export default function EncounterForm({ doctorProfile, patient, onCreated, onCan
       )}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={saving || !checkIn}>
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Open Encounter"}
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Open Patient Visit"}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
         {checkIn === null && (

@@ -52,7 +52,7 @@ export default function ExaminationViewDialog({ record, open, onOpenChange, onAm
           <p className="text-xs text-muted-foreground">
             {record.examination_date}
             {record.examination_time ? ` · ${record.examination_time}` : ""} · Dr. {record.doctor_name} ·{" "}
-            {record.clinical_location} · Encounter {record.encounter_id}
+            {record.clinical_location} · Visit {record.encounter_id}
             {record.version > 1 ? ` · Version ${record.version} (amended)` : ""}
           </p>
         </DialogHeader>

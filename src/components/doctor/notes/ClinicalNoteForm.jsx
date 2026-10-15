@@ -351,7 +351,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       {patient && (
         <div className="rounded-xl border border-border bg-muted/40 p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            AMedix Patient &amp; Encounter Information — attached automatically from the unified Patient Record
+            AMedix Patient &amp; Visit Information — attached automatically from the unified Patient Record
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 text-xs text-muted-foreground">
             <p>Patient: <span className="text-foreground font-medium">{patient.full_name}</span></p>
@@ -361,7 +361,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             <p>Specialty: <span className="text-foreground font-medium">{mySpecialty}</span></p>
             <p>Hospital / Clinic: <span className="text-foreground font-medium">{doctorProfile.hospital || "—"}</span></p>
             <p>Department: <span className="text-foreground font-medium">{mySpecialty}</span></p>
-            <p>Encounter: <span className="text-foreground font-medium">Linked automatically on save</span></p>
+            <p>Visit: <span className="text-foreground font-medium">Linked automatically on save</span></p>
             <p>Allergies: <span className="text-foreground font-medium">{patient.allergies || "None recorded"}</span></p>
             <p>Current Medications: <span className="text-foreground font-medium">{recordContext && recordContext.meds.length > 0 ? recordContext.meds.join(", ") : "None"}</span></p>
             <p className="sm:col-span-2">Previous History: <span className="text-foreground font-medium">{recordContext && recordContext.conditions.length > 0 ? recordContext.conditions.join("; ") : "No recorded history"}</span></p>
@@ -480,7 +480,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
           />
         </div>
         <div className="space-y-2">
-          <Label>Location of Encounter *</Label>
+          <Label>Location of Visit *</Label>
           <Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}>
             <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
             <SelectContent>

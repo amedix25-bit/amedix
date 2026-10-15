@@ -94,7 +94,7 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
         <p>Patient: <span className="text-foreground font-medium">{viewing.patient_name}</span></p>
         <p>CIN: <span className="text-foreground font-medium">{viewing.patient_cin}</span></p>
         <p>Date of birth: <span className="text-foreground font-medium">{viewing.patient_dob || "-"}</span></p>
-        <p>Encounter ID: <span className="text-foreground font-medium">{viewing.encounter_id}</span></p>
+        <p>Visit ID: <span className="text-foreground font-medium">{viewing.encounter_id}</span></p>
         <p>Hospital/Clinic: <span className="text-foreground font-medium">{viewing.hospital || "-"}</span></p>
         <p>Department: <span className="text-foreground font-medium">{viewing.department || "-"}</span></p>
         <p>Doctor: <span className="text-foreground font-medium">Dr. {viewing.doctor_name}</span></p>

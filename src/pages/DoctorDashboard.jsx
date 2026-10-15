@@ -29,7 +29,7 @@ import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
-  { key: "encounters", label: "Encounters", icon: ClipboardList },
+  { key: "encounters", label: "Patient Visits", icon: ClipboardList },
   { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "referrals", label: "Referral Letters", icon: Mail },
   { key: "hospitals", label: "My Hospitals", icon: Building2 },

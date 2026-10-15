@@ -105,7 +105,7 @@ export default function EncountersSection({ doctorProfile }) {
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <h3 className="font-semibold flex items-center gap-2">
           <Stethoscope className="w-4 h-4 text-primary" />
-          Encounters — Select a Patient
+          Patient Visits — Select a Patient
         </h3>
         <p className="text-sm text-muted-foreground">
           Open a patient's unified clinical record: encounters, clinical documents, consents and the longitudinal history.
@@ -143,7 +143,7 @@ export default function EncountersSection({ doctorProfile }) {
           {activeEncounters.length > 0 && (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
               <p className="text-sm font-semibold text-primary mb-2">
-                {activeEncounters.length} active encounter{activeEncounters.length > 1 ? "s" : ""}
+                {activeEncounters.length} active visit{activeEncounters.length > 1 ? "s" : ""}
               </p>
               <div className="space-y-2">
                 {activeEncounters.map((e) => (
@@ -177,7 +177,7 @@ export default function EncountersSection({ doctorProfile }) {
           ) : (
             <Button onClick={() => setCreatingEncounter(true)}>
               <Plus className="w-4 h-4" />
-              New Encounter
+              New Patient Visit
             </Button>
           )}
 
@@ -185,7 +185,7 @@ export default function EncountersSection({ doctorProfile }) {
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-primary" />
-              Encounters ({record.encounters.length})
+              Patient Visits ({record.encounters.length})
             </h3>
             {record.encounters.length === 0 ? (
               <p className="text-sm text-muted-foreground">No encounters yet — open the first one above.</p>
