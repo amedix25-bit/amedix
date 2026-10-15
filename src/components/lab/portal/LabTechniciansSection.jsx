@@ -207,31 +207,39 @@ export default function LabTechniciansSection({ profile }) {
       ) : (
         <div className="space-y-3">
           {items.map((t) => (
-            <div key={t.id} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium truncate">{t.full_name}</p>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        t.is_active ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {t.is_active ? "Active" : "Deactivated"}
-                    </span>
+            <div key={t.id} className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-full bg-primary/10 items-center justify-center">
+                    <UserCog className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {t.job_title} · {t.sex || ""} {t.age ? `· ${t.age}y` : ""} · Username: {t.username}
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold truncate">{t.full_name}</p>
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          t.is_active ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {t.is_active ? "Active" : "Deactivated"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                      {t.job_title && <span className="font-medium text-foreground/80">{t.job_title}</span>}
+                      {t.sex && <span>· {t.sex.charAt(0).toUpperCase() + t.sex.slice(1)}</span>}
+                      {t.age && <span>· {t.age} y</span>}
+                      <span>· Username: <span className="font-mono">{t.username}</span></span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => toggleActive(t)}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" className="h-8" onClick={() => toggleActive(t)}>
                     {t.is_active ? "Deactivate" : "Activate"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => { setResetId(resetId === t.id ? null : t.id); setNewPassword(""); }}>
+                  <Button size="sm" variant="outline" className="h-8" onClick={() => { setResetId(resetId === t.id ? null : t.id); setNewPassword(""); }}>
                     Reset Password
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => removeTech(t)}>
+                  <Button size="sm" variant="destructive" className="h-8" onClick={() => removeTech(t)}>
                     Remove
                   </Button>
                 </div>
