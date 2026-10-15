@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, ScanLine, Keyboard, User } from "lucide-react";
 import QrScanner from "@/components/lab/technician/QrScanner";
-import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
-import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
+import PharmacyPatientRecordTabs from "@/components/pharmacy/pharmacist/PharmacyPatientRecordTabs";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import PharmacyVisitBar from "@/components/pharmacy/pharmacist/PharmacyVisitBar";
@@ -15,63 +14,15 @@ function FoundPatient({ data, onReset, session }) {
   return (
     <div className="space-y-4">
       <PharmacyVisitBar session={session} patient={data.patient} />
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
-        <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <User className="w-5 h-5 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold truncate">{data.patient.full_name}</p>
-          <p className="text-xs text-muted-foreground">
-            CIN {data.patient.cin}
-            {data.patient.date_of_birth ? ` · DOB ${data.patient.date_of_birth}` : ""}
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={onReset}>Scan Another</Button>
       </div>
-
-      <div>
-        <h3 className="font-semibold text-sm mb-3">Prescriptions Authorized to Your Pharmacy</h3>
-        {data.prescriptions.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8 rounded-xl border border-border bg-card">
-            This patient has no prescriptions authorized to your pharmacy yet.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {data.prescriptions.map((p) => (
-              <div key={p.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <p className="font-semibold">
-                      {p.medication_name}{p.strength ? ` ${p.strength}` : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {p.prescription_id} · Prescribed by {p.doctor_name} · {p.date_prescribed}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {p.reservation_code && p.status !== "dispensed" && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-accent text-accent-foreground">{p.reservation_code}</span>
-                    )}
-                    <PrescriptionStatusBadge status={p.status} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-xs">
-                  <div><span className="text-muted-foreground">Dosage:</span> {p.dosage || "—"}</div>
-                  <div><span className="text-muted-foreground">Frequency:</span> {p.frequency || "—"}</div>
-                  <div><span className="text-muted-foreground">Duration:</span> {p.duration || "—"}</div>
-                  <div><span className="text-muted-foreground">Quantity:</span> {p.quantity || "—"}</div>
-                </div>
-                {p.special_instructions && (
-                  <p className="text-xs text-muted-foreground mt-2">Instructions: {p.special_instructions}</p>
-                )}
-                <div className="mt-3">
-                  <PrescriptionActions prescription={p} onChanged={onReset} session={session} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <PharmacyPatientRecordTabs
+        patient={data.patient}
+        prescriptions={data.prescriptions}
+        session={session}
+        onChanged={onReset}
+      />
 
       {session && <PharmacyPatientVisits session={session} patient={data.patient} />}
       {session && <PharmacyPatientNotes session={session} patient={data.patient} />}

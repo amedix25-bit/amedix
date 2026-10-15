@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { todayStr } from "../../shared/pharmacyPrescription.ts";
 import { medicationHistoryStatus } from "../../shared/medicationSafety.ts";
+import { resolvePharmacyActor } from "../../shared/pharmacyStaffAuth.ts";
 
 // Longitudinal medication history — the doctor-facing reconciliation view.
 // Unifies three sources into one traceable history:
@@ -19,11 +20,15 @@ export default async function(req) {
     const patientId = String(body?.patient_id || '').trim();
     if (!patientId) return Response.json({ error: 'patient_id is required.' }, { status: 400 });
 
-    // Doctors (and administrators) only.
+    // Doctors (and administrators) review this during consultations; pharmacy
+    // staff review it at the counter for an identified patient.
     if (user.role !== 'admin') {
       const docs = await base44.asServiceRole.entities.DoctorProfile.filter({ user_id: user.id }, { limit: 1 });
       if ((docs.items || docs).length === 0) {
-        return Response.json({ error: 'Only doctors can review medication history.' }, { status: 403 });
+        const pharmacies = await base44.asServiceRole.entities.PharmacyProfile.filter({ user_id: user.id }, { limit: 1 });
+        if ((pharmacies.items || pharmacies).length === 0) {
+          return Response.json({ error: 'Only doctors and pharmacies can review medication history.' }, { status: 403 });
+        }
       }
     }
 

@@ -27,7 +27,7 @@ export function HistoryStatusBadge({ status }) {
   );
 }
 
-function MedRow({ entry, onReconciled }) {
+function MedRow({ entry, onReconciled, readOnly }) {
   const isOpen = entry.status?.is_active !== false;
   const [expanded, setExpanded] = useState(false);
   const med = entry;
@@ -50,7 +50,7 @@ function MedRow({ entry, onReconciled }) {
         <div className="flex items-center gap-2">
           {med.source === "patient_reported" && <HistoryStatusBadge status="patient_reported" />}
           <HistoryStatusBadge status={med.history_status} />
-          {med.history_status === "active" && <StopMedicationDialog med={med} onDone={onReconciled} />}
+          {med.history_status === "active" && !readOnly && <StopMedicationDialog med={med} onDone={onReconciled} />}
         </div>
       </div>
       {med.patient_notes && <p className="text-xs text-muted-foreground mt-2">Patient note: {med.patient_notes}</p>}
@@ -88,7 +88,7 @@ function PrescriptionRow({ rx, onReconciled }) {
 // duplicate-therapy flags, dispensing traceability, adherence reports and
 // reconciliation actions. Doctors review this during consultations,
 // admissions and discharge.
-export default function DoctorMedicationHistory({ patient, onReconciled }) {
+export default function DoctorMedicationHistory({ patient, onReconciled, readOnly }) {
   const { t } = useAppLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -232,7 +232,7 @@ export default function DoctorMedicationHistory({ patient, onReconciled }) {
         ) : (
           <div className="space-y-3">
             {currentRxs.map((rx) => <PrescriptionRow key={"rx-" + rx.id} rx={rx} />)}
-            {currentMeds.map((m) => <MedRow key={"med-" + m.id} med={m} onReconciled={() => { load(); onReconciled?.(); }} />)}
+            {currentMeds.map((m) => <MedRow key={"med-" + m.id} med={m} onReconciled={() => { load(); onReconciled?.(); }} readOnly={readOnly} />)}
           </div>
         )}
       </div>
@@ -243,7 +243,7 @@ export default function DoctorMedicationHistory({ patient, onReconciled }) {
           <p className="text-sm font-semibold text-muted-foreground mb-2">Past Medications (discontinued, completed and cancelled — fully traceable)</p>
           <div className="space-y-3 opacity-90">
             {pastRxs.map((rx) => <PrescriptionRow key={"rx-" + rx.id} rx={rx} />)}
-            {pastMeds.map((m) => <MedRow key={"med-" + m.id} med={m} />)}
+            {pastMeds.map((m) => <MedRow key={"med-" + m.id} med={m} readOnly={readOnly} />)}
           </div>
         </div>
       )}
