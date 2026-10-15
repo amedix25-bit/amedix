@@ -8,8 +8,9 @@ import PartnerAdForm from "@/components/partner/PartnerAdForm";
 import PartnerAdAnalytics from "@/components/partner/PartnerAdAnalytics";
 import {
   Building2, CheckCircle2, Clock, FlaskConical, Loader2, Sparkles, AlertTriangle, XCircle,
-  ArrowUpRight, ArrowDownRight, RefreshCw, Ban, FileCheck, BarChart3, Wallet, CalendarClock,
+  ArrowUpRight, ArrowDownRight, RefreshCw, Ban, FileCheck, BarChart3, Wallet, CalendarClock, Eye,
 } from "lucide-react";
+import PartnerSubscriptionDetailsDialog from "@/components/partner/PartnerSubscriptionDetailsDialog";
 
 const TIER_LABEL = { standard: "Standard Partner", premium: "Premium Partner" };
 const METHOD_LABEL = { cash: "Cash", bank_transfer: "Bank transfer", card: "Card", other: "Other" };
@@ -41,6 +42,7 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
   const [changeNote, setChangeNote] = useState("");
   const [changeType, setChangeType] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -277,16 +279,21 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
               </p>
             </div>
           </div>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-            status === "active" ? "bg-emerald-100 text-emerald-700"
-            : ["past_due"].includes(status) ? "bg-amber-100 text-amber-700"
-            : ["pending_approval", "pending_payment", "cancellation_pending"].includes(sub.status) ? "bg-blue-100 text-blue-700"
-            : "bg-red-100 text-red-700"}`}
-          >
-            {status === "past_due" ? "Past due" : sub.status === "pending_payment" ? "Pending payment"
-              : sub.status === "cancellation_pending" ? "Cancellation pending"
-              : sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+              status === "active" ? "bg-emerald-100 text-emerald-700"
+              : ["past_due"].includes(status) ? "bg-amber-100 text-amber-700"
+              : ["pending_approval", "pending_payment", "cancellation_pending"].includes(sub.status) ? "bg-blue-100 text-blue-700"
+              : "bg-red-100 text-red-700"}`}
+            >
+              {status === "past_due" ? "Past due" : sub.status === "pending_payment" ? "Pending payment"
+                : sub.status === "cancellation_pending" ? "Cancellation pending"
+                : sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+            </span>
+            <Button size="sm" variant="outline" onClick={() => setShowDetails(true)}>
+              <Eye className="w-4 h-4" /> View subscription
+            </Button>
+          </div>
         </div>
         {["active", "past_due"].includes(sub.status) && (
           <div className="grid sm:grid-cols-2 gap-2 text-sm">
@@ -359,6 +366,12 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
           </div>
         </div>
       )}
+
+      <PartnerSubscriptionDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        sub={sub}
+      />
 
       <PartnerAdForm subscription={sub} advertisement={ad} partnerType={partnerType} onSaved={load} />
 
