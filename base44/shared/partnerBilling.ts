@@ -30,13 +30,19 @@ export async function loadPlanSettings(base44) {
   return items[0] || planDefaults();
 }
 
+// Settings field prefix: the schema stores laboratory fields as lab_* —
+// pharmacy_* matches directly.
+export function planPrefix(partnerType) {
+  return partnerType === "laboratory" ? "lab" : partnerType;
+}
+
 export function priceFor(settings, partnerType, tier) {
-  const v = settings[`${partnerType}_${tier}_price`];
+  const v = settings[`${planPrefix(partnerType)}_${tier}_price`];
   return typeof v === "number" && v > 0 ? v : null;
 }
 
 export function isAvailable(settings, partnerType, tier) {
-  return settings[`${partnerType}_${tier}_available`] !== false;
+  return settings[`${planPrefix(partnerType)}_${tier}_available`] !== false;
 }
 
 // Explicit subscription lifecycle. ACTIVE is the only entitlement state:
@@ -236,12 +242,12 @@ export function publicPlans(settings, partnerType) {
     plan_features: settings.plan_features || [],
     standard: {
       price: priceFor(settings, partnerType, "standard"),
-      description: settings[`${partnerType}_standard_description`] || "",
+      description: settings[`${planPrefix(partnerType)}_standard_description`] || "",
       available: isAvailable(settings, partnerType, "standard"),
     },
     premium: {
       price: priceFor(settings, partnerType, "premium"),
-      description: settings[`${partnerType}_premium_description`] || "",
+      description: settings[`${planPrefix(partnerType)}_premium_description`] || "",
       available: isAvailable(settings, partnerType, "premium"),
     },
   };
