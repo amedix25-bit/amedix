@@ -45,8 +45,8 @@ const EMPTY_FORM = {
   mri_other_concern: "",
 };
 
-export default function ImagingRequestForm({ doctorProfile, onSubmit, onCancel }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+export default function ImagingRequestForm({ doctorProfile, initialCin, onSubmit, onCancel }) {
+  const [form, setForm] = useState({ ...EMPTY_FORM, patient_cin: initialCin || "" });
   const [errors, setErrors] = useState([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));

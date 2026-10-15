@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { ArrowLeft, History, FileText, Pill, ClipboardList } from "lucide-react";
+import { ArrowLeft, History, FileText, Pill, ClipboardList, Stethoscope, FlaskConical, Image as ImageIcon } from "lucide-react";
+import DoctorPatientVisitSection from "@/components/doctor/patients/DoctorPatientVisitSection";
+import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
+import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
+import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorPatientHistorySection from "@/components/doctor/patients/DoctorPatientHistorySection";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
@@ -36,11 +40,15 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
 
       <DoctorPatientSummary patient={patient} />
 
-      <div className="flex rounded-xl border border-border bg-card p-1 gap-1 max-w-xl">
+      <div className="flex flex-wrap rounded-xl border border-border bg-card p-1 gap-1 max-w-3xl">
         {tabButton("history", "Patient History", History)}
         {tabButton("notes", "Clinical Notes", FileText)}
         {tabButton("prescriptions", "Prescriptions", Pill)}
         {tabButton("medhistory", "Medication History", ClipboardList)}
+        {tabButton("visit", "Patient Visit", Stethoscope)}
+        {tabButton("newnote", "Add Clinical Note", FileText)}
+        {tabButton("newlab", "Add Lab Request", FlaskConical)}
+        {tabButton("newimaging", "Add Imaging", ImageIcon)}
       </div>
 
       {activeTab === "history" && (
@@ -74,9 +82,46 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         </section>
       )}
 
+      {activeTab === "visit" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Patient Visit</h3>
+          <DoctorPatientVisitSection patient={patient} doctorProfile={doctorProfile} />
+        </section>
+      )}
+
+      {activeTab === "newnote" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Add Clinical Note</h3>
+          <ClinicalNoteForm
+            doctorProfile={doctorProfile}
+            preselectedPatient={patient}
+            onSaved={() => setActiveTab("notes")}
+            onCancel={() => setActiveTab("notes")}
+          />
+        </section>
+      )}
+
+      {activeTab === "newlab" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Add Lab Request</h3>
+          <DoctorLabRequests
+            doctorProfile={doctorProfile}
+            draftContext={{ patient }}
+            onNavigateTab={() => {}}
+          />
+        </section>
+      )}
+
+      {activeTab === "newimaging" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Add Imaging</h3>
+          <DoctorImagingRequests doctorProfile={doctorProfile} initialCin={patient.cin} />
+        </section>
+      )}
+
       {!activeTab && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          Select Patient History, Clinical Notes, Prescriptions or Medication History above to view the patient's information.
+          Select a tab above to view the patient's information or start a visit, clinical note, lab request or imaging request.
         </p>
       )}
     </div>
