@@ -1,10 +1,11 @@
 import React from "react";
-import { Pill, ScrollText, Megaphone, ChevronRight } from "lucide-react";
+import { Pill, ScrollText, ChevronRight } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
 
 // Patient Portal → Drugs. The single entry point for everything medication —
-// the patient chooses what to open: their medications, their prescriptions,
-// or offers from partner pharmacies.
+// the patient chooses what to open: their medications or their prescriptions.
+// Offers from AMedix partner pharmacies show automatically at the top.
 export default function DrugsEntry({ onOpen }) {
   const { t } = usePatientLanguage();
 
@@ -21,16 +22,11 @@ export default function DrugsEntry({ onOpen }) {
       title: t("Prescriptions"),
       description: t("Your prescriptions and their journey through affiliated pharmacies — from issue to dispensing."),
     },
-    {
-      key: "advertisement",
-      icon: Megaphone,
-      title: t("Advertisement"),
-      description: t("Offers from AMedix partner pharmacies"),
-    },
   ];
 
   return (
     <div className="space-y-3">
+      <PartnerAdStrip section="pharmacy" />
       {choices.map((choice) => (
         <button
           key={choice.key}
