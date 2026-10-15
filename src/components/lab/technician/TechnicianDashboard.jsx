@@ -72,7 +72,7 @@ export default function TechnicianDashboard({ session, onNavigate }) {
           ),
           base44.entities.LabAuditLog.filter({ laboratory_id: session.laboratory_id }, "-created_date", 8),
         ]);
-        setData({ requests, audits });
+        setData({ requests: requests.items || requests, audits: audits.items || audits });
       } catch (err) {
         console.error(err);
       }
