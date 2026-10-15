@@ -5,12 +5,14 @@ import { getLabSession, clearLabSession } from "@/lib/labSession";
 import TechnicianLogin from "@/components/lab/technician/TechnicianLogin";
 import TechnicianWorkspace from "@/components/lab/technician/TechnicianWorkspace";
 import TechnicianNotificationsBar from "@/components/lab/technician/TechnicianNotificationsBar";
+import TechnicianDashboard from "@/components/lab/technician/TechnicianDashboard";
 import TechnicianLabRequestsSection from "@/components/lab/technician/TechnicianLabRequestsSection";
 import UploadResultsFlow from "@/components/lab/technician/UploadResultsFlow";
 import TechnicianPatientsSection from "@/components/lab/technician/TechnicianPatientsSection";
 import NotificationsBell from "@/components/lab/notifications/NotificationsBell";
 
 const TABS = [
+  { key: "dashboard", label: "Dashboard", icon: FlaskConical },
   { key: "requests", label: "Lab Requests", icon: FlaskConical },
   { key: "patients", label: "Patients", icon: Users },
   { key: "upload", label: "Upload Results", icon: Upload },
@@ -19,7 +21,7 @@ const TABS = [
 
 export default function LabTechnician() {
   const [session, setSession] = useState(getLabSession());
-  const [tab, setTab] = useState("requests");
+  const [tab, setTab] = useState("dashboard");
   const [notifPatientId, setNotifPatientId] = useState(null);
 
   if (!session) {
@@ -94,6 +96,7 @@ export default function LabTechnician() {
           ))}
         </div>
 
+        {tab === "dashboard" && <TechnicianDashboard session={session} onNavigate={setTab} />}
         {tab === "requests" && <TechnicianLabRequestsSection session={session} />}
         {tab === "patients" && (
           <TechnicianPatientsSection session={session} selectedPatientId={notifPatientId} />
