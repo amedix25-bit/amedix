@@ -66,29 +66,6 @@
       "additionalProperties": true,
       "description": "Partner change request awaiting the administrator \u2014 upgrade, downgrade, renewal or cancellation, with the requested tier, note, requester and the administrator's decision. One pending request at a time"
     },
-    "ad_description": {
-      "type": "string",
-      "description": "Legacy advertisement description \u2014 superseded by the PartnerAdvertisement record; kept so earlier subscriptions still render"
-    },
-    "ad_cover_url": {
-      "type": "string",
-      "description": "Legacy advertisement cover image \u2014 superseded by the PartnerAdvertisement record"
-    },
-    "ad_services": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Legacy advertisement services \u2014 superseded by the PartnerAdvertisement record"
-    },
-    "ad_contact_phone": {
-      "type": "string",
-      "description": "Legacy advertisement contact number \u2014 superseded by the PartnerAdvertisement record"
-    },
-    "ad_hours": {
-      "type": "string",
-      "description": "Legacy advertisement opening hours \u2014 superseded by the PartnerAdvertisement record"
-    },
     "price_amount": {
       "type": "number",
       "description": "Recurring price per billing interval, locked from the plan settings at approval \u2014 shown to the partner in billing history"
@@ -119,11 +96,11 @@
     },
     "next_billing_datetime": {
       "type": "string",
-      "description": "Next billing date \u2014 advanced by the billing interval when a payment is recorded; ads stop showing after this date plus the grace period"
+      "description": "Next billing date \u2014 advanced by the billing interval when a confirmed payment is recorded; ads stop showing after this date plus the grace period"
     },
     "payments": {
       "type": "array",
-      "description": "Traceable billing history \u2014 one entry per payment, refund or adjustment recorded for this subscription, with who recorded it, the method and a note. Subscription billing is recorded through this ledger until automated card billing is connected",
+      "description": "Traceable billing history \u2014 one entry per payment, refund or adjustment recorded for this subscription, with who recorded it, the method, reference, verification status and idempotency key. Subscription billing is recorded through this administrator-verified ledger until automated card billing is connected",
       "items": {
         "type": "object",
         "properties": {
@@ -166,8 +143,41 @@
               "upgrade_fee"
             ]
           },
+          "payment_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the payment was made (ISO date) \u2014 defaults to the record date"
+          },
+          "payment_reference": {
+            "type": "string",
+            "description": "Bank transfer reference, receipt number or transaction ID supplied when recording the payment"
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "pending_verification"
+            ],
+            "description": "CONFIRMED: verified by an administrator (cash and refunds/adjustments are confirmed at record time). PENDING_VERIFICATION: awaiting administrator verification \u2014 the payment does not advance billing until confirmed"
+          },
+          "verified_by_name": {
+            "type": "string",
+            "description": "Authorized verifier who confirmed the payment"
+          },
+          "verified_datetime": {
+            "type": "string",
+            "description": "Date and time the payment was verified (ISO datetime)"
+          },
+          "billing_applied": {
+            "type": "boolean",
+            "description": "True once this payment has advanced the billing date or reduced the upgrade fee \u2014 guards against double-applying"
+          },
           "note": {
             "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "description": "Key submitted at record time \u2014 resubmitting the same key returns the original entry instead of creating a duplicate payment"
           }
         },
         "required": [
@@ -175,6 +185,34 @@
           "entry_type",
           "datetime",
           "amount"
+        ]
+      }
+    },
+    "payment_audit": {
+      "type": "array",
+      "description": "Audit trail of changes to payment status \u2014 recorded, verified, rejected \u2014 with who performed each change and when",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "payment_id": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
         ]
       }
     },

@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
   planDefaults, loadPlanSettings, priceFor, publicPlans, intervalAdvanceMs,
-  buildPaymentEntry, applyPaymentPatch, effectiveStatus,
+  buildPaymentEntry, applyPaymentPatch, verifyPaymentPatch, findExistingPayment,
+  auditEntry, effectiveStatus,
 } from '../../shared/partnerBilling.ts';
 import { canTransition, validateCampaignDates } from '../../shared/partnerAds.ts';
 
@@ -91,6 +92,48 @@ export default async function(req) {
           advertisement: adsBySub[s.id] || null,
         })),
         settings,
+      });
+    }
+
+    // Subscription revenue and advertisement performance summaries.
+    if (action === 'summary') {
+      const subs = await subsEntity.filter({}, { limit: 500 });
+      const ads = await adsEntity.filter({}, { limit: 500 });
+      const settings = await loadPlanSettings(base44);
+      const now = new Date();
+      const all = subs.items || subs;
+      const revenue = { total: 0, last30: 0, pharmacy: 0, laboratory: 0, pending_verification: 0 };
+      const cutoff30 = now.getTime() - 30 * 86400000;
+      let outstandingUpgradeFees = 0;
+      let overdueCount = 0;
+      const counts = { active: 0, pending_approval: 0, suspended: 0, cancelled: 0 };
+      for (const s of all) {
+        if (counts[s.status] != null) counts[s.status] += 1;
+        if (s.status === 'active' && effectiveStatus(s, settings, now) === 'suspended') overdueCount += 1;
+        outstandingUpgradeFees += s.pending_upgrade_fee || 0;
+        for (const p of s.payments || []) {
+          if (p.verification === 'pending_verification') revenue.pending_verification += p.amount;
+          if (p.verification !== 'confirmed') continue;
+          if (p.entry_type === 'refund') {
+            revenue.total -= p.amount;
+            revenue.last30 -= new Date(p.datetime).getTime() >= cutoff30 ? p.amount : 0;
+            revenue[s.partner_type] -= p.amount;
+          } else if (p.entry_type === 'payment') {
+            revenue.total += p.amount;
+            revenue.last30 += new Date(p.datetime).getTime() >= cutoff30 ? p.amount : 0;
+            revenue[s.partner_type] += p.amount;
+          }
+        }
+      }
+      const adCounts = {};
+      for (const ad of (ads.items || ads)) {
+        adCounts[ad.status] = (adCounts[ad.status] || 0) + 1;
+      }
+      return Response.json({
+        summary: {
+          counts, overdue_count: overdueCount, revenue, outstanding_upgrade_fees: outstandingUpgradeFees,
+          ad_counts: adCounts, currency: settings.currency || 'LYD',
+        },
       });
     }
 
@@ -259,18 +302,29 @@ export default async function(req) {
       if (effectiveStatus(sub, settings) === 'suspended' && sub.status === 'active' && sub.next_billing_datetime) {
         return Response.json({ error: 'This subscription is overdue past its grace period — reinstate it first' }, { status: 400 });
       }
+      // Duplicate protection: the same idempotency key never creates a second
+      // payment record.
+      const existing = findExistingPayment(sub, body.idempotency_key);
+      if (existing) return Response.json({ subscription: sub, payment: existing, duplicate: true });
       const amount = Number(body.amount);
       if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
         return Response.json({ error: 'Enter a valid payment amount' }, { status: 400 });
+      }
+      const paymentDate = body.payment_date ? String(body.payment_date).trim() : '';
+      if (paymentDate && !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
+        return Response.json({ error: 'The payment date is not a valid date' }, { status: 400 });
       }
       const appliesTo = body.applies_to === 'upgrade_fee' && (sub.pending_upgrade_fee || 0) > 0
         ? 'upgrade_fee' : 'subscription';
       const entry = buildPaymentEntry(
         sub,
-        { amount, method: body.method, note: body.note, appliesTo },
+        {
+          amount, method: body.method, note: body.note, appliesTo,
+          entryType: body.entry_type === 'adjustment' || body.entry_type === 'refund' ? body.entry_type : 'payment',
+          paymentReference: body.payment_reference, paymentDate, idempotencyKey: body.idempotency_key,
+        },
         user.full_name || user.email,
-        'admin',
-        body.entry_type === 'adjustment' || body.entry_type === 'refund' ? body.entry_type : 'payment'
+        'admin'
       );
       const patch = applyPaymentPatch(sub, entry);
       // A caught-up payment clears an overdue state. A payment NEVER changes
@@ -278,6 +332,45 @@ export default async function(req) {
       if (sub.status === 'active' && patch.next_billing_datetime) {
         patch.suspension_reason = null;
       }
+      patch.payment_audit = [
+        ...(sub.payment_audit || []),
+        auditEntry('recorded', user.full_name || user.email, entry.payment_id,
+          `${entry.entry_type} · ${entry.verification}${entry.payment_reference ? ` · ref ${entry.payment_reference}` : ''}`),
+      ];
+      await subsEntity.update(sub.id, patch);
+      return Response.json({ subscription: { ...sub, ...patch }, payment: entry });
+    }
+
+    // Administrator verification of a pending (non-cash) payment. Until this
+    // is called the payment does NOT advance billing — a partner-submitted
+    // receipt is never treated as paid on its own.
+    if (action === 'verify_payment') {
+      if (!body.payment_id) return Response.json({ error: 'payment_id is required' }, { status: 400 });
+      const patch = verifyPaymentPatch(sub, body.payment_id, user.full_name || user.email);
+      if (!patch) return Response.json({ error: 'This payment is not pending verification' }, { status: 400 });
+      patch.payment_audit = [
+        ...(sub.payment_audit || []),
+        auditEntry('verified', user.full_name || user.email, body.payment_id, 'Payment confirmed by the administrator'),
+      ];
+      await subsEntity.update(sub.id, patch);
+      return Response.json({ subscription: { ...sub, ...patch } });
+    }
+
+    if (action === 'reject_payment') {
+      if (!body.payment_id) return Response.json({ error: 'payment_id is required' }, { status: 400 });
+      const target = (sub.payments || []).find((p) => p.payment_id === body.payment_id);
+      if (!target || target.verification !== 'pending_verification') {
+        return Response.json({ error: 'This payment is not pending verification' }, { status: 400 });
+      }
+      const reason = String(body.reason || '').trim().slice(0, 300);
+      if (!reason) return Response.json({ error: 'A rejection reason is required' }, { status: 400 });
+      const patch = {
+        payments: (sub.payments || []).filter((p) => p.payment_id !== body.payment_id),
+        payment_audit: [
+          ...(sub.payment_audit || []),
+          auditEntry('rejected', user.full_name || user.email, body.payment_id, reason),
+        ],
+      };
       await subsEntity.update(sub.id, patch);
       return Response.json({ subscription: { ...sub, ...patch } });
     }

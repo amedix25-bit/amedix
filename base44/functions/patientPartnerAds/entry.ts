@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { loadPlanSettings, effectiveStatus } from '../../shared/partnerBilling.ts';
+import { loadPlanSettings, effectiveStatus, DAY_MS } from '../../shared/partnerBilling.ts';
 import { adDisplayEligible } from '../../shared/partnerAds.ts';
 
 // Serves published partner advertisements to the Patient Portal. A section is
@@ -74,10 +74,25 @@ export default async function(req) {
       await Promise.allSettled(pendingStatusPatches);
     }
 
-    // Premium placements first; nothing else influences ordering.
-    out.sort((a, b) => (a.tier === 'premium' ? -1 : 1) - (b.tier === 'premium' ? -1 : 1));
+    // Deduplicate: one advertisement per organization, even if duplicate
+    // records or subscriptions ever exist.
+    const seen = new Set();
+    const unique = out.filter((a) => {
+      if (seen.has(a.partner_id)) return false;
+      seen.add(a.partner_id);
+      return true;
+    });
 
-    return Response.json({ ads: out });
+    // Deterministic ordering with fair rotation: Premium partners are featured
+    // first, but within each group the order rotates daily — so repeated
+    // refreshes never change the order, yet no partner keeps the top regular
+    // slot forever.
+    const rotate = (arr, offset) => (arr.length ? arr.map((_, i) => arr[(i + offset) % arr.length]) : arr);
+    const dayNumber = Math.floor(now.getTime() / DAY_MS);
+    const premium = rotate(unique.filter((a) => a.tier === 'premium'), dayNumber);
+    const standard = rotate(unique.filter((a) => a.tier !== 'premium'), dayNumber);
+
+    return Response.json({ ads: [...premium, ...standard] });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
