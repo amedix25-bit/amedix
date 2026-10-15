@@ -34,6 +34,16 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: "File is too large. Maximum size is 3 MB." }, { status: 400 });
     }
 
+    // A file renamed to .pdf (e.g. a PNG image) opens blank in the PDF viewer —
+    // verify the real PDF signature, not just the file name.
+    const fileHead = String.fromCharCode(...base64ToBytes(fileB64.slice(0, 8)));
+    if (fileHead !== "%PDF-") {
+      return Response.json(
+        { error: "The report file is not a real PDF (it may be an image renamed to .pdf). Export it as a PDF and upload again." },
+        { status: 400 }
+      );
+    }
+
     const file = new File([base64ToBytes(fileB64)], fileName, { type: fileType });
     const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
     const fileUrl = up.file_url;

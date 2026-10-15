@@ -60,7 +60,7 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
     }
   };
 
-  const pickFile = (e) => {
+  const pickFile = async (e) => {
     const f = e.target.files[0];
     e.target.value = "";
     if (!f) return;
@@ -70,6 +70,17 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
     }
     if (f.size > MAX_FILE_BYTES) {
       toast({ title: "File too large", description: "Please upload a PDF up to 3 MB.", variant: "destructive" });
+      return;
+    }
+    // A file renamed to .pdf (e.g. a PNG image) still opens blank in the PDF viewer —
+    // check the real file signature, not just the name.
+    const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
+    if (String.fromCharCode(...head) !== "%PDF-") {
+      toast({
+        title: "Not a valid PDF",
+        description: "This file is an image or document renamed to .pdf. Export or print it as a real PDF and try again.",
+        variant: "destructive",
+      });
       return;
     }
     setFile(f);

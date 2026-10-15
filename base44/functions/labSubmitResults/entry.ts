@@ -32,6 +32,16 @@ export default async function(req: Request): Promise<Response> {
     if (!paymentAmount) return Response.json({ error: "Enter the payment amount collected." }, { status: 400 });
     if (!paymentMethod) return Response.json({ error: "Select or enter the payment method." }, { status: 400 });
 
+    // A file renamed to .pdf (e.g. a PNG image) opens blank in the PDF viewer —
+    // verify the real PDF signature, not just the file name.
+    const fileHead = String.fromCharCode(...base64ToBytes(fileB64.slice(0, 8)));
+    if (fileHead !== "%PDF-") {
+      return Response.json(
+        { error: "The results file is not a real PDF (it may be an image renamed to .pdf). Export it as a PDF and upload again." },
+        { status: 400 }
+      );
+    }
+
     // The request — and only this request — defines the patient. Nothing client-supplied
     // can move the results or payment onto another patient.
     const found = await base44.asServiceRole.entities.LabRequest.filter({ id: requestId });
