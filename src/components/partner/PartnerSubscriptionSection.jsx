@@ -60,6 +60,18 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Keep plans and subscription state in sync with administrator changes:
+  // refetch on window focus and on a light interval while the section is open.
+  useEffect(() => {
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    const timer = setInterval(load, 30000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(timer);
+    };
+  }, [load]);
+
   const act = async (payload, successMsg) => {
     setBusy(true);
     try {
