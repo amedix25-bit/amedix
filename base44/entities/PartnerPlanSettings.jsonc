@@ -1,0 +1,143 @@
+{
+  "name": "PartnerPlanSettings",
+  "type": "object",
+  "properties": {
+    "currency": {
+      "type": "string",
+      "default": "LYD",
+      "description": "Billing currency for partner subscriptions, e.g. LYD \u2014 set by the administrator, not invented by the system"
+    },
+    "billing_interval": {
+      "type": "string",
+      "enum": [
+        "month",
+        "year"
+      ],
+      "default": "month",
+      "description": "Billing interval for all partner subscriptions"
+    },
+    "pharmacy_standard_price": {
+      "type": "number",
+      "description": "Pharmacy Standard Partner monthly price \u2014 unset (null) until the administrator sets the initial commercial terms"
+    },
+    "pharmacy_premium_price": {
+      "type": "number",
+      "description": "Pharmacy Premium Partner monthly price \u2014 the TOTAL monthly price (inclusive of premium placement) unless a separate upgrade fee is configured"
+    },
+    "lab_standard_price": {
+      "type": "number",
+      "description": "Laboratory Standard Partner monthly price \u2014 unset until the administrator sets it"
+    },
+    "lab_premium_price": {
+      "type": "number",
+      "description": "Laboratory Premium Partner monthly price \u2014 the TOTAL monthly price unless a separate upgrade fee is configured"
+    },
+    "premium_upgrade_fee": {
+      "type": "number",
+      "default": 0,
+      "description": "Optional separate one-time fee for upgrading Standard to Premium mid-cycle. 0 or empty means the Premium price is fully inclusive and no extra fee is charged"
+    },
+    "pharmacy_standard_description": {
+      "type": "string",
+      "description": "Plan description shown to pharmacies considering the Standard tier"
+    },
+    "pharmacy_premium_description": {
+      "type": "string",
+      "description": "Plan description shown to pharmacies considering the Premium tier"
+    },
+    "lab_standard_description": {
+      "type": "string",
+      "description": "Plan description shown to laboratories considering the Standard tier"
+    },
+    "lab_premium_description": {
+      "type": "string",
+      "description": "Plan description shown to laboratories considering the Premium tier"
+    },
+    "plan_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Included features shown for both tiers, e.g. approved partner profile, advertisement in the Patient Portal tab, premium featured placement"
+    },
+    "intro_offer_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether an introductory offer applies to new subscriptions"
+    },
+    "intro_discount_percent": {
+      "type": "number",
+      "description": "Percentage discount applied during the introductory period, e.g. 20 for 20% off"
+    },
+    "intro_duration_months": {
+      "type": "number",
+      "description": "How many monthly payments the introductory discount applies to"
+    },
+    "grace_days": {
+      "type": "number",
+      "default": 7,
+      "description": "Grace period in days after the billing date before an unpaid subscription is treated as overdue \u2014 during the grace period the ad keeps running, past it the ad stops showing"
+    },
+    "overdue_policy": {
+      "type": "string",
+      "description": "Administrator-written description of the overdue-payment policy shown to partners"
+    },
+    "pharmacy_standard_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the pharmacy Standard plan accepts new subscriptions"
+    },
+    "pharmacy_premium_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the pharmacy Premium plan accepts new subscriptions"
+    },
+    "lab_standard_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the laboratory Standard plan accepts new subscriptions"
+    },
+    "lab_premium_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the laboratory Premium plan accepts new subscriptions"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the plan settings were last changed (ISO datetime)"
+    },
+    "updated_by_name": {
+      "type": "string",
+      "description": "Administrator who last changed the plan settings"
+    }
+  },
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

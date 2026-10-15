@@ -13,8 +13,9 @@ import LabProfileSection from "@/components/lab/portal/LabProfileSection";
 import LabPatientsSection from "@/components/lab/portal/LabPatientsSection";
 import LabNotificationsBar from "@/components/lab/portal/LabNotificationsBar";
 import NotificationsBell from "@/components/lab/notifications/NotificationsBell";
+import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, FlaskConical, TestTube, CheckCircle2, Users, UserCog, Building2 } from "lucide-react";
+import { LayoutDashboard, FlaskConical, TestTube, CheckCircle2, Users, UserCog, Building2, Megaphone } from "lucide-react";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -23,6 +24,7 @@ const navItems = [
   { key: "completed", label: "Completed Payments/Results", icon: CheckCircle2 },
   { key: "patients", label: "Patients", icon: Users },
   { key: "staff", label: "Technicians/Staff", icon: UserCog },
+  { key: "partner", label: "Partner Program", icon: Megaphone },
   { key: "profile", label: "Profile", icon: Building2 },
 ];
 
@@ -98,6 +100,7 @@ export default function LabPortal() {
         {activeTab === "pending" && <LabPendingTestsSection profile={profile} />}
         {activeTab === "completed" && <LabCompletedSection profile={profile} />}
         {activeTab === "staff" && <LabTechniciansSection profile={profile} />}
+        {activeTab === "partner" && <PartnerSubscriptionSection partnerType="laboratory" profile={profile} />}
         {activeTab === "profile" && <LabProfileSection profile={profile} onUpdate={setProfile} />}
       </div>
     </DashboardLayout>

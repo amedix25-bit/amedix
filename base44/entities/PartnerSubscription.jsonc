@@ -1,0 +1,242 @@
+{
+  "name": "PartnerSubscription",
+  "type": "object",
+  "properties": {
+    "partner_type": {
+      "type": "string",
+      "enum": [
+        "pharmacy",
+        "laboratory"
+      ],
+      "description": "Which portal section the partner advertises in \u2014 pharmacies advertise only in the patient Prescriptions tab, laboratories only in the Labs tab"
+    },
+    "partner_id": {
+      "type": "string",
+      "description": "PharmacyProfile / LaboratoryProfile id \u2014 the existing organization record is reused, never duplicated"
+    },
+    "partner_user_id": {
+      "type": "string",
+      "description": "User id of the pharmacy / laboratory account that owns this subscription \u2014 used for Row Level Security"
+    },
+    "partner_name": {
+      "type": "string",
+      "description": "Organization name \u2014 snapshot from the profile at subscription time"
+    },
+    "partner_number": {
+      "type": "string",
+      "description": "A&M Pharmacy / Lab Number \u2014 snapshot from the profile"
+    },
+    "partner_logo_url": {
+      "type": "string",
+      "description": "Organization logo \u2014 snapshot from the profile, refreshed when the ad content is saved"
+    },
+    "partner_address": {
+      "type": "string",
+      "description": "Organization location \u2014 snapshot from the profile"
+    },
+    "partner_phone": {
+      "type": "string",
+      "description": "Organization phone \u2014 snapshot from the profile"
+    },
+    "partner_whatsapp": {
+      "type": "string",
+      "description": "Organization WhatsApp \u2014 snapshot from the profile"
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "premium"
+      ],
+      "description": "Subscribed tier \u2014 STANDARD: approved partner profile plus an ad in the corresponding patient tab. PREMIUM: all Standard features plus featured placement (larger card, top position, premium label) in the same tab only"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_approval",
+        "active",
+        "suspended",
+        "cancelled"
+      ],
+      "default": "pending_approval",
+      "description": "PENDING_APPROVAL: awaiting administrator approval of the subscription and its advertisement. ACTIVE: approved \u2014 the ad shows in its tab. SUSPENDED: paused by the administrator, ad hidden. CANCELLED: subscription ended"
+    },
+    "ad_description": {
+      "type": "string",
+      "description": "Short description shown in the partner's advertisement \u2014 written by the partner"
+    },
+    "ad_cover_url": {
+      "type": "string",
+      "description": "Cover image of the advertisement \u2014 uploaded by the partner, shown larger on premium placements"
+    },
+    "ad_services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Available services listed in the advertisement, e.g. home sample collection, chronic medication stock"
+    },
+    "ad_contact_phone": {
+      "type": "string",
+      "description": "Contact number shown in the advertisement \u2014 defaults to the profile phone"
+    },
+    "ad_hours": {
+      "type": "string",
+      "description": "Opening hours shown in the advertisement \u2014 defaults to the profile operating hours"
+    },
+    "price_amount": {
+      "type": "number",
+      "description": "Recurring price per billing interval, locked from the plan settings at approval \u2014 shown to the partner in billing history"
+    },
+    "currency": {
+      "type": "string",
+      "description": "Billing currency \u2014 locked from the plan settings at approval"
+    },
+    "billing_interval": {
+      "type": "string",
+      "description": "Billing interval \u2014 locked from the plan settings at approval"
+    },
+    "intro_months_remaining": {
+      "type": "number",
+      "description": "Remaining monthly payments covered by the introductory discount \u2014 decremented as discounted payments are recorded"
+    },
+    "intro_discount_percent": {
+      "type": "number",
+      "description": "Introductory discount locked at approval, e.g. 20"
+    },
+    "pending_upgrade_fee": {
+      "type": "number",
+      "description": "One-time upgrade fee currently due after moving from Standard to Premium, when the administrator configured a separate upgrade fee \u2014 cleared when a payment covering it is recorded"
+    },
+    "start_datetime": {
+      "type": "string",
+      "description": "Date and time the subscription was approved and billing started (ISO datetime)"
+    },
+    "next_billing_datetime": {
+      "type": "string",
+      "description": "Next billing date \u2014 advanced by the billing interval when a payment is recorded; ads stop showing after this date plus the grace period"
+    },
+    "payments": {
+      "type": "array",
+      "description": "Traceable billing history \u2014 one entry per payment, refund or adjustment recorded for this subscription, with who recorded it, the method and a note. Subscription billing is recorded through this ledger until automated card billing is connected",
+      "items": {
+        "type": "object",
+        "properties": {
+          "payment_id": {
+            "type": "string"
+          },
+          "entry_type": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "refund",
+              "adjustment"
+            ]
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "bank_transfer",
+              "card",
+              "other"
+            ]
+          },
+          "recorded_by_name": {
+            "type": "string"
+          },
+          "recorded_by_role": {
+            "type": "string"
+          },
+          "applies_to": {
+            "type": "string",
+            "enum": [
+              "subscription",
+              "upgrade_fee"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_id",
+          "entry_type",
+          "datetime",
+          "amount"
+        ]
+      }
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Internal notes from the administrator"
+    },
+    "suspension_reason": {
+      "type": "string",
+      "description": "Reason the administrator suspended or cancelled the subscription"
+    },
+    "approved_by_name": {
+      "type": "string",
+      "description": "Administrator who approved the subscription"
+    },
+    "approved_datetime": {
+      "type": "string",
+      "description": "Date and time of approval (ISO datetime)"
+    },
+    "cancelled_datetime": {
+      "type": "string",
+      "description": "Date and time the subscription was cancelled (ISO datetime)"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the subscription was first created (ISO datetime)"
+    }
+  },
+  "required": [
+    "partner_type",
+    "partner_id",
+    "partner_user_id",
+    "partner_name",
+    "tier"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.partner_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.partner_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.partner_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
