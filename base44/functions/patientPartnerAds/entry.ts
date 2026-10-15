@@ -1,12 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { loadPlanSettings, effectiveStatus } from '../../shared/partnerBilling.ts';
+import { adDisplayEligible } from '../../shared/partnerAds.ts';
 
-// Serves approved partner advertisements to the Patient Portal. A section is
-// passed in ('pharmacy' or 'laboratory') and ONLY subscriptions of that type
+// Serves published partner advertisements to the Patient Portal. A section is
+// passed in ('pharmacy' or 'laboratory') and ONLY advertisements of that type
 // are returned — pharmacy ads appear exclusively in the patient Prescriptions
-// tab and laboratory ads exclusively in the Labs tab. Overdue subscriptions
-// past their grace period are excluded, and no pricing or billing data is ever
-// returned here.
+// tab and laboratory ads exclusively in the Labs tab.
+//
+// Display rules enforced here: only PUBLISHED ads show (plus SCHEDULED ads
+// whose campaign window has begun); paused, rejected, expired, draft and
+// unapproved ads are never returned; a scheduled ad never appears before its
+// start date and every ad stops after its end date; the linked subscription
+// must be active and not overdue past its grace period — an expired
+// subscription never retains paid Premium placement. Lazily applies the
+// scheduled→published and published→expired transitions as time passes. No
+// pricing or billing data is ever returned here.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -17,34 +25,59 @@ export default async function(req) {
     const section = body.section === 'laboratory' ? 'laboratory' : 'pharmacy';
 
     const settings = await loadPlanSettings(base44);
-    const subs = await base44.asServiceRole.entities.PartnerSubscription.filter({
-      partner_type: section,
-      status: 'active',
-    });
-
     const now = new Date();
-    const ads = (subs.items || subs)
-      .map((s) => ({ sub: s, effective: effectiveStatus(s, settings, now) }))
-      .filter((x) => x.effective === 'active' || x.effective === 'overdue')
-      .map((x) => ({
-        partner_id: x.sub.partner_id,
-        partner_name: x.sub.partner_name,
-        partner_number: x.sub.partner_number,
-        partner_logo_url: x.sub.partner_logo_url || '',
-        partner_address: x.sub.partner_address || '',
-        partner_phone: x.sub.partner_phone || '',
-        partner_whatsapp: x.sub.partner_whatsapp || '',
-        tier: x.sub.tier,
-        ad_description: x.sub.ad_description || '',
-        ad_cover_url: x.sub.ad_cover_url || '',
-        ad_services: x.sub.ad_services || [],
-        ad_contact_phone: x.sub.ad_contact_phone || '',
-        ad_hours: x.sub.ad_hours || '',
-      }))
-      // Premium placements first; nothing else influences ordering.
-      .sort((a, b) => (a.tier === 'premium' ? -1 : 1) - (b.tier === 'premium' ? -1 : 1));
 
-    return Response.json({ ads });
+    const adsEntity = base44.asServiceRole.entities.PartnerAdvertisement;
+    const subsEntity = base44.asServiceRole.entities.PartnerSubscription;
+
+    const ads = await adsEntity.filter({ partner_type: section }, { sort: '-created_date', limit: 200 });
+    const subs = await subsEntity.filter({ partner_type: section, status: 'active' });
+    const subById = {};
+    for (const s of (subs.items || subs)) subById[s.id] = s;
+
+    const out = [];
+    const pendingStatusPatches = [];
+
+    for (const ad of (ads.items || ads)) {
+      const sub = subById[ad.subscription_id];
+      const check = adDisplayEligible(ad, sub, settings, now);
+
+      // Lazy lifecycle transitions as time passes.
+      if (ad.status === 'scheduled' && check.reason === 'in_window') {
+        pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'published' }));
+      } else if (ad.status === 'published' && check.reason === 'after_end') {
+        pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
+      } else if (['published', 'scheduled'].includes(ad.status) && check.reason === 'subscription_inactive') {
+        pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
+      }
+
+      if (!check.eligible) continue;
+      out.push({
+        partner_id: ad.partner_id,
+        partner_name: ad.partner_name,
+        partner_number: ad.partner_number,
+        partner_logo_url: ad.logo_url || '',
+        partner_address: ad.location || '',
+        partner_phone: '',
+        partner_whatsapp: '',
+        tier: sub.tier,
+        ad_title: ad.title || '',
+        ad_description: ad.description || '',
+        ad_cover_url: ad.cover_url || '',
+        ad_services: ad.services || [],
+        ad_contact_phone: ad.contact_phone || '',
+        ad_hours: ad.hours || '',
+      });
+    }
+
+    if (pendingStatusPatches.length) {
+      await Promise.allSettled(pendingStatusPatches);
+    }
+
+    // Premium placements first; nothing else influences ordering.
+    out.sort((a, b) => (a.tier === 'premium' ? -1 : 1) - (b.tier === 'premium' ? -1 : 1));
+
+    return Response.json({ ads: out });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

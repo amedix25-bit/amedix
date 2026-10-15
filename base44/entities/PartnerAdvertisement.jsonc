@@ -1,0 +1,168 @@
+{
+  "name": "PartnerAdvertisement",
+  "type": "object",
+  "properties": {
+    "ad_id": {
+      "type": "string",
+      "description": "Unique advertisement reference, e.g. PAB-20261015-8F3K"
+    },
+    "subscription_id": {
+      "type": "string",
+      "description": "PartnerSubscription id this advertisement is linked to"
+    },
+    "partner_type": {
+      "type": "string",
+      "enum": [
+        "pharmacy",
+        "laboratory"
+      ],
+      "description": "PHARMACY: advertised in the patient Prescriptions tab. LABORATORY: advertised in the patient Labs tab"
+    },
+    "partner_id": {
+      "type": "string",
+      "description": "PharmacyProfile / LaboratoryProfile id the advertisement belongs to"
+    },
+    "partner_user_id": {
+      "type": "string",
+      "description": "User id of the partner organization account \u2014 used for Row Level Security"
+    },
+    "partner_name": {
+      "type": "string",
+      "description": "Organization name \u2014 snapshot from the profile"
+    },
+    "partner_number": {
+      "type": "string",
+      "description": "A&M Pharmacy / Lab Number \u2014 snapshot from the profile"
+    },
+    "title": {
+      "type": "string",
+      "description": "Advertisement title \u2014 written by the partner, approved by the administrator"
+    },
+    "description": {
+      "type": "string",
+      "description": "Approved promotional text shown in the advertisement"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Organization logo \u2014 kept in sync with the partner profile"
+    },
+    "cover_url": {
+      "type": "string",
+      "description": "Cover image of the advertisement \u2014 uploaded by the partner, shown larger on premium placements"
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Available services listed in the advertisement, e.g. home sample collection, chronic medication stock"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Contact number shown in the advertisement \u2014 defaults to the profile phone"
+    },
+    "location": {
+      "type": "string",
+      "description": "Location shown in the advertisement \u2014 snapshot from the partner profile address"
+    },
+    "hours": {
+      "type": "string",
+      "description": "Opening hours shown in the advertisement"
+    },
+    "placement": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "premium"
+      ],
+      "default": "standard",
+      "description": "STANDARD: compact card. PREMIUM: featured placement (larger card, top position, premium label) \u2014 follows the subscription tier"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "approved",
+        "scheduled",
+        "published",
+        "paused",
+        "rejected",
+        "expired"
+      ],
+      "default": "draft",
+      "description": "DRAFT: being written by the partner. PENDING_REVIEW: awaiting administrator content review. APPROVED: content approved, not yet live. SCHEDULED: approved with a future campaign start date. PUBLISHED: live in its patient tab. PAUSED: temporarily hidden by the administrator. REJECTED: content rejected with a reason. EXPIRED: campaign ended or subscription ended"
+    },
+    "campaign_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Campaign start date \u2014 a scheduled advertisement must not appear before this date"
+    },
+    "campaign_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Campaign end date \u2014 the advertisement stops appearing after this date"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason the administrator rejected the advertisement content"
+    },
+    "reviewed_by_name": {
+      "type": "string",
+      "description": "Administrator who last reviewed the advertisement"
+    },
+    "reviewed_datetime": {
+      "type": "string",
+      "description": "Date and time of the last administrator review (ISO datetime)"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the advertisement was created (ISO datetime)"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the advertisement was last changed (ISO datetime)"
+    }
+  },
+  "required": [
+    "subscription_id",
+    "partner_type",
+    "partner_id",
+    "partner_user_id",
+    "partner_name"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.partner_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.partner_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.partner_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

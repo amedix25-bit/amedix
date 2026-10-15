@@ -1,14 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
   loadPlanSettings, priceFor, isAvailable, publicPlans,
-  buildPaymentEntry, applyPaymentPatch, effectiveStatus, DAY_MS,
 } from '../../shared/partnerBilling.ts';
+import {
+  validateAdContent, validateCampaignDates, partnerProfileSnapshot, canTransition,
+} from '../../shared/partnerAds.ts';
 
 // Partner-side management of advertising subscriptions for pharmacies and
-// laboratories. Partners can subscribe to a tier, edit their advertisement,
-// change tier, record payments against the billing ledger and cancel. Every
-// action is scoped to the authenticated organization account — partners can
-// never touch another partner's subscription.
+// laboratories. Partners subscribe to a tier (confirming the billing terms),
+// edit and submit their advertisement for review, view their subscription
+// status / plan / billing history / renewal date / pending actions, and request
+// an upgrade, downgrade, renewal or cancellation subject to the configured
+// terms. Partners can NEVER approve their own advertisement or change their
+// own subscription payment status — payments are recorded by the administrator
+// only. Every action is scoped to the authenticated organization account.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -34,25 +39,32 @@ export default async function(req) {
     });
     const sub = (own.items || own)[0] || null;
 
-    const refreshSnapshot = () => ({
-      partner_id: profile.id,
-      partner_name: partnerType === 'pharmacy' ? profile.pharmacy_name : profile.lab_name,
-      partner_number: partnerType === 'pharmacy' ? profile.pharmacy_number : profile.lab_number,
-      partner_logo_url: profile.logo_url || '',
-      partner_address: profile.address || '',
-      partner_phone: profile.phone || '',
-      partner_whatsapp: profile.whatsapp_number || '',
-    });
+    const loadAd = async () => {
+      if (!sub) return null;
+      const res = await base44.entities.PartnerAdvertisement.filter(
+        { subscription_id: sub.id },
+        { sort: '-created_date', limit: 1 }
+      );
+      return (res.items || res)[0] || null;
+    };
 
     if (action === 'get') {
       const effective = sub ? effectiveStatus(sub, settings) : null;
+      const ad = await loadAd();
       return Response.json({
         subscription: sub ? { ...sub, effective_status: effective } : null,
+        advertisement: ad,
         plans: publicPlans(settings, partnerType),
       });
     }
 
+    // Subscribe: the representative selects a tier, reviews the billing terms
+    // and explicitly confirms them. The subscription enters pending_approval
+    // and a DRAFT advertisement record is created alongside it.
     if (action === 'subscribe') {
+      if (body.confirmed !== true) {
+        return Response.json({ error: 'Please confirm the billing terms to submit your request' }, { status: 400 });
+      }
       const tier = body.tier === 'premium' ? 'premium' : 'standard';
       if (!isAvailable(settings, partnerType, tier)) {
         return Response.json({ error: 'This plan is not currently accepting new subscriptions' }, { status: 400 });
@@ -60,18 +72,15 @@ export default async function(req) {
       if (!priceFor(settings, partnerType, tier)) {
         return Response.json({ error: 'Plan pricing has not been configured yet — please contact the administrator' }, { status: 400 });
       }
-      if (sub && ['active', 'pending_approval'].includes(sub.status)) {
+      if (sub && sub.status !== 'cancelled') {
         return Response.json({ error: 'You already have a subscription' }, { status: 400 });
       }
-      const snapshot = refreshSnapshot();
+      const snapshot = partnerProfileSnapshot(partnerType, profile);
+      const now = new Date().toISOString();
       const base = {
         ...snapshot,
         tier,
         status: 'pending_approval',
-        ad_description: '',
-        ad_services: [],
-        ad_contact_phone: profile.phone || '',
-        ad_hours: (partnerType === 'pharmacy' ? profile.operating_hours : '') || '',
         price_amount: null,
         currency: null,
         billing_interval: null,
@@ -84,80 +93,152 @@ export default async function(req) {
         approved_datetime: null,
         cancelled_datetime: null,
         suspension_reason: null,
+        pending_change: null,
       };
+      let savedSub;
       if (sub) {
-        await base44.entities.PartnerSubscription.update(sub.id, base);
-        return Response.json({ subscription: { ...sub, ...base } });
+        savedSub = await base44.entities.PartnerSubscription.update(sub.id, base);
+      } else {
+        savedSub = await base44.entities.PartnerSubscription.create({
+          ...base,
+          partner_user_id: user.id,
+          created_datetime: now,
+        });
       }
-      const created = await base44.entities.PartnerSubscription.create({
-        ...base,
+      // Expire any previous advertisement of this partner.
+      const prevAds = await base44.entities.PartnerAdvertisement.filter({ partner_user_id: user.id, partner_type: partnerType });
+      for (const old of (prevAds.items || prevAds)) {
+        if (!['expired'].includes(old.status)) {
+          await base44.entities.PartnerAdvertisement.update(old.id, { status: 'expired', updated_datetime: now });
+        }
+      }
+      const adContent = validateAdContent(body.ad || {});
+      if (adContent.error) return Response.json({ error: adContent.error }, { status: 400 });
+      const ad = await base44.entities.PartnerAdvertisement.create({
+        ad_id: `PAB-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        subscription_id: savedSub.id,
+        partner_type: partnerType,
+        partner_id: snapshot.partner_id,
         partner_user_id: user.id,
-        created_datetime: new Date().toISOString(),
+        partner_name: snapshot.partner_name,
+        partner_number: snapshot.partner_number,
+        logo_url: snapshot.partner_logo_url,
+        location: snapshot.partner_address,
+        contact_phone: profile.phone || '',
+        ...adContent.patch,
+        placement: tier,
+        status: 'draft',
+        campaign_start_date: null,
+        campaign_end_date: null,
+        rejection_reason: null,
+        reviewed_by_name: null,
+        reviewed_datetime: null,
+        created_datetime: now,
+        updated_datetime: now,
       });
-      return Response.json({ subscription: created });
+      return Response.json({ subscription: savedSub, advertisement: ad });
     }
 
     if (!sub) return Response.json({ error: 'No subscription found' }, { status: 404 });
 
+    // Edit advertisement content. While the ad is already approved, scheduled,
+    // published or paused, an important content change requires renewed
+    // approval: the ad returns to pending_review. A rejected ad returns to
+    // draft when its content is edited, so the partner can resubmit.
     if (action === 'update_ad') {
       if (sub.status === 'cancelled') return Response.json({ error: 'Subscription is cancelled' }, { status: 400 });
+      const ad = body.ad_id
+        ? await base44.entities.PartnerAdvertisement.get(body.ad_id)
+        : await loadAd();
+      if (!ad || ad.partner_user_id !== user.id) return Response.json({ error: 'Advertisement not found' }, { status: 404 });
+      if (ad.status === 'expired') return Response.json({ error: 'This advertisement has expired' }, { status: 400 });
+      const content = validateAdContent(body);
+      if (content.error) return Response.json({ error: content.error }, { status: 400 });
+      const needsRenewedReview = ['approved', 'scheduled', 'published', 'paused'].includes(ad.status);
       const patch = {
-        partner_logo_url: refreshSnapshot().partner_logo_url, // keep logo in sync with the profile
-        ad_description: String(body.ad_description || '').slice(0, 1000),
-        ad_cover_url: body.ad_cover_url ? String(body.ad_cover_url).slice(0, 500) : '',
-        ad_services: (Array.isArray(body.ad_services) ? body.ad_services : [])
-          .map((s) => String(s || '').trim().slice(0, 80)).filter(Boolean).slice(0, 12),
-        ad_contact_phone: String(body.ad_contact_phone || '').slice(0, 40),
-        ad_hours: String(body.ad_hours || '').slice(0, 120),
+        ...content.patch,
+        logo_url: partnerProfileSnapshot(partnerType, profile).partner_logo_url, // keep logo in sync
+        updated_datetime: new Date().toISOString(),
       };
-      await base44.entities.PartnerSubscription.update(sub.id, patch);
-      return Response.json({ subscription: { ...sub, ...patch } });
+      if (needsRenewedReview) {
+        patch.status = 'pending_review';
+        patch.reviewed_by_name = null;
+        patch.reviewed_datetime = null;
+      } else if (ad.status === 'rejected') {
+        patch.status = 'draft';
+      }
+      const updated = await base44.entities.PartnerAdvertisement.update(ad.id, patch);
+      return Response.json({ advertisement: updated });
     }
 
-    if (action === 'change_tier') {
-      if (sub.status !== 'active') return Response.json({ error: 'Only an active subscription can change tier' }, { status: 400 });
-      const tier = body.tier === 'premium' ? 'premium' : 'standard';
-      if (tier === sub.tier) return Response.json({ subscription: sub });
-      if (!isAvailable(settings, partnerType, tier)) {
-        return Response.json({ error: 'This plan is not currently accepting subscriptions' }, { status: 400 });
+    // Submit for review: draft or rejected → pending_review. Only the
+    // administrator can approve — a partner can never approve their own ad.
+    if (action === 'submit_ad') {
+      const ad = await loadAd();
+      if (!ad) return Response.json({ error: 'Advertisement not found' }, { status: 404 });
+      if (!canTransition(ad.status, 'pending_review')) {
+        return Response.json({ error: `An advertisement in status "${ad.status}" cannot be submitted for review` }, { status: 400 });
       }
-      const price = priceFor(settings, partnerType, tier);
-      if (!price) return Response.json({ error: 'Plan pricing has not been configured yet' }, { status: 400 });
-      const patch = { tier, price_amount: price, billing_interval: settings.billing_interval || 'month' };
-      // The Premium price is the total inclusive price; only charge an extra
-      // upgrade fee when the administrator explicitly configured one.
-      if (sub.tier === 'standard' && tier === 'premium' && (settings.premium_upgrade_fee || 0) > 0) {
-        patch.pending_upgrade_fee = settings.premium_upgrade_fee;
-      }
-      await base44.entities.PartnerSubscription.update(sub.id, patch);
-      return Response.json({ subscription: { ...sub, ...patch } });
-    }
-
-    if (action === 'record_payment') {
-      if (sub.status !== 'active') return Response.json({ error: 'Only an active subscription can receive payments' }, { status: 400 });
-      const amount = Number(body.amount);
-      if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
-        return Response.json({ error: 'Enter a valid payment amount' }, { status: 400 });
-      }
-      const appliesTo = body.applies_to === 'upgrade_fee' && (sub.pending_upgrade_fee || 0) > 0
-        ? 'upgrade_fee' : 'subscription';
-      const entry = buildPaymentEntry(
-        sub,
-        { amount, method: body.method, note: body.note, appliesTo },
-        user.full_name || user.email,
-        partnerType
-      );
-      const patch = applyPaymentPatch(sub, entry);
-      await base44.entities.PartnerSubscription.update(sub.id, patch);
-      return Response.json({ subscription: { ...sub, ...patch, effective_status: 'active' } });
-    }
-
-    if (action === 'cancel') {
-      await base44.entities.PartnerSubscription.update(sub.id, {
-        status: 'cancelled',
-        cancelled_datetime: new Date().toISOString(),
+      const content = validateAdContent(ad, { requireContent: true });
+      if (content.error) return Response.json({ error: content.error }, { status: 400 });
+      const dates = validateCampaignDates(ad.campaign_start_date, ad.campaign_end_date);
+      if (dates.error) return Response.json({ error: dates.error }, { status: 400 });
+      const updated = await base44.entities.PartnerAdvertisement.update(ad.id, {
+        status: 'pending_review',
+        rejection_reason: null,
+        updated_datetime: new Date().toISOString(),
       });
-      return Response.json({ subscription: { ...sub, status: 'cancelled' } });
+      return Response.json({ advertisement: updated });
+    }
+
+    // Withdraw back to draft.
+    if (action === 'withdraw_ad') {
+      const ad = await loadAd();
+      if (!ad) return Response.json({ error: 'Advertisement not found' }, { status: 404 });
+      if (!canTransition(ad.status, 'draft')) {
+        return Response.json({ error: `An advertisement in status "${ad.status}" cannot be withdrawn` }, { status: 400 });
+      }
+      const updated = await base44.entities.PartnerAdvertisement.update(ad.id, {
+        status: 'draft',
+        updated_datetime: new Date().toISOString(),
+      });
+      return Response.json({ advertisement: updated });
+    }
+
+    // Request an upgrade, downgrade, renewal or cancellation. Requests are
+    // decided by the administrator; the partner cannot change payment status.
+    if (action === 'request_change') {
+      if (sub.status !== 'active') return Response.json({ error: 'Only an active subscription can be changed' }, { status: 400 });
+      if (sub.pending_change && sub.pending_change.status === 'pending') {
+        return Response.json({ error: 'You already have a change request awaiting the administrator' }, { status: 400 });
+      }
+      const type = String(body.change_type || '');
+      if (!['upgrade', 'downgrade', 'renewal', 'cancellation'].includes(type)) {
+        return Response.json({ error: 'Unknown request type' }, { status: 400 });
+      }
+      const requestedTier = type === 'upgrade' ? 'premium' : type === 'downgrade' ? 'standard' : null;
+      if (requestedTier) {
+        if (requestedTier === sub.tier) return Response.json({ error: 'You are already on this plan' }, { status: 400 });
+        if (!isAvailable(settings, partnerType, requestedTier)) {
+          return Response.json({ error: 'This plan is not currently accepting subscriptions' }, { status: 400 });
+        }
+        if (!priceFor(settings, partnerType, requestedTier)) {
+          return Response.json({ error: 'Plan pricing has not been configured yet' }, { status: 400 });
+        }
+      }
+      const pendingChange = {
+        request_type: type,
+        requested_tier: requestedTier,
+        note: String(body.note || '').slice(0, 300),
+        requested_by_name: user.full_name || user.email,
+        requested_datetime: new Date().toISOString(),
+        status: 'pending',
+        decided_by_name: null,
+        decided_datetime: null,
+        decision_note: null,
+      };
+      const updated = await base44.entities.PartnerSubscription.update(sub.id, { pending_change: pendingChange });
+      return Response.json({ subscription: { ...updated, pending_change: pendingChange } });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

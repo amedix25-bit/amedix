@@ -28,7 +28,7 @@
     },
     "partner_logo_url": {
       "type": "string",
-      "description": "Organization logo \u2014 snapshot from the profile, refreshed when the ad content is saved"
+      "description": "Organization logo \u2014 snapshot from the profile"
     },
     "partner_address": {
       "type": "string",
@@ -59,30 +59,35 @@
         "cancelled"
       ],
       "default": "pending_approval",
-      "description": "PENDING_APPROVAL: awaiting administrator approval of the subscription and its advertisement. ACTIVE: approved \u2014 the ad shows in its tab. SUSPENDED: paused by the administrator, ad hidden. CANCELLED: subscription ended"
+      "description": "PENDING_APPROVAL: awaiting administrator approval of the partner's affiliation and subscription terms. ACTIVE: approved \u2014 the advertisement may be published after its own content review. SUSPENDED: paused by the administrator, ad hidden. CANCELLED: subscription ended"
+    },
+    "pending_change": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Partner change request awaiting the administrator \u2014 upgrade, downgrade, renewal or cancellation, with the requested tier, note, requester and the administrator's decision. One pending request at a time"
     },
     "ad_description": {
       "type": "string",
-      "description": "Short description shown in the partner's advertisement \u2014 written by the partner"
+      "description": "Legacy advertisement description \u2014 superseded by the PartnerAdvertisement record; kept so earlier subscriptions still render"
     },
     "ad_cover_url": {
       "type": "string",
-      "description": "Cover image of the advertisement \u2014 uploaded by the partner, shown larger on premium placements"
+      "description": "Legacy advertisement cover image \u2014 superseded by the PartnerAdvertisement record"
     },
     "ad_services": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Available services listed in the advertisement, e.g. home sample collection, chronic medication stock"
+      "description": "Legacy advertisement services \u2014 superseded by the PartnerAdvertisement record"
     },
     "ad_contact_phone": {
       "type": "string",
-      "description": "Contact number shown in the advertisement \u2014 defaults to the profile phone"
+      "description": "Legacy advertisement contact number \u2014 superseded by the PartnerAdvertisement record"
     },
     "ad_hours": {
       "type": "string",
-      "description": "Opening hours shown in the advertisement \u2014 defaults to the profile operating hours"
+      "description": "Legacy advertisement opening hours \u2014 superseded by the PartnerAdvertisement record"
     },
     "price_amount": {
       "type": "number",
