@@ -1,7 +1,7 @@
 import React from "react";
 import { Pill, ScrollText, ChevronRight } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
+
 
 // Patient Portal → Drugs. The single entry point for everything medication —
 // the patient chooses what to open: their medications or their prescriptions.
@@ -26,7 +26,6 @@ export default function DrugsEntry({ onOpen }) {
 
   return (
     <div className="space-y-3">
-      <PartnerAdStrip section="pharmacy" />
       {choices.map((choice) => (
         <button
           key={choice.key}

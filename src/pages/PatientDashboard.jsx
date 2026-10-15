@@ -26,6 +26,7 @@ import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
 import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User, Stethoscope, ChevronLeft } from "lucide-react";
 import DrugsEntry from "@/components/patient/DrugsEntry";
+import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
 
 const NAV_ITEMS = [
   { key: "overview", label: "Home", icon: HomeIcon },
@@ -155,6 +156,11 @@ function PatientPortal() {
             {profile && <NotificationsBar patientId={profile.id} onNavigate={setActiveTab} />}
           </div>
 
+          {(activeTab === "drugs" || activeTab === "labs") && (
+            <div className="mb-4">
+              <PartnerAdStrip key={activeTab} section={activeTab === "drugs" ? "pharmacy" : "laboratory"} />
+            </div>
+          )}
           {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
           {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
           {activeTab === "drugs" && (

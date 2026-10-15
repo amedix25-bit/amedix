@@ -17,6 +17,7 @@ export default function PartnerAdStrip({ section }) {
     },
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
+    refetchInterval: 30000,
     retry: 1,
   });
   const heading = section === "laboratory" ? t("AMedix Laboratory Partners") : t("AMedix Pharmacy Partners");

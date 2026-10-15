@@ -1,7 +1,7 @@
 import React from "react";
 import { FlaskConical, ClipboardList, ChevronRight } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
+
 
 // Patient Portal → Labs. The single entry point for everything laboratory —
 // the patient chooses what to open: their lab requests or their lab results.
@@ -25,7 +25,6 @@ export default function LabsEntry({ onOpen }) {
 
   return (
     <div className="space-y-3">
-      <PartnerAdStrip section="laboratory" />
       {choices.map((choice) => (
         <button
           key={choice.key}

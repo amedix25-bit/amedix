@@ -7,8 +7,8 @@ import { adDisplayEligible } from '../../shared/partnerAds.ts';
 // are returned — pharmacy ads appear exclusively in the patient Prescriptions
 // tab and laboratory ads exclusively in the Labs tab.
 //
-// Display rules enforced here: only PUBLISHED ads show (plus SCHEDULED ads
-// whose campaign window has begun); paused, rejected, expired, draft and
+// Display rules: APPROVED and due SCHEDULED ads are published automatically
+// when the subscription permits display; paused, rejected, expired, draft and
 // unapproved ads are never returned; a scheduled ad never appears before its
 // start date and every ad stops after its end date; the linked subscription
 // must be active and not overdue past its grace period — an expired
@@ -49,9 +49,12 @@ export default async function(req) {
       const sub = subById[ad.subscription_id];
       const check = adDisplayEligible(ad, sub, settings, now);
 
-      // Lazy lifecycle transitions as time passes.
-      if (ad.status === 'scheduled' && check.reason === 'in_window') {
-        pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'published' }));
+      // Approved content with an entitled subscription and an open campaign
+      // window becomes genuinely published, not just eligible in this response.
+      if (['approved', 'scheduled'].includes(ad.status) && check.eligible) {
+        pendingStatusPatches.push(adsEntity.update(ad.id, {
+          status: 'published', updated_datetime: now.toISOString(),
+        }));
       } else if (ad.status === 'published' && check.reason === 'after_end') {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
       } else if (['published', 'scheduled'].includes(ad.status) && check.reason === 'subscription_inactive') {

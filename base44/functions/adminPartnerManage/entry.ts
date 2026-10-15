@@ -4,7 +4,7 @@ import {
   buildPaymentEntry, applyPaymentPatch, verifyPaymentPatch, findExistingPayment,
   auditEntry, adminAuditEntry, effectiveStatus, paymentStatusPatch, scheduledTierPatch,
 } from '../../shared/partnerBilling.ts';
-import { canTransition, validateCampaignDates } from '../../shared/partnerAds.ts';
+import { canTransition, validateCampaignDates, adDisplayEligible } from '../../shared/partnerAds.ts';
 import { notifyPartner } from '../../shared/partnerNotifications.ts';
 
 // Administrator management of the partner advertising system: plan settings
@@ -228,12 +228,19 @@ export default async function(req) {
         }
         const dates = validateCampaignDates(ad.campaign_start_date, ad.campaign_end_date);
         if (dates.error) return Response.json({ error: dates.error }, { status: 400 });
+        const [subscription, settings] = await Promise.all([
+          subsEntity.get(ad.subscription_id),
+          loadPlanSettings(base44.asServiceRole),
+        ]);
+        const publishNow = adDisplayEligible({ ...ad, status: 'approved' }, subscription, settings).eligible;
         const updated = await adsEntity.update(ad.id, {
-          ...reviewPatch(), status: 'approved', rejection_reason: null,
+          ...reviewPatch(), status: publishNow ? 'published' : 'approved', rejection_reason: null,
         });
         await notifyPartner(base44.asServiceRole, ad.partner_type, ad, {
-          title: 'Advertisement approved',
-          message: `"${ad.title || 'Your advertisement'}" was approved. It goes live once the subscription is active and the administrator publishes it.`,
+          title: publishNow ? 'Advertisement published' : 'Advertisement approved',
+          message: publishNow
+            ? `"${ad.title || 'Your advertisement'}" was approved and is now live in the Patient Portal.`
+            : `"${ad.title || 'Your advertisement'}" was approved. It goes live automatically when the subscription is active and the campaign dates permit.`, 
           dedupeKey: `ad:${ad.id}:approved:${updated.reviewed_datetime}`,
         });
         return Response.json({ advertisement: updated });
