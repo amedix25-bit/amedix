@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pill, Trash2, ShieldAlert, PackageX, ArchiveX } from "lucide-react";
+import { Loader2, Plus, Pill, Trash2, ShieldAlert, PackageX, ArchiveX, Tag } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 
@@ -28,8 +28,13 @@ const URGENCY_OPTIONS = [
 
 const EMPTY = {
   medication_name: "", active_ingredient: "", strength: "", dosage_form: "tablet",
-  quantity_in_stock: "", batch_number: "", expiry_date: "",
+  quantity_in_stock: "", price: "", batch_number: "", expiry_date: "",
 };
+
+const formatPrice = (price) =>
+  typeof price === "number"
+    ? `LYD ${Number.isInteger(price) ? price : price.toFixed(2)}`
+    : null;
 
 const RECALL_EMPTY = {
   medication_name: "", active_ingredient: "", strength: "", batch_number: "",
@@ -68,6 +73,8 @@ export default function PharmacyInventorySection({ profile }) {
   const [recallForm, setRecallForm] = useState(RECALL_EMPTY);
   const [recallSubmitting, setRecallSubmitting] = useState(false);
   const [disposingId, setDisposingId] = useState(null);
+  const [priceEdit, setPriceEdit] = useState(null); // { item, price }
+  const [savingPrice, setSavingPrice] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
 
@@ -112,6 +119,7 @@ export default function PharmacyInventorySection({ profile }) {
         dosage_form: form.dosage_form,
         batch_number: form.batch_number.trim(),
         expiry_date: form.expiry_date || "",
+        price: form.price === "" ? undefined : Number(form.price),
         quantity_in_stock: qty,
         updated_datetime: new Date().toISOString(),
       });
@@ -189,6 +197,23 @@ export default function PharmacyInventorySection({ profile }) {
       load();
     } catch (err) {
       toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const savePrice = async () => {
+    setSavingPrice(true);
+    try {
+      await base44.entities.PharmacyInventory.update(priceEdit.item.id, {
+        price: priceEdit.price === "" ? undefined : Number(priceEdit.price),
+        updated_datetime: new Date().toISOString(),
+      });
+      toast({ title: "Price updated", description: `${priceEdit.item.medication_name} is now shown to patients at the new price.` });
+      setPriceEdit(null);
+      load();
+    } catch (err) {
+      toast({ title: "Price update failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingPrice(false);
     }
   };
 
@@ -331,9 +356,15 @@ export default function PharmacyInventorySection({ profile }) {
                     <Input type="date" min={today()} value={form.expiry_date} onChange={set("expiry_date")} />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Quantity in Stock *</Label>
-                  <Input type="number" min="0" placeholder="e.g. 100" value={form.quantity_in_stock} onChange={set("quantity_in_stock")} required />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Quantity in Stock *</Label>
+                    <Input type="number" min="0" placeholder="e.g. 100" value={form.quantity_in_stock} onChange={set("quantity_in_stock")} required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Price (LYD)</Label>
+                    <Input type="number" min="0" step="0.01" placeholder="e.g. 12.50" value={form.price} onChange={set("price")} />
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={adding}>
                   {adding && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -377,6 +408,7 @@ export default function PharmacyInventorySection({ profile }) {
                     {item.active_ingredient || "—"} · {item.dosage_form || "—"}
                     {item.batch_number ? ` · Batch ${item.batch_number}` : ""}
                     {item.expiry_date ? ` · Expires ${item.expiry_date}` : ""}
+                    {formatPrice(item.price) ? ` · ${formatPrice(item.price)}` : ""}
                     {quarantined && item.quarantine_reason ? ` · ${item.quarantine_reason}` : ""}
                   </p>
                 </div>
@@ -395,6 +427,15 @@ export default function PharmacyInventorySection({ profile }) {
                   )}
                   {!quarantined && (
                     <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPriceEdit({ item, price: typeof item.price === "number" ? String(item.price) : "" })}
+                        className="w-8 h-8 p-0 text-muted-foreground"
+                        title={formatPrice(item.price) || "Set price"}
+                      >
+                        <Tag className="w-4 h-4" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => updateStock(item, -1)} className="w-8 h-8 p-0">−</Button>
                       <span className={`text-sm font-bold w-12 text-center ${item.quantity_in_stock <= 10 ? "text-amber-600" : ""}`}>
                         {item.quantity_in_stock}
@@ -411,6 +452,40 @@ export default function PharmacyInventorySection({ profile }) {
           })}
         </div>
       )}
+
+      {/* Price edit — patients see this price when comparing pharmacies. */}
+      <Dialog open={!!priceEdit} onOpenChange={(open) => { if (!open) setPriceEdit(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Price{priceEdit ? ` — ${priceEdit.item.medication_name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {priceEdit && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Price per unit, in LYD. This is the price patients see when they compare pharmacies and authorize a prescription. Leave empty to show no price.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Price (LYD)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 12.50"
+                  value={priceEdit.price}
+                  onChange={(e) => setPriceEdit((s) => ({ ...s, price: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setPriceEdit(null)} disabled={savingPrice}>Cancel</Button>
+                <Button onClick={savePrice} disabled={savingPrice || priceEdit.price === ""} className="gap-1.5">
+                  {savingPrice && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Price
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

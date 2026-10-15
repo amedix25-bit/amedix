@@ -17,6 +17,14 @@ import { recordStockMovement } from "../../shared/inventoryMovements.ts";
 //   dispose   → mark a quarantined batch as disposed
 const DOSAGE_FORMS = ['tablet', 'capsule', 'syrup', 'injection', 'cream', 'drops', 'other'];
 
+// Price per unit in LYD — optional, but when given it must be a valid
+// non-negative number. Patients see this price when comparing pharmacies.
+function parsePrice(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : NaN;
+}
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -68,6 +76,10 @@ export default async function(req) {
       if (expiry && expiry < today) {
         return Response.json({ error: 'The expiry date is in the past — expired stock cannot be added.' }, { status: 400 });
       }
+      const price = parsePrice(body?.price);
+      if (Number.isNaN(price)) {
+        return Response.json({ error: 'Enter a valid price.' }, { status: 400 });
+      }
       const item = await base44.asServiceRole.entities.PharmacyInventory.create({
         pharmacy_id: pharmacy.id,
         pharmacy_user_id: pharmacist.pharmacy_user_id,
@@ -78,6 +90,7 @@ export default async function(req) {
         batch_number: String(body?.batch_number || '').trim(),
         expiry_date: expiry,
         supplier: String(body?.supplier || '').trim(),
+        price: parsePrice(body?.price),
         quantity_in_stock: qty,
         updated_datetime: new Date().toISOString(),
       });
@@ -133,6 +146,17 @@ export default async function(req) {
         quantity_change: qty - (item.quantity_in_stock || 0),
         quantity_after: qty,
         reason,
+      });
+      return Response.json({ ok: true });
+    }
+
+    if (action === 'set_price') {
+      if (item.is_quarantined) return Response.json({ error: 'Quarantined stock cannot be repriced. Dispose of it instead.' }, { status: 400 });
+      const price = parsePrice(body?.price);
+      if (Number.isNaN(price)) return Response.json({ error: 'Enter a valid price.' }, { status: 400 });
+      await base44.asServiceRole.entities.PharmacyInventory.update(item.id, {
+        price,
+        updated_datetime: new Date().toISOString(),
       });
       return Response.json({ ok: true });
     }

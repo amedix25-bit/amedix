@@ -114,6 +114,7 @@ export default async function(req) {
           strength: item.strength || '',
           dosage_form: item.dosage_form || '',
           quantity_in_stock: item.quantity_in_stock,
+          price: typeof item.price === 'number' ? item.price : null,
         });
       }
       substitutes.sort((a, b) => b.quantity_in_stock - a.quantity_in_stock);
@@ -144,6 +145,7 @@ export default async function(req) {
         strength: item.strength || '',
         dosage_form: item.dosage_form || '',
         quantity_in_stock: item.quantity_in_stock,
+        price: typeof item.price === 'number' ? item.price : null,
         updated_datetime: item.updated_datetime || '',
       });
     }

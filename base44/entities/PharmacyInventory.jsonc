@@ -48,6 +48,10 @@
       "format": "date",
       "description": "Expiry date of the batch \u2014 expired stock is blocked from dispensing and flagged by the daily safety scan"
     },
+    "price": {
+      "type": "number",
+      "description": "Price per unit, in LYD \u2014 shown to patients when they compare pharmacies and authorize or reserve a prescription"
+    },
     "quantity_in_stock": {
       "type": "number",
       "default": 0,

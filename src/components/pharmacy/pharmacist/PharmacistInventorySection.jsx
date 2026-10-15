@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Pill, Trash2, ArchiveX, PackageX, Search, History, PencilLine } from "lucide-react";
+import { Loader2, Plus, Pill, Trash2, ArchiveX, PackageX, Search, History, PencilLine, Tag } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 
@@ -44,8 +44,13 @@ const MOVEMENT_BADGES = {
 
 const EMPTY = {
   medication_name: "", active_ingredient: "", strength: "", dosage_form: "tablet",
-  quantity_in_stock: "", batch_number: "", expiry_date: "", supplier: "",
+  quantity_in_stock: "", price: "", batch_number: "", expiry_date: "", supplier: "",
 };
+
+const formatPrice = (price) =>
+  typeof price === "number"
+    ? `LYD ${Number.isInteger(price) ? price : price.toFixed(2)}`
+    : null;
 
 const today = () => new Date().toISOString().slice(0, 10);
 const horizon = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -77,6 +82,7 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
   const [adjust, setAdjust] = useState(null); // { item, qty, reason }
+  const [pricing, setPricing] = useState(null); // { item, price }
   const [removing, setRemoving] = useState(null); // { item, reason }
   const [history, setHistory] = useState(null); // { loading, movements }
   const { toast } = useToast();
@@ -126,6 +132,26 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
       setError(err.response?.data?.error || err.message || "Could not add the medication.");
     } finally {
       setAdding(false);
+    }
+  };
+
+  const confirmPrice = async () => {
+    setBusyId(pricing.item.id);
+    try {
+      await base44.functions.invoke("pharmacistInventoryManage", {
+        action: "set_price",
+        inventory_id: pricing.item.id,
+        price: pricing.price === "" ? undefined : Number(pricing.price),
+        pharmacist_id: session.pharmacist_id,
+        pharmacist_session_token: session.session_token,
+      });
+      toast({ title: "Price updated", description: `${pricing.item.medication_name} is now shown to patients at the new price.` });
+      setPricing(null);
+      load();
+    } catch (err) {
+      toast({ title: "Price update failed", description: err.response?.data?.error || err.message, variant: "destructive" });
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -300,9 +326,15 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
                 <Label>Supplier</Label>
                 <Input placeholder="e.g. National Medical Supply" value={form.supplier} onChange={set("supplier")} />
               </div>
-              <div className="space-y-1.5">
-                <Label>Quantity in Stock *</Label>
-                <Input type="number" min="0" placeholder="e.g. 100" value={form.quantity_in_stock} onChange={set("quantity_in_stock")} required />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Quantity in Stock *</Label>
+                  <Input type="number" min="0" placeholder="e.g. 100" value={form.quantity_in_stock} onChange={set("quantity_in_stock")} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Price (LYD)</Label>
+                  <Input type="number" min="0" step="0.01" placeholder="e.g. 12.50" value={form.price} onChange={set("price")} />
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={adding}>
                 {adding && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -371,6 +403,7 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
                       {item.batch_number ? ` · Batch ${item.batch_number}` : ""}
                       {item.expiry_date ? ` · Expires ${item.expiry_date}` : ""}
                       {item.supplier ? ` · Supplier: ${item.supplier}` : ""}
+                      {formatPrice(item.price) ? ` · ${formatPrice(item.price)}` : ""}
                       {quarantined && item.quarantine_reason ? ` · ${item.quarantine_reason}` : ""}
                     </p>
                   </div>
@@ -397,6 +430,15 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
                       </Button>
                     )
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy || quarantined}
+                    onClick={() => setPricing({ item, price: typeof item.price === "number" ? String(item.price) : "" })}
+                    className="gap-1 text-xs text-muted-foreground"
+                  >
+                    <Tag className="w-3.5 h-3.5" /> {formatPrice(item.price) || "Set Price"}
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => openHistory(item)} className="gap-1 text-xs text-muted-foreground">
                     <History className="w-3.5 h-3.5" /> History
                   </Button>
@@ -446,6 +488,40 @@ export default function PharmacistInventorySection({ session, onSessionExpired }
                 <Button onClick={confirmAdjust} disabled={busyId === adjust?.item?.id || !adjust.qty || !adjust.reason.trim()} className="gap-1.5">
                   {busyId === adjust?.item?.id && <Loader2 className="w-4 h-4 animate-spin" />}
                   Save Adjustment
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Price edit — shown to patients when they compare pharmacies. */}
+      <Dialog open={!!pricing} onOpenChange={(open) => { if (!open) setPricing(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Price{pricing ? ` — ${pricing.item.medication_name}` : ""}</DialogTitle>
+          </DialogHeader>
+          {pricing && (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Price per unit, in LYD. This is the price patients see when they compare pharmacies and authorize a prescription. Leave empty to show no price.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Price (LYD)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 12.50"
+                  value={pricing.price}
+                  onChange={(e) => setPricing((s) => ({ ...s, price: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setPricing(null)} disabled={busyId === pricing?.item?.id}>Cancel</Button>
+                <Button onClick={confirmPrice} disabled={busyId === pricing?.item?.id || pricing.price === ""} className="gap-1.5">
+                  {busyId === pricing?.item?.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Price
                 </Button>
               </div>
             </div>

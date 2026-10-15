@@ -2,7 +2,12 @@ import React from "react";
 import usePrescriptionAvailability from "@/components/pharmacy/usePrescriptionAvailability";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
-import { Building2, Loader2, MapPin, RefreshCw } from "lucide-react";
+import { Building2, Loader2, MapPin, RefreshCw, Tag } from "lucide-react";
+
+const formatPrice = (price) =>
+  typeof price === "number"
+    ? `LYD ${Number.isInteger(price) ? price : price.toFixed(2)} per unit`
+    : null;
 
 // Automatic medication availability check across affiliated pharmacies.
 // Runs as soon as the component mounts (and on refresh) — shows stock levels,
@@ -57,6 +62,11 @@ export default function PrescriptionAvailability({ medicationName, strength, act
                 </p>
               </div>
               <div className="text-right shrink-0">
+                {formatPrice(p.price) && (
+                  <p className="text-sm font-bold text-primary flex items-center justify-end gap-1">
+                    <Tag className="w-3.5 h-3.5" /> {formatPrice(p.price)}
+                  </p>
+                )}
                 <p className="text-sm font-bold text-emerald-700">{p.quantity_in_stock} in stock</p>
                 <p className="text-[11px] text-muted-foreground">
                   {p.updated_datetime ? `Updated ${new Date(p.updated_datetime).toLocaleString()}` : "AM Pharmacy"}
@@ -92,6 +102,11 @@ export default function PrescriptionAvailability({ medicationName, strength, act
                   </p>
                 </div>
                 <div className="text-right shrink-0">
+                  {formatPrice(s.price) && (
+                    <p className="text-sm font-bold text-amber-700 flex items-center justify-end gap-1">
+                      <Tag className="w-3.5 h-3.5" /> {formatPrice(s.price)}
+                    </p>
+                  )}
                   <p className="text-sm font-bold text-amber-700">{s.quantity_in_stock} in stock</p>
                   <p className="text-[11px] text-muted-foreground">{s.active_ingredient || ""}</p>
                 </div>
