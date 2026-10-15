@@ -4,7 +4,6 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
-import LabDashboardSection from "@/components/lab/portal/LabDashboardSection";
 import LabRequestsSection from "@/components/lab/portal/LabRequestsSection";
 import LabPendingTestsSection from "@/components/lab/portal/LabPendingTestsSection";
 import LabCompletedSection from "@/components/lab/portal/LabCompletedSection";
@@ -15,10 +14,9 @@ import LabNotificationsBar from "@/components/lab/portal/LabNotificationsBar";
 import NotificationsBell from "@/components/lab/notifications/NotificationsBell";
 import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, FlaskConical, TestTube, CheckCircle2, Users, UserCog, Building2, Megaphone } from "lucide-react";
+import { FlaskConical, TestTube, CheckCircle2, Users, UserCog, Building2, Megaphone } from "lucide-react";
 
 const navItems = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "requests", label: "Lab Requests", icon: FlaskConical },
   { key: "pending", label: "Pending Tests", icon: TestTube },
   { key: "completed", label: "Completed Payments/Results", icon: CheckCircle2 },
@@ -32,7 +30,7 @@ export default function LabPortal() {
   const { user } = useAuth();
   const { t } = useAppLanguage();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("requests");
   const [notifPatientId, setNotifPatientId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +86,6 @@ export default function LabPortal() {
 
         <LabNotificationsBar />
 
-        {activeTab === "dashboard" && <LabDashboardSection profile={profile} />}
         {activeTab === "requests" && <LabRequestsSection profile={profile} />}
         {activeTab === "patients" && (
           <LabPatientsSection
