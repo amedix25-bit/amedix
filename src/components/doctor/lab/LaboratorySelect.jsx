@@ -50,6 +50,7 @@ export default function LaboratorySelect({ value, onChange }) {
           items={(results || []).map((l) => ({
             id: l.id,
             name: l.lab_name,
+            lab_name: l.lab_name,
             subtitle: l.lab_number ? `A&M Lab Number: ${l.lab_number}` : "",
             logo_url: l.logo_url,
             address: l.address,
