@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import ScanRequestQrFlow from "@/components/lab/technician/ScanRequestQrFlow";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
-import { FileText, FlaskConical, Loader2, QrCode, Upload } from "lucide-react";
+import { Eye, FileText, FlaskConical, Loader2, QrCode, Upload } from "lucide-react";
 
 const MAX_FILE_BYTES = 3 * 1024 * 1024;
 
@@ -193,6 +193,24 @@ export default function TechnicianLabRequestsSection({ session }) {
           )}
           {normalizeLabStatus(r.status) === "results" && (
             <div className="mt-3 flex flex-wrap gap-2">
+              {r.result_file_url && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(r.result_file_url, "_blank")}
+                >
+                  <Eye className="w-4 h-4 mr-1" /> View Results
+                </Button>
+              )}
+              {r.corrected_result_file_url && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(r.corrected_result_file_url, "_blank")}
+                >
+                  <Eye className="w-4 h-4 mr-1" /> View Corrected Results
+                </Button>
+              )}
               <Button size="sm" disabled={busyId === r.id} onClick={() => verifyResult(r)}>
                 {busyId === r.id && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
                 {r.result_verified ? "Verify & Release Again" : "Verify & Release Result"}

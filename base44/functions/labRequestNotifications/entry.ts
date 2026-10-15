@@ -41,6 +41,11 @@ export default async function(req: Request): Promise<Response> {
       status: r.status,
       tests: (r.tests || []).map((t) => t.name),
       pdf_url: r.pdf_url || null,
+      result_file_url: r.result_file_url || null,
+      result_file_name: r.result_file_name || null,
+      result_submitted_by_name: r.result_submitted_by_name || null,
+      result_verified: Boolean(r.result_verified),
+      corrected_result_file_url: r.corrected_result_file_url || null,
       opened: Boolean(r.lab_opened_at),
     }));
 
