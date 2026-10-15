@@ -52,7 +52,7 @@ export default async function(req) {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'published' }));
       } else if (ad.status === 'published' && check.reason === 'after_end') {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
-      } else if (['published', 'scheduled'].includes(ad.status) && check.reason === 'subscription_inactive') {
+      } else if (['published', 'scheduled', 'approved'].includes(ad.status) && check.reason === 'subscription_inactive') {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
       }
 

@@ -97,7 +97,11 @@ export function adDisplayEligible(ad, sub, settings, now = new Date()) {
   if (ad.campaign_end_date && today > ad.campaign_end_date) {
     return { eligible: false, reason: 'after_end', effective };
   }
-  if (ad.status === 'published') return { eligible: true, reason: 'published', effective };
+  // An APPROVED ad goes live as soon as it is approved (and within its campaign
+  // window) — administrator approval is what makes an ad patient-visible.
+  if (ad.status === 'published' || ad.status === 'approved') {
+    return { eligible: true, reason: ad.status === 'published' ? 'published' : 'approved', effective };
+  }
   if (ad.status === 'scheduled') return { eligible: true, reason: 'in_window', effective };
   return { eligible: false, reason: ad.status, effective };
 }

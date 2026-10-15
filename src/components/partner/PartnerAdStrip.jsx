@@ -53,16 +53,10 @@ export default function PartnerAdStrip({ section }) {
         </p>
         <span className="text-[10px] text-muted-foreground">{t("Sponsored")}</span>
       </div>
-      {premium.length > 0 && (
-        <div className="space-y-3 mb-3">
-          {premium.map((ad) => <PartnerAdCard key={ad.partner_id} ad={ad} premium />)}
-        </div>
-      )}
-      {standard.length > 0 && (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {standard.map((ad) => <PartnerAdCard key={ad.partner_id} ad={ad} />)}
-        </div>
-      )}
+      <div className="space-y-3">
+        {premium.map((ad) => <PartnerAdCard key={ad.partner_id} ad={ad} premium />)}
+        {standard.map((ad) => <PartnerAdCard key={ad.partner_id} ad={ad} />)}
+      </div>
     </div>
   );
 }
