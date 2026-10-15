@@ -82,19 +82,22 @@ export default function DoctorVisits({ patientId }) {
 function DoctorVisitDetail({ visit, onBack }) {
   const { t } = usePatientLanguage();
   const [items, setItems] = useState(null);
+  const [error, setError] = useState("");
   const [openId, setOpenId] = useState(null);
   const ar = useDoctorTextAr(visit.patient_id, (items || []).map((i) => i.content || i.diagnosis || ""));
 
   useEffect(() => {
     const load = async () => {
+      setItems(null);
+      setError("");
       try {
         const [docs, notes] = await Promise.all([
           base44.entities.ClinicalDocument.filter(
-            { patient_id: visit.patient_id, encounter_id: visit.id, status: "signed" },
+            { patient_id: visit.patient_id, encounter_id: visit.encounter_id, status: "signed" },
             "-created_datetime"
           ),
           base44.entities.ClinicalNote.filter(
-            { patient_id: visit.patient_id, encounter_id: visit.id },
+            { patient_id: visit.patient_id, encounter_id: visit.encounter_id },
             "-date"
           ),
         ]);
@@ -106,11 +109,11 @@ function DoctorVisitDetail({ visit, onBack }) {
         setItems(list);
       } catch (err) {
         console.error(err);
-        setItems([]);
+        setError("Could not load the notes for this visit. Please reopen the visit to try again.");
       }
     };
     load();
-  }, [visit.id]);
+  }, [visit.patient_id, visit.encounter_id]);
 
   const openPdf = (item) => {
     if (item.kind === "document" && item.pdf_url) {
@@ -151,7 +154,9 @@ function DoctorVisitDetail({ visit, onBack }) {
           <FileText className="w-4 h-4" />
           {t("Clinical Notes")}
         </p>
-        {items === null ? (
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">{t(error)}</p>
+        ) : items === null ? (
           <div className="flex items-center py-4 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin mr-2 rtl:ml-2 rtl:mr-0" />
             {t("Loading...")}
