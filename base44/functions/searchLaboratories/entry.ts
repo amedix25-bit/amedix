@@ -14,7 +14,6 @@ export default async function(req) {
 
     const body = await req.json().catch(() => ({}));
     const query = String(body.query || '').trim().slice(0, 60);
-    if (query.length < 1) return Response.json({ laboratories: [] });
 
     const labs = await base44.asServiceRole.entities.LaboratoryProfile.list('lab_name', 200);
     const needle = query.toLowerCase();
@@ -22,6 +21,7 @@ export default async function(req) {
       .filter((l) => {
         // Only officially registered, approved and currently active laboratories appear.
         if (l.status && l.status !== 'active') return false;
+        if (!needle) return true; // empty query returns the first registered laboratories
         const name = (l.lab_name || '').toLowerCase();
         const number = (l.lab_number || '').toLowerCase();
         return name.includes(needle) || number.includes(needle);

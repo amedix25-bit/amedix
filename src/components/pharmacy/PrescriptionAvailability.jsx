@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import usePrescriptionAvailability from "@/components/pharmacy/usePrescriptionAvailability";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Image } from "@/components/ui/image";
-import { Building2, Clock, Loader2, MapPin, RefreshCw, Tag } from "lucide-react";
+import { Building2, Clock, Loader2, MapPin, RefreshCw, Search, Tag } from "lucide-react";
 
 const formatPrice = (price) =>
   typeof price === "number"
@@ -20,6 +21,13 @@ const formatPrice = (price) =>
 export default function PrescriptionAvailability({ medicationName, strength, activeIngredient, onSelect, refreshKey, showSubstitutes }) {
   const { pharmacies, substitutes, loading, error, check } = usePrescriptionAvailability({
     medicationName, strength, activeIngredient, refreshKey,
+  });
+  const [filter, setFilter] = useState("");
+  const filteredPharmacies = (pharmacies || []).filter((p) => {
+    const needle = filter.trim().toLowerCase();
+    if (!needle) return true;
+    return (p.pharmacy_name || "").toLowerCase().includes(needle) ||
+      (p.address || "").toLowerCase().includes(needle);
   });
 
   return (
@@ -46,7 +54,21 @@ export default function PrescriptionAvailability({ medicationName, strength, act
       )}
       {!loading && !error && pharmacies && pharmacies.length > 0 && (
         <div className="mt-2 space-y-2">
-          {pharmacies.map((p) => (
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground rtl:left-auto rtl:right-3" />
+            <Input
+              placeholder="Search pharmacies by name or address..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="pl-9 rtl:pl-3 rtl:pr-9"
+            />
+          </div>
+          {filteredPharmacies.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No pharmacy matches "{filter}".
+            </p>
+          )}
+          {filteredPharmacies.map((p) => (
             <div key={p.pharmacy_id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
               {p.logo_url ? (
                 <Image src={p.logo_url} alt={p.pharmacy_name} className="w-10 h-10 rounded-full border border-border" />

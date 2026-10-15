@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LabTestPicker from "@/components/doctor/lab/LabTestPicker";
+import LaboratorySelect from "@/components/doctor/lab/LaboratorySelect";
 import LabRequestReview from "@/components/doctor/lab/LabRequestReview";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
@@ -279,13 +280,9 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="lab_name">Laboratory *</Label>
-          <Input
-            id="lab_name"
-            placeholder="Laboratory to receive this request"
+          <LaboratorySelect
             value={form.lab_name}
-            onChange={(e) => setForm({ ...form, lab_name: e.target.value })}
-            required
+            onChange={(lab) => setForm({ ...form, lab_name: lab?.lab_name || "" })}
           />
         </div>
       </div>
