@@ -27,10 +27,8 @@ export function HistoryStatusBadge({ status }) {
   );
 }
 
-function MedRow({ entry, onReconciled, readOnly }) {
-  const isOpen = entry.status?.is_active !== false;
+function MedRow({ med, onReconciled, readOnly }) {
   const [expanded, setExpanded] = useState(false);
-  const med = entry;
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
