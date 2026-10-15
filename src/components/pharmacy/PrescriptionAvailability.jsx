@@ -2,7 +2,7 @@ import React from "react";
 import usePrescriptionAvailability from "@/components/pharmacy/usePrescriptionAvailability";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
-import { Building2, Loader2, MapPin, RefreshCw, Tag } from "lucide-react";
+import { Building2, Clock, Loader2, MapPin, RefreshCw, Tag } from "lucide-react";
 
 const formatPrice = (price) =>
   typeof price === "number"
@@ -58,8 +58,13 @@ export default function PrescriptionAvailability({ medicationName, strength, act
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">{p.pharmacy_name}</p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {p.address || "—"}
+                  <MapPin className="w-3 h-3 shrink-0" /> {p.address || "—"}
                 </p>
+                {p.operating_hours && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3 shrink-0" /> {p.operating_hours}
+                  </p>
+                )}
               </div>
               <div className="text-right shrink-0">
                 {formatPrice(p.price) && (
