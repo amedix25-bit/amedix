@@ -153,14 +153,16 @@ export default async function(req) {
     // information or diagnoses — only one-way deduplication hashes.
     if (action === 'analytics') {
       const eventsEntity = base44.asServiceRole.entities.PartnerAdEvent;
-      const subs = await subsEntity.filter({}, { limit: 500 });
+      const scopeType = body.partner_type === 'laboratory' ? 'laboratory' : body.partner_type === 'pharmacy' ? 'pharmacy' : null;
+      const scopeQuery = scopeType ? { partner_type: scopeType } : {};
+      const subs = await subsEntity.filter(scopeQuery, { limit: 500 });
       const settings = await loadPlanSettings(base44);
       const now = new Date();
       const all = subs.items || subs;
-      const byType = await eventsEntity.aggregate({ groupBy: 'event_type' });
-      const byPartner = await eventsEntity.aggregate({ groupBy: 'partner_id' });
+      const byType = await eventsEntity.aggregate({ query: scopeQuery, groupBy: 'event_type' });
+      const byPartner = await eventsEntity.aggregate({ query: scopeQuery, groupBy: 'partner_id' });
       const impressionsByPartner = await eventsEntity.aggregate({
-        query: { event_type: 'impression' }, groupBy: 'partner_id',
+        query: { ...scopeQuery, event_type: 'impression' }, groupBy: 'partner_id',
       });
       const totalsByType = {};
       for (const row of byType.rows || []) totalsByType[row.event_type] = row.count;

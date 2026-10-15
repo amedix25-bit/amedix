@@ -3,11 +3,13 @@ import { base44 } from "@/api/base44Client";
 import AdminPartnerPlans from "@/components/admin/partner/AdminPartnerPlans";
 import AdminPartnerSubscriptions from "@/components/admin/partner/AdminPartnerSubscriptions";
 import AdminPartnerAnalytics from "@/components/admin/partner/AdminPartnerAnalytics";
-import { Loader2 } from "lucide-react";
+import { Building2, FlaskConical, Loader2 } from "lucide-react";
 
-// Admin section for the partner advertising and subscription system: plan
-// settings, subscription management and aggregated analytics.
+// Admin section for the partner advertising and subscription system. Two
+// separate partner areas — pharmacies and laboratories — each with the same
+// three views: plan settings, subscription management and analytics.
 export default function AdminPartnerAds() {
+  const [partnerType, setPartnerType] = useState("pharmacy");
   const [view, setView] = useState("plans");
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,34 +35,57 @@ export default function AdminPartnerAds() {
     );
   }
 
+  const typeOptions = [
+    { key: "pharmacy", label: "Pharmacy Ads", sub: "Shown in the patient Prescriptions tab", icon: Building2 },
+    { key: "laboratory", label: "Laboratory Ads", sub: "Shown in the patient Labs tab", icon: FlaskConical },
+  ];
+
+  const tabs = [
+    { key: "plans", label: "Plans & Pricing" },
+    { key: "subs", label: "Subscriptions" },
+    { key: "analytics", label: "Analytics" },
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setView("plans")}
-          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${view === "plans" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
-        >
-          Plans & Pricing
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("subs")}
-          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${view === "subs" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
-        >
-          Subscriptions
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("analytics")}
-          className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${view === "analytics" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
-        >
-          Analytics
-        </button>
+      {/* Two separate partner ad areas — pick one, the same three tabs follow */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {typeOptions.map(({ key, label, sub, icon: Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => { setPartnerType(key); setView("plans"); }}
+            className={`flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-colors ${
+              partnerType === key ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"
+            }`}
+          >
+            <span className={`rounded-lg p-2.5 shrink-0 ${partnerType === key ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+              <Icon className="w-5 h-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{label}</span>
+              <span className="block text-xs text-muted-foreground truncate">{sub}</span>
+            </span>
+          </button>
+        ))}
       </div>
-      {view === "plans" && <AdminPartnerPlans settings={settings} onSaved={load} />}
-      {view === "subs" && <AdminPartnerSubscriptions settings={settings} onChanged={load} />}
-      {view === "analytics" && <AdminPartnerAnalytics refreshKey={settings?.updated_datetime} />}
+
+      <div className="flex gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setView(tab.key)}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${view === tab.key ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {view === "plans" && <AdminPartnerPlans settings={settings} partnerType={partnerType} onSaved={load} />}
+      {view === "subs" && <AdminPartnerSubscriptions key={partnerType} settings={settings} fixedPartnerType={partnerType} onChanged={load} />}
+      {view === "analytics" && <AdminPartnerAnalytics refreshKey={settings?.updated_datetime} partnerType={partnerType} />}
     </div>
   );
 }

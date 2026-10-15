@@ -8,13 +8,13 @@ import { BarChart3, Eye, MousePointerClick, Phone, MapPin, Wallet, AlertTriangle
 // outstanding upgrade fees, effective status). Ad analytics events carry no
 // patient identities or health information — only anonymized, deduplicated
 // counts.
-export default function AdminPartnerAnalytics({ refreshKey }) {
+export default function AdminPartnerAnalytics({ refreshKey, partnerType }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const res = await base44.functions.invoke("adminPartnerManage", { action: "analytics" });
+      const res = await base44.functions.invoke("adminPartnerManage", { action: "analytics", partner_type: partnerType });
       setData(res.data.analytics);
       setError("");
     } catch (err) {

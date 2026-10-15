@@ -47,7 +47,7 @@ const METHOD_LABEL = { cash: "Cash", bank_transfer: "Bank transfer", card: "Card
 // suspend/reinstate/cancel, the administrator-verified payment ledger
 // (payments with reference and verification, refunds, adjustments) and the
 // payment audit trail.
-export default function AdminPartnerSubscriptions({ settings, onChanged }) {
+export default function AdminPartnerSubscriptions({ settings, onChanged, fixedPartnerType }) {
   const { toast } = useToast();
   const [subs, setSubs] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -58,7 +58,7 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
     amount: "", method: "bank_transfer", note: "", entry_type: "payment",
     applies_to: "subscription", payment_date: "", payment_reference: "",
   });
-  const [filters, setFilters] = useState({ q: "", partner_type: "all", tier: "all", status: "all", renewal_before: "" });
+  const [filters, setFilters] = useState({ q: "", partner_type: fixedPartnerType || "all", tier: "all", status: "all", renewal_before: "" });
 
   const load = useCallback(async () => {
     try {
@@ -130,12 +130,14 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
         <div className="grid sm:grid-cols-5 gap-2">
           <Input placeholder="Search organization..." value={filters.q}
             onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
-          <select value={filters.partner_type} onChange={(e) => setFilters({ ...filters, partner_type: e.target.value })}
-            className="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm">
-            <option value="all">All partner types</option>
-            <option value="pharmacy">Pharmacies</option>
-            <option value="laboratory">Laboratories</option>
-          </select>
+          {!fixedPartnerType && (
+            <select value={filters.partner_type} onChange={(e) => setFilters({ ...filters, partner_type: e.target.value })}
+              className="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm">
+              <option value="all">All partner types</option>
+              <option value="pharmacy">Pharmacies</option>
+              <option value="laboratory">Laboratories</option>
+            </select>
+          )}
           <select value={filters.tier} onChange={(e) => setFilters({ ...filters, tier: e.target.value })}
             className="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm">
             <option value="all">All plans</option>
@@ -162,8 +164,8 @@ export default function AdminPartnerSubscriptions({ settings, onChanged }) {
             Showing {filtered.length} of {subs.length} subscription{subs.length === 1 ? "" : "s"}
           </p>
           <div className="flex gap-2">
-            {(filters.q || filters.partner_type !== "all" || filters.tier !== "all" || filters.status !== "all" || filters.renewal_before) && (
-              <Button variant="ghost" size="sm" onClick={() => setFilters({ q: "", partner_type: "all", tier: "all", status: "all", renewal_before: "" })}>
+            {(filters.q || filters.partner_type !== (fixedPartnerType || "all") || filters.tier !== "all" || filters.status !== "all" || filters.renewal_before) && (
+              <Button variant="ghost" size="sm" onClick={() => setFilters({ q: "", partner_type: fixedPartnerType || "all", tier: "all", status: "all", renewal_before: "" })}>
                 Clear filters
               </Button>
             )}
