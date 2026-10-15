@@ -88,7 +88,7 @@ export default function LabPortal() {
 
         <LabNotificationsBar />
 
-        {activeTab === "dashboard" && <LabDashboardSection profile={profile} />}
+        {activeTab === "dashboard" && <LabDashboardSection profile={profile} onNavigate={setActiveTab} />}
         {activeTab === "requests" && <LabRequestsSection profile={profile} />}
         {activeTab === "patients" && (
           <LabPatientsSection
