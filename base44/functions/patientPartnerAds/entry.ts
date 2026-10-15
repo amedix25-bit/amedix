@@ -24,7 +24,9 @@ export default async function(req) {
     const body = await req.json().catch(() => ({}));
     const section = body.section === 'laboratory' ? 'laboratory' : 'pharmacy';
 
-    const settings = await loadPlanSettings(base44);
+    // Entitlement settings are administrator-only. Read them server-side after
+    // authentication, without exposing billing settings to the patient.
+    const settings = await loadPlanSettings(base44.asServiceRole);
     const now = new Date();
 
     const adsEntity = base44.asServiceRole.entities.PartnerAdvertisement;
@@ -52,12 +54,13 @@ export default async function(req) {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'published' }));
       } else if (ad.status === 'published' && check.reason === 'after_end') {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
-      } else if (['published', 'scheduled', 'approved'].includes(ad.status) && check.reason === 'subscription_inactive') {
+      } else if (['published', 'scheduled'].includes(ad.status) && check.reason === 'subscription_inactive') {
         pendingStatusPatches.push(adsEntity.update(ad.id, { status: 'expired' }));
       }
 
       if (!check.eligible) continue;
       out.push({
+        ad_id: ad.id,
         partner_id: ad.partner_id,
         partner_name: ad.partner_name,
         partner_number: ad.partner_number,
