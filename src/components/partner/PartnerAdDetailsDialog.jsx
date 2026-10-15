@@ -39,7 +39,7 @@ export default function PartnerAdDetailsDialog({ ad, premium = false }) {
                   <Building2 className="w-4 h-4 text-muted-foreground" />
                 )}
               </div>
-              <span className="min-w-0 truncate">{ad.partner_name}</span>
+              <span className="min-w-0 truncate">{ad.company_name || ad.partner_name}</span>
               {premium && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 text-amber-950 text-[10px] font-bold px-2 py-0.5 shrink-0">
                   <Sparkles className="w-3 h-3" /> {t("Premium Partner")}

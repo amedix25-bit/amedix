@@ -34,6 +34,10 @@
       "type": "string",
       "description": "A&M Pharmacy / Lab Number \u2014 snapshot from the profile"
     },
+    "company_name": {
+      "type": "string",
+      "description": "Company / organization name the partner enters with the advertisement \u2014 required before the ad can be submitted for review, shown to patients on the advertisement"
+    },
     "title": {
       "type": "string",
       "description": "Advertisement title \u2014 written by the partner, approved by the administrator"

@@ -68,6 +68,9 @@ export default function PartnerAdCard({ ad, premium = false }) {
               {t("Sponsored")}
             </span>
           </div>
+          {(ad.company_name || ad.partner_name) && (
+            <p className="text-xs font-medium mt-0.5 truncate">{ad.company_name || ad.partner_name}</p>
+          )}
           {metaLine && <p className="text-xs text-muted-foreground mt-0.5 truncate">{metaLine}</p>}
           {ad.ad_description && (
             <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{ad.ad_description}</p>

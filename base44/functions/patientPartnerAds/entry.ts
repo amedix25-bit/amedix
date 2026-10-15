@@ -73,6 +73,7 @@ export default async function(req) {
         partner_phone: '',
         partner_whatsapp: '',
         tier: sub.tier,
+        company_name: ad.company_name || '',
         ad_title: ad.title || '',
         ad_description: ad.description || '',
         ad_cover_url: ad.cover_url || '',

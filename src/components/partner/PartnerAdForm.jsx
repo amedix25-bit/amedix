@@ -25,6 +25,7 @@ const AD_STATUS = {
 // renewed administrator approval; editing a rejected one returns it to draft.
 export default function PartnerAdForm({ subscription, advertisement, partnerType, onSaved }) {
   const { toast } = useToast();
+  const [companyName, setCompanyName] = useState(advertisement?.company_name || "");
   const [title, setTitle] = useState(advertisement?.title || "");
   const [description, setDescription] = useState(advertisement?.description || "");
   const [coverUrl, setCoverUrl] = useState(advertisement?.cover_url || "");
@@ -81,6 +82,7 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
 
   const contentPayload = {
     ad_id: advertisement?.id,
+    company_name: companyName,
     title, description, cover_url: coverUrl,
     services: services.split(",").map((s) => s.trim()).filter(Boolean),
     contact_phone: phone, hours,
@@ -100,7 +102,7 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Shown to patients in your section only. Your name, logo and address come from your profile automatically. Only the AMedix administrator can approve and publish it.
+        Shown to patients in your section only. Your logo and address come from your profile automatically. Only the AMedix administrator can approve and publish it.
       </p>
 
       {status === "rejected" && advertisement?.rejection_reason && (
@@ -122,6 +124,11 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
         </div>
       )}
 
+      <div className="space-y-1.5">
+        <Label className="text-xs">Company name</Label>
+        <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={120} disabled={!canEdit}
+          placeholder="e.g. AMedix Pharmacy" />
+      </div>
       <div className="space-y-1.5">
         <Label className="text-xs">Title</Label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} disabled={!canEdit}
@@ -168,7 +175,7 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
             Save
           </Button>
           {canSubmit && (
-            <Button type="button" variant="outline" onClick={submit} disabled={busy || uploading || !title.trim() || !description.trim()}>
+            <Button type="button" variant="outline" onClick={submit} disabled={busy || uploading || !companyName.trim() || !title.trim() || !description.trim()}>
               <SendHorizonal className="w-4 h-4" /> Submit for review
             </Button>
           )}
@@ -179,8 +186,8 @@ export default function PartnerAdForm({ subscription, advertisement, partnerType
           )}
         </div>
       )}
-      {canSubmit && (!title.trim() || !description.trim()) && (
-        <p className="text-xs text-muted-foreground">A title and description are required before submitting for review.</p>
+      {canSubmit && (!companyName.trim() || !title.trim() || !description.trim()) && (
+        <p className="text-xs text-muted-foreground">Your company name, a title and a description are required before submitting for review.</p>
       )}
     </div>
   );

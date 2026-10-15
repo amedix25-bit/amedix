@@ -25,6 +25,7 @@ export function canTransition(from, to) {
 // opts.requireContent enforces title + description (needed to submit for review).
 export function validateAdContent(input = {}, opts = {}) {
   const patch = {
+    company_name: String(input.company_name || '').trim().slice(0, 120),
     title: String(input.title || '').trim().slice(0, 120),
     description: String(input.description || '').trim().slice(0, 1000),
     services: (Array.isArray(input.services) ? input.services : [])
@@ -46,8 +47,8 @@ export function validateAdContent(input = {}, opts = {}) {
   if (patch.contact_phone && !/^[0-9+\-\s()]{3,20}$/.test(patch.contact_phone)) {
     return { error: 'The contact number contains invalid characters' };
   }
-  if (opts.requireContent && (!patch.title || !patch.description)) {
-    return { error: 'A title and a description are required to submit the advertisement for review' };
+  if (opts.requireContent && (!patch.company_name || !patch.title || !patch.description)) {
+    return { error: 'Your company name, a title and a description are required to submit the advertisement for review' };
   }
   return { patch };
 }
