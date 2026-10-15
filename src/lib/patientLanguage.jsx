@@ -498,6 +498,15 @@ const AR = {
   "View PDF": "عرض PDF",
   "Provisional Diagnosis": "التشخيص المبدئي",
   "Dr.": "د.",
+  "No prescriptions for this visit": "لا توجد وصفات طبية لهذه الزيارة",
+  "No lab requests for this visit": "لا توجد طلبات تحاليل لهذه الزيارة",
+  "No imaging requests for this visit": "لا توجد طلبات تصوير لهذه الزيارة",
+  "Working Diagnosis": "التشخيص العمل الأولي",
+  "Contrast": "مادة التباين",
+  "Dosage": "الجرعة",
+  "Refills": "إعادة الصرف",
+  "Quantity": "الكمية",
+  "Result": "النتيجة",
 
   // Patient Registration screen
   "Patient Registration": "تسجيل المريض",

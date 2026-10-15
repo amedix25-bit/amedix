@@ -4,6 +4,7 @@ import { Loader2, Stethoscope, ChevronLeft, MapPin, Clock, FileText, ChevronRigh
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
+import VisitOrders from "@/components/patient/visits/VisitOrders";
 import { Button } from "@/components/ui/button";
 
 // Patient Portal → Doctor Visits. Lists every doctor visit (doctor, place,
@@ -180,6 +181,8 @@ function DoctorVisitDetail({ visit, onBack }) {
           </div>
         )}
       </div>
+
+      <VisitOrders visit={visit} />
     </div>
   );
 }
