@@ -2,9 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
   planDefaults, loadPlanSettings, priceFor, publicPlans, intervalAdvanceMs,
   buildPaymentEntry, applyPaymentPatch, verifyPaymentPatch, findExistingPayment,
-  auditEntry, effectiveStatus, paymentStatusPatch, scheduledTierPatch,
+  auditEntry, adminAuditEntry, effectiveStatus, paymentStatusPatch, scheduledTierPatch,
 } from '../../shared/partnerBilling.ts';
 import { canTransition, validateCampaignDates } from '../../shared/partnerAds.ts';
+import { notifyPartner } from '../../shared/partnerNotifications.ts';
 
 // Administrator management of the partner advertising system: plan settings
 // (prices, currency, interval, intro offers, grace period, availability,
@@ -230,6 +231,11 @@ export default async function(req) {
         const updated = await adsEntity.update(ad.id, {
           ...reviewPatch(), status: 'approved', rejection_reason: null,
         });
+        await notifyPartner(base44.asServiceRole, ad.partner_type, ad, {
+          title: 'Advertisement approved',
+          message: `"${ad.title || 'Your advertisement'}" was approved. It goes live once the subscription is active and the administrator publishes it.`,
+          dedupeKey: `ad:${ad.id}:approved:${updated.reviewed_datetime}`,
+        });
         return Response.json({ advertisement: updated });
       }
       if (!canTransition(ad.status, 'rejected')) {
@@ -239,6 +245,11 @@ export default async function(req) {
       if (!reason) return Response.json({ error: 'A rejection reason is required' }, { status: 400 });
       const updated = await adsEntity.update(ad.id, {
         ...reviewPatch(), status: 'rejected', rejection_reason: reason,
+      });
+      await notifyPartner(base44.asServiceRole, ad.partner_type, ad, {
+        title: 'Advertisement rejected',
+        message: `"${ad.title || 'Your advertisement'}" was rejected: ${reason}`,
+        dedupeKey: `ad:${ad.id}:rejected:${updated.reviewed_datetime}`,
       });
       return Response.json({ advertisement: updated });
     }
@@ -255,6 +266,11 @@ export default async function(req) {
       const updated = await adsEntity.update(ad.id, {
         ...reviewPatch(), status: 'scheduled',
         campaign_start_date: dates.start_date, campaign_end_date: dates.end_date,
+      });
+      await notifyPartner(base44.asServiceRole, ad.partner_type, ad, {
+        title: 'Advertisement scheduled',
+        message: `"${ad.title || 'Your advertisement'}" is scheduled to start on ${dates.start_date}.`,
+        dedupeKey: `ad:${ad.id}:scheduled:${updated.reviewed_datetime}`,
       });
       return Response.json({ advertisement: updated });
     }
@@ -282,6 +298,11 @@ export default async function(req) {
       const updated = await adsEntity.update(ad.id, {
         ...reviewPatch(), status: 'published', rejection_reason: null,
       });
+      await notifyPartner(base44.asServiceRole, ad.partner_type, ad, {
+        title: 'Advertisement published',
+        message: `"${ad.title || 'Your advertisement'}" is now live in the Patient Portal.`,
+        dedupeKey: `ad:${ad.id}:published_admin:${updated.reviewed_datetime}`,
+      });
       return Response.json({ advertisement: updated });
     }
 
@@ -300,6 +321,15 @@ export default async function(req) {
         }
       }
       const updated = await adsEntity.update(ad.id, { ...reviewPatch(), status: to });
+      await notifyPartner(base44.asServiceRole, ad.partner_type, ad, action === 'pause_ad' ? {
+        title: 'Advertisement paused',
+        message: `"${ad.title || 'Your advertisement'}" was paused by the administrator and is not shown to patients.`,
+        dedupeKey: `ad:${ad.id}:paused:${updated.reviewed_datetime}`,
+      } : {
+        title: 'Advertisement live again',
+        message: `"${ad.title || 'Your advertisement'}" is visible to patients again.`,
+        dedupeKey: `ad:${ad.id}:resumed:${updated.reviewed_datetime}`,
+      });
       return Response.json({ advertisement: updated });
     }
 
@@ -337,15 +367,34 @@ export default async function(req) {
         patch.intro_discount_percent = settings.intro_discount_percent;
         patch.intro_months_remaining = settings.intro_duration_months || 1;
       }
+      patch.admin_audit = [
+        ...(sub.admin_audit || []),
+        adminAuditEntry('subscription_approved', user.full_name || user.email, `Tier ${sub.tier} approved — awaiting the first verified payment`),
+      ];
       await subsEntity.update(sub.id, patch);
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: 'Subscription approved',
+        message: 'Your subscription was approved. The first verified payment activates it.',
+        dedupeKey: `sub:${sub.id}:approved`,
+      });
       return Response.json({ subscription: { ...sub, ...patch } });
     }
 
     if (action === 'suspend') {
+      const reason = String(body.reason || '').slice(0, 300) || 'Suspended by the administrator';
       await subsEntity.update(sub.id, {
         status: 'suspended',
-        suspension_reason: String(body.reason || '').slice(0, 300) || 'Suspended by the administrator',
+        suspension_reason: reason,
         admin_notes: body.admin_notes ? String(body.admin_notes).slice(0, 500) : (sub.admin_notes || ''),
+        admin_audit: [
+          ...(sub.admin_audit || []),
+          adminAuditEntry('subscription_suspended', user.full_name || user.email, reason),
+        ],
+      });
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: 'Subscription suspended',
+        message: `Your subscription was suspended: ${reason}. Its advertisement is no longer shown.`,
+        dedupeKey: `sub:${sub.id}:suspended_admin:${Date.now()}`,
       });
       // A suspended subscription can never display a Premium advertisement:
       // its live ad is paused immediately.
@@ -360,7 +409,14 @@ export default async function(req) {
 
     if (action === 'reinstate') {
       if (sub.status !== 'suspended') return Response.json({ error: 'Only suspended subscriptions can be reinstated' }, { status: 400 });
-      await subsEntity.update(sub.id, { status: 'active', suspension_reason: null });
+      await subsEntity.update(sub.id, {
+        status: 'active',
+        suspension_reason: null,
+        admin_audit: [
+          ...(sub.admin_audit || []),
+          adminAuditEntry('subscription_reinstated', user.full_name || user.email, 'Reinstated by the administrator'),
+        ],
+      });
       // Reinstate paused ads whose campaign window still permits display.
       const ads = await adsEntity.filter({ subscription_id: sub.id });
       const today = new Date().toISOString().slice(0, 10);
@@ -376,11 +432,21 @@ export default async function(req) {
     }
 
     if (action === 'cancel') {
+      const cancelReason = String(body.reason || '').slice(0, 300);
       await subsEntity.update(sub.id, {
         status: 'cancelled',
-        suspension_reason: String(body.reason || '').slice(0, 300),
+        suspension_reason: cancelReason,
         cancellation_effective_datetime: null,
         cancelled_datetime: new Date().toISOString(),
+        admin_audit: [
+          ...(sub.admin_audit || []),
+          adminAuditEntry('subscription_cancelled', user.full_name || user.email, cancelReason || 'Cancelled by the administrator'),
+        ],
+      });
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: 'Subscription cancelled',
+        message: 'Your subscription was cancelled by the administrator. Its advertisement has expired.',
+        dedupeKey: `sub:${sub.id}:cancelled_admin:${Date.now()}`,
       });
       // A cancelled subscription never retains its placement: its live or
       // scheduled advertisement expires.
@@ -443,6 +509,15 @@ export default async function(req) {
         }
       }
       await subsEntity.update(sub.id, patch);
+      // Notify the partner: cash is confirmed immediately; any other method
+      // is announced strictly as awaiting verification — never as paid.
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: entry.verification === 'confirmed' ? 'Payment recorded' : 'Payment received — awaiting verification',
+        message: entry.verification === 'confirmed'
+          ? `A ${entry.entry_type} of ${entry.amount} ${sub.currency || ''} was recorded for your subscription.`
+          : `A ${entry.entry_type} of ${entry.amount} ${sub.currency || ''} was recorded and is awaiting administrator verification.`,
+        dedupeKey: `sub:${sub.id}:payment_recorded:${entry.payment_id}`,
+      });
       return Response.json({ subscription: { ...sub, ...patch }, payment: entry });
     }
 
@@ -468,6 +543,11 @@ export default async function(req) {
         }
       }
       await subsEntity.update(sub.id, patch);
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: 'Payment verified',
+        message: 'Your payment was verified by the administrator. Billing has been updated.',
+        dedupeKey: `sub:${sub.id}:payment_verified:${body.payment_id}`,
+      });
       return Response.json({ subscription: { ...sub, ...patch } });
     }
 
@@ -487,6 +567,11 @@ export default async function(req) {
         ],
       };
       await subsEntity.update(sub.id, patch);
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: 'Payment rejected',
+        message: `A recorded payment was rejected by the administrator: ${reason}`,
+        dedupeKey: `sub:${sub.id}:payment_rejected:${body.payment_id}`,
+      });
       return Response.json({ subscription: { ...sub, ...patch } });
     }
 
@@ -510,7 +595,18 @@ export default async function(req) {
         decision_note: decisionNote,
       };
       if (action === 'reject_change') {
-        const updated = await subsEntity.update(sub.id, { pending_change: decided });
+        const updated = await subsEntity.update(sub.id, {
+          ...{ pending_change: decided },
+          admin_audit: [
+            ...(sub.admin_audit || []),
+            adminAuditEntry(`change_${change.request_type}_rejected`, user.full_name || user.email, decisionNote || 'Rejected by the administrator'),
+          ],
+        });
+        await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+          title: 'Change request rejected',
+          message: `Your ${change.request_type} request was rejected${decisionNote ? `: ${decisionNote}` : '.'}`,
+          dedupeKey: `sub:${sub.id}:change_rejected:${decided.decided_datetime}`,
+        });
         return Response.json({ subscription: updated });
       }
       const settings = settingsForSub;
@@ -554,7 +650,27 @@ export default async function(req) {
       }
       // 'renewal' requests are satisfied by recording the renewal payment —
       // approving the request only clears it.
-      const updated = await subsEntity.update(sub.id, patch);
+      const changeMessages = {
+        upgrade: 'Your Premium upgrade was approved. Featured placement starts now; the new price applies from your next renewal.',
+        downgrade: 'Your downgrade to Standard was approved. It takes effect at your next renewal.',
+        renewal: 'Your renewal request was approved — the renewal payment is recorded with the administrator.',
+        cancellation: patch.status === 'cancelled'
+          ? 'Your cancellation was approved and takes effect immediately.'
+          : 'Your cancellation was approved. The subscription stays active until the end of the paid period, then ends automatically.',
+      };
+      await subsEntity.update(sub.id, {
+        ...patch,
+        admin_audit: [
+          ...(sub.admin_audit || []),
+          adminAuditEntry(`change_${change.request_type}_approved`, user.full_name || user.email, decisionNote || 'Approved by the administrator'),
+        ],
+      });
+      await notifyPartner(base44.asServiceRole, sub.partner_type, sub, {
+        title: 'Change request approved',
+        message: changeMessages[change.request_type] || 'Your request was approved by the administrator.',
+        dedupeKey: `sub:${sub.id}:change_approved:${decided.decided_datetime}`,
+      });
+      const updated = await subsEntity.get(sub.id);
       return Response.json({ subscription: updated });
     }
 

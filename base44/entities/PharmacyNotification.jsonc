@@ -52,6 +52,10 @@
       "type": "string",
       "description": "MedicationRecall reference for recall notifications \u2014 used to acknowledge the recall from the notification"
     },
+    "dedupe_key": {
+      "type": "string",
+      "description": "Deduplication key set by the backend \u2014 the same key never creates a duplicate notification (subscription events, renewal reminders, recalls)"
+    },
     "target": {
       "type": "string",
       "enum": [

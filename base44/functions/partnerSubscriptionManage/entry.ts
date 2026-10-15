@@ -24,16 +24,21 @@ export default async function(req) {
     const action = body.action || 'get';
     const partnerType = body.partner_type === 'laboratory' ? 'laboratory' : 'pharmacy';
 
-    const settings = await loadPlanSettings(base44);
+    // Subscription, advertisement, profile and plan-settings operations run
+    // through the service role: these records are writable only by backend
+    // logic (and the administrator for settings) — never directly by a
+    // partner account at the database layer.
+    const svc = base44.asServiceRole;
+    const settings = await loadPlanSettings(svc);
 
     // The existing organization profile is reused — never duplicated.
     const profileEntity = partnerType === 'pharmacy'
-      ? base44.entities.PharmacyProfile : base44.entities.LaboratoryProfile;
+      ? svc.entities.PharmacyProfile : svc.entities.LaboratoryProfile;
     const profiles = await profileEntity.filter({ user_id: user.id });
     const profile = (profiles.items || profiles)[0];
     if (!profile) return Response.json({ error: 'Organization profile not found' }, { status: 404 });
 
-    const own = await base44.entities.PartnerSubscription.filter({
+    const own = await svc.entities.PartnerSubscription.filter({
       partner_user_id: user.id,
       partner_type: partnerType,
     });
@@ -41,7 +46,7 @@ export default async function(req) {
 
     const loadAd = async () => {
       if (!sub) return null;
-      const res = await base44.entities.PartnerAdvertisement.filter(
+      const res = await svc.entities.PartnerAdvertisement.filter(
         { subscription_id: sub.id },
         { sort: '-created_date', limit: 1 }
       );
@@ -75,10 +80,16 @@ export default async function(req) {
       if (sub && sub.status !== 'cancelled') {
         return Response.json({ error: 'You already have a subscription' }, { status: 400 });
       }
+      // Validate the advertisement content BEFORE creating the subscription so
+      // a rejected cover image or invalid content never leaves an orphaned
+      // subscription record behind.
+      const adContent = validateAdContent(body.ad || {});
+      if (adContent.error) return Response.json({ error: adContent.error }, { status: 400 });
       const snapshot = partnerProfileSnapshot(partnerType, profile);
       const now = new Date().toISOString();
       const base = {
         ...snapshot,
+        partner_type: partnerType,
         tier,
         status: 'pending_approval',
         price_amount: null,
@@ -97,24 +108,22 @@ export default async function(req) {
       };
       let savedSub;
       if (sub) {
-        savedSub = await base44.entities.PartnerSubscription.update(sub.id, base);
+        savedSub = await svc.entities.PartnerSubscription.update(sub.id, base);
       } else {
-        savedSub = await base44.entities.PartnerSubscription.create({
+        savedSub = await svc.entities.PartnerSubscription.create({
           ...base,
           partner_user_id: user.id,
           created_datetime: now,
         });
       }
       // Expire any previous advertisement of this partner.
-      const prevAds = await base44.entities.PartnerAdvertisement.filter({ partner_user_id: user.id, partner_type: partnerType });
+      const prevAds = await svc.entities.PartnerAdvertisement.filter({ partner_user_id: user.id, partner_type: partnerType });
       for (const old of (prevAds.items || prevAds)) {
         if (!['expired'].includes(old.status)) {
-          await base44.entities.PartnerAdvertisement.update(old.id, { status: 'expired', updated_datetime: now });
+          await svc.entities.PartnerAdvertisement.update(old.id, { status: 'expired', updated_datetime: now });
         }
       }
-      const adContent = validateAdContent(body.ad || {});
-      if (adContent.error) return Response.json({ error: adContent.error }, { status: 400 });
-      const ad = await base44.entities.PartnerAdvertisement.create({
+      const ad = await svc.entities.PartnerAdvertisement.create({
         ad_id: `PAB-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
         subscription_id: savedSub.id,
         partner_type: partnerType,
@@ -148,7 +157,7 @@ export default async function(req) {
     if (action === 'update_ad') {
       if (sub.status === 'cancelled') return Response.json({ error: 'Subscription is cancelled' }, { status: 400 });
       const ad = body.ad_id
-        ? await base44.entities.PartnerAdvertisement.get(body.ad_id)
+        ? await svc.entities.PartnerAdvertisement.get(body.ad_id)
         : await loadAd();
       if (!ad || ad.partner_user_id !== user.id) return Response.json({ error: 'Advertisement not found' }, { status: 404 });
       if (ad.status === 'expired') return Response.json({ error: 'This advertisement has expired' }, { status: 400 });
@@ -167,7 +176,7 @@ export default async function(req) {
       } else if (ad.status === 'rejected') {
         patch.status = 'draft';
       }
-      const updated = await base44.entities.PartnerAdvertisement.update(ad.id, patch);
+      const updated = await svc.entities.PartnerAdvertisement.update(ad.id, patch);
       return Response.json({ advertisement: updated });
     }
 
@@ -183,7 +192,7 @@ export default async function(req) {
       if (content.error) return Response.json({ error: content.error }, { status: 400 });
       const dates = validateCampaignDates(ad.campaign_start_date, ad.campaign_end_date);
       if (dates.error) return Response.json({ error: dates.error }, { status: 400 });
-      const updated = await base44.entities.PartnerAdvertisement.update(ad.id, {
+      const updated = await svc.entities.PartnerAdvertisement.update(ad.id, {
         status: 'pending_review',
         rejection_reason: null,
         updated_datetime: new Date().toISOString(),
@@ -198,7 +207,7 @@ export default async function(req) {
       if (!canTransition(ad.status, 'draft')) {
         return Response.json({ error: `An advertisement in status "${ad.status}" cannot be withdrawn` }, { status: 400 });
       }
-      const updated = await base44.entities.PartnerAdvertisement.update(ad.id, {
+      const updated = await svc.entities.PartnerAdvertisement.update(ad.id, {
         status: 'draft',
         updated_datetime: new Date().toISOString(),
       });
@@ -241,7 +250,7 @@ export default async function(req) {
         decided_datetime: null,
         decision_note: null,
       };
-      const updated = await base44.entities.PartnerSubscription.update(sub.id, { pending_change: pendingChange });
+      const updated = await svc.entities.PartnerSubscription.update(sub.id, { pending_change: pendingChange });
       return Response.json({ subscription: { ...updated, pending_change: pendingChange } });
     }
 

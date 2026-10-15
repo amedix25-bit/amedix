@@ -209,6 +209,18 @@ export function auditEntry(action, byName, paymentId, details) {
   };
 }
 
+// Audit trail of sensitive ADMINISTRATIVE subscription actions (approval,
+// suspension, reinstatement, cancellation, change decisions) — who did what
+// and when. Kept on the subscription record next to the payment audit.
+export function adminAuditEntry(action, byName, details) {
+  return {
+    datetime: new Date().toISOString(),
+    action,
+    by_name: byName || "",
+    details: details || "",
+  };
+}
+
 // The plan view seen by partners — public pricing fields only.
 export function publicPlans(settings, partnerType) {
   return {

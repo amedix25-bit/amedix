@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
   loadPlanSettings, planDefaults, effectiveStatus, intervalAdvanceMs, DAY_MS,
 } from '../../shared/partnerBilling.ts';
+import { notifyPartner } from '../../shared/partnerNotifications.ts';
 
 // Automatic lifecycle scan for partner subscriptions and advertisements.
 // Called only by the scheduled "Partner Lifecycle Scan" workflow, so it
@@ -96,10 +97,43 @@ export default async function(req) {
         };
       }
 
+      // Approaching-renewal reminder — once per billing date, 7 days ahead.
+      if (sub.status === 'active' && sub.next_billing_datetime) {
+        const dueMs = new Date(sub.next_billing_datetime).getTime() - now.getTime();
+        if (dueMs > 0 && dueMs <= 7 * DAY_MS) {
+          await notifyPartner(s, sub.partner_type, sub, {
+            title: 'Renewal due soon',
+            message: `Your subscription renews on ${sub.next_billing_datetime.slice(0, 10)}.`,
+            dedupeKey: `sub:${sub.id}:renewal_7d:${sub.next_billing_datetime}`,
+          });
+        }
+      }
+
       if (patch) {
         await subsEntity.update(sub.id, patch);
         changes.subscriptions += 1;
         const updated = { ...sub, ...patch };
+        if (updated.status === 'past_due') {
+          await notifyPartner(s, sub.partner_type, sub, {
+            title: 'Payment overdue',
+            message: `The renewal payment is overdue (was due ${sub.next_billing_datetime ? sub.next_billing_datetime.slice(0, 10) : ''}). The grace period is running — the advertisement keeps showing until it ends.`,
+            dedupeKey: `sub:${sub.id}:past_due:${sub.next_billing_datetime}`,
+          });
+        }
+        if (updated.status === 'suspended') {
+          await notifyPartner(s, sub.partner_type, sub, {
+            title: 'Subscription suspended',
+            message: 'The grace period ended without a verified payment — the paid advertising entitlement is suspended. Record a payment to restore it.',
+            dedupeKey: `sub:${sub.id}:suspended:${today}`,
+          });
+        }
+        if (updated.status === 'cancelled') {
+          await notifyPartner(s, sub.partner_type, sub, {
+            title: 'Subscription cancelled',
+            message: 'Your subscription reached its cancellation date and has ended. Its advertisement has expired.',
+            dedupeKey: `sub:${sub.id}:cancelled:${today}`,
+          });
+        }
         // A suspended subscription can never display a Premium advertisement.
         if (updated.status === 'suspended') {
           const ads = await adsEntity.filter({ subscription_id: sub.id });
@@ -131,15 +165,30 @@ export default async function(req) {
       if (ad.status === 'published' && ad.campaign_end_date && today > ad.campaign_end_date) {
         await adsEntity.update(ad.id, { status: 'expired', updated_datetime: nowIso });
         changes.ads += 1;
+        await notifyPartner(s, ad.partner_type, ad, {
+          title: 'Advertisement campaign ended',
+          message: `"${ad.title || 'Your advertisement'}" expired after its campaign end date.`,
+          dedupeKey: `ad:${ad.id}:expired:${today}`,
+        });
       } else if (ad.status === 'scheduled' && ad.campaign_start_date && today >= ad.campaign_start_date) {
         if (!ad.campaign_end_date || today <= ad.campaign_end_date) {
           if (['active', 'past_due'].includes(subEff)) {
             await adsEntity.update(ad.id, { status: 'published', updated_datetime: nowIso });
             changes.ads += 1;
+            await notifyPartner(s, ad.partner_type, ad, {
+              title: 'Advertisement is now live',
+              message: `"${ad.title || 'Your advertisement'}" is now visible to patients.`,
+              dedupeKey: `ad:${ad.id}:published:${today}`,
+            });
           }
         } else {
           await adsEntity.update(ad.id, { status: 'expired', updated_datetime: nowIso });
           changes.ads += 1;
+          await notifyPartner(s, ad.partner_type, ad, {
+            title: 'Advertisement campaign ended',
+            message: `"${ad.title || 'Your advertisement'}" expired after its campaign end date.`,
+            dedupeKey: `ad:${ad.id}:expired:${today}`,
+          });
         }
       }
     }

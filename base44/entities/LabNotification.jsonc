@@ -53,6 +53,10 @@
       "type": "string",
       "description": "Uploaded laboratory results PDF"
     },
+    "dedupe_key": {
+      "type": "string",
+      "description": "Deduplication key set by the backend \u2014 the same key never creates a duplicate notification (subscription events, renewal reminders)"
+    },
     "target": {
       "type": "string",
       "enum": [

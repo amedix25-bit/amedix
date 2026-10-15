@@ -34,12 +34,17 @@ export function validateAdContent(input = {}, opts = {}) {
   };
   const cover = String(input.cover_url || '').trim();
   if (cover) {
-    if (!/^https:\/\/[^\s]+$/i.test(cover) || cover.length > 500) {
-      return { error: 'The cover image must be a valid https image link' };
+    // Only images uploaded through the app's own public storage are accepted —
+    // arbitrary external links (and anything not https) are rejected.
+    if (!/^https:\/\/media\.base44\.com\//i.test(cover) || cover.length > 500) {
+      return { error: 'The cover image must be uploaded through AMedix — external image links are not accepted' };
     }
     patch.cover_url = cover;
   } else {
     patch.cover_url = '';
+  }
+  if (patch.contact_phone && !/^[0-9+\-\s()]{3,20}$/.test(patch.contact_phone)) {
+    return { error: 'The contact number contains invalid characters' };
   }
   if (opts.requireContent && (!patch.title || !patch.description)) {
     return { error: 'A title and a description are required to submit the advertisement for review' };

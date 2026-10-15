@@ -104,7 +104,7 @@ export default async function(req) {
 
 async function loadPlanSettingsSafe(base44) {
   try {
-    const res = await base44.entities.PartnerPlanSettings.filter({}, { limit: 1 });
+    const res = await base44.asServiceRole.entities.PartnerPlanSettings.filter({}, { limit: 1 });
     const items = res.items || res;
     return items[0] || {};
   } catch {
