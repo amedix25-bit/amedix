@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ArrowLeft, History, FileText, Pill, ClipboardList, Stethoscope, FlaskConical, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, History, FileText, Pill, ClipboardList, Stethoscope, FlaskConical, Image as ImageIcon, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import DoctorPatientVisitSection from "@/components/doctor/patients/DoctorPatientVisitSection";
 import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
 import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
@@ -17,6 +18,7 @@ import { DoctorTranslationsProvider } from "@/lib/doctorMedicalTranslations";
 // is displayed full width below (nothing shown until one is selected).
 export default function DoctorPatientRecordView({ patient, onBack, doctorProfile }) {
   const [activeTab, setActiveTab] = useState(null);
+  const [showNoteForm, setShowNoteForm] = useState(false);
 
   const tabButton = (key, label, Icon) => (
     <button
@@ -46,7 +48,6 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         {tabButton("prescriptions", "Prescriptions", Pill)}
         {tabButton("medhistory", "Medication History", ClipboardList)}
         {tabButton("visit", "Patient Visit", Stethoscope)}
-        {tabButton("newnote", "Add Clinical Note", FileText)}
         {tabButton("newlab", "Add Lab Request", FlaskConical)}
         {tabButton("newimaging", "Add Imaging", ImageIcon)}
       </div>
@@ -60,8 +61,28 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
 
       {activeTab === "notes" && (
         <section className="rounded-2xl border border-border bg-card p-6">
-          <h3 className="font-semibold text-lg mb-4">Clinical Notes</h3>
-          <DoctorPatientClinicalNotesView patientId={patient.id} doctorId={doctorProfile?.id} embedded />
+          {showNoteForm ? (
+            <>
+              <h3 className="font-semibold text-lg mb-4">Add Clinical Note</h3>
+              <ClinicalNoteForm
+                doctorProfile={doctorProfile}
+                preselectedPatient={patient}
+                onSaved={() => setShowNoteForm(false)}
+                onCancel={() => setShowNoteForm(false)}
+              />
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg">Clinical Notes</h3>
+                <Button size="sm" onClick={() => setShowNoteForm(true)}>
+                  <Plus className="w-4 h-4" />
+                  Add Clinical Note
+                </Button>
+              </div>
+              <DoctorPatientClinicalNotesView patientId={patient.id} doctorId={doctorProfile?.id} embedded />
+            </>
+          )}
         </section>
       )}
 
@@ -86,18 +107,6 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         <section className="rounded-2xl border border-border bg-card p-6">
           <h3 className="font-semibold text-lg mb-4">Patient Visit</h3>
           <DoctorPatientVisitSection patient={patient} doctorProfile={doctorProfile} />
-        </section>
-      )}
-
-      {activeTab === "newnote" && (
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <h3 className="font-semibold text-lg mb-4">Add Clinical Note</h3>
-          <ClinicalNoteForm
-            doctorProfile={doctorProfile}
-            preselectedPatient={patient}
-            onSaved={() => setActiveTab("notes")}
-            onCancel={() => setActiveTab("notes")}
-          />
         </section>
       )}
 
