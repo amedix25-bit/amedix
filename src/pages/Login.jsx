@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -20,30 +20,44 @@ import {
   routeAfterValidation,
 } from "@/lib/portalAccess";
 
-// The portal selected on the role-choice page: ?portal= wins, the role stored
-// by the landing page is the fallback.
-const urlParams = new URLSearchParams(window.location.search);
-// Post-login destination (e.g. the MCP OAuth consent page sends users here
-// with returnTo so the grant flow can resume). Same-origin paths only.
-const returnTo = safeReturnTo();
-const portalParam = urlParams.get("portal");
-const storedRole = localStorage.getItem("amh_selected_role");
-const rejectedParam = urlParams.get("rejected");
-const selectedPortal = VALID_PORTALS.includes(portalParam)
-  ? portalParam
-  : VALID_PORTALS.includes(storedRole)
-    ? storedRole
-    : null;
-
 export default function Login() {
   const { t } = useAppLanguage();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(() => (rejectedParam ? rejectionMessage(rejectedParam, t) : ""));
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [selection, setSelection] = useState(null);
+
+  // The portal selected on the role-choice page: ?portal= wins, the role
+  // stored by the landing page is the fallback. Read from the CURRENT url on
+  // every navigation — reading it once at module load captured the address
+  // the app booted on, so a client-side navigation to /login?portal=patient
+  // could still open the previous (e.g. lab) portal login.
+  const { returnTo, selectedPortal, rejectedParam } = React.useMemo(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    // Post-login destination (e.g. the MCP OAuth consent page sends users here
+    // with returnTo so the grant flow can resume). Same-origin paths only.
+    const currentReturnTo = safeReturnTo();
+    const portalParam = urlParams.get("portal");
+    const storedRole = localStorage.getItem("amh_selected_role");
+    return {
+      returnTo: currentReturnTo,
+      selectedPortal: VALID_PORTALS.includes(portalParam)
+        ? portalParam
+        : VALID_PORTALS.includes(storedRole)
+          ? storedRole
+          : null,
+      rejectedParam: urlParams.get("rejected"),
+    };
+  }, [location.search]);
+
+  useEffect(() => {
+    if (rejectedParam) setError(rejectionMessage(rejectedParam, t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rejectedParam]);
 
   const reject = (role) => logoutWithRejection(role, "/login", selectedPortal ? { portal: selectedPortal } : {});
 
@@ -86,7 +100,7 @@ export default function Login() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, returnTo, selectedPortal]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
