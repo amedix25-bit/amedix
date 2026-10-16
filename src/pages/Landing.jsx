@@ -45,7 +45,10 @@ export default function Landing() {
   const [role, setRole] = useState(null); // null | "patient" | "doctor"
 
   const selectRole = (r) => {
-    localStorage.setItem("amh_selected_role", r);
+    // The role flag is only used to reopen the matching registration form after
+    // "Create Account" — choosing a role for Log In must not store it, so
+    // logging in never drops the user into a registration flow.
+    localStorage.removeItem("amh_selected_role");
     setRole(r);
   };
 
@@ -219,7 +222,16 @@ export default function Landing() {
                     <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     {t("Log In")}
                   </Button>
-                  <Button size="lg" onClick={() => navigate(role === "lab" ? "/lab/register" : role === "hospital" ? "/hospital/register" : role === "pharmacy" ? "/pharmacy/register" : "/register")}>
+                  <Button size="lg" onClick={() => {
+                    // Registration continuation: after sign-up the role's
+                    // onboarding form reopens on the role-selection page.
+                    // Only patient/doctor onboarding reopens after sign-up;
+                    // lab/hospital/pharmacy register on their own standalone pages.
+                    if (role === "patient" || role === "doctor") {
+                      localStorage.setItem("amh_selected_role", role);
+                    }
+                    navigate(role === "lab" ? "/lab/register" : role === "hospital" ? "/hospital/register" : role === "pharmacy" ? "/pharmacy/register" : "/register");
+                  }}>
                     {t("Create Account")}
                   </Button>
                 </div>
