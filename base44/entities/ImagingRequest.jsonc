@@ -12,6 +12,10 @@
     "doctor_id": {
       "type": "string"
     },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the requesting doctor account \u2014 set server-side when the request is created, used for Row Level Security so the doctor can see and manage the requests they sent"
+    },
     "patient_cin": {
       "type": "string"
     },
@@ -249,6 +253,9 @@
           "created_by_id": "{{user.id}}"
         },
         {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
           "data.patient_user_id": "{{user.id}}"
         },
         {
@@ -270,6 +277,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
         },
         {
           "user_condition": {
