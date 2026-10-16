@@ -2,6 +2,22 @@ import { base44 } from "@/api/base44Client";
 
 export const RADIOLOGY_SPECIALTY = "Radiology";
 
+// Radiology sub-specialties — selecting one keeps the radiologist in the
+// Radiologist Portal; selecting any other specialty opens the regular
+// Doctor Portal with that specialty's clinical documentation.
+export const RADIOLOGY_SPECIALTIES = [
+  "Diagnostic Radiology",
+  "Interventional Radiology",
+  "Neuroradiology",
+  "Musculoskeletal Radiology",
+  "Pediatric Radiology",
+  "Breast Imaging",
+  "Emergency Radiology",
+  "Nuclear Medicine",
+];
+
+export const isRadiologySpecialty = (s) => s === RADIOLOGY_SPECIALTY || RADIOLOGY_SPECIALTIES.includes(s);
+
 // A doctor who selects the Radiology specialty works in the Radiologist
 // Portal — the exact same portal dedicated radiologists use. That portal runs
 // on a RadiologistProfile, so this makes sure the doctor's account has one,

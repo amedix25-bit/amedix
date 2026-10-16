@@ -18,7 +18,7 @@ import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
-import { ensureRadiologistProfile } from "@/lib/radiologyAccess";
+import { ensureRadiologistProfile, isRadiologySpecialty } from "@/lib/radiologyAccess";
 import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
@@ -97,9 +97,10 @@ export default function DoctorDashboard() {
         return;
       }
       const p = profiles[0];
-      // A doctor whose specialty is Radiology works in the Radiologist
-      // Portal — the same portal dedicated radiologists use.
-      if (p.specialization === "Radiology") {
+      // A doctor whose specialty is Radiology (or a radiology sub-specialty
+      // set while testing from the Radiologist Portal) works in the
+      // Radiologist Portal — the same portal dedicated radiologists use.
+      if (isRadiologySpecialty(p.specialization)) {
         await ensureRadiologistProfile(p, user);
         navigate("/radiologist");
         return;

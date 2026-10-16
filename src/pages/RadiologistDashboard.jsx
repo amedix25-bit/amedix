@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
 import RadiologistSpecialtySelect from "@/components/radiologist/RadiologistSpecialtySelect";
+import { isRadiologySpecialty } from "@/lib/radiologyAccess";
 import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPatient";
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
@@ -43,7 +44,15 @@ export default function RadiologistDashboard() {
         navigate("/home");
         return;
       }
-      setProfile(profiles[0]);
+      const prof = profiles[0];
+      // A leftover non-radiology specialty (saved while testing the Doctor
+      // Portal) resets to the default radiology specialty here.
+      if (prof.specialization && !isRadiologySpecialty(prof.specialization)) {
+        const fixed = "Diagnostic Radiology";
+        base44.entities.RadiologistProfile.update(prof.id, { specialization: fixed }).catch(() => {});
+        prof.specialization = fixed;
+      }
+      setProfile(prof);
     } catch (err) {
       console.error(err);
     } finally {
