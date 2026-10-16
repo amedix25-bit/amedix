@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import PrescriptionEditor from "@/components/doctor/notes/PrescriptionEditor";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
@@ -13,7 +12,7 @@ import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import DocumentFields from "@/components/doctor/encounters/DocumentFields";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
-import { X, Search, Loader2, FlaskConical, Image as ImageIcon, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
+import { X, Search, Loader2, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
 
 // "General Clinical Note" — the universal free-text note with no
 // specialty-specific structured template.
@@ -582,102 +581,6 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
           <Plus className="w-4 h-4 mr-1.5" />
           Add Provisional Diagnosis
         </Button>
-      </div>
-
-      <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-4">
-        <p className="text-sm font-semibold">Management</p>
-
-        <div className="space-y-2">
-          <Label>Prescriptions</Label>
-          <p className="text-xs text-muted-foreground">
-            Prescribed medications are automatically added to the patient's Medication History as active medications.
-          </p>
-          <PrescriptionEditor medications={medications} onChange={setMedications} specialty={mySpecialty} />
-        </div>
-
-        {isGeneralNote && (
-          <>
-            <div className="space-y-2">
-              <Label>Interventions</Label>
-              <Textarea
-                value={form.interventions}
-                onChange={(e) => setForm({ ...form, interventions: e.target.value })}
-                rows={2}
-              />
-              <MedicalDictationButton
-                value={form.interventions}
-                onChange={(v) => setForm({ ...form, interventions: v })}
-                specialty={mySpecialty}
-                contextLabel="Interventions — procedures and treatments performed"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Biopsy (if required)</Label>
-              <Textarea
-                value={form.biopsy}
-                onChange={(e) => setForm({ ...form, biopsy: e.target.value })}
-                rows={2}
-              />
-              <MedicalDictationButton
-                value={form.biopsy}
-                onChange={(v) => setForm({ ...form, biopsy: v })}
-                specialty={mySpecialty}
-                contextLabel="Biopsy details"
-              />
-            </div>
-          </>
-        )}
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="flex items-center gap-1.5"><FlaskConical className="w-4 h-4 text-primary" />Lab Requests</Label>
-            {onNavigateTab && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowDraftConfirm(true)}>
-                Go to Lab Requests <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
-          </div>
-          {selectedLabs.size > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {selectedLabs.size} lab request{selectedLabs.size !== 1 ? "s" : ""} created during this encounter will be linked to this note.
-            </p>
-          )}
-        </div>
-
-        {showDraftConfirm && (
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-            <p className="text-sm font-semibold">Save Clinical Notes Draft?</p>
-            <p className="text-xs text-muted-foreground">
-              Everything you have written will be saved as a draft linked to this patient and encounter, and restored exactly as it was when you return to Clinical Notes.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" onClick={saveDraftAndContinueToLabs} disabled={savingDraft}>
-                {savingDraft && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-                Save Draft & Continue to Labs
-              </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setShowDraftConfirm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="flex items-center gap-1.5"><ImageIcon className="w-4 h-4 text-primary" />Imaging Requests</Label>
-            {onNavigateTab && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => onNavigateTab("imaging")}>
-                Go to Imaging <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
-          </div>
-          {selectedImaging.size > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {selectedImaging.size} imaging request{selectedImaging.size !== 1 ? "s" : ""} created during this encounter will be linked to this note.
-            </p>
-          )}
-        </div>
       </div>
 
       {isGeneralNote && (
