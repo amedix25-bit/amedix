@@ -20,6 +20,10 @@ export default function DoctorHospitalGate({ profile, user, onVerified }) {
   const [error, setError] = useState("");
   const [assocs, setAssocs] = useState(null);
 
+  // Hospital pick step — the doctor selects the hospital they work in before
+  // entering its AMedix Hospital Code.
+  const [selectedHospital, setSelectedHospital] = useState(null);
+
   // Join flow (only offered when the doctor has no active association yet)
   const [joinStep, setJoinStep] = useState("code"); // code | confirm
   const [hospitalName, setHospitalName] = useState("");
@@ -96,17 +100,11 @@ export default function DoctorHospitalGate({ profile, user, onVerified }) {
           </div>
           <h1 className="text-xl font-bold">{t("Verify Your Hospital")}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("Dr.")} {(profile?.full_name || "").replace(/^Dr\.?\s*/i, "").trim()} — {t("enter the AMedix Hospital Code of the hospital where you are working today to open your Doctor Portal session.")}
+            {t("Dr.")} {(profile?.full_name || "").replace(/^Dr\.?\s*/i, "").trim()} — {t("select the hospital you work in, then enter its AMedix Hospital Code to open your Doctor Portal session.")}
           </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-sm">
-          {active.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {t("Your hospitals")}: {active.map((a) => a.hospital_name).join(", ")}
-            </p>
-          )}
-
           {needsJoin && joinStep === "code" ? (
             <>
               <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex items-start gap-2">
@@ -144,8 +142,43 @@ export default function DoctorHospitalGate({ profile, user, onVerified }) {
                 </Button>
               </div>
             </>
+          ) : !selectedHospital ? (
+            <>
+              <p className="text-xs text-muted-foreground">{t("Select the hospital you work in")}</p>
+              <div className="space-y-2">
+                {active.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setSelectedHospital(a.hospital_name)}
+                    className="w-full flex items-center gap-3 rounded-xl border border-border bg-background p-3 text-left rtl:text-right hover:border-primary/40 hover:bg-accent/40 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">{a.hospital_name}</p>
+                      {a.hospital_location && <p className="text-xs text-muted-foreground truncate">{a.hospital_location}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
           ) : (
             <>
+              <div className="rounded-lg bg-muted/50 p-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">{t("Selected hospital")}</p>
+                  <p className="font-semibold truncate">{selectedHospital}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedHospital(null); setCodeInput(""); setError(""); }}
+                  className="text-xs text-primary hover:underline shrink-0"
+                >
+                  {t("Change")}
+                </button>
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("AMedix Hospital Code")}</Label>
                 <Input
