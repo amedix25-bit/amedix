@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 
 // Portal login validation helpers. The credentials identify the user, the
 // database determines their authorized roles (checked server-side in the
@@ -55,6 +56,7 @@ export function rejectionMessage(role, t) {
 // Logs the user out and returns them to the login page they used, carrying the
 // rejection reason so the page can show the message after the reload.
 export function logoutWithRejection(role, basePath = "/login", extraParams = {}) {
+  clearDoctorHospitalSession();
   const params = new URLSearchParams(extraParams);
   params.set("rejected", role);
   base44.auth.logout(`${window.location.origin}${basePath}?${params.toString()}`);
