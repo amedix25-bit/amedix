@@ -32,6 +32,14 @@
       "type": "number",
       "description": "Laboratory Premium Partner monthly price \u2014 the TOTAL monthly price unless a separate upgrade fee is configured"
     },
+    "hospital_standard_price": {
+      "type": "number",
+      "description": "Hospital Standard Partner monthly price \u2014 unset until the administrator sets it"
+    },
+    "hospital_premium_price": {
+      "type": "number",
+      "description": "Hospital Premium Partner monthly price \u2014 the TOTAL monthly price unless a separate upgrade fee is configured"
+    },
     "premium_upgrade_fee": {
       "type": "number",
       "default": 0,
@@ -52,6 +60,14 @@
     "lab_premium_description": {
       "type": "string",
       "description": "Plan description shown to laboratories considering the Premium tier"
+    },
+    "hospital_standard_description": {
+      "type": "string",
+      "description": "Plan description shown to hospitals considering the Standard tier"
+    },
+    "hospital_premium_description": {
+      "type": "string",
+      "description": "Plan description shown to hospitals considering the Premium tier"
     },
     "plan_features": {
       "type": "array",
@@ -110,6 +126,16 @@
       "type": "boolean",
       "default": true,
       "description": "Whether the laboratory Premium plan accepts new subscriptions"
+    },
+    "hospital_standard_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the hospital Standard plan accepts new subscriptions"
+    },
+    "hospital_premium_available": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the hospital Premium plan accepts new subscriptions"
     },
     "last_lifecycle_scan_date": {
       "type": "string",

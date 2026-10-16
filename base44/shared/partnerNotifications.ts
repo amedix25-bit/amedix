@@ -12,6 +12,10 @@
 export async function notifyPartner(svc, partnerType, partner, { title, message, dedupeKey = '' }) {
   try {
     if (!partner || !partner.partner_id || !partner.partner_user_id) return null;
+    // Hospitals have no in-portal notification bar yet — their subscription
+    // status is always visible live in the partnership section, so nothing is
+    // silently lost.
+    if (partnerType === 'hospital') return null;
     const entity = partnerType === 'laboratory' ? svc.entities.LabNotification : svc.entities.PharmacyNotification;
     if (dedupeKey) {
       const existing = await entity.filter({ dedupe_key: dedupeKey }, { limit: 1 });

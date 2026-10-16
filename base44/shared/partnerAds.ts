@@ -66,6 +66,17 @@ export function validateCampaignDates(start, end) {
 
 // Snapshot of partner contact information reused from the existing profile.
 export function partnerProfileSnapshot(partnerType, profile) {
+  if (partnerType === 'hospital') {
+    return {
+      partner_id: profile.id,
+      partner_name: profile.hospital_name,
+      partner_number: profile.hospital_code || '',
+      partner_logo_url: profile.photo_url || '',
+      partner_address: profile.location || '',
+      partner_phone: profile.phone || '',
+      partner_whatsapp: '',
+    };
+  }
   return {
     partner_id: profile.id,
     partner_name: partnerType === 'pharmacy' ? profile.pharmacy_name : profile.lab_name,

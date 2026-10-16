@@ -32,6 +32,7 @@ export default async function(req) {
         plans: {
           pharmacy: publicPlans(settings, 'pharmacy'),
           laboratory: publicPlans(settings, 'laboratory'),
+          hospital: publicPlans(settings, 'hospital'),
         },
       });
     }
@@ -50,11 +51,15 @@ export default async function(req) {
         pharmacy_premium_price: num(input.pharmacy_premium_price),
         lab_standard_price: num(input.lab_standard_price),
         lab_premium_price: num(input.lab_premium_price),
+        hospital_standard_price: num(input.hospital_standard_price),
+        hospital_premium_price: num(input.hospital_premium_price),
         premium_upgrade_fee: num(input.premium_upgrade_fee) ?? 0,
         pharmacy_standard_description: String(input.pharmacy_standard_description || '').slice(0, 500),
         pharmacy_premium_description: String(input.pharmacy_premium_description || '').slice(0, 500),
         lab_standard_description: String(input.lab_standard_description || '').slice(0, 500),
         lab_premium_description: String(input.lab_premium_description || '').slice(0, 500),
+        hospital_standard_description: String(input.hospital_standard_description || '').slice(0, 500),
+        hospital_premium_description: String(input.hospital_premium_description || '').slice(0, 500),
         plan_features: (Array.isArray(input.plan_features) ? input.plan_features : [])
           .map((f) => String(f || '').trim().slice(0, 120)).filter(Boolean).slice(0, 10),
         intro_offer_enabled: !!input.intro_offer_enabled,
@@ -67,6 +72,8 @@ export default async function(req) {
         pharmacy_premium_available: input.pharmacy_premium_available !== false,
         lab_standard_available: input.lab_standard_available !== false,
         lab_premium_available: input.lab_premium_available !== false,
+        hospital_standard_available: input.hospital_standard_available !== false,
+        hospital_premium_available: input.hospital_premium_available !== false,
         updated_datetime: new Date().toISOString(),
         updated_by_name: user.full_name || user.email,
       };
@@ -107,7 +114,7 @@ export default async function(req) {
       const settings = await loadPlanSettings(base44);
       const now = new Date();
       const all = subs.items || subs;
-      const revenue = { total: 0, last30: 0, pharmacy: 0, laboratory: 0, pending_verification: 0 };
+      const revenue = { total: 0, last30: 0, pharmacy: 0, laboratory: 0, hospital: 0, pending_verification: 0 };
       const cutoff30 = now.getTime() - 30 * 86400000;
       let outstandingUpgradeFees = 0;
       let overdueCount = 0;
@@ -153,7 +160,8 @@ export default async function(req) {
     // information or diagnoses — only one-way deduplication hashes.
     if (action === 'analytics') {
       const eventsEntity = base44.asServiceRole.entities.PartnerAdEvent;
-      const scopeType = body.partner_type === 'laboratory' ? 'laboratory' : body.partner_type === 'pharmacy' ? 'pharmacy' : null;
+      const scopeType = ['laboratory', 'pharmacy', 'hospital'].includes(body.partner_type)
+        ? body.partner_type : null;
       const scopeQuery = scopeType ? { partner_type: scopeType } : {};
       const subs = await subsEntity.filter(scopeQuery, { limit: 500 });
       const settings = await loadPlanSettings(base44);

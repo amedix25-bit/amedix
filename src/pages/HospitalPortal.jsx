@@ -10,8 +10,9 @@ import HospitalDoctorsSection from "@/components/hospital/portal/HospitalDoctors
 import HospitalReceptionistsSection from "@/components/hospital/portal/HospitalReceptionistsSection";
 import HospitalProfileSection from "@/components/hospital/portal/HospitalProfileSection";
 import HospitalLabPanelsSection from "@/components/hospital/portal/HospitalLabPanelsSection";
+import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone } from "lucide-react";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -19,6 +20,7 @@ const navItems = [
   { key: "doctors", label: "Manage Doctors", icon: Stethoscope },
   { key: "panels", label: "Lab Panels", icon: FlaskConical },
   { key: "staff", label: "Receptionists", icon: UserCog },
+  { key: "partnership", label: "Partnership", icon: Megaphone },
   { key: "profile", label: "Profile", icon: Building2 },
 ];
 
@@ -70,6 +72,9 @@ export default function HospitalPortal() {
         {activeTab === "doctors" && <HospitalDoctorsSection profile={profile} />}
         {activeTab === "panels" && <HospitalLabPanelsSection profile={profile} />}
         {activeTab === "staff" && <HospitalReceptionistsSection profile={profile} />}
+        {activeTab === "partnership" && (
+          <PartnerSubscriptionSection partnerType="hospital" profile={profile} />
+        )}
         {activeTab === "profile" && <HospitalProfileSection profile={profile} onUpdate={setProfile} />}
       </div>
     </DashboardLayout>

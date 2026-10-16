@@ -22,7 +22,8 @@ export default async function(req) {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'get';
-    const partnerType = body.partner_type === 'laboratory' ? 'laboratory' : 'pharmacy';
+    const partnerType = ['laboratory', 'pharmacy', 'hospital'].includes(body.partner_type)
+      ? body.partner_type : 'pharmacy';
 
     // Subscription, advertisement, profile and plan-settings operations run
     // through the service role: these records are writable only by backend
@@ -33,7 +34,8 @@ export default async function(req) {
 
     // The existing organization profile is reused — never duplicated.
     const profileEntity = partnerType === 'pharmacy'
-      ? svc.entities.PharmacyProfile : svc.entities.LaboratoryProfile;
+      ? svc.entities.PharmacyProfile
+      : partnerType === 'hospital' ? svc.entities.HospitalProfile : svc.entities.LaboratoryProfile;
     const profiles = await profileEntity.filter({ user_id: user.id });
     const profile = (profiles.items || profiles)[0];
     if (!profile) return Response.json({ error: 'Organization profile not found' }, { status: 404 });

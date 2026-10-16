@@ -20,7 +20,7 @@ export default function AdminAdTemplates({ partnerType }) {
   const [form, setForm] = useState({ title: "", description: "", offer: "", services: "", image_url: "" });
   const fileRef = useRef(null);
 
-  const typeLabel = partnerType === "laboratory" ? "Laboratory" : "Pharmacy";
+  const typeLabel = partnerType === "laboratory" ? "Laboratory" : partnerType === "hospital" ? "Hospital" : "Pharmacy";
 
   const load = useCallback(async () => {
     try {

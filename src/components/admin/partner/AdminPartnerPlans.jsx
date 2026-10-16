@@ -15,8 +15,8 @@ export default function AdminPartnerPlans({ settings, onSaved, partnerType = "ph
   const { toast } = useToast();
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
-  const p = partnerType === "laboratory" ? "lab" : "pharmacy";
-  const typeLabel = partnerType === "laboratory" ? "Laboratory" : "Pharmacy";
+  const p = partnerType === "laboratory" ? "lab" : partnerType === "hospital" ? "hospital" : "pharmacy";
+  const typeLabel = partnerType === "laboratory" ? "Laboratory" : partnerType === "hospital" ? "Hospital" : "Pharmacy";
 
   useEffect(() => {
     if (settings) setForm({ ...settings });

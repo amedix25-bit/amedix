@@ -4,11 +4,12 @@ import AdminPartnerPlans from "@/components/admin/partner/AdminPartnerPlans";
 import AdminPartnerSubscriptions from "@/components/admin/partner/AdminPartnerSubscriptions";
 import AdminPartnerAnalytics from "@/components/admin/partner/AdminPartnerAnalytics";
 import AdminAdTemplates from "@/components/admin/partner/AdminAdTemplates";
-import { Building2, FlaskConical, Loader2 } from "lucide-react";
+import { Building2, FlaskConical, Stethoscope, Loader2 } from "lucide-react";
 
-// Admin section for the partner advertising and subscription system. Two
-// separate partner areas — pharmacies and laboratories — each with the same
-// three views: plan settings, subscription management and analytics.
+// Admin section for the partner advertising and subscription system. Three
+// separate partner areas — pharmacies, laboratories and hospitals — each with
+// the same views: plan settings, ad library, subscription management and
+// analytics.
 export default function AdminPartnerAds() {
   const [partnerType, setPartnerType] = useState("pharmacy");
   const [view, setView] = useState("plans");
@@ -39,6 +40,7 @@ export default function AdminPartnerAds() {
   const typeOptions = [
     { key: "pharmacy", label: "Pharmacy Ads", sub: "Shown in the patient Prescriptions tab", icon: Building2 },
     { key: "laboratory", label: "Laboratory Ads", sub: "Shown in the patient Labs tab", icon: FlaskConical },
+    { key: "hospital", label: "Hospital Ads", sub: "Hospital partnership plans", icon: Stethoscope },
   ];
 
   const tabs = [
@@ -51,7 +53,7 @@ export default function AdminPartnerAds() {
   return (
     <div className="space-y-4">
       {/* Two separate partner ad areas — pick one, the same three tabs follow */}
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid sm:grid-cols-3 gap-3">
         {typeOptions.map(({ key, label, sub, icon: Icon }) => (
           <button
             key={key}

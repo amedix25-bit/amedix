@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Image } from "@/components/ui/image";
 import AdminPartnerSummary from "@/components/admin/partner/AdminPartnerSummary";
 import {
-  Building2, FlaskConical, Loader2, RefreshCw, Sparkles, CheckCircle2, XCircle, Clock,
+  Building2, FlaskConical, Stethoscope, Loader2, RefreshCw, Sparkles, CheckCircle2, XCircle, Clock,
   CalendarClock, Eye, EyeOff, Megaphone, ArrowUpDown, ShieldCheck, ScrollText,
 } from "lucide-react";
 
@@ -136,6 +136,7 @@ export default function AdminPartnerSubscriptions({ settings, onChanged, fixedPa
               <option value="all">All partner types</option>
               <option value="pharmacy">Pharmacies</option>
               <option value="laboratory">Laboratories</option>
+              <option value="hospital">Hospitals</option>
             </select>
           )}
           <select value={filters.tier} onChange={(e) => setFilters({ ...filters, tier: e.target.value })}
@@ -175,7 +176,7 @@ export default function AdminPartnerSubscriptions({ settings, onChanged, fixedPa
       </div>
 
       {subs.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-10">No partner subscriptions yet. Pharmacies and laboratories subscribe from their portals.</p>
+        <p className="text-sm text-muted-foreground text-center py-10">No partner subscriptions yet. Pharmacies, laboratories and hospitals subscribe from their portals.</p>
       )}
       {subs.length > 0 && filtered.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-10">No subscriptions match the current filters.</p>
@@ -192,7 +193,7 @@ export default function AdminPartnerSubscriptions({ settings, onChanged, fixedPa
           <div key={s.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 min-w-0">
-                {s.partner_type === "pharmacy" ? <Building2 className="w-5 h-5 text-primary" /> : <FlaskConical className="w-5 h-5 text-primary" />}
+                {s.partner_type === "hospital" ? <Stethoscope className="w-5 h-5 text-primary" /> : s.partner_type === "pharmacy" ? <Building2 className="w-5 h-5 text-primary" /> : <FlaskConical className="w-5 h-5 text-primary" />}
                 <div className="min-w-0">
                   <p className="font-semibold truncate flex items-center gap-1.5">
                     {s.partner_name}

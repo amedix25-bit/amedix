@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import PartnerAdForm from "@/components/partner/PartnerAdForm";
 import PartnerAdAnalytics from "@/components/partner/PartnerAdAnalytics";
 import {
-  Building2, CheckCircle2, Clock, FlaskConical, Loader2, Sparkles, AlertTriangle, XCircle,
+  Building2, CheckCircle2, Clock, FlaskConical, Stethoscope, Loader2, Sparkles, AlertTriangle, XCircle,
   ArrowUpRight, ArrowDownRight, RefreshCw, Ban, FileCheck, BarChart3, Wallet, CalendarClock, Eye,
 } from "lucide-react";
 import PartnerSubscriptionDetailsDialog from "@/components/partner/PartnerSubscriptionDetailsDialog";
@@ -280,7 +280,7 @@ export default function PartnerSubscriptionSection({ partnerType, profile }) {
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            {partnerType === "pharmacy" ? <Building2 className="w-5 h-5 text-primary" /> : <FlaskConical className="w-5 h-5 text-primary" />}
+            {partnerType === "pharmacy" ? <Building2 className="w-5 h-5 text-primary" /> : partnerType === "hospital" ? <Stethoscope className="w-5 h-5 text-primary" /> : <FlaskConical className="w-5 h-5 text-primary" />}
             <div>
               <p className="font-semibold flex items-center gap-2">
                 {TIER_LABEL[sub.tier]}

@@ -15,10 +15,12 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const partnerType = body.partner_type === 'laboratory' ? 'laboratory' : 'pharmacy';
+    const partnerType = ['laboratory', 'pharmacy', 'hospital'].includes(body.partner_type)
+      ? body.partner_type : 'pharmacy';
 
     const profileEntity = partnerType === 'pharmacy'
-      ? base44.entities.PharmacyProfile : base44.entities.LaboratoryProfile;
+      ? base44.entities.PharmacyProfile
+      : partnerType === 'hospital' ? base44.entities.HospitalProfile : base44.entities.LaboratoryProfile;
     const profiles = await profileEntity.filter({ user_id: user.id });
     const profile = (profiles.items || profiles)[0];
     if (!profile) return Response.json({ error: 'Organization profile not found' }, { status: 404 });

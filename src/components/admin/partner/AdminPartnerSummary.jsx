@@ -57,7 +57,7 @@ export default function AdminPartnerSummary({ refreshKey }) {
           <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5" /> Revenue (verified)</p>
           <p className="text-2xl font-bold mt-1">{cur(summary.revenue.total)}</p>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {cur(summary.revenue.last30)} last 30 days · pharmacy {cur(summary.revenue.pharmacy)} · lab {cur(summary.revenue.laboratory)}
+            {cur(summary.revenue.last30)} last 30 days · pharmacy {cur(summary.revenue.pharmacy)} · lab {cur(summary.revenue.laboratory)} · hospital {cur(summary.revenue.hospital || 0)}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">

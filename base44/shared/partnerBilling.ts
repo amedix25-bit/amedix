@@ -21,6 +21,8 @@ export function planDefaults() {
     pharmacy_premium_available: true,
     lab_standard_available: true,
     lab_premium_available: true,
+    hospital_standard_available: true,
+    hospital_premium_available: true,
   };
 }
 
