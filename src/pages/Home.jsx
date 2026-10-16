@@ -43,16 +43,20 @@ export default function Home() {
     checkProfile();
   }, []);
 
+  // The home page is always the first screen — role routing happens only when
+  // the user picks a role. Other roles (radiologist, lab, hospital) and admins
+  // are still routed directly to their own portals.
   const checkProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       if (user.role === "admin") {
         navigate("/admin");
         return;
       }
-      const [patientProfiles, doctorProfiles, labProfiles, radiologistProfiles, hospitalProfiles] = await Promise.all([
-        base44.entities.PatientProfile.filter({ user_id: user.id }),
-        base44.entities.DoctorProfile.filter({ user_id: user.id }),
+      const [labProfiles, radiologistProfiles, hospitalProfiles] = await Promise.all([
         base44.entities.LaboratoryProfile.filter({ user_id: user.id }),
         base44.entities.RadiologistProfile.filter({ user_id: user.id }),
         base44.entities.HospitalProfile.filter({ user_id: user.id }),
@@ -64,20 +68,12 @@ export default function Home() {
         navigate("/radiologist");
         return;
       }
-      if (doctorProfiles.length > 0) {
-        navigate("/doctor");
-        return;
-      }
       if (labProfiles.length > 0) {
         navigate("/lab-portal");
         return;
       }
       if (hospitalProfiles.length > 0) {
         navigate("/hospital-portal");
-        return;
-      }
-      if (patientProfiles.length > 0) {
-        navigate("/patient");
         return;
       }
       const selectedRole = localStorage.getItem("amh_selected_role");
@@ -92,7 +88,33 @@ export default function Home() {
     }
   };
 
-  const handlePatientSelect = () => setShowPatientForm(true);
+  // Picking a role continues to the portal when a profile already exists,
+  // otherwise it opens the registration/onboarding form.
+  const handlePatientSelect = async () => {
+    try {
+      const profiles = await base44.entities.PatientProfile.filter({ user_id: user.id });
+      if (profiles.length > 0) {
+        navigate("/patient");
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setShowPatientForm(true);
+  };
+
+  const handleDoctorSelect = async () => {
+    try {
+      const profiles = await base44.entities.DoctorProfile.filter({ user_id: user.id });
+      if (profiles.length > 0) {
+        navigate("/doctor");
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setShowDoctorForm(true);
+  };
 
   const handleDoctorSubmit = async (e) => {
     e.preventDefault();
@@ -192,7 +214,7 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => setShowDoctorForm(true)}
+              onClick={handleDoctorSelect}
               className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-accent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity" />
