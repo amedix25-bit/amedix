@@ -154,15 +154,13 @@
     "read": {
       "$or": [
         {
-          "data.is_confidential": {
-            "$ne": true
-          }
+          "data.patient_user_id": "{{user.id}}"
         },
         {
           "data.doctor_user_id": "{{user.id}}"
         },
         {
-          "data.patient_user_id": "{{user.id}}"
+          "created_by_id": "{{user.id}}"
         },
         {
           "user_condition": {
