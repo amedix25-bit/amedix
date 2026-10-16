@@ -5,11 +5,13 @@ import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 
 export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
+    clearDoctorHospitalSession();
     base44.auth.logout(window.location.origin);
   };
 

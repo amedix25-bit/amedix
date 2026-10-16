@@ -3,6 +3,7 @@ import { User, Stethoscope, ScanLine, FlaskConical, ShieldCheck } from "lucide-r
 import { base44 } from "@/api/base44Client";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { PORTAL_DESTINATIONS, ROLE_LABELS } from "@/lib/portalAccess";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 
 const ROLE_ICONS = {
   patient: User,
@@ -42,7 +43,10 @@ export default function PortalSelection({ fullName, roles }) {
         })}
       </div>
       <button
-        onClick={() => base44.auth.logout(window.location.origin)}
+        onClick={() => {
+          clearDoctorHospitalSession();
+          base44.auth.logout(window.location.origin);
+        }}
         className="mt-6 text-sm text-muted-foreground hover:text-foreground"
       >
         {t("Log out")}

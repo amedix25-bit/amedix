@@ -14,6 +14,7 @@ import DocumentVerificationCard from "@/components/verification/DocumentVerifica
 import { PatientLanguageProvider } from "@/lib/patientLanguage";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -182,7 +183,10 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3">
             <AppLanguageSwitcher />
-            <Button variant="ghost" size="sm" onClick={() => base44.auth.logout(window.location.origin)}>
+            <Button variant="ghost" size="sm" onClick={() => {
+              clearDoctorHospitalSession();
+              base44.auth.logout(window.location.origin);
+            }}>
               {t("Log out")}
             </Button>
           </div>

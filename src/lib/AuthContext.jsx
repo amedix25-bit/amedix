@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
+import { clearDoctorHospitalSession } from '@/lib/doctorHospitalSession';
 
 const AuthContext = createContext();
 
@@ -105,6 +106,9 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback((shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
+    // Every fresh login must re-verify the doctor's hospital — never carry a
+    // verified-hospital session across a logout in the same browser tab.
+    clearDoctorHospitalSession();
 
     if (shouldRedirect) {
       // Use the SDK's logout method which handles token cleanup and redirect
