@@ -6,6 +6,10 @@
       "type": "string",
       "description": "PatientProfile id the log entry belongs to"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 set when the entry is created and backfilled for legacy records \u2014 used for Row Level Security"
+    },
     "doctor_id": {
       "type": "string",
       "description": "DoctorProfile id the access change concerns"
@@ -34,5 +38,39 @@
     "doctor_id",
     "action",
     "datetime"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

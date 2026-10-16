@@ -5,6 +5,10 @@
     "patient_id": {
       "type": "string"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 set when the result is submitted and backfilled for legacy records \u2014 used for Row Level Security"
+    },
     "patient_cin": {
       "type": "string"
     },
@@ -45,5 +49,28 @@
     "test_type",
     "test_date",
     "file_url"
-  ]
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "data.patient_user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }
