@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
-import AmedixMark from "@/components/AmedixMark";
+import RadiologistSpecialtySelect from "@/components/radiologist/RadiologistSpecialtySelect";
 import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPatient";
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
@@ -57,13 +57,14 @@ export default function RadiologistDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" logo={AmedixMark} sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">{t(navItems.find((n) => n.key === activeTab)?.label)}</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {profile?.full_name} · {profile?.specialization}
+            <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
+              {profile?.full_name}
+              {profile ? <RadiologistSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
             </p>
           </div>
           {user && (
