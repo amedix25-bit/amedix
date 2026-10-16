@@ -41,7 +41,7 @@ export default function PharmacyPortal() {
       try {
         const profiles = await base44.entities.PharmacyProfile.filter({ user_id: user.id });
         if (profiles.length === 0) {
-          navigate("/");
+          navigate("/home");
           return;
         }
         setProfile(profiles[0]);

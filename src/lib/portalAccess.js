@@ -67,7 +67,7 @@ export function logoutWithRejection(role, basePath = "/login", extraParams = {})
 export function routeAfterValidation(data, selectedPortal, { onSelection, onReject }) {
   const { roles, allowed } = data;
   if (!roles || roles.length === 0) {
-    window.location.href = "/";
+    window.location.href = "/home";
     return;
   }
   if (roles.length === 1) {

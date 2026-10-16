@@ -107,7 +107,7 @@ function PatientPortal() {
     try {
       const profiles = await base44.entities.PatientProfile.filter({ user_id: user.id });
       if (profiles.length === 0) {
-        navigate("/");
+        navigate("/home");
         return;
       }
       const p = profiles[0];

@@ -43,7 +43,7 @@ export default function LabPortal() {
       try {
         const profiles = await base44.entities.LaboratoryProfile.filter({ user_id: user.id });
         if (profiles.length === 0) {
-          navigate("/");
+          navigate("/home");
           return;
         }
         setProfile(profiles[0]);

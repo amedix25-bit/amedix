@@ -27,7 +27,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (user && user.role !== "admin") {
-      navigate("/");
+      navigate("/home");
     }
   }, [user]);
 
