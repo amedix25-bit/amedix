@@ -11,7 +11,7 @@ import PortalSelection from "@/components/PortalSelection";
 import { validatePortalAccess, rejectionMessage, logoutWithRejection, routeAfterValidation } from "@/lib/portalAccess";
 import { useAppLanguage } from "@/lib/appLanguage";
 
-export default function HospitalLogin() {
+export default function HospitalLogin({ embedded = false }) {
   const [tab, setTab] = useState("hospital");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +63,7 @@ export default function HospitalLogin() {
   if (selection) {
     return (
       <AuthLayout
+        embedded={embedded}
         icon={Building2}
         title={t("Hospital Portal")}
         subtitle={t("Hospital and receptionist sign-in")}
@@ -74,6 +75,7 @@ export default function HospitalLogin() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={Building2}
       title={t("Hospital Portal")}
       subtitle={t("Hospital and receptionist sign-in")}

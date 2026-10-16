@@ -12,7 +12,7 @@ import { useAppLanguage } from "@/lib/appLanguage";
 
 // The Pharmacy login only accepts accounts authorized for the Pharmacy Portal —
 // verified against the user's database roles by the checkPortalAccess function.
-export default function PharmacyLogin() {
+export default function PharmacyLogin({ embedded = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selection, setSelection] = useState(null);
@@ -45,7 +45,7 @@ export default function PharmacyLogin() {
 
   if (selection) {
     return (
-      <AuthLayout icon={Building2} title={t("Pharmacy Portal")} subtitle={t("Pharmacy sign-in")}>
+      <AuthLayout embedded={embedded} icon={Building2} title={t("Pharmacy Portal")} subtitle={t("Pharmacy sign-in")}>
         <PortalSelection fullName={selection.full_name} roles={selection.roles} />
       </AuthLayout>
     );
@@ -53,6 +53,7 @@ export default function PharmacyLogin() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={Building2}
       title={t("Pharmacy Portal")}
       subtitle={t("Pharmacy sign-in")}

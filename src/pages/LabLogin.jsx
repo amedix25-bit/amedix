@@ -11,7 +11,7 @@ import PortalSelection from "@/components/PortalSelection";
 import { validatePortalAccess, rejectionMessage, logoutWithRejection, routeAfterValidation } from "@/lib/portalAccess";
 import { useAppLanguage } from "@/lib/appLanguage";
 
-export default function LabLogin() {
+export default function LabLogin({ embedded = false }) {
   const [tab, setTab] = useState("lab");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +63,7 @@ export default function LabLogin() {
   if (selection) {
     return (
       <AuthLayout
+        embedded={embedded}
         icon={Building2}
         title={t("Lab Portal")}
         subtitle={t("Laboratory and technician sign-in")}
@@ -74,6 +75,7 @@ export default function LabLogin() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={Building2}
       title={t("Lab Portal")}
       subtitle={t("Laboratory and technician sign-in")}

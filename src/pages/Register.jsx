@@ -12,7 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
 
-export default function Register() {
+export default function Register({ embedded = false }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -76,6 +76,7 @@ export default function Register() {
   if (showOtp) {
     return (
       <AuthLayout
+        embedded={embedded}
         icon={Mail}
         title={t("Verify your email")}
         subtitle={t("We sent a code to {email}", { email })}
@@ -129,6 +130,7 @@ export default function Register() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={UserPlus}
       title={t("Join A&M Healthcare")}
       subtitle={t("Connected Care. Better Health.")}

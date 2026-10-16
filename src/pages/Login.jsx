@@ -20,7 +20,7 @@ import {
   routeAfterValidation,
 } from "@/lib/portalAccess";
 
-export default function Login() {
+export default function Login({ portal = null, embedded = false }) {
   const { t } = useAppLanguage();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -47,12 +47,14 @@ export default function Login() {
       returnTo: currentReturnTo,
       selectedPortal: VALID_PORTALS.includes(portalParam)
         ? portalParam
-        : VALID_PORTALS.includes(storedRole)
-          ? storedRole
-          : null,
+        : VALID_PORTALS.includes(portal)
+          ? portal
+          : VALID_PORTALS.includes(storedRole)
+            ? storedRole
+            : null,
       rejectedParam: urlParams.get("rejected"),
     };
-  }, [location.search]);
+  }, [location.search, portal]);
 
   useEffect(() => {
     if (rejectedParam) setError(rejectionMessage(rejectedParam, t));
@@ -129,6 +131,7 @@ export default function Login() {
   if (selection) {
     return (
       <AuthLayout
+        embedded={embedded}
         icon={LogIn}
         title={t("Welcome Back")}
         subtitle={t("Log in to your A&M Healthcare account")}
@@ -140,6 +143,7 @@ export default function Login() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={LogIn}
       title={selectedPortal ? t(ROLE_LOGIN_LABELS[selectedPortal]) : t("Welcome Back")}
       subtitle={t("Log in to your A&M Healthcare account")}

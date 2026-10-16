@@ -1,6 +1,13 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, Building2, Pill } from "lucide-react";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import LabLogin from "@/pages/LabLogin";
+import LabRegister from "@/pages/LabRegister";
+import HospitalLogin from "@/pages/HospitalLogin";
+import HospitalRegister from "@/pages/HospitalRegister";
+import PharmacyLogin from "@/pages/PharmacyLogin";
+import PharmacyRegister from "@/pages/PharmacyRegister";
 import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
@@ -40,9 +47,9 @@ const ROLE_CONTENT = {
   };
 
 export default function Landing() {
-  const navigate = useNavigate();
   const { t } = useAppLanguage();
-  const [role, setRole] = useState(null); // null | "patient" | "doctor"
+  const [role, setRole] = useState(null); // null | "patient" | "doctor" | "lab" | "hospital" | "pharmacy"
+  const [authMode, setAuthMode] = useState(null); // null | "login" | "register"
 
   const selectRole = (r) => {
     // The role flag is only used to reopen the matching registration form after
@@ -50,6 +57,7 @@ export default function Landing() {
     // logging in never drops the user into a registration flow.
     localStorage.removeItem("amh_selected_role");
     setRole(r);
+    setAuthMode(null);
   };
 
   const roleContent = role ? ROLE_CONTENT[role] : null;
@@ -66,7 +74,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             {role &&
             <button
-              onClick={() => setRole(null)}
+              onClick={() => (authMode ? setAuthMode(null) : setRole(null))}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
               {t("Back")}
@@ -89,7 +97,23 @@ export default function Landing() {
             {t("Your medical information, securely connected to your healthcare.")}
           </p>
 
-          {!role ?
+          {role && authMode === "login" ?
+            <div className="max-w-md mx-auto mt-10">
+              {role === "lab" ? <LabLogin embedded /> :
+               role === "hospital" ? <HospitalLogin embedded /> :
+               role === "pharmacy" ? <PharmacyLogin embedded /> :
+               <Login portal={role} embedded />}
+            </div> :
+
+          role && authMode === "register" ?
+            <div className="max-w-md mx-auto mt-10">
+              {role === "lab" ? <LabRegister embedded /> :
+               role === "hospital" ? <HospitalRegister embedded /> :
+               role === "pharmacy" ? <PharmacyRegister embedded /> :
+               <Register embedded />}
+            </div> :
+
+          !role ?
           <>
               <p className="text-sm text-muted-foreground mt-6 font-medium">{t("Choose how you use the platform")}</p>
 
@@ -218,7 +242,7 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mt-2">{t(roleContent.description)}</p>
 
                 <div className="flex flex-col gap-3 mt-6">
-                  <Button size="lg" variant="outline" onClick={() => navigate(role === "lab" ? "/lab" : role === "hospital" ? "/hospital" : role === "pharmacy" ? "/pharmacy" : "/login?portal=" + role)}>
+                  <Button size="lg" variant="outline" onClick={() => setAuthMode("login")}>
                     <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     {t("Log In")}
                   </Button>
@@ -230,7 +254,7 @@ export default function Landing() {
                     if (role === "patient" || role === "doctor") {
                       localStorage.setItem("amh_selected_role", role);
                     }
-                    navigate(role === "lab" ? "/lab/register" : role === "hospital" ? "/hospital/register" : role === "pharmacy" ? "/pharmacy/register" : "/register");
+                    setAuthMode("register");
                   }}>
                     {t("Create Account")}
                   </Button>

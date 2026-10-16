@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const DEFAULT_PAYMENT_METHODS = ["Cash", "Card", "Bank Transfer"];
 
-export default function HospitalRegister() {
+export default function HospitalRegister({ embedded = false }) {
   const [form, setForm] = useState({ hospital_name: "", location: "", phone: "", email: "", password: "", confirm: "" });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -109,7 +109,7 @@ export default function HospitalRegister() {
 
   if (showOtp) {
     return (
-      <AuthLayout icon={Mail} title="Verify your email" subtitle={`We sent a code to ${form.email}`}>
+      <AuthLayout embedded={embedded} icon={Mail} title="Verify your email" subtitle={`We sent a code to ${form.email}`}>
         {error && <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
         <div className="flex justify-center mb-6">
           <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode} autoFocus autoComplete="one-time-code">
@@ -149,6 +149,7 @@ export default function HospitalRegister() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={Building2}
       title="Create Hospital Account"
       subtitle="Register your hospital on AMedix"

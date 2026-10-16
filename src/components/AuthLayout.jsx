@@ -5,8 +5,31 @@ import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
 
-export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
+export default function AuthLayout({ icon: Icon, title, subtitle, footer, embedded = false, children }) {
   const { t } = useAppLanguage();
+
+  // Embedded mode renders only the form card — the host page (e.g. the role
+  // selection page) already provides the branding, header and language switch.
+  if (embedded) {
+    return (
+      <div className="w-full">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+            <Icon className="w-7 h-7 text-primary-foreground" aria-hidden="true" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+          {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}
+        </div>
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+          {children}
+        </div>
+        {footer &&
+        <p className="text-center text-sm text-muted-foreground mt-6">{footer}</p>
+        }
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Left branding panel */}

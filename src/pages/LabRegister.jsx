@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const PHONE_PATTERN = /^\+?[0-9\s-]{7,15}$/;
 
-export default function LabRegister() {
+export default function LabRegister({ embedded = false }) {
   const [form, setForm] = useState({ lab_name: "", address: "", phone: "", whatsapp_number: "", email: "", password: "", confirm: "" });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -114,7 +114,7 @@ export default function LabRegister() {
 
   if (showOtp) {
     return (
-      <AuthLayout icon={Mail} title="Verify your email" subtitle={`We sent a code to ${form.email}`}>
+      <AuthLayout embedded={embedded} icon={Mail} title="Verify your email" subtitle={`We sent a code to ${form.email}`}>
         {error && <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
         <div className="flex justify-center mb-6">
           <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode} autoFocus autoComplete="one-time-code">
@@ -154,6 +154,7 @@ export default function LabRegister() {
 
   return (
     <AuthLayout
+      embedded={embedded}
       icon={Building2}
       title="Create Laboratory Account"
       subtitle="Register your laboratory on AMedix"
