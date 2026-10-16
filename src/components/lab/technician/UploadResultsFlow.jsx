@@ -83,12 +83,12 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
     // A file renamed to .pdf still opens blank in the PDF viewer — check the real
     // file signature, not just the name.
     const head = new Uint8Array(await f.slice(0, 12).arrayBuffer());
-    const sig = String.fromCharCode(...head.slice(0, 4));
+    const sig = String.fromCharCode(...head);
     const validSig =
-      sig === "%PDF-" ||
+      sig.startsWith("%PDF-") ||
       (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) || // PNG
       (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) || // JPEG
-      (sig === "RIFF" && String.fromCharCode(...head.slice(8, 12)) === "WEBP"); // WebP
+      (sig.startsWith("RIFF") && sig.slice(4, 8) === "WEBP"); // WebP
     if (!validSig) {
       toast({
         title: "Not a valid file",
