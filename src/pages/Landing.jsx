@@ -24,7 +24,10 @@ export default function Landing() {
     else localStorage.removeItem("amh_selected_role");
     setParams({ portal: option.key, step: next });
   };
-  const goBack = () => setParams(step ? { portal: option.key } : {});
+  const goBack = () => {
+    localStorage.removeItem("amh_selected_role");
+    setParams(step ? { portal: option.key } : {});
+  };
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-background/90 sticky top-0 z-10">
@@ -41,7 +44,7 @@ export default function Landing() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium mb-6"><ShieldCheck className="w-3.5 h-3.5" />{t("Secure, patient-owned clinical records")}</div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">{t("Welcome to AMedix")}</h1>
           <p className="text-lg sm:text-xl text-muted-foreground mt-4 max-w-2xl mx-auto">{t("Your medical information, securely connected to your healthcare.")}</p>
-          {!option ? <><PortalOptions options={PORTAL_OPTIONS} onContinue={choosePortal} /><PortalFeatures /></> : step ? <PortalAuthForm portal={option.key} mode={step} /> : <PortalChoice option={option} onLogin={() => changeStep("login")} onRegister={() => changeStep("register")} onBack={() => setParams({})} />}
+          {!option ? <><PortalOptions options={PORTAL_OPTIONS} onContinue={choosePortal} /><PortalFeatures /></> : step ? <PortalAuthForm portal={option.key} mode={step} onModeChange={changeStep} /> : <PortalChoice option={option} onLogin={() => changeStep("login")} onRegister={() => changeStep("register")} onBack={() => setParams({})} />}
         </div>
       </main>
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">{t("AMedix · Connected Care. Better Health.")}</footer>

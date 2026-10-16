@@ -12,7 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
 
-export default function Register({ embedded = false }) {
+export default function Register({ embedded = false, onLogin = null }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -137,12 +137,11 @@ export default function Register({ embedded = false }) {
       footer={
         <>
           {t("Already have an account?")}{" "}
-          <Link
-            to={"/login" + (safeReturnTo(null) ? "?returnTo=" + encodeURIComponent(safeReturnTo(null)) : "")}
-            className="text-primary font-medium hover:underline"
-          >
-            {t("Log in")}
-          </Link>
+          {onLogin ? (
+            <button type="button" onClick={onLogin} className="text-primary font-medium hover:underline">{t("Log in")}</button>
+          ) : (
+            <Link to={"/login" + (safeReturnTo(null) ? "?returnTo=" + encodeURIComponent(safeReturnTo(null)) : "")} className="text-primary font-medium hover:underline">{t("Log in")}</Link>
+          )}
         </>
       }
     >

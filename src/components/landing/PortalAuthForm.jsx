@@ -11,7 +11,7 @@ import PharmacyRegister from "@/pages/PharmacyRegister";
 const LOGINS = { lab: LabLogin, hospital: HospitalLogin, pharmacy: PharmacyLogin };
 const REGISTRATIONS = { lab: LabRegister, hospital: HospitalRegister, pharmacy: PharmacyRegister };
 
-export default function PortalAuthForm({ portal, mode }) {
+export default function PortalAuthForm({ portal, mode, onModeChange }) {
   const Form = mode === "register" ? REGISTRATIONS[portal] || Register : LOGINS[portal] || Login;
-  return <div className="max-w-md mx-auto mt-10"><Form key={`${portal}-${mode}`} portal={portal} embedded /></div>;
+  return <div className="max-w-md mx-auto mt-10"><Form key={`${portal}-${mode}`} portal={portal} embedded onRegister={() => onModeChange("register")} onLogin={() => onModeChange("login")} /></div>;
 }

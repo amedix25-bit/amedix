@@ -21,7 +21,7 @@ import {
   routeAfterValidation,
 } from "@/lib/portalAccess";
 
-export default function Login({ portal = null, embedded = false }) {
+export default function Login({ portal = null, embedded = false, onRegister = null }) {
   const { t } = useAppLanguage();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -148,12 +148,11 @@ export default function Login({ portal = null, embedded = false }) {
       footer={
         <>
           {t("Don't have an account?")}{" "}
-          <Link
-            to={"/register" + (returnTo ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
-            className="text-primary font-medium hover:underline"
-          >
-            {t("Create one")}
-          </Link>
+          {onRegister ? (
+            <button type="button" onClick={onRegister} className="text-primary font-medium hover:underline">{t("Create one")}</button>
+          ) : (
+            <Link to={"/register" + (returnTo ? "?returnTo=" + encodeURIComponent(returnTo) : "")} className="text-primary font-medium hover:underline">{t("Create one")}</Link>
+          )}
         </>
       }
     >
