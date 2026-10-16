@@ -24,14 +24,17 @@ export default function SurgicalRecordForm({ doctorProfile, patient, recordType,
   useEffect(() => {
     fetchCheckInStatus(patient.id).then(setCheckIn);
     const load = async () => {
-      const [meds, conditions, allergies, labs, imaging] = await Promise.all([
-        base44.entities.Medication.filter({ patient_id: patient.id, is_active: true }).catch(() => []),
-        base44.entities.MedicalCondition.filter({ patient_id: patient.id }).catch(() => []),
-        base44.entities.Allergy.filter({ patient_id: patient.id }).catch(() => []),
-        base44.entities.LabRequest.filter({ patient_id: patient.id }, "-created_date", 10).catch(() => []),
-        base44.entities.ImagingRequest.filter({ patient_id: patient.id }, "-created_date", 10).catch(() => []),
-      ]);
-      setMedInfo({ meds, conditions, allergies, labs, imaging });
+      const res = await base44.functions
+        .invoke("doctorPatientMedicalData", { patient_id: patient.id })
+        .catch(() => ({ data: {} }));
+      const d = res.data || {};
+      setMedInfo({
+        meds: (d.medications || []).filter((m) => m.is_active),
+        conditions: d.conditions || [],
+        allergies: d.allergies || [],
+        labs: (d.lab_requests || []).slice(0, 10),
+        imaging: (d.imaging || []).slice(0, 10),
+      });
     };
     load();
   }, [patient.id]);

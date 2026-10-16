@@ -184,8 +184,12 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       }
       if (medical.medications.length) {
         creates.push(
-          base44.entities.Medication.bulkCreate(
-            medical.medications.map((m) => ({ ...meta, ...m, source: "patient_reported" }))
+          ...medical.medications.map((m) =>
+            base44.functions.invoke("createClinicalRecord", {
+              kind: "medication",
+              patient_id: meta.patient_id,
+              record: { ...m, source: "patient_reported" },
+            })
           )
         );
       }

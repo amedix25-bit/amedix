@@ -65,9 +65,11 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       return undefined;
     }
     let cancelled = false;
-    base44.entities.ClinicalDocument.filter({ patient_id: patient.id, specialty: "dentistry" }, "created_date", 200)
-      .then((docs) => {
+    base44.functions
+      .invoke("doctorPatientMedicalData", { patient_id: patient.id })
+      .then((res) => {
         if (cancelled) return;
+        const docs = (res.data.clinical_documents || []).filter((d) => d.specialty === "dentistry");
         const map = {};
         docs.forEach((d) => {
           const tc = d.data?.tooth_chart?.value;

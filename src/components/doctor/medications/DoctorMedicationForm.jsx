@@ -55,7 +55,11 @@ export default function DoctorMedicationForm({ patient, onSaved, onCancel }) {
           ? `Every ${form.everyHours || "X"} hours`
           : form.frequency;
       const rec = medicationRecordFromForm({ ...form, frequency, prn: isPrn }, { patient });
-      await base44.entities.Medication.create(rec);
+      await base44.functions.invoke("createClinicalRecord", {
+        kind: "medication",
+        patient_id: patient.id,
+        record: rec,
+      });
       toast({
         title: "Medication added",
         description: `${form.name.trim()} was added to ${patient.full_name}'s medication record.`,

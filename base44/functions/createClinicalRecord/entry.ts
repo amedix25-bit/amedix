@@ -79,9 +79,22 @@ export default async function(req) {
     }
 
     if (kind === "diagnosis") {
+      // Duplicate guard — same patient, same diagnosis name and type.
+      const nameKeyRaw = String(record.diagnosis_name || "").trim().toLowerCase();
+      const existingDiags = await base44.asServiceRole.entities.Diagnosis.filter({ patient_id: patient.id });
+      const duplicate = existingDiags.some(
+        (d) => (d.diagnosis_name || "").trim().toLowerCase() === nameKeyRaw && d.diagnosis_type === record.diagnosis_type
+      );
+      if (duplicate) {
+        return Response.json(
+          { error: "This diagnosis (same name and type) has already been recorded for this patient." },
+          { status: 409 }
+        );
+      }
       const diag = await base44.asServiceRole.entities.Diagnosis.create({
         ...record,
         patient_id: patient.id,
+        patient_user_id: patient.user_id,
         patient_cin: patient.cin,
         patient_name: patient.full_name,
         doctor_id: doctor.id,
@@ -94,6 +107,7 @@ export default async function(req) {
         if (!conditions.some((c) => String(c.name || "").trim().toLowerCase() === nameKey)) {
           await base44.asServiceRole.entities.MedicalCondition.create({
             patient_id: patient.id,
+            patient_user_id: patient.user_id,
             patient_cin: patient.cin,
             patient_name: patient.full_name,
             name: String(record.diagnosis_name || "").trim(),

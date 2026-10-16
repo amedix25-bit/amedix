@@ -75,13 +75,11 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [recordContext, setRecordContext] = useState(null);
   const loadRecordContext = async (p) => {
     try {
-      const [meds, conditions] = await Promise.all([
-        base44.entities.Medication.filter({ patient_id: p.id, is_active: true }),
-        base44.entities.MedicalCondition.filter({ patient_id: p.id }),
-      ]);
+      const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: p.id });
+      const d = res.data;
       setRecordContext({
-        meds: meds.map((m) => m.name).filter(Boolean),
-        conditions: conditions.map((c) => c.name).filter(Boolean),
+        meds: (d.medications || []).filter((m) => m.is_active).map((m) => m.name).filter(Boolean),
+        conditions: (d.conditions || []).map((c) => c.name).filter(Boolean),
       });
     } catch (err) {
       console.error(err);

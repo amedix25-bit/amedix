@@ -43,13 +43,14 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await base44.entities.Medication.create({
+      await base44.functions.invoke("createClinicalRecord", {
+        kind: "medication",
         patient_id: patient.id,
-        patient_cin: patient.cin || "",
-        patient_name: patient.full_name || "",
-        name: name.trim(),
-        start_date: startDate || new Date().toISOString().slice(0, 10),
-        is_active: true,
+        record: {
+          name: name.trim(),
+          start_date: startDate || new Date().toISOString().slice(0, 10),
+          is_active: true,
+        },
       });
       setName("");
       setStartDate("");

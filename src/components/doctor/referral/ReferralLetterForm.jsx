@@ -98,8 +98,8 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
   useEffect(() => {
     const load = async () => {
       try {
-        const docs = await base44.entities.MedicalDocument.filter({ patient_id: patient.id }, "-date");
-        setPatientDocs(docs.filter((d) => d.file_url));
+        const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
+        setPatientDocs((res.data.documents || []).filter((d) => d.file_url));
       } catch (err) {
         console.error(err);
       }
@@ -268,6 +268,7 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       // File the referral under the patient's Documents → Referral Letters
       await base44.entities.MedicalDocument.create({
         patient_id: patient.id,
+        patient_user_id: patient.user_id,
         patient_cin: patient.cin,
         patient_name: patient.full_name,
         doctor_name: doctorProfile.full_name,

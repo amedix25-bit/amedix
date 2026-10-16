@@ -123,6 +123,21 @@
     "name"
   ],
   "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "create": {
       "user_condition": {
         "role": "admin"

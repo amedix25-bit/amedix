@@ -33,7 +33,7 @@ export default async function (req) {
     const profiles = await loadAll(sr.entities.PatientProfile);
     const byProfileId = new Map(profiles.map((p) => [p.id, p.user_id]));
 
-    for (const name of ['AccessRequest', 'AccessAuditLog', 'PatientLabResult', 'PatientNotification']) {
+    for (const name of ['AccessRequest', 'AccessAuditLog', 'PatientLabResult', 'PatientNotification', 'MedicalHistoryEntry', 'MedicalCondition', 'SurgicalHistory', 'FamilyHistory', 'Allergy', 'MedicalDocument', 'ClinicalNote', 'Diagnosis', 'ClinicalDocument', 'Encounter', 'Consent', 'Medication', 'PatientExamination']) {
       const records = await loadAll(sr.entities[name]);
       let updated = 0;
       let already_set = 0;

@@ -37,15 +37,13 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId, em
     const load = async () => {
       if (!patientId) return;
       try {
-        const [notes, diagnoses, imaging] = await Promise.all([
-          base44.entities.ClinicalNote.filter({ patient_id: patientId }, "-date"),
-          base44.entities.Diagnosis.filter({ patient_id: patientId }, "-created_datetime"),
-          base44.entities.ImagingRequest.filter({ patient_id: patientId }),
-        ]);
+        const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patientId });
+        const d = res.data;
         setItems([
-          ...notes.map((n) => ({ ...n, __type: "note" })),
-          ...diagnoses.map((d) => ({ ...d, __type: "diagnosis" })),
+          ...(d.notes || []).map((n) => ({ ...n, __type: "note" })),
+          ...(d.diagnoses || []).map((x) => ({ ...x, __type: "diagnosis" })),
         ]);
+        const imaging = d.imaging || [];
         const map = {};
         imaging.forEach((img) => {
           map[img.id] = img;

@@ -16,14 +16,11 @@ export default function DoctorPatientSummary({ patient }) {
     setMeds(null);
     const load = async () => {
       try {
-        const [al, cd, md] = await Promise.all([
-          base44.entities.Allergy.filter({ patient_id: patient.id }),
-          base44.entities.MedicalCondition.filter({ patient_id: patient.id, category: "known_case" }),
-          base44.entities.Medication.filter({ patient_id: patient.id }),
-        ]);
-        setAllergies(al);
-        setConditions(cd);
-        setMeds(md.filter((m) => medicationStatus(m, todayStr()) === "active").map((m) => m.name));
+        const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
+        const d = res.data;
+        setAllergies(d.allergies || []);
+        setConditions((d.conditions || []).filter((c) => c.category === "known_case"));
+        setMeds((d.medications || []).filter((m) => medicationStatus(m, todayStr()) === "active").map((m) => m.name));
       } catch (err) {
         console.error(err);
       }

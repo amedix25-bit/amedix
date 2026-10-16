@@ -5,6 +5,10 @@
     "patient_id": {
       "type": "string"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 set when the record is created and backfilled for legacy records \u2014 used for Row Level Security"
+    },
     "patient_cin": {
       "type": "string"
     },
@@ -41,7 +45,21 @@
     "category"
   ],
   "rls": {
-    "read": {},
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "create": {
       "$or": [
         {

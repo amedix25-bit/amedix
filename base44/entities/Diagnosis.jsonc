@@ -6,6 +6,10 @@
       "type": "string",
       "description": "PatientProfile id the diagnosis is permanently linked to"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 set server-side when the diagnosis is created and backfilled for legacy records \u2014 used for Row Level Security"
+    },
     "doctor_id": {
       "type": "string",
       "description": "Unique DoctorProfile id of the authoring physician \u2014 used to determine ownership (My Clinical Notes vs Other Physicians' Clinical Notes); never rely on the name alone"
@@ -62,6 +66,21 @@
     "created_datetime"
   ],
   "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
     "create": {
       "user_condition": {
         "role": "admin"

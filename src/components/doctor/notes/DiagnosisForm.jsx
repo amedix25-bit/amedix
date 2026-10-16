@@ -40,56 +40,29 @@ export default function DiagnosisForm({ doctorProfile, patient, onSaved, onCance
     }
     setSaving(true);
     try {
-      const [existing, conditions] = await Promise.all([
-        base44.entities.Diagnosis.filter({ patient_id: patient.id }),
-        base44.entities.MedicalCondition.filter({ patient_id: patient.id }),
-      ]);
-      const nameKey = form.diagnosis_name.trim().toLowerCase();
-      const duplicate = existing.some(
-        (d) =>
-          (d.diagnosis_name || "").trim().toLowerCase() === nameKey && d.diagnosis_type === form.diagnosis_type
-      );
-      if (duplicate) {
-        setError("This diagnosis (same name and type) has already been recorded for this patient.");
-        return;
-      }
-
       const now = new Date().toISOString();
-      await base44.entities.Diagnosis.create({
+      // Server-side save — the backend verifies the active check-in, blocks
+      // duplicates, records the diagnosis and mirrors it into the patient's
+      // known conditions.
+      await base44.functions.invoke("createClinicalRecord", {
+        kind: "diagnosis",
         patient_id: patient.id,
-        doctor_id: doctorProfile.id,
-        patient_cin: patient.cin,
-        patient_name: patient.full_name,
-        doctor_name: doctorProfile.full_name,
-        diagnosis_name: form.diagnosis_name.trim(),
-        diagnosis_type: form.diagnosis_type,
-        created_datetime: now,
-        description: form.description.trim(),
-        assessment: form.assessment.trim(),
-        treatment_plan: form.treatment_plan.trim(),
+        record: {
+          doctor_id: doctorProfile.id,
+          doctor_name: doctorProfile.full_name,
+          diagnosis_name: form.diagnosis_name.trim(),
+          diagnosis_type: form.diagnosis_type,
+          created_datetime: now,
+          description: form.description.trim(),
+          assessment: form.assessment.trim(),
+          treatment_plan: form.treatment_plan.trim(),
+        },
       });
-
-      // Also add the diagnosis to the patient's medical history (Known Cases) —
-      // only if the same condition is not already recorded there.
-      const hasCondition = conditions.some((c) => (c.name || "").trim().toLowerCase() === nameKey);
-      if (!hasCondition) {
-        await base44.entities.MedicalCondition.create({
-          patient_id: patient.id,
-          patient_cin: patient.cin,
-          patient_name: patient.full_name,
-          name: form.diagnosis_name.trim(),
-          category: "known_case",
-          details: [form.diagnosis_type, form.assessment.trim() || form.description.trim()]
-            .filter(Boolean)
-            .join(" — "),
-          date: now.slice(0, 10),
-        });
-      }
 
       onSaved();
     } catch (err) {
       console.error(err);
-      setError("Could not save the diagnosis.");
+      setError(err.response?.data?.error || "Could not save the diagnosis.");
     } finally {
       setSaving(false);
     }

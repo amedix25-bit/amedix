@@ -83,7 +83,11 @@ export default function PatientMedications({ patient }) {
       if (editing) {
         await base44.entities.Medication.update(editing.id, data);
       } else {
-        await base44.entities.Medication.create({ ...data, start_date: today });
+        await base44.functions.invoke("createClinicalRecord", {
+          kind: "medication",
+          patient_id: patient.id,
+          record: { ...data, start_date: today },
+        });
       }
       setShowForm(false);
       setEditing(null);

@@ -23,12 +23,13 @@ export default function DoctorPatientHistorySection({ patient }) {
     const load = async () => {
       if (!patient?.id) return;
       try {
-        const [history, imaging, labs, appts] = await Promise.all([
-          base44.entities.MedicalHistoryEntry.filter({ patient_id: patient.id }),
-          base44.entities.ImagingRequest.filter({ patient_id: patient.id }),
-          base44.entities.PatientLabResult.filter({ patient_id: patient.id }),
+        const [recordData, appts] = await Promise.all([
+          base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id }),
           base44.entities.Appointment.filter({ patient_id: patient.id }),
         ]);
+        const history = recordData.data.medical_history || [];
+        const imaging = recordData.data.imaging || [];
+        const labs = recordData.data.lab_results || [];
         setEvents(
           [
             ...history.map((h) => ({

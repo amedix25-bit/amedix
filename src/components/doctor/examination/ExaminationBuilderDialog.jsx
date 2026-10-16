@@ -259,7 +259,11 @@ export default function ExaminationBuilderDialog({
               },
             ],
       };
-      await base44.entities.PatientExamination.create(record);
+      await base44.functions.invoke("createClinicalRecord", {
+        kind: "examination",
+        patient_id: patient.id,
+        record,
+      });
       if (!editOf) localStorage.removeItem(draftKeyFor(patient.id, typeKey));
       toast({
         title: editOf ? "Examination amended" : "Examination saved",

@@ -45,12 +45,12 @@ export default function DoctorPatientVisitSection({ patient, doctorProfile }) {
   const refreshRecord = async () => {
     if (!patient) return;
     try {
-      const [encounters, documents, consents] = await Promise.all([
-        base44.entities.Encounter.filter({ patient_id: patient.id }, "-encounter_datetime", 200),
-        base44.entities.ClinicalDocument.filter({ patient_id: patient.id }, "-created_datetime", 500),
-        base44.entities.Consent.filter({ patient_id: patient.id }, "-consent_datetime", 200),
-      ]);
-      setRecord({ encounters, documents, consents });
+      const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
+      setRecord({
+        encounters: res.data.encounters || [],
+        documents: res.data.clinical_documents || [],
+        consents: res.data.consents || [],
+      });
       if (openEncounter) {
         const fresh = encounters.find((e) => e.id === openEncounter.id);
         setOpenEncounter(fresh || null);

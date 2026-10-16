@@ -245,8 +245,10 @@ export default function DoctorAppointments({ doctorProfile }) {
       if (!apt.original_date) patch.original_date = apt.date;
       if (!apt.original_time) patch.original_time = apt.time;
       await base44.entities.Appointment.update(apt.id, patch);
+      const patientProfile = await base44.entities.PatientProfile.get(apt.patient_id).catch(() => null);
       await base44.entities.MedicalHistoryEntry.create({
         patient_id: apt.patient_id,
+        patient_user_id: patientProfile?.user_id || "",
         patient_cin: apt.patient_cin,
         patient_name: apt.patient_name,
         entry_type: "patient_seen",

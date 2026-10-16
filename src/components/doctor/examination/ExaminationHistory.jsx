@@ -30,11 +30,8 @@ export default function ExaminationHistory({ patient, reloadKey, onView, onAmend
     const load = async () => {
       if (!patient?.id) return;
       try {
-        const list = await base44.entities.PatientExamination.filter(
-          { patient_id: patient.id },
-          "-created_datetime"
-        );
-        setItems(list);
+        const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
+        setItems(res.data.examinations || []);
       } catch (err) {
         console.error(err);
         setItems([]);

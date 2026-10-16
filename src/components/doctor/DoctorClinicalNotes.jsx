@@ -54,11 +54,11 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab, retu
     const load = async () => {
       setPrevLoading(true);
       try {
-        const [notes, imaging] = await Promise.all([
-          base44.entities.ClinicalNote.filter({ doctor_id: doctorProfile.id }, "-date"),
+        const [notesRes, imaging] = await Promise.all([
+          base44.functions.invoke("doctorMyClinicalNotes", {}),
           base44.entities.ImagingRequest.filter({ doctor_id: doctorProfile.id }),
         ]);
-        setPrevNotes(notes);
+        setPrevNotes(notesRes.data.notes || []);
         const map = {};
         imaging.forEach((img) => {
           map[img.id] = img;

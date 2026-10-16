@@ -11,8 +11,8 @@ export default function DoctorPatientLabResultsView({ patientId }) {
     const load = async () => {
       if (!patientId) return;
       try {
-        const results = await base44.entities.PatientLabResult.filter({ patient_id: patientId }, "-test_date");
-        setItems(results);
+        const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patientId });
+        setItems(res.data.lab_results || []);
       } catch (err) {
         console.error(err);
       } finally {
