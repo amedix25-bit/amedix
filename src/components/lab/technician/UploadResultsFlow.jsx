@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { ArrowLeft, FileText, Loader2, Search, Upload } from "lucide-react";
+
+const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp";
+const isImageFile = (f) => f && /^image\/(png|jpe?g|webp)$/.test(f.type || "");
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MAX_FILE_BYTES = 3 * 1024 * 1024;
@@ -64,31 +67,43 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
     const f = e.target.files[0];
     e.target.value = "";
     if (!f) return;
-    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-      toast({ title: "PDF required", description: "Please upload the results as a PDF.", variant: "destructive" });
-      return;
-    }
-    if (f.size > MAX_FILE_BYTES) {
-      toast({ title: "File too large", description: "Please upload a PDF up to 3 MB.", variant: "destructive" });
-      return;
-    }
-    // A file renamed to .pdf (e.g. a PNG image) still opens blank in the PDF viewer —
-    // check the real file signature, not just the name.
-    const head = new Uint8Array(await f.slice(0, 5).arrayBuffer());
-    if (String.fromCharCode(...head) !== "%PDF-") {
+    const looksLikePdf = f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
+    if (!looksLikePdf && !isImageFile(f)) {
       toast({
-        title: "Not a valid PDF",
-        description: "This file is an image or document renamed to .pdf. Export or print it as a real PDF and try again.",
+        title: "Unsupported file",
+        description: "Please upload the results as a PDF or an image (PNG, JPG, WebP).",
         variant: "destructive",
       });
       return;
     }
-    setFile(f);
+    if (f.size > MAX_FILE_BYTES) {
+      toast({ title: "File too large", description: "Please upload a file up to 3 MB.", variant: "destructive" });
+      return;
+    }
+    // A file renamed to .pdf still opens blank in the PDF viewer — check the real
+    // file signature, not just the name.
+    const head = new Uint8Array(await f.slice(0, 12).arrayBuffer());
+    const sig = String.fromCharCode(...head.slice(0, 4));
+    const validSig =
+      sig === "%PDF-" ||
+      (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) || // PNG
+      (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) || // JPEG
+      (sig === "RIFF" && String.fromCharCode(...head.slice(8, 12)) === "WEBP"); // WebP
+    if (!validSig) {
+      toast({
+        title: "Not a valid file",
+        description: "This file is not a real PDF or image. Export or print it as a PDF and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (file) URL.revokeObjectURL(file.preview_url);
+    setFile(Object.assign(f, { preview_url: URL.createObjectURL(f) }));
   };
 
   const submit = async () => {
     if (!file) {
-      toast({ title: "Results PDF required", description: "Upload the laboratory results PDF.", variant: "destructive" });
+      toast({ title: "Results file required", description: "Upload the laboratory results as a PDF or image.", variant: "destructive" });
       return;
     }
     if (!amount.trim() || !/^\d+(\.\d{1,2})?$/.test(amount.trim())) {
@@ -109,7 +124,7 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
         lab_request_id: request.id,
         file_b64: b64,
         file_name: file.name,
-        file_type: file.type || "application/pdf",
+        file_type: file.type || (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg"),
         payment_amount: amount.trim(),
         payment_method: finalMethod,
       });
@@ -121,6 +136,7 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
       setMatches(null);
       setPatient(null);
       setRequest(null);
+      if (file) URL.revokeObjectURL(file.preview_url);
       setFile(null);
       setAmount("");
       setMethod("Cash");
@@ -140,6 +156,7 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
   const resetPatient = () => {
     setPatient(null);
     setRequest(null);
+    if (file) URL.revokeObjectURL(file.preview_url);
     setFile(null);
     setAmount("");
     setMethod("Cash");
@@ -276,17 +293,39 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
 
           <div className="space-y-4 border-t border-border pt-4">
             <div className="space-y-1.5">
-              <Label>Laboratory Results PDF *</Label>
+              <Label>Laboratory Results (PDF or Image) *</Label>
               <input
                 ref={fileRef}
                 type="file"
                 className="hidden"
-                accept="application/pdf"
+                accept={ACCEPTED_TYPES}
                 onChange={pickFile}
               />
               <Button variant="outline" className="w-full" onClick={() => fileRef.current && fileRef.current.click()}>
-                <Upload className="w-4 h-4 mr-1" /> {file ? file.name : "Choose PDF file"}
+                <Upload className="w-4 h-4 mr-1" /> {file ? file.name : "Choose PDF or image"}
               </Button>
+
+              {/* Preview before submitting */}
+              {file && (
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Preview — {isImageFile(file) ? "image" : "PDF"} · {(file.size / 1024).toFixed(0)} KB
+                  </p>
+                  {isImageFile(file) ? (
+                    <img
+                      src={file.preview_url}
+                      alt="Results preview"
+                      className="max-h-64 w-full rounded-md border border-border object-contain bg-background"
+                    />
+                  ) : (
+                    <iframe
+                      src={file.preview_url}
+                      title="Results preview"
+                      className="w-full h-64 rounded-md border border-border bg-background"
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -334,7 +373,7 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
               Submit Results & Payment
             </Button>
             <p className="text-xs text-muted-foreground">
-              The results PDF, payment amount and payment method will be securely attached to{" "}
+              The results file, payment amount and payment method will be securely attached to{" "}
               {request.request_ref} for {patient.patient_name} and sent to the Lab Portal.
             </p>
           </div>

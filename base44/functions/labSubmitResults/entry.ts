@@ -32,12 +32,18 @@ export default async function(req: Request): Promise<Response> {
     if (!paymentAmount) return Response.json({ error: "Enter the payment amount collected." }, { status: 400 });
     if (!paymentMethod) return Response.json({ error: "Select or enter the payment method." }, { status: 400 });
 
-    // A file renamed to .pdf (e.g. a PNG image) opens blank in the PDF viewer —
-    // verify the real PDF signature, not just the file name.
-    const fileHead = String.fromCharCode(...base64ToBytes(fileB64.slice(0, 8)));
-    if (fileHead !== "%PDF-") {
+    // A file renamed to .pdf opens blank in the PDF viewer — verify the real
+    // file signature, not just the name. PDF and images (PNG/JPEG/WebP) are accepted.
+    const fileBytes = base64ToBytes(fileB64.slice(0, 16));
+    const head4 = String.fromCharCode(...fileBytes.slice(0, 4));
+    const head3 = String.fromCharCode(...fileBytes.slice(0, 3));
+    const isPdf = fileB64.slice(0, 5) === "%PDF-";
+    const isPng = fileBytes[0] === 0x89 && fileBytes[1] === 0x50 && fileBytes[2] === 0x4e && fileBytes[3] === 0x47;
+    const isJpeg = fileBytes[0] === 0xff && fileBytes[1] === 0xd8 && fileBytes[2] === 0xff;
+    const isWebp = head4 === "RIFF" && String.fromCharCode(...fileBytes.slice(8, 12)) === "WEBP";
+    if (!isPdf && !isPng && !isJpeg && !isWebp) {
       return Response.json(
-        { error: "The results file is not a real PDF (it may be an image renamed to .pdf). Export it as a PDF and upload again." },
+        { error: "The results file is not a valid PDF or image (PNG, JPG, WebP). Export it as a PDF or use the original image." },
         { status: 400 }
       );
     }
