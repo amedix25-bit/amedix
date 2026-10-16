@@ -88,7 +88,7 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
       sig.startsWith("%PDF-") ||
       (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) || // PNG
       (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) || // JPEG
-      (sig.startsWith("RIFF") && sig.slice(4, 8) === "WEBP"); // WebP
+      (sig.startsWith("RIFF") && sig.slice(8, 12) === "WEBP"); // WebP
     if (!validSig) {
       toast({
         title: "Not a valid file",

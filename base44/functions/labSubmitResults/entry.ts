@@ -36,8 +36,7 @@ export default async function(req: Request): Promise<Response> {
     // file signature, not just the name. PDF and images (PNG/JPEG/WebP) are accepted.
     const fileBytes = base64ToBytes(fileB64.slice(0, 16));
     const head4 = String.fromCharCode(...fileBytes.slice(0, 4));
-    const head3 = String.fromCharCode(...fileBytes.slice(0, 3));
-    const isPdf = fileB64.slice(0, 5) === "%PDF-";
+    const isPdf = String.fromCharCode(...fileBytes.slice(0, 5)) === "%PDF-";
     const isPng = fileBytes[0] === 0x89 && fileBytes[1] === 0x50 && fileBytes[2] === 0x4e && fileBytes[3] === 0x47;
     const isJpeg = fileBytes[0] === 0xff && fileBytes[1] === 0xd8 && fileBytes[2] === 0xff;
     const isWebp = head4 === "RIFF" && String.fromCharCode(...fileBytes.slice(8, 12)) === "WEBP";
