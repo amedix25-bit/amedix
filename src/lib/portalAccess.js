@@ -62,21 +62,27 @@ export function logoutWithRejection(role, basePath = "/login", extraParams = {})
 
 // Decides what happens after a successful, backend-verified check:
 // - no profile yet → the post-registration onboarding page
-// - one role → that portal (rejected if the selected portal doesn't match)
-// - multiple roles → the "Welcome back — Continue as" selection screen
+// - selected authorized portal → that portal, even with multiple roles
+// - no selection, one role → that portal
+// - no selection, multiple roles → the "Welcome back — Continue as" screen
 export function routeAfterValidation(data, selectedPortal, { onSelection, onReject }) {
   const { roles, allowed } = data;
   if (!roles || roles.length === 0) {
     window.location.href = "/home";
     return;
   }
-  if (roles.length === 1) {
-    const role = roles[0];
-    if (selectedPortal && !allowed) {
-      onReject(role);
+  if (selectedPortal) {
+    if (!allowed || !roles.includes(selectedPortal)) {
+      onReject(roles[0]);
       return;
     }
-    window.location.href = PORTAL_DESTINATIONS[role];
+    localStorage.removeItem("amh_selected_role");
+    window.location.href = PORTAL_DESTINATIONS[selectedPortal];
+    return;
+  }
+  if (roles.length === 1) {
+    localStorage.removeItem("amh_selected_role");
+    window.location.href = PORTAL_DESTINATIONS[roles[0]];
     return;
   }
   onSelection({ full_name: data.full_name, roles });

@@ -138,7 +138,7 @@ export default function Register({ embedded = false }) {
         <>
           {t("Already have an account?")}{" "}
           <Link
-            to={"/login" + (safeReturnTo() !== "/" ? "?returnTo=" + encodeURIComponent(safeReturnTo()) : "")}
+            to={"/login" + (safeReturnTo(null) ? "?returnTo=" + encodeURIComponent(safeReturnTo(null)) : "")}
             className="text-primary font-medium hover:underline"
           >
             {t("Log in")}

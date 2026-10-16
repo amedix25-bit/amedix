@@ -40,7 +40,7 @@ export default function Login({ portal = null, embedded = false }) {
     const urlParams = new URLSearchParams(window.location.search);
     // Post-login destination (e.g. the MCP OAuth consent page sends users here
     // with returnTo so the grant flow can resume). Same-origin paths only.
-    const currentReturnTo = safeReturnTo();
+    const currentReturnTo = safeReturnTo(null);
     const portalParam = urlParams.get("portal");
     const storedRole = localStorage.getItem("amh_selected_role");
     return {
@@ -83,7 +83,7 @@ export default function Login({ portal = null, embedded = false }) {
     let cancelled = false;
     (async () => {
       try {
-        if (returnTo !== "/") {
+        if (returnTo) {
           window.location.href = returnTo;
           return;
         }
@@ -110,7 +110,7 @@ export default function Login({ portal = null, embedded = false }) {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
-      if (returnTo !== "/") {
+      if (returnTo) {
         window.location.href = returnTo;
         return;
       }
@@ -124,7 +124,7 @@ export default function Login({ portal = null, embedded = false }) {
   const handleGoogle = () => {
     // After Google returns, the user lands back on this page authenticated —
     // the backend role check then runs before any portal opens.
-    const fromUrl = returnTo !== "/" ? returnTo : `${window.location.origin}/login${selectedPortal ? `?portal=${selectedPortal}` : ""}`;
+    const fromUrl = returnTo || `${window.location.origin}/login${selectedPortal ? `?portal=${selectedPortal}` : ""}`;
     base44.auth.loginWithProvider("google", fromUrl);
   };
 
@@ -151,7 +151,7 @@ export default function Login({ portal = null, embedded = false }) {
         <>
           {t("Don't have an account?")}{" "}
           <Link
-            to={"/register" + (returnTo !== "/" ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
+            to={"/register" + (returnTo ? "?returnTo=" + encodeURIComponent(returnTo) : "")}
             className="text-primary font-medium hover:underline"
           >
             {t("Create one")}
