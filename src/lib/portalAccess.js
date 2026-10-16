@@ -42,6 +42,9 @@ export const PORTAL_DESTINATIONS = {
 // authorized for, and whether the selected portal matches one of them.
 export async function validatePortalAccess(portal) {
   const res = await base44.functions.invoke("checkPortalAccess", { portal: portal || null });
+  if (!Array.isArray(res.data?.roles)) {
+    throw new Error("Unable to verify your portal access. Please try again.");
+  }
   return res.data;
 }
 

@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
-import { safeReturnTo } from "@/lib/authReturnTo";
+import { safeLoginReturnTo } from "@/lib/authReturnTo";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { useAppLanguage } from "@/lib/appLanguage";
 import PortalSelection from "@/components/PortalSelection";
 import {
@@ -40,7 +41,7 @@ export default function Login({ portal = null, embedded = false }) {
     const urlParams = new URLSearchParams(window.location.search);
     // Post-login destination (e.g. the MCP OAuth consent page sends users here
     // with returnTo so the grant flow can resume). Same-origin paths only.
-    const currentReturnTo = safeReturnTo(null);
+    const currentReturnTo = safeLoginReturnTo();
     const portalParam = urlParams.get("portal");
     const storedRole = localStorage.getItem("amh_selected_role");
     return {
@@ -95,7 +96,10 @@ export default function Login({ portal = null, embedded = false }) {
           });
         }
       } catch (err) {
-        console.error(err);
+        if (!cancelled) {
+          setError(err.response?.data?.error || err.message || t("Unable to open your portal. Please try again."));
+          setLoading(false);
+        }
       }
     })();
     return () => {
@@ -110,6 +114,7 @@ export default function Login({ portal = null, embedded = false }) {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
+      clearDoctorHospitalSession();
       if (returnTo) {
         window.location.href = returnTo;
         return;

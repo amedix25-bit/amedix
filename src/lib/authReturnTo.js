@@ -12,7 +12,8 @@
 // //evil.com when assigned to location.href — an open redirect. So require the
 // resolved path to be exactly one leading slash (no "//" prefix, no backslash).
 export function safeReturnTo(fallback = "/home") {
-  const raw = new URLSearchParams(window.location.search).get("returnTo");
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("returnTo") || params.get("from_url");
   if (!raw) return fallback;
   try {
     const url = new URL(raw, window.location.origin);
@@ -29,4 +30,14 @@ export function safeReturnTo(fallback = "/home") {
   } catch {
     return fallback;
   }
+}
+
+// Generic entry/onboarding pages are not a completed sign-in destination.
+// Resolve the account's authorized portal instead; keep real deep links intact.
+export function safeLoginReturnTo() {
+  const path = safeReturnTo(null);
+  if (!path) return null;
+  const pathname = new URL(path, window.location.origin).pathname.replace(/\/+$/, "").toLowerCase() || "/";
+  const entryPages = ["/", "/home", "/landing", "/login", "/register", "/forgot-password", "/reset-password"];
+  return entryPages.includes(pathname) ? null : path;
 }

@@ -15,12 +15,17 @@ import { PatientLanguageProvider } from "@/lib/patientLanguage";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
+import { validatePortalAccess, routeAfterValidation, logoutWithRejection } from "@/lib/portalAccess";
+import PortalSelection from "@/components/PortalSelection";
+import AuthLayout from "@/components/AuthLayout";
 
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useAppLanguage();
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState("");
+  const [selection, setSelection] = useState(null);
   const [showDoctorForm, setShowDoctorForm] = useState(false);
   const [showPatientForm, setShowPatientForm] = useState(false);
 
@@ -41,54 +46,37 @@ export default function Home() {
   const [doctorVerError, setDoctorVerError] = useState("");
 
   useEffect(() => {
-    checkProfile();
-  }, []);
+    if (user?.id) checkProfile();
+  }, [user?.id]);
 
-  // The home page is always the first screen — role routing happens only when
-  // the user picks a role. Other roles (radiologist, lab, hospital) and admins
-  // are still routed directly to their own portals.
+  // Legacy redirects and Google registration can still arrive at /home.
+  // Existing accounts must finish portal routing, not repeat role onboarding.
   const checkProfile = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    if (!user?.id) return;
+    setLoading(true);
+    setProfileError("");
     try {
-      if (user.role === "admin") {
-        navigate("/admin");
+      const storedRole = localStorage.getItem("amh_selected_role");
+      const selectedRole = ["patient", "doctor"].includes(storedRole) ? storedRole : null;
+      const data = await validatePortalAccess(selectedRole);
+      if (data.roles.length > 0 && (!selectedRole || data.roles.includes(selectedRole))) {
+        routeAfterValidation(data, selectedRole, {
+          onSelection: (value) => {
+            localStorage.removeItem("amh_selected_role");
+            setSelection(value);
+            setLoading(false);
+          },
+          onReject: (role) => logoutWithRejection(role),
+        });
         return;
       }
-      const [labProfiles, radiologistProfiles, hospitalProfiles] = await Promise.all([
-        base44.entities.LaboratoryProfile.filter({ user_id: user.id }),
-        base44.entities.RadiologistProfile.filter({ user_id: user.id }),
-        base44.entities.HospitalProfile.filter({ user_id: user.id }),
-      ]);
-      // Radiologist accounts go to the Radiologist Portal. A radiologist may only
-      // use the regular Doctor Portal when an administrator has explicitly
-      // granted doctor_portal_access on their profile.
-      if (radiologistProfiles.length > 0 && radiologistProfiles[0].doctor_portal_access !== true) {
-        navigate("/radiologist");
-        return;
-      }
-      if (labProfiles.length > 0) {
-        navigate("/lab-portal");
-        return;
-      }
-      if (hospitalProfiles.length > 0) {
-        navigate("/hospital-portal");
-        return;
-      }
-      // The selected role is a one-shot flag: consume it so a later visit to
-      // the published link always lands on the clean role-selection page
-      // instead of auto-opening a stale registration form.
-      const selectedRole = localStorage.getItem("amh_selected_role");
+      // Only accounts that still need the selected profile see onboarding.
       localStorage.removeItem("amh_selected_role");
-      if (selectedRole === "patient") {
-        setShowPatientForm(true);
-      } else if (selectedRole === "doctor") {
-        setShowDoctorForm(true);
-      }
+      if (selectedRole === "patient") setShowPatientForm(true);
+      if (selectedRole === "doctor") setShowDoctorForm(true);
       setLoading(false);
     } catch (err) {
+      setProfileError(err.response?.data?.error || err.message || t("Unable to open your portal. Please try again."));
       setLoading(false);
     }
   };
@@ -170,6 +158,23 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6">
+        <p role="alert" className="text-sm text-destructive text-center">{profileError}</p>
+        <Button onClick={checkProfile}>{t("Try again")}</Button>
+      </div>
+    );
+  }
+
+  if (selection) {
+    return (
+      <AuthLayout icon={User} title={t("Welcome Back")}>
+        <PortalSelection fullName={selection.full_name} roles={selection.roles} />
+      </AuthLayout>
     );
   }
 
