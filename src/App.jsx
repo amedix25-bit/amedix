@@ -11,7 +11,6 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
-import Home from '@/pages/Home';
 import Landing from '@/pages/Landing';
 import Welcome from '@/pages/Welcome';
 import PatientDashboard from '@/pages/PatientDashboard';
@@ -68,7 +67,7 @@ const AuthenticatedApp = () => {
       <Route path="/hospital/register" element={<HospitalRegister />} />
       <Route path="/hospital/receptionist" element={<Receptionist />} />
       <Route path="/lab-technician" element={<LabTechnician />} />
-      <Route path="/" element={isAuthenticated ? <Home /> : <Welcome />} />
+      <Route path="/" element={<Welcome />} />
       <Route path="/landing" element={<Landing />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/patient" element={<PatientDashboard />} />
