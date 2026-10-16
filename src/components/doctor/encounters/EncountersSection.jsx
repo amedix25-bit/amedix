@@ -88,7 +88,7 @@ export default function EncountersSection({ doctorProfile }) {
         consents: res.data.consents || [],
       });
       if (openEncounter) {
-        const fresh = encounters.find((e) => e.id === openEncounter.id);
+        const fresh = (record.encounters || []).find((e) => e.id === openEncounter.id);
         setOpenEncounter(fresh || null);
       }
     } catch (err) {

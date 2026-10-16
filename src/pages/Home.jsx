@@ -76,7 +76,11 @@ export default function Home() {
         navigate("/hospital-portal");
         return;
       }
+      // The selected role is a one-shot flag: consume it so a later visit to
+      // the published link always lands on the clean role-selection page
+      // instead of auto-opening a stale registration form.
       const selectedRole = localStorage.getItem("amh_selected_role");
+      localStorage.removeItem("amh_selected_role");
       if (selectedRole === "patient") {
         setShowPatientForm(true);
       } else if (selectedRole === "doctor") {
