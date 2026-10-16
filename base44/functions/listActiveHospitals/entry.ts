@@ -14,13 +14,25 @@ export default async function(req) {
       { status: "active" },
       { sort: "hospital_name", limit: 200 }
     );
+    // Hospitals whose administrator account was deleted are orphans — their
+    // email no longer exists, so they are removed from the directory.
+    const withOwner = await Promise.all(items.map(async (h) => {
+      try {
+        await base44.asServiceRole.entities.User.get(h.user_id);
+        return h;
+      } catch {
+        return null;
+      }
+    }));
     return Response.json({
-      hospitals: items.map((h) => ({
-        hospital_id: h.id,
-        hospital_name: h.hospital_name,
-        hospital_location: h.location || "",
-        hospital_photo_url: h.photo_url || "",
-      })),
+      hospitals: withOwner
+        .filter(Boolean)
+        .map((h) => ({
+          hospital_id: h.id,
+          hospital_name: h.hospital_name,
+          hospital_location: h.location || "",
+          hospital_photo_url: h.photo_url || "",
+        })),
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
