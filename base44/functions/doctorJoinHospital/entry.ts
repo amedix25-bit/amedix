@@ -36,7 +36,11 @@ export default async function(req) {
     }
 
     if (verifyOnly) {
-      return Response.json({ hospital_name: hospital.hospital_name, hospital_location: hospital.location || "" });
+      return Response.json({
+        hospital_name: hospital.hospital_name,
+        hospital_location: hospital.location || "",
+        hospital_photo_url: hospital.photo_url || "",
+      });
     }
 
     const department = String(body.department || "").trim() || doctor.specialization || "";

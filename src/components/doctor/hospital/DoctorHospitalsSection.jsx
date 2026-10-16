@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SpecialtyDepartmentSelect from "@/components/doctor/hospital/SpecialtyDepartmentSelect";
 import { Loader2, Building2, ArrowLeft } from "lucide-react";
+import { Image } from "@/components/ui/image";
 
 // My Hospitals — the doctor's verified hospital associations. A doctor joins a
 // hospital ONLY with its unique AMedix Hospital Code (verified by the
@@ -24,11 +25,19 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
   const [department, setDepartment] = useState(profile.specialization || "");
   const [busy, setBusy] = useState(false);
   const [switchingId, setSwitchingId] = useState(null);
+  const [hospitalPhotoUrl, setHospitalPhotoUrl] = useState("");
+  const [logosById, setLogosById] = useState({});
 
   const load = useCallback(async () => {
     try {
-      const list = await base44.entities.HospitalDoctor.filter({ doctor_user_id: user.id });
+      const [list, dir] = await Promise.all([
+        base44.entities.HospitalDoctor.filter({ doctor_user_id: user.id }),
+        base44.functions.invoke("listActiveHospitals", {}),
+      ]);
       setAssocs(list);
+      const logos = {};
+      (dir.data?.hospitals || []).forEach((h) => { logos[h.hospital_id] = h.hospital_photo_url || ""; });
+      setLogosById(logos);
     } catch (err) {
       console.error(err);
     }
@@ -52,6 +61,7 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
       const res = await base44.functions.invoke("doctorJoinHospital", { code: code.trim(), verify_only: true });
       setHospitalName(res.data.hospital_name);
       setHospitalLocation(res.data.hospital_location || "");
+      setHospitalPhotoUrl(res.data.hospital_photo_url || "");
       setStep("confirm");
     } catch (err) {
       fail(err);
@@ -130,10 +140,19 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
           </>
         ) : (
           <>
-            <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground">Hospital</p>
-              <p className="font-semibold">{hospitalName}</p>
-              {hospitalLocation && <p className="text-xs text-muted-foreground mt-0.5">{hospitalLocation}</p>}
+            <div className="rounded-lg bg-muted/50 p-3 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-background border border-border flex items-center justify-center overflow-hidden shrink-0">
+                {hospitalPhotoUrl ? (
+                  <Image src={hospitalPhotoUrl} alt={`${hospitalName} logo`} fittingType="fill" className="w-full h-full" />
+                ) : (
+                  <Building2 className="w-5 h-5 text-primary/40" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Hospital</p>
+                <p className="font-semibold truncate">{hospitalName}</p>
+                {hospitalLocation && <p className="text-xs text-muted-foreground mt-0.5">{hospitalLocation}</p>}
+              </div>
             </div>
             <SpecialtyDepartmentSelect value={department} onChange={setDepartment} />
             <div className="flex gap-2">
