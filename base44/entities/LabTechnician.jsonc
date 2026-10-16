@@ -5,6 +5,10 @@
     "laboratory_id": {
       "type": "string"
     },
+    "laboratory_user_id": {
+      "type": "string",
+      "description": "User id of the laboratory owner account \u2014 validated at creation so technician accounts can only be registered for the owner's own laboratory"
+    },
     "laboratory_name": {
       "type": "string"
     },
@@ -60,16 +64,25 @@
           "created_by_id": "{{user.id}}"
         },
         {
+          "data.laboratory_user_id": "{{user.id}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
         }
       ]
     },
+    "create": {
+      "data.laboratory_user_id": "{{user.id}}"
+    },
     "update": {
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.laboratory_user_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -82,6 +95,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.laboratory_user_id": "{{user.id}}"
         },
         {
           "user_condition": {
