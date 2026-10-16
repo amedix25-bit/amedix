@@ -72,6 +72,7 @@ export default function PatientLabResults({ patient }) {
       const testType = form.test_type === "Other" ? form.custom_type.trim() : form.test_type;
       await base44.entities.PatientLabResult.create({
         patient_id: patient.id,
+        patient_user_id: patient.user_id,
         patient_cin: patient.cin,
         patient_name: patient.full_name,
         test_type: testType,

@@ -46,6 +46,7 @@ export default async function(req: Request): Promise<Response> {
     const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
     const nowIso = new Date().toISOString();
 
+    const patientProfile = await base44.asServiceRole.entities.PatientProfile.get(labRequest.patient_id);
     // The original result / result_file_url are deliberately left untouched.
     await base44.asServiceRole.entities.LabRequest.update(labRequest.id, {
       corrected_result_file_url: up.file_url,
@@ -57,6 +58,7 @@ export default async function(req: Request): Promise<Response> {
 
     await base44.asServiceRole.entities.PatientNotification.create({
       patient_id: labRequest.patient_id,
+      patient_user_id: patientProfile?.user_id,
       type: "lab_results",
       title: "Corrected Laboratory Results Available",
       message: "A corrected version of your laboratory results is now available. The original result is preserved in your record.",

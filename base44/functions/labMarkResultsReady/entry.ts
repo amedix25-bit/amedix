@@ -17,6 +17,8 @@ export default async function(req: Request): Promise<Response> {
     const nowIso = new Date().toISOString();
     const today = nowIso.slice(0, 10);
 
+    const patientProfile = await base44.asServiceRole.entities.PatientProfile.get(visit.patient_id);
+
     await base44.asServiceRole.entities.LabPatientVisit.update(visit.id, {
       status: "patient_notified",
       results_ready_at: nowIso,
@@ -24,6 +26,7 @@ export default async function(req: Request): Promise<Response> {
 
     await base44.asServiceRole.entities.PatientLabResult.create({
       patient_id: visit.patient_id,
+      patient_user_id: patientProfile?.user_id,
       patient_cin: visit.patient_cin,
       patient_name: visit.patient_name,
       test_type: visit.requested_tests || "Laboratory tests",
@@ -44,6 +47,7 @@ export default async function(req: Request): Promise<Response> {
 
     await base44.asServiceRole.entities.PatientNotification.create({
       patient_id: visit.patient_id,
+      patient_user_id: patientProfile?.user_id,
       type: "lab_results",
       title: "Laboratory Results Available",
       message: "Your laboratory results are now available.",

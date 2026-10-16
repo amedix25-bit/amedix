@@ -109,6 +109,9 @@
         }
       ]
     },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
     "update": {
       "$or": [
         {

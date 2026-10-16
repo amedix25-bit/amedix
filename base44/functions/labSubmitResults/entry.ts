@@ -114,8 +114,10 @@ export default async function(req: Request): Promise<Response> {
     }
 
     // Secure patient access — results appear in the patient's My Lab Results section
+    const patientProfile = await base44.asServiceRole.entities.PatientProfile.get(labRequest.patient_id);
     await base44.asServiceRole.entities.PatientLabResult.create({
       patient_id: labRequest.patient_id,
+      patient_user_id: patientProfile?.user_id,
       patient_cin: labRequest.patient_cin,
       patient_name: labRequest.patient_name,
       test_type: (labRequest.tests || []).map((t) => t.name).join(", ") || "Laboratory tests",
@@ -129,6 +131,7 @@ export default async function(req: Request): Promise<Response> {
 
     await base44.asServiceRole.entities.PatientNotification.create({
       patient_id: labRequest.patient_id,
+      patient_user_id: patientProfile?.user_id,
       type: "lab_results",
       title: "Laboratory Results Available",
       message: "Your laboratory results are now available.",

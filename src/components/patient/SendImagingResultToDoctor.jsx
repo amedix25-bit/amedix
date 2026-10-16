@@ -42,6 +42,7 @@ export default function SendImagingResultToDoctor({ patientId, result }) {
       await base44.entities.AccessRequest.update(req.id, patch);
       await base44.entities.AccessAuditLog.create({
         patient_id: patientId,
+        patient_user_id: req.patient_user_id,
         doctor_id: req.doctor_id,
         doctor_name: req.doctor_name,
         action: granted ? "access_suspended" : "access_restored",

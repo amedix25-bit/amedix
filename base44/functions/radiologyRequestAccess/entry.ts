@@ -62,6 +62,7 @@ export default async function(req) {
 
     await svc.entities.PatientNotification.create({
       patient_id: imaging.patient_id,
+      patient_user_id: patient.user_id,
       type: "other",
       title: `New Radiology Request from Dr./Radiologist ${rad.full_name}`,
       message: "Please review and authorize access to your imaging request.",

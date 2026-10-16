@@ -92,6 +92,7 @@ function PatientPortal() {
       if (existing.length > 0) return;
       await base44.entities.PatientNotification.create({
         patient_id: profile.id,
+        patient_user_id: profile.user_id,
         type: "medication_update",
         title: "Update Your Medication Information",
         message: "Please add your current medication information to keep your medical record up to date.",

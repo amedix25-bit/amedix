@@ -67,6 +67,7 @@ export default function LabTechniciansSection({ profile }) {
       const finalUsername = username.trim().toLowerCase() || makeUsername(form.full_name, profile.lab_number);
       await base44.entities.LabTechnician.create({
         laboratory_id: profile.id,
+        laboratory_user_id: profile.user_id,
         laboratory_name: profile.lab_name,
         full_name: form.full_name.trim(),
         age: String(form.age || ""),
