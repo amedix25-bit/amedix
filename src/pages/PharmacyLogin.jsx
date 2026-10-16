@@ -5,16 +5,20 @@ import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Loader2, Lock, LogIn, Mail } from "lucide-react";
+import { Building2, Loader2, Lock, LogIn, Mail, UserCircle } from "lucide-react";
 import PortalSelection from "@/components/PortalSelection";
 import { validatePortalAccess, rejectionMessage, logoutWithRejection, routeAfterValidation } from "@/lib/portalAccess";
+import { savePharmacistSession } from "@/lib/pharmacistSession";
 import { useAppLanguage } from "@/lib/appLanguage";
 
 // The Pharmacy login only accepts accounts authorized for the Pharmacy Portal —
 // verified against the user's database roles by the checkPortalAccess function.
+// Pharmacists sign in with their own individual account credentials.
 export default function PharmacyLogin({ embedded = false }) {
+  const [tab, setTab] = useState("pharmacy");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [selection, setSelection] = useState(null);
   const [loading, setLoading] = useState(false);
   const { t } = useAppLanguage();
@@ -43,9 +47,23 @@ export default function PharmacyLogin({ embedded = false }) {
     }
   };
 
+  const handlePharmacistLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await base44.functions.invoke("pharmacistLogin", { username, password });
+      savePharmacistSession(res.data);
+      window.location.href = "/pharmacy/pharmacist";
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || t("Invalid username or password"));
+      setLoading(false);
+    }
+  };
+
   if (selection) {
     return (
-      <AuthLayout embedded={embedded} icon={Building2} title={t("Pharmacy Portal")} subtitle={t("Pharmacy sign-in")}>
+      <AuthLayout embedded={embedded} icon={Building2} title={t("Pharmacy Portal")} subtitle={t("Pharmacy and pharmacist sign-in")}>
         <PortalSelection fullName={selection.full_name} roles={selection.roles} />
       </AuthLayout>
     );
@@ -56,69 +74,135 @@ export default function PharmacyLogin({ embedded = false }) {
       embedded={embedded}
       icon={Building2}
       title={t("Pharmacy Portal")}
-      subtitle={t("Pharmacy sign-in")}
+      subtitle={t("Pharmacy and pharmacist sign-in")}
       footer={
         <>
           {t("Don't have a pharmacy account?")}{" "}
           <Link to="/pharmacy/register" className="text-primary font-medium hover:underline">
             {t("Create one")}
           </Link>
-          {" · "}
-          <Link to="/pharmacy/pharmacist" className="text-primary font-medium hover:underline">
-            {t("Pharmacist sign-in")}
-          </Link>
         </>
       }
     >
+      <div className="flex rounded-xl border border-border bg-card p-1 gap-1 mb-6">
+        <button
+          type="button"
+          onClick={() => setTab("pharmacy")}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            tab === "pharmacy" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          {t("Pharmacy")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("pharmacist")}
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            tab === "pharmacist" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+          }`}
+        >
+          <UserCircle className="w-4 h-4" />
+          {t("Pharmacist")}
+        </button>
+      </div>
+
       {error && <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
-      <form onSubmit={handleLogin} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">{t("Email")}</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="pharmacy@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
+
+      {tab === "pharmacy" ? (
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">{t("Email")}</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                autoFocus
+                placeholder="pharmacy@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">{t("Password")}</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
+          <div className="space-y-2">
+            <Label htmlFor="password">{t("Password")}</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
           </div>
-        </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {t("Logging in...")}
-            </>
-          ) : (
-            <>
-              <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-              {t("Log in to Pharmacy Portal")}
-            </>
-          )}
-        </Button>
-      </form>
+          <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t("Logging in...")}
+              </>
+            ) : (
+              <>
+                <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                {t("Log in to Pharmacy Portal")}
+              </>
+            )}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handlePharmacistLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="pharmacist_username">{t("Pharmacist Username")}</Label>
+            <div className="relative">
+              <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="pharmacist_username"
+                autoComplete="username"
+                placeholder="e.g. sara.ahmed.pharmacy"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pharmacist_password">{t("Password")}</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="pharmacist_password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 h-12"
+                required
+              />
+            </div>
+          </div>
+          <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t("Signing in...")}
+              </>
+            ) : (
+              t("Sign in to your workspace")
+            )}
+          </Button>
+        </form>
+      )}
     </AuthLayout>
   );
 }
