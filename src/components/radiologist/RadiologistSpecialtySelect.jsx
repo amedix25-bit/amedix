@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { SPECIALTIES } from "@/lib/specialties";
 
-// Radiology sub-specialties the radiologist can switch between — like the
-// doctor portal's specialty selector, the selection becomes the CURRENTLY
-// ACTIVE specialty shown throughout the portal.
+// Radiology sub-specialties plus the full medical specialty catalog — the
+// selection becomes the CURRENTLY ACTIVE specialty shown throughout the portal.
 const RADIOLOGY_SPECIALTIES = [
   "Diagnostic Radiology",
   "Interventional Radiology",
@@ -22,7 +22,7 @@ export default function RadiologistSpecialtySelect({ profile, onSelected }) {
   const [error, setError] = useState(false);
 
   const active = profile.specialization || "";
-  const options = [...new Set([...RADIOLOGY_SPECIALTIES, active].filter(Boolean))];
+  const options = [...new Set([...SPECIALTIES, ...RADIOLOGY_SPECIALTIES, active].filter(Boolean))];
 
   const makeActive = async (s) => {
     if (!s || s === active || saving) return;
