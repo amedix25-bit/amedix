@@ -28,7 +28,12 @@ export default async function(req) {
 
     // Written with the service role — doctors cannot create imaging requests
     // directly through the client API (Row Level Security blocks it).
-    const imaging_request = await base44.asServiceRole.entities.ImagingRequest.create(payload);
+    // doctor_user_id is stamped server-side (never trusted from the client) so
+    // the requesting doctor can see and manage the requests they sent.
+    const imaging_request = await base44.asServiceRole.entities.ImagingRequest.create({
+      ...payload,
+      doctor_user_id: user.id,
+    });
 
     await logClinicalAudit(base44, {
       actor_user_id: user.id,
