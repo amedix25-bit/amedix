@@ -1,278 +1,50 @@
-import React, { useState } from "react";
-import { User, Stethoscope, FlaskConical, ArrowRight, LogIn, ArrowLeft, ShieldCheck, KeyRound, Lock, Building2, Pill } from "lucide-react";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import LabLogin from "@/pages/LabLogin";
-import LabRegister from "@/pages/LabRegister";
-import HospitalLogin from "@/pages/HospitalLogin";
-import HospitalRegister from "@/pages/HospitalRegister";
-import PharmacyLogin from "@/pages/PharmacyLogin";
-import PharmacyRegister from "@/pages/PharmacyRegister";
+import React from "react";
+import { useSearchParams } from "react-router-dom";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
-import { Button } from "@/components/ui/button";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
-
-const ROLE_CONTENT = {
-  patient: {
-    icon: User,
-    title: "I am a Patient",
-    description:
-    "Log in to view your records, appointments, and test results — or create an account to receive your unique Clinical Identification Number (CIN) and QR code."
-  },
-  doctor: {
-    icon: Stethoscope,
-    title: "I am a Doctor",
-    description:
-    "Log in to manage your patients, appointments, and clinical records — or register your professional account to get started."
-  },
-  lab: {
-    icon: FlaskConical,
-    title: "I am a Lab",
-    description:
-      "Register your laboratory, manage technicians, and process laboratory requests — or sign in to your Lab Portal."
-  },
-  hospital: {
-    icon: Building2,
-    title: "I am a Hospital",
-    description:
-      "Register your hospital, manage receptionists, patient check-ins, and visit payments — or sign in to your Hospital Portal."
-  },
-  pharmacy: {
-    icon: Pill,
-    title: "I am a Pharmacy",
-    description:
-      "Register your pharmacy, manage medication stock, and dispense authorized prescriptions — or sign in to your Pharmacy Portal."
-  }
-  };
+import { PORTAL_OPTIONS } from "@/components/landing/portalOptions";
+import PortalOptions from "@/components/landing/PortalOptions";
+import PortalFeatures from "@/components/landing/PortalFeatures";
+import PortalChoice from "@/components/landing/PortalChoice";
+import PortalAuthForm from "@/components/landing/PortalAuthForm";
 
 export default function Landing() {
   const { t } = useAppLanguage();
-  const [role, setRole] = useState(null); // null | "patient" | "doctor" | "lab" | "hospital" | "pharmacy"
-  const [authMode, setAuthMode] = useState(null); // null | "login" | "register"
-
-  const selectRole = (r) => {
-    // The role flag is only used to reopen the matching registration form after
-    // "Create Account" — choosing a role for Log In must not store it, so
-    // logging in never drops the user into a registration flow.
+  const [params, setParams] = useSearchParams();
+  const option = PORTAL_OPTIONS.find((item) => item.key === params.get("portal"));
+  const step = option && ["login", "register"].includes(params.get("step")) ? params.get("step") : null;
+  const choosePortal = (portal) => {
     localStorage.removeItem("amh_selected_role");
-    setRole(r);
-    setAuthMode(null);
+    setParams({ portal });
   };
-
-  const roleContent = role ? ROLE_CONTENT[role] : null;
-  const RoleIcon = roleContent?.icon;
-
+  const changeStep = (next) => {
+    if (next === "register" && ["patient", "doctor"].includes(option.key)) localStorage.setItem("amh_selected_role", option.key);
+    else localStorage.removeItem("amh_selected_role");
+    setParams({ portal: option.key, step: next });
+  };
+  const goBack = () => setParams(step ? { portal: option.key } : {});
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border bg-background/90 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BrandLogo className="w-9 h-9 rounded-xl" />
-            <span className="text-lg font-normal [font-family:'Bungee',_system-ui]">AMedix</span>
-          </div>
+          <div className="flex items-center gap-2"><BrandLogo className="w-9 h-9 rounded-xl" /><span className="text-lg font-normal [font-family:'Bungee',_system-ui]">AMedix</span></div>
           <div className="flex items-center gap-3">
-            {role &&
-            <button
-              onClick={() => (authMode ? setAuthMode(null) : setRole(null))}
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-              {t("Back")}
-            </button>
-            }
+            {option && <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="w-4 h-4 rtl:rotate-180" />{t("Back")}</button>}
             <AppLanguageSwitcher />
           </div>
         </div>
       </header>
-
       <main className="flex-1 flex items-center justify-center px-4 py-14">
         <div className="w-full max-w-4xl text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium mb-6">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            {t("Secure, patient-owned clinical records")}
-          </div>
-
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium mb-6"><ShieldCheck className="w-3.5 h-3.5" />{t("Secure, patient-owned clinical records")}</div>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">{t("Welcome to AMedix")}</h1>
-          <p className="text-lg sm:text-xl text-muted-foreground mt-4 max-w-2xl mx-auto">
-            {t("Your medical information, securely connected to your healthcare.")}
-          </p>
-
-          {role && authMode === "login" ?
-            <div className="max-w-md mx-auto mt-10">
-              {role === "lab" ? <LabLogin embedded /> :
-               role === "hospital" ? <HospitalLogin embedded /> :
-               role === "pharmacy" ? <PharmacyLogin embedded /> :
-               <Login portal={role} embedded />}
-            </div> :
-
-          role && authMode === "register" ?
-            <div className="max-w-md mx-auto mt-10">
-              {role === "lab" ? <LabRegister embedded /> :
-               role === "hospital" ? <HospitalRegister embedded /> :
-               role === "pharmacy" ? <PharmacyRegister embedded /> :
-               <Register embedded />}
-            </div> :
-
-          !role ?
-          <>
-              <p className="text-sm text-muted-foreground mt-6 font-medium">{t("Choose how you use the platform")}</p>
-
-              <div className="grid sm:grid-cols-2 gap-6 mt-8">
-                <button
-                onClick={() => selectRole("patient")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <User className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Patient")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Access your clinical records with your unique CIN and control which doctors can see them.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                onClick={() => selectRole("doctor")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <Stethoscope className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Doctor")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Search patients by CIN, manage appointments, clinical notes, and test requests.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                onClick={() => selectRole("lab")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <FlaskConical className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Lab")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Register your laboratory, manage technicians, and process laboratory requests.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                onClick={() => selectRole("hospital")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <Building2 className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Hospital")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Register your hospital, manage receptionists, patient check-ins, and visit payments.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                onClick={() => selectRole("pharmacy")}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 text-left rtl:text-right transition-all hover:shadow-lg hover:border-primary/30">
-                  <div className="absolute top-0 right-0 rtl:right-auto rtl:left-0 w-32 h-32 bg-accent rounded-bl-full rtl:rounded-bl-none rtl:rounded-br-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <Pill className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-bold">{t("I am a Pharmacy")}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {t("Manage medication stock, reserve prescriptions, and dispense to patients.")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-6 text-primary font-medium text-sm">
-                      {t("Continue")}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              <div className="grid sm:grid-cols-3 gap-4 mt-14 text-left rtl:text-right">
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <KeyRound className="w-5 h-5 text-primary mb-2" />
-                  <p className="text-sm font-semibold">{t("Unique CIN")}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{t("Every patient receives a permanent, searchable identification number.")}</p>
-                </div>
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <Lock className="w-5 h-5 text-primary mb-2" />
-                  <p className="text-sm font-semibold">{t("Patient-Controlled Access")}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{t("Doctors can only view your record after you approve their request.")}</p>
-                </div>
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <ShieldCheck className="w-5 h-5 text-primary mb-2" />
-                  <p className="text-sm font-semibold">{t("All Records in One Place")}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{t("Appointments, labs, imaging, documents and medications, together.")}</p>
-                </div>
-              </div>
-            </> :
-
-            <div className="max-w-md mx-auto mt-10">
-              <div className="rounded-2xl border border-border bg-card p-8 text-left rtl:text-right">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  {RoleIcon && <RoleIcon className="w-7 h-7 text-primary" />}
-                </div>
-                <h2 className="text-2xl font-bold">{t(roleContent.title)}</h2>
-                <p className="text-sm text-muted-foreground mt-2">{t(roleContent.description)}</p>
-
-                <div className="flex flex-col gap-3 mt-6">
-                  <Button size="lg" variant="outline" onClick={() => setAuthMode("login")}>
-                    <LogIn className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                    {t("Log In")}
-                  </Button>
-                  <Button size="lg" onClick={() => {
-                    // Registration continuation: after sign-up the role's
-                    // onboarding form reopens on the role-selection page.
-                    // Only patient/doctor onboarding reopens after sign-up;
-                    // lab/hospital/pharmacy register on their own standalone pages.
-                    if (role === "patient" || role === "doctor") {
-                      localStorage.setItem("amh_selected_role", role);
-                    }
-                    setAuthMode("register");
-                  }}>
-                    {t("Create Account")}
-                  </Button>
-                </div>
-              </div>
-              <button
-              onClick={() => setRole(null)}
-              className="mt-6 mx-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-                {t("I am neither — choose again")}
-              </button>
-            </div>
-          }
+          <p className="text-lg sm:text-xl text-muted-foreground mt-4 max-w-2xl mx-auto">{t("Your medical information, securely connected to your healthcare.")}</p>
+          {!option ? <><PortalOptions options={PORTAL_OPTIONS} onContinue={choosePortal} /><PortalFeatures /></> : step ? <PortalAuthForm portal={option.key} mode={step} /> : <PortalChoice option={option} onLogin={() => changeStep("login")} onRegister={() => changeStep("register")} onBack={() => setParams({})} />}
         </div>
       </main>
-
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        {t("AMedix · Connected Care. Better Health.")}
-      </footer>
-    </div>);
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">{t("AMedix · Connected Care. Better Health.")}</footer>
+    </div>
+  );
 }

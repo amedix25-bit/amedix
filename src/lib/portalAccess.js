@@ -70,10 +70,13 @@ export function logoutWithRejection(role, basePath = "/login", extraParams = {})
 // - selected authorized portal → that portal, even with multiple roles
 // - no selection, one role → that portal
 // - no selection, multiple roles → the "Welcome back — Continue as" screen
-export function routeAfterValidation(data, selectedPortal, { onSelection, onReject }) {
+export function routeAfterValidation(data, selectedPortal, { onSelection, onReject, returnTo = null }) {
   const { roles, allowed } = data;
   if (!roles || roles.length === 0) {
-    window.location.href = "/home";
+    if (selectedPortal) {
+      throw new Error("This account has no registered portal profile. Please create an account for this portal first.");
+    }
+    window.location.href = returnTo || "/home";
     return;
   }
   if (selectedPortal) {
@@ -82,7 +85,11 @@ export function routeAfterValidation(data, selectedPortal, { onSelection, onReje
       return;
     }
     localStorage.removeItem("amh_selected_role");
-    window.location.href = PORTAL_DESTINATIONS[selectedPortal];
+    window.location.href = returnTo || PORTAL_DESTINATIONS[selectedPortal];
+    return;
+  }
+  if (returnTo) {
+    window.location.href = returnTo;
     return;
   }
   if (roles.length === 1) {

@@ -32,28 +32,21 @@ export default function Login({ portal = null, embedded = false }) {
   const [loading, setLoading] = useState(false);
   const [selection, setSelection] = useState(null);
 
-  // The portal selected on the role-choice page: ?portal= wins, the role
-  // stored by the landing page is the fallback. Read from the CURRENT url on
-  // every navigation — reading it once at module load captured the address
-  // the app booted on, so a client-side navigation to /login?portal=patient
-  // could still open the previous (e.g. lab) portal login.
-  const { returnTo, selectedPortal, rejectedParam } = React.useMemo(() => {
+  // The current choice is carried in the URL, never inferred from an old
+  // registration flag or an account's other roles.
+  const { returnTo, selectedPortal, rejectedParam, authCallback } = React.useMemo(() => {
     const urlParams = new URLSearchParams(window.location.search);
     // Post-login destination (e.g. the MCP OAuth consent page sends users here
     // with returnTo so the grant flow can resume). Same-origin paths only.
     const currentReturnTo = safeLoginReturnTo();
     const portalParam = urlParams.get("portal");
-    const storedRole = localStorage.getItem("amh_selected_role");
     return {
       returnTo: currentReturnTo,
-      selectedPortal: VALID_PORTALS.includes(portalParam)
-        ? portalParam
-        : VALID_PORTALS.includes(portal)
-          ? portal
-          : VALID_PORTALS.includes(storedRole)
-            ? storedRole
-            : null,
+      selectedPortal: VALID_PORTALS.includes(portal)
+        ? portal
+        : VALID_PORTALS.includes(portalParam) ? portalParam : null,
       rejectedParam: urlParams.get("rejected"),
+      authCallback: urlParams.get("auth_callback") === "google",
     };
   }, [location.search, portal]);
 
@@ -69,6 +62,7 @@ export default function Login({ portal = null, embedded = false }) {
   const finishLogin = async () => {
     const data = await validatePortalAccess(selectedPortal);
     routeAfterValidation(data, selectedPortal, {
+      returnTo,
       onSelection: (sel) => {
         setSelection({ ...sel, full_name: sel.full_name || email });
         setLoading(false);
@@ -77,21 +71,20 @@ export default function Login({ portal = null, embedded = false }) {
     });
   };
 
-  // Visitors arriving already authenticated (e.g. returning from Google
-  // sign-in) go through the same backend role check before any portal opens.
+  // A saved session must not skip the requested email/password step.
+  // Only an explicit Google callback completes sign-in automatically.
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !authCallback) return;
+    setLoading(true);
     let cancelled = false;
     (async () => {
       try {
-        if (returnTo) {
-          window.location.href = returnTo;
-          return;
-        }
         const data = await validatePortalAccess(selectedPortal);
         if (!cancelled) {
+          clearDoctorHospitalSession();
           routeAfterValidation(data, selectedPortal, {
-            onSelection: (sel) => setSelection(sel),
+            returnTo,
+            onSelection: (sel) => { setSelection(sel); setLoading(false); },
             onReject: reject,
           });
         }
@@ -106,7 +99,7 @@ export default function Login({ portal = null, embedded = false }) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, returnTo, selectedPortal]);
+  }, [isAuthenticated, returnTo, selectedPortal, authCallback]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -115,10 +108,6 @@ export default function Login({ portal = null, embedded = false }) {
     try {
       await base44.auth.loginViaEmailPassword(email, password);
       clearDoctorHospitalSession();
-      if (returnTo) {
-        window.location.href = returnTo;
-        return;
-      }
       await finishLogin();
     } catch (err) {
       setError(err.message || t("Invalid email or password"));
@@ -129,8 +118,12 @@ export default function Login({ portal = null, embedded = false }) {
   const handleGoogle = () => {
     // After Google returns, the user lands back on this page authenticated —
     // the backend role check then runs before any portal opens.
-    const fromUrl = returnTo || `${window.location.origin}/login${selectedPortal ? `?portal=${selectedPortal}` : ""}`;
-    base44.auth.loginWithProvider("google", fromUrl);
+    const callback = new URL(embedded ? "/landing" : "/login", window.location.origin);
+    if (selectedPortal) callback.searchParams.set("portal", selectedPortal);
+    if (embedded) callback.searchParams.set("step", "login");
+    if (returnTo) callback.searchParams.set("returnTo", returnTo);
+    callback.searchParams.set("auth_callback", "google");
+    base44.auth.loginWithProvider("google", callback.toString());
   };
 
   if (selection) {
@@ -168,6 +161,7 @@ export default function Login({ portal = null, embedded = false }) {
         variant="outline"
         className="w-full h-12 text-sm font-medium mb-6"
         onClick={handleGoogle}
+        disabled={loading}
       >
         <GoogleIcon className="w-5 h-5 mr-2" />
         {t("Continue with Google")}
