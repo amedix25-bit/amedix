@@ -13,6 +13,18 @@ import { AR_PARAGRAPHS, AR_VISION_HEADING, AR_VISION_LINE } from "@/lib/amedixSt
 // so the text and button stay fully readable. Get Started leads to the
 // existing role-choice page. The language switcher is available from here,
 // before any login or registration.
+// Renders text with every "AMedix" occurrence bolded.
+function AMedixBold({ text }) {
+  const parts = String(text || "").split(/(AMedix)/);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part === "AMedix" ? <strong key={i}>{part}</strong> : part
+      )}
+    </>
+  );
+}
+
 export default function Welcome() {
   const navigate = useNavigate();
   const { t, isArabic } = useAppLanguage();
@@ -46,20 +58,20 @@ export default function Welcome() {
         // version and proper RTL alignment.
         <div className="mt-6 space-y-4 text-foreground leading-relaxed font-normal" dir="rtl">
             {AR_PARAGRAPHS.map((p, i) =>
-          <p key={i}>{p}</p>
+          <p key={i}><AMedixBold text={p} /></p>
           )}
             <p>{AR_VISION_HEADING}</p>
             <p className="text-primary text-lg sm:text-xl">{AR_VISION_LINE}</p>
           </div> :
 
         <div className="mt-6 space-y-4 text-foreground leading-relaxed font-normal">
-            <p className="font-normal"><strong>AMedix</strong> was founded by two medical students: <strong>Ayatallah Abed Elallegy and Mohammed Saad Alsaba</strong>, with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
+            <p className="font-normal"><strong>AMedix</strong> was founded by two medical students:<br /> <strong>Ayatallah Abed Elallegy</strong> and <strong>Mohammed Saad Alsaba</strong>,<br />with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
 
 
 
           </p>
             <p>
-              At the heart of AMedix is the idea that a patient’s healthcare information
+              At the heart of <strong>AMedix</strong> is the idea that a patient’s healthcare information
               should be securely organized and readily accessible whenever and wherever
               it is needed. The platform brings essential health information together in
               one place, including medical appointments, laboratory results, diagnostic
@@ -67,16 +79,16 @@ export default function Welcome() {
               comprehensive and accessible digital health record.
             </p>
             <p>
-              Beyond record management, AMedix is designed to create an interconnected
+              Beyond record management, <strong>AMedix</strong> is designed to create an interconnected
               healthcare ecosystem that brings patients, physicians, laboratories,
               radiology services, and other healthcare providers together through a
               unified platform. By enabling healthcare information to move efficiently
-              and securely across different points of care, AMedix aims to improve
+              and securely across different points of care, <strong>AMedix</strong> aims to improve
               communication, support continuity of care, and reduce the fragmentation
               that often exists within the healthcare system.
             </p>
             <p>
-              Most importantly, AMedix keeps the patient at the center of the healthcare
+              Most importantly, <strong>AMedix</strong> keeps the patient at the center of the healthcare
               journey. By connecting healthcare professionals, services, and information
               around each patient, the platform aims to create a simpler, more
               coordinated, and more informed healthcare experience.
@@ -89,7 +101,7 @@ export default function Welcome() {
         }
 
         <p className="mt-8 text-xl">
-          {t("AMedix — Your Healthcare, All in One Place.")}
+          <AMedixBold text={t("AMedix — Your Healthcare, All in One Place.")} />
         </p>
 
         <Button size="lg" className="mt-8" onClick={() => navigate("/landing")}>
