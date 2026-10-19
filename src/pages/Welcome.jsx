@@ -53,7 +53,7 @@ export default function Welcome() {
           </div> :
 
         <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
-            <p className="font-extrabold">AMedix was founded by two medical students: Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
+            <p className="font-extrabold">AMedix was founded by two medical students: Ayatallah Abed Elallegy and Mohammed Saad Alsabawith a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
 
 
 
