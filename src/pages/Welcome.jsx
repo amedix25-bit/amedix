@@ -38,22 +38,22 @@ export default function Welcome() {
       </div>
 
       <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold">{t("Welcome to AMedix")}</h1>
+        <h1 className="text-4xl sm:text-5xl">{t("Welcome to AMedix")}</h1>
 
         {isArabic ?
         // Official, manually provided Arabic version — displayed verbatim,
         // never auto-translated, with the same design as the English
         // version and proper RTL alignment.
-        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold" dir="rtl">
+        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-normal" dir="rtl">
             {AR_PARAGRAPHS.map((p, i) =>
           <p key={i}>{p}</p>
           )}
-            <p className="font-semibold">{AR_VISION_HEADING}</p>
+            <p>{AR_VISION_HEADING}</p>
             <p className="text-primary text-lg sm:text-xl">{AR_VISION_LINE}</p>
           </div> :
 
-        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
-            <p className="font-normal"><strong>AMedix</strong> was founded by two medical students: Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
+        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-normal">
+            <p className="font-normal"><strong>AMedix</strong> was founded by two medical students: <strong>Ayatallah Abed Elallegy and Mohammed Saad Alsaba</strong>, with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
 
 
 
@@ -88,7 +88,7 @@ export default function Welcome() {
           </div>
         }
 
-        <p className="mt-8 text-xl font-bold">
+        <p className="mt-8 text-xl">
           {t("AMedix — Your Healthcare, All in One Place.")}
         </p>
 
