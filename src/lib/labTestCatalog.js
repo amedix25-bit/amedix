@@ -8,8 +8,13 @@ export const LAB_CATEGORIES = [
         name: "CBC / CBS",
         tests: ["Hemoglobin", "Hematocrit", "RBC Count", "WBC Count", "Differential Count", "Platelets", "MCV", "MCH", "MCHC", "RDW"],
       },
+      {
+        id: "other",
+        name: "Other",
+        tests: ["ESR", "Peripheral Blood Smear", "Reticulocyte Count", "PT (Prothrombin Time)", "INR", "aPTT", "Fibrinogen", "D-Dimer", "Blood Group & Rh"],
+      },
     ],
-    tests: ["ESR", "Peripheral Blood Smear", "Reticulocyte Count", "PT (Prothrombin Time)", "INR", "aPTT", "Fibrinogen", "D-Dimer", "Blood Group & Rh"],
+    tests: [],
   },
   {
     id: "biochemistry",
@@ -278,7 +283,18 @@ export const CATALOG_ENTRIES = LAB_CATEGORIES.flatMap((cat) => [
   })),
 ]);
 
-export const entryById = (id) => CATALOG_ENTRIES.find((t) => t.id === id);
+export const entryById = (id) => {
+  const direct = CATALOG_ENTRIES.find((t) => t.id === id);
+  if (direct) return direct;
+  // Legacy two-part ids ("hematology:ESR") saved before a test moved into a
+  // panel — resolve by category and name so old favorites keep working.
+  const parts = String(id).split(":");
+  if (parts.length === 2) {
+    const [categoryId, name] = parts;
+    return CATALOG_ENTRIES.find((t) => t.categoryId === categoryId && t.name === name);
+  }
+  return undefined;
+};
 
 export function searchLabTests(query) {
   const q = query.trim().toLowerCase();
