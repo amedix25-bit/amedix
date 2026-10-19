@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 // time). Clicking a visit opens its visit notes plus the clinical documents
 // and notes the doctor wrote during that visit, viewable in full or as PDF.
 export default function DoctorVisits({ patientId }) {
-  const { t } = usePatientLanguage();
+  const { t, isArabic } = usePatientLanguage();
   const [visits, setVisits] = useState(null);
   const [selected, setSelected] = useState(null);
 
@@ -65,11 +65,11 @@ export default function DoctorVisits({ patientId }) {
               <p className="font-medium truncate">{t("Dr.")} {visit.doctor_name}</p>
               <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{visit.hospital}{visit.department ? ` · ${visit.department}` : ""}</span>
+                <span className="truncate">{visit.hospital}{visit.department ? ` · ${departmentLabel(visit.department, isArabic)}` : ""}</span>
               </p>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 shrink-0" />
-                {formatVisitTime(visit.encounter_datetime)}
+                {formatVisitTime(visit.encounter_datetime, isArabic)}
               </p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 rtl:rotate-180" />
@@ -81,7 +81,7 @@ export default function DoctorVisits({ patientId }) {
 }
 
 function DoctorVisitDetail({ visit, onBack }) {
-  const { t } = usePatientLanguage();
+  const { t, isArabic } = usePatientLanguage();
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
   const [openId, setOpenId] = useState(null);
@@ -136,11 +136,11 @@ function DoctorVisitDetail({ visit, onBack }) {
         <p className="font-semibold">{t("Dr.")} {visit.doctor_name}</p>
         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5 shrink-0" />
-          {visit.hospital}{visit.department ? ` · ${visit.department}` : ""}
+          {visit.hospital}{visit.department ? ` · ${departmentLabel(visit.department, isArabic)}` : ""}
         </p>
         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5 shrink-0" />
-          {formatVisitTime(visit.encounter_datetime)}
+          {formatVisitTime(visit.encounter_datetime, isArabic)}
         </p>
         {visit.chief_complaint && (
           <div className="pt-2 border-t border-border">
@@ -188,7 +188,7 @@ function DoctorVisitDetail({ visit, onBack }) {
 }
 
 function ClinicalItemCard({ item, ar, open, onToggle, onOpenPdf }) {
-  const { t } = usePatientLanguage();
+  const { t, isArabic } = usePatientLanguage();
   const isDoc = item.kind === "document";
   const title = item.document_type_label || t("Clinical Note");
   const when = item.signed_datetime || item.created_datetime || item.date;
@@ -201,7 +201,7 @@ function ClinicalItemCard({ item, ar, open, onToggle, onOpenPdf }) {
           <div className="min-w-0">
             <p className="font-medium text-sm truncate">{title}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {t("Dr.")} {item.doctor_name}{when ? ` · ${formatVisitTime(when)}` : ""}
+              {t("Dr.")} {item.doctor_name}{when ? ` · ${formatVisitTime(when, isArabic)}` : ""}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -260,13 +260,66 @@ function NoteField({ label, value }) {
   );
 }
 
-function formatVisitTime(dt) {
+function formatVisitTime(dt, isArabic = false) {
   if (!dt) return "";
   try {
-    return new Date(dt).toLocaleString("en-GB", {
+    return new Date(dt).toLocaleString(isArabic ? "ar" : "en-GB", {
       year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
     });
   } catch (err) {
     return dt;
   }
+}
+
+// Department / specialty values are stored in English — show them in Arabic
+// in the Patient Portal when the language is Arabic.
+const DEPARTMENT_AR = {
+  "surgeon": "جراح",
+  "internal medicine": "الباطنية",
+  "family medicine": "طب الأسرة",
+  "general practice": "طب عام",
+  "emergency medicine": "طب الطوارئ",
+  "cardiology": "القلبية",
+  "pediatrics": "طب الأطفال",
+  "neurology": "الأعصاب",
+  "orthopedics": "العظام",
+  "obstetrics & gynecology": "النساء والتوليد",
+  "dermatology": "الجلدية",
+  "psychiatry": "الطب النفسي",
+  "ent (otolaryngology)": "الأنف والأذن والحنجرة",
+  "ophthalmology": "العيون",
+  "urology": "المسالك البولية",
+  "oncology": "الأورام",
+  "anesthesiology & intensive care": "التخدير والعناية المركزة",
+  "plastic surgery": "الجراحة التجميلية",
+  "vascular surgery": "جراحة الأوعية الدموية",
+  "endocrinology": "الغدد الصماء",
+  "gastroenterology": "الجهاز الهضمي",
+  "pulmonology": "الصدرية",
+  "nephrology": "الكلى",
+  "rheumatology": "الروماتيزم",
+  "hematology": "أمراض الدم",
+  "infectious diseases": "الأمراض المعدية",
+  "physical medicine & rehabilitation": "الطب الطبيعي والتأهيل",
+  "dentistry": "طب الأسنان",
+  "nutrition & dietetics": "التغذية",
+  "neurosurgery": "جراحة الأعصاب",
+  "cardiothoracic surgery": "جراحة القلب والصدر",
+  "pediatric surgery": "جراحة الأطفال",
+  "trauma surgery": "جراحة الإصابات",
+  "critical care / icu": "العناية المركزة",
+  "pain medicine": "طب الألم",
+  "allergy & immunology": "الحساسية والمناعة",
+  "geriatrics": "طب المسنين",
+  "palliative care": "الرعاية التلطيفية",
+  "sports medicine": "طب الرياضة",
+  "radiology": "الأشعة",
+  "pathology": "علم الأمراض",
+  "laboratory medicine": "طب المختبرات",
+};
+
+function departmentLabel(department, isArabic = false) {
+  if (!department || !isArabic) return department || "";
+  const key = department.toLowerCase().replace(/\s*clinic\s*$/, "").trim();
+  return DEPARTMENT_AR[key] || department;
 }
