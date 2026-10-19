@@ -22,14 +22,14 @@ export default function Welcome() {
       {/* AMedix logo watermark */}
       <div
         className="pointer-events-none select-none absolute inset-0 flex items-center justify-center"
-        aria-hidden="true"
-      >
+        aria-hidden="true">
+        
         <Image
           src={AMEDIX_LOGO_URL}
           alt=""
           fittingType="fill"
-          className="h-full w-full opacity-[0.15] mix-blend-multiply dark:invert dark:hue-rotate-180 dark:mix-blend-screen"
-        />
+          className="h-full w-full opacity-[0.15] mix-blend-multiply dark:invert dark:hue-rotate-180 dark:mix-blend-screen" />
+        
       </div>
 
       {/* Top navigation — language selection available before login */}
@@ -40,24 +40,24 @@ export default function Welcome() {
       <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold">{t("Welcome to AMedix")}</h1>
 
-        {isArabic ? (
-          // Official, manually provided Arabic version — displayed verbatim,
-          // never auto-translated, with the same design as the English
-          // version and proper RTL alignment.
-          <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold" dir="rtl">
-            {AR_PARAGRAPHS.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
+        {isArabic ?
+        // Official, manually provided Arabic version — displayed verbatim,
+        // never auto-translated, with the same design as the English
+        // version and proper RTL alignment.
+        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold" dir="rtl">
+            {AR_PARAGRAPHS.map((p, i) =>
+          <p key={i}>{p}</p>
+          )}
             <p className="font-semibold">{AR_VISION_HEADING}</p>
             <p className="text-primary text-lg sm:text-xl">{AR_VISION_LINE}</p>
-          </div>
-        ) : (
-          <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
-            <p className="font-extrabold">
-              AMedix was founded by two medical students, Ayatallah Abed Elallegy and
-              Mohammed Saad Alsaba, with a clear vision: to make healthcare connected,
-              organized, and accessible for both patients and healthcare professionals.
-            </p>
+          </div> :
+
+        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-bold">
+            <p className="font-extrabold">AMedix was founded by two medical students: Ayatallah Abed Elallegy and Mohammed Saad Alsaba, with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
+
+
+
+          </p>
             <p>
               At the heart of AMedix is the idea that a patient’s healthcare information
               should be securely organized and readily accessible whenever and wherever
@@ -86,7 +86,7 @@ export default function Welcome() {
               One patient. One connected healthcare journey. All in one place.
             </p>
           </div>
-        )}
+        }
 
         <p className="mt-8 text-xl font-bold">
           {t("AMedix — Your Healthcare, All in One Place.")}
@@ -97,6 +97,6 @@ export default function Welcome() {
           <ArrowRight className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1" />
         </Button>
       </div>
-    </div>
-  );
+    </div>);
+
 }
