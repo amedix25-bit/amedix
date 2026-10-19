@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrCode, X } from "lucide-react";
+import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrCode, X, Pencil } from "lucide-react";
 import QrCodeCard from "@/components/QrCodeCard";
 import InfoRow from "@/components/patient/medical/InfoRow";
 import { Button } from "@/components/ui/button";
 import { calcAge, capitalize, patientDisplayName, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-export default function PatientOverview({ profile, stats, loading }) {
+export default function PatientOverview({ profile, stats, loading, onGoToProfile }) {
   const { t, lang } = usePatientLanguage();
   const [showQr, setShowQr] = useState(false);
   const [med, setMed] = useState({ conditions: [], medications: [], allergies: [] });
@@ -116,7 +116,15 @@ export default function PatientOverview({ profile, stats, loading }) {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="font-semibold text-sm mb-4">{t("Personal Information")}</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-sm">{t("Personal Information")}</h3>
+            {onGoToProfile && (
+              <Button variant="ghost" size="sm" onClick={onGoToProfile}>
+                <Pencil className="w-3.5 h-3.5 mr-1 rtl:ml-1 rtl:mr-0" />
+                {t("Edit")}
+              </Button>
+            )}
+          </div>
           <div className="space-y-3">
             <InfoRow label={t("Full Name")} value={patientDisplayName(profile, lang) || null} />
             <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth} />

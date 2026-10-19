@@ -162,7 +162,7 @@ function PatientPortal() {
               <PartnerAdStrip key={activeTab} section={activeTab === "drugs" ? "pharmacy" : "laboratory"} />
             </div>
           )}
-          {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} />}
+          {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} onGoToProfile={() => setActiveTab("profile")} />}
           {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
           {activeTab === "drugs" && (
             drugsView === "choose" ? (
