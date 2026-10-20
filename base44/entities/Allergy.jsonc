@@ -16,19 +16,33 @@
       "type": "string"
     },
     "allergen": {
-      "type": "string"
+      "type": "string",
+      "description": "Substance causing the reaction"
     },
     "allergy_type": {
       "type": "string",
       "enum": [
         "drug",
         "food",
+        "latex",
+        "contrast",
         "environmental",
         "other"
-      ]
+      ],
+      "description": "Category of allergy \u2014 medication, food, latex, contrast-agent reaction, environmental or other"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "confirmed_allergy",
+        "reported_side_effect"
+      ],
+      "default": "confirmed_allergy",
+      "description": "CONFIRMED_ALLERGY: the patient reports a true allergy. REPORTED_SIDE_EFFECT: the patient reports an intolerance / side effect. AMedix never treats a patient entry as clinically verified \u2014 doctors must confirm"
     },
     "reaction": {
-      "type": "string"
+      "type": "string",
+      "description": "Reaction the patient experienced"
     },
     "severity": {
       "type": "string",
@@ -37,6 +51,14 @@
         "moderate",
         "severe"
       ]
+    },
+    "approx_date": {
+      "type": "string",
+      "description": "Approximate date of the reaction, if known"
+    },
+    "treatment_required": {
+      "type": "string",
+      "description": "Treatment the reaction required, if any"
     }
   },
   "required": [
@@ -74,6 +96,9 @@
     "update": {
       "$or": [
         {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
           "created_by_id": "{{user.id}}"
         },
         {
@@ -85,6 +110,9 @@
     },
     "delete": {
       "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
         {
           "created_by_id": "{{user.id}}"
         },

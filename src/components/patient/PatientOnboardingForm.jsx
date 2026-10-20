@@ -5,16 +5,19 @@ import QrCodeCard from "@/components/QrCodeCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Loader2, BadgeCheck, Lock, Fingerprint, ArrowLeft, Check } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, AllergyEntryForm, SurgeryEntryForm,
+  MedicalEventEntryForm, conditionTypeLabel, medicalEventLabel, conditionStatusLabel,
 } from "@/components/patient/onboarding/EntryForms";
 import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
+import VaccinationDocumentUpload, { ImmunizationEntryForm, ChronicCareEntryForm, immunizationKindLabel, chronicCareTypeLabel } from "@/components/patient/onboarding/PreventiveCareForms";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 
-const STEPS = ["Personal Information", "Medical History", "Medications & Surgeries", "Lifestyle & Pregnancy"];
+const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
 
 // Pregnancy-history counters — selection-only questions with predefined
 // number options, answered by married female patients during registration.
@@ -54,17 +57,29 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     preferred_language: lang === "ar" ? "ar" : "en",
   });
   const [medical, setMedical] = useState({
-    familyHistory: [], pastHistory: [], allergies: [], medications: [], surgeries: [],
+    familyHistory: [], pastHistory: [], medicalEvents: [], allergies: [],
+    medications: [], surgeries: [], immunizations: [], chronicCare: [], uploadedDocs: [],
   });
+  // Allergy section-level state: "" (entries / nothing yet), or one of the two
+  // section answers — "no known allergies" vs "not yet established" — which
+  // AMedix keeps distinct and never treats as clinically verified.
+  const [allergyRecord, setAllergyRecord] = useState("");
   const [noneFlags, setNoneFlags] = useState({
-    familyHistory: false, pastHistory: false, allergies: false, medications: false, surgeries: false,
+    familyHistory: false, pastHistory: false, medicalEvents: false,
+    medications: false, surgeries: false, immunizations: false, chronicCare: false,
   });
   const [lifestyle, setLifestyle] = useState({
-    smoking_status: "", alcohol_use: "", substance_use: "",
+    smoking_status: "", tobacco_details: "", vaping_history: "", alcohol_use: "", substance_use: "",
+    consanguinity: "",
+    occupation: "", occupational_exposure: "", physical_activity: "", typical_diet: "",
+    sleep_concerns: "", mobility_limitations: "", living_situation: "",
     marital_status: "",
     pregnancy_status: "", gestational_age: "", estimated_due_date: "",
+    pregnancy_complications: "", menstrual_history: "", contraception_history: "",
+    fertility_history: "", gynecological_history: "", urological_history: "",
     gravida: "", para: "", living_children: "", miscarriages: "", stillbirths: "",
   });
+  const [uploadingVaxDoc, setUploadingVaxDoc] = useState(false);
 
   const isFemale = form.gender === "female";
 
@@ -88,10 +103,29 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     setNoneFlags((n) => ({ ...n, [flag]: checked }));
     setError("");
   };
+  const setAllergyAnswer = (value) => {
+    setAllergyRecord((cur) => (cur === value ? "" : value));
+    setError("");
+  };
+
+  const handleVaxFile = async (file) => {
+    setUploadingVaxDoc(true);
+    setError("");
+    try {
+      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      setMedical((m) => ({ ...m, uploadedDocs: [...m.uploadedDocs, { file_url, file_name: file.name }] }));
+    } catch (err) {
+      console.error(err);
+      setError(t("Could not upload the document. Please try again."));
+    } finally {
+      setUploadingVaxDoc(false);
+    }
+  };
 
   const sectionAnswered = (flag) => noneFlags[flag] || medical[flag].length > 0;
-  const step1Valid = ["familyHistory", "pastHistory", "allergies"].every(sectionAnswered);
-  const step2Valid = ["medications", "surgeries"].every(sectionAnswered);
+  const allergyAnswered = allergyRecord !== "" || medical.allergies.length > 0;
+  const step1Valid = ["familyHistory", "pastHistory", "medicalEvents", "surgeries"].every(sectionAnswered);
+  const step2Valid = sectionAnswered("medications") && allergyAnswered;
   const pregnancyCountsAnswered = PREGNANCY_COUNTS.every(({ key }) => lifestyle[key] !== "");
   const step3Valid =
     !!lifestyle.smoking_status &&
@@ -156,8 +190,19 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         emergency_contact_phone: form.emergency_contact_phone,
         emergency_contact_relationship: form.emergency_contact_relationship,
         smoking_status: lifestyle.smoking_status,
+        tobacco_details: lifestyle.smoking_status === "never" ? "" : lifestyle.tobacco_details,
+        vaping_history: lifestyle.vaping_history,
         alcohol_use: lifestyle.alcohol_use,
         substance_use: lifestyle.substance_use,
+        occupation: lifestyle.occupation,
+        occupational_exposure: lifestyle.occupational_exposure,
+        physical_activity: lifestyle.physical_activity,
+        typical_diet: lifestyle.typical_diet,
+        sleep_concerns: lifestyle.sleep_concerns,
+        mobility_limitations: lifestyle.mobility_limitations,
+        living_situation: lifestyle.living_situation,
+        consanguinity: lifestyle.consanguinity,
+        allergy_record_status: medical.allergies.length ? "" : allergyRecord,
         marital_status: isFemale ? lifestyle.marital_status : "",
         pregnancy_status: marriedFemale ? lifestyle.pregnancy_status : "not_applicable",
         gestational_age: isPregnant ? lifestyle.gestational_age : "",
@@ -170,12 +215,24 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         pregnancy_history: marriedFemale
           ? `G${lifestyle.gravida} P${lifestyle.para} · ${lifestyle.living_children} living children · ${lifestyle.miscarriages} miscarriages/abortions · ${lifestyle.stillbirths} stillbirths`
           : "",
+        pregnancy_complications: marriedFemale ? lifestyle.pregnancy_complications : "",
+        menstrual_history: marriedFemale ? lifestyle.menstrual_history : "",
+        contraception_history: marriedFemale ? lifestyle.contraception_history : "",
+        fertility_history: marriedFemale ? lifestyle.fertility_history : "",
+        gynecological_history: marriedFemale ? lifestyle.gynecological_history : "",
+        urological_history: isFemale ? lifestyle.urological_history : "",
         medication_info_completed: true,
       });
       const meta = { patient_id: profile.id, patient_cin: newCin, patient_name: fullName };
-      const conditions = medical.pastHistory.map((c) => ({ ...meta, ...c, category: "past_history" }));
+      const conditions = medical.pastHistory.map((c) => ({
+        ...meta, ...c,
+        category: c.history_type === "previous_diagnosis" || c.history_type === "other" ? "past_history" : "known_case",
+      }));
       const creates = [];
       if (conditions.length) creates.push(base44.entities.MedicalCondition.bulkCreate(conditions));
+      if (medical.medicalEvents.length) {
+        creates.push(base44.entities.MedicalHistoryEvent.bulkCreate(medical.medicalEvents.map((e) => ({ ...meta, ...e }))));
+      }
       if (medical.familyHistory.length) {
         creates.push(base44.entities.FamilyHistory.bulkCreate(medical.familyHistory.map((f) => ({ ...meta, ...f }))));
       }
@@ -188,13 +245,43 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
             base44.functions.invoke("createClinicalRecord", {
               kind: "medication",
               patient_id: meta.patient_id,
-              record: { ...m, source: "patient_reported" },
+              record: {
+                ...m,
+                source: "patient_reported",
+                // A discontinued reported medication is saved inactive.
+                ...(m.current_status === "discontinued" && m.end_date
+                  ? { is_active: false, stopped_date: m.end_date }
+                  : {}),
+              },
             })
           )
         );
       }
       if (medical.surgeries.length) {
         creates.push(base44.entities.SurgicalHistory.bulkCreate(medical.surgeries.map((s) => ({ ...meta, ...s }))));
+      }
+      if (medical.immunizations.length) {
+        creates.push(base44.entities.Immunization.bulkCreate(medical.immunizations.map((i) => ({ ...meta, ...i }))));
+      }
+      if (medical.chronicCare.length) {
+        creates.push(base44.entities.ChronicCareItem.bulkCreate(medical.chronicCare.map((c) => ({ ...meta, ...c }))));
+      }
+      if (medical.uploadedDocs.length) {
+        creates.push(
+          ...medical.uploadedDocs.map((d) =>
+            base44.entities.MedicalDocument.create({
+              patient_id: profile.id,
+              patient_cin: newCin,
+              patient_name: fullName,
+              title: "Vaccination record",
+              type: "other",
+              category: "vaccination",
+              file_url: d.file_url,
+              file_name: d.file_name,
+              date: new Date().toISOString().slice(0, 10),
+            })
+          )
+        );
       }
       if (creates.length) await Promise.all(creates);
       // Associate the verified identity document with the new profile.
@@ -440,45 +527,63 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
               {step === 1 && (
                 <div className="p-6 space-y-4">
                   <MedicalListSection
+                    id="none_pastHistory"
+                    title={`${t("Medical Conditions & Diagnoses")} *`}
+                    description={t("Existing conditions, chronic diseases, previous diagnoses and long-term conditions requiring monitoring")}
+                    entries={medical.pastHistory}
+                    entryLabel={(c) =>
+                      `${c.name_ar || c.name} — ${conditionTypeLabel(c.history_type, t)}${c.date ? ` · ${c.date}` : ""}${c.current_status ? ` · ${conditionStatusLabel(c.current_status, t)}` : ""}`
+                    }
+                    onRemove={removeEntry("pastHistory")}
+                    noneChecked={noneFlags.pastHistory}
+                    onNoneChange={toggleNone("pastHistory")}
+                    noneLabel={t("No medical conditions or diagnoses")}
+                  >
+                    <ConditionEntryForm onAdd={addEntry("pastHistory")} />
+                  </MedicalListSection>
+
+                  <MedicalListSection
+                    id="none_medicalEvents"
+                    title={`${t("Hospital Admissions & Significant History")} *`}
+                    description={t("Previous hospital admissions, emergency department visits, injuries and accidents, blood transfusions, infectious diseases and complications of medical treatment")}
+                    entries={medical.medicalEvents}
+                    entryLabel={(e) =>
+                      `${medicalEventLabel(e.event_type, t)} — ${e.title}${e.event_date ? ` · ${e.event_date}` : ""}${e.event_type === "blood_transfusion" && e.reaction ? ` · ${t("Reaction")}: ${e.reaction}` : ""}`
+                    }
+                    onRemove={removeEntry("medicalEvents")}
+                    noneChecked={noneFlags.medicalEvents}
+                    onNoneChange={toggleNone("medicalEvents")}
+                    noneLabel={t("No hospital admissions or significant history")}
+                  >
+                    <MedicalEventEntryForm onAdd={addEntry("medicalEvents")} />
+                  </MedicalListSection>
+
+                  <MedicalListSection
+                    id="none_surgeries"
+                    title={`${t("Past Surgical History")} *`}
+                    description={t("Every previous surgery or procedure")}
+                    entries={medical.surgeries}
+                    entryLabel={(s) => `${s.surgery_type_ar || s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}`}
+                    onRemove={removeEntry("surgeries")}
+                    noneChecked={noneFlags.surgeries}
+                    onNoneChange={toggleNone("surgeries")}
+                    noneLabel={t("I never had surgery")}
+                  >
+                    <SurgeryEntryForm onAdd={addEntry("surgeries")} />
+                  </MedicalListSection>
+
+                  <MedicalListSection
                     id="none_familyHistory"
                     title={`${t("Family History")} *`}
-                    description={t("Diseases or medical conditions that run in your family")}
+                    description={t("Diseases or medical conditions that run in your family — mother, father, siblings, children or other relatives. You are not required to provide every family member's information.")}
                     entries={medical.familyHistory}
-                    entryLabel={(c) => `${familyConditionLabel(c, lang === "ar")} — ${relationLabel(c.relation, lang === "ar")}`}
+                    entryLabel={(c) => `${familyConditionLabel(c, lang === "ar")} — ${relationLabel(c.relation, lang === "ar")}${c.age_at_diagnosis ? ` · ${t("Age at diagnosis")}: ${c.age_at_diagnosis}` : ""}`}
                     onRemove={removeEntry("familyHistory")}
                     noneChecked={noneFlags.familyHistory}
                     onNoneChange={toggleNone("familyHistory")}
                     noneLabel={t("No family history of diseases")}
                   >
                     <FamilyHistoryEntryForm onAdd={addEntry("familyHistory")} />
-                  </MedicalListSection>
-
-                  <MedicalListSection
-                    id="none_pastHistory"
-                    title={`${t("Past Medical History")} *`}
-                    description={t("Previous diseases and important hospitalizations")}
-                    entries={medical.pastHistory}
-                    entryLabel={(c) => `${c.name_ar || c.name}${c.date ? ` (${c.date})` : ""}`}
-                    onRemove={removeEntry("pastHistory")}
-                    noneChecked={noneFlags.pastHistory}
-                    onNoneChange={toggleNone("pastHistory")}
-                    noneLabel={t("No past medical history")}
-                  >
-                    <ConditionEntryForm onAdd={addEntry("pastHistory")} />
-                  </MedicalListSection>
-
-                  <MedicalListSection
-                    id="none_allergies"
-                    title={`${t("Allergies")} *`}
-                    description={t("Drug, food, or environmental allergies")}
-                    entries={medical.allergies}
-                    entryLabel={(a) => `${a.allergen}${a.reaction ? ` — ${a.reaction}` : ""}`}
-                    onRemove={removeEntry("allergies")}
-                    noneChecked={noneFlags.allergies}
-                    onNoneChange={toggleNone("allergies")}
-                    noneLabel={t("I have no allergies")}
-                  >
-                    <AllergyEntryForm onAdd={addEntry("allergies")} />
                   </MedicalListSection>
 
                   {!step1Valid && (
@@ -493,10 +598,12 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                 <div className="p-6 space-y-4">
                   <MedicalListSection
                     id="none_medications"
-                    title={`${t("Current Medications")} *`}
-                    description={t("Medicines you currently take, with dose and frequency")}
+                    title={`${t("Current & Previous Medications")} *`}
+                    description={t("Prescription and non-prescription medicines, vitamins, supplements, herbal products, and long-term injections or therapies")}
                     entries={medical.medications}
-                    entryLabel={(m) => `${m.name}${m.dose ? ` · ${m.dose}` : ""}${m.frequency ? ` · ${m.frequency}` : ""}`}
+                    entryLabel={(m) =>
+                      `${m.name}${m.dose ? ` · ${m.dose}` : ""}${m.frequency ? ` · ${m.frequency}` : ""}${m.current_status ? ` · ${t(m.current_status === "taking" ? "Currently taking" : m.current_status === "discontinued" ? "Discontinued" : "Taken occasionally")}` : ""}`
+                    }
                     onRemove={removeEntry("medications")}
                     noneChecked={noneFlags.medications}
                     onNoneChange={toggleNone("medications")}
@@ -505,19 +612,59 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     <MedicationEntryForm onAdd={addEntry("medications")} />
                   </MedicalListSection>
 
-                  <MedicalListSection
-                    id="none_surgeries"
-                    title={`${t("Past Surgical History")} *`}
-                    description={t("Every previous surgery or operation")}
-                    entries={medical.surgeries}
-                    entryLabel={(s) => `${s.surgery_type_ar || s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}`}
-                    onRemove={removeEntry("surgeries")}
-                    noneChecked={noneFlags.surgeries}
-                    onNoneChange={toggleNone("surgeries")}
-                    noneLabel={t("I never had surgery")}
-                  >
-                    <SurgeryEntryForm onAdd={addEntry("surgeries")} />
-                  </MedicalListSection>
+                  {/* Allergies — the section distinguishes entries, "no known
+                      allergies" and "not yet established" (unsure). Entries
+                      distinguish a confirmed allergy from a reported side
+                      effect; nothing here is treated as clinically verified. */}
+                  <div className="rounded-xl border border-border bg-card p-5">
+                    <h3 className="text-sm font-semibold text-primary">{`${t("Allergies & Adverse Reactions")} *`}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t("Medication, food, latex, contrast-agent or other allergies and reactions. Your answers are saved as reported by you and are not treated as clinically verified.")}
+                    </p>
+                    <div className="flex flex-col gap-2 mt-3">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="allergy_none_known"
+                          checked={allergyRecord === "no_known_allergies"}
+                          onCheckedChange={() => setAllergyAnswer("no_known_allergies")}
+                          disabled={medical.allergies.length > 0 || allergyRecord === "not_established"}
+                        />
+                        <Label htmlFor="allergy_none_known" className="text-sm font-normal text-muted-foreground">
+                          {t("I have no known allergies")}
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="allergy_not_established"
+                          checked={allergyRecord === "not_established"}
+                          onCheckedChange={() => setAllergyAnswer("not_established")}
+                          disabled={medical.allergies.length > 0 || allergyRecord === "no_known_allergies"}
+                        />
+                        <Label htmlFor="allergy_not_established" className="text-sm font-normal text-muted-foreground">
+                          {t("My allergy status is not yet established — I am unsure")}
+                        </Label>
+                      </div>
+                    </div>
+                    {allergyRecord === "" && (
+                      <div className="mt-4 space-y-3">
+                        {medical.allergies.map((a, i) => (
+                          <div key={i} className="flex items-start justify-between gap-3 rounded-lg bg-muted px-3 py-2">
+                            <p className="text-sm">
+                              {`${a.allergen} — ${t(a.allergy_type === "drug" ? "Medication" : a.allergy_type === "latex" ? "Latex" : a.allergy_type === "contrast" ? "Contrast agent" : a.allergy_type === "food" ? "Food" : a.allergy_type === "environmental" ? "Environmental" : "Other")}${a.reaction ? ` — ${a.reaction} (${t(a.severity)})` : ""}${a.entry_type === "reported_side_effect" ? ` · ${t("Side effect / intolerance")}` : ""}`}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => removeEntry("allergies")(i)}
+                              className="text-muted-foreground hover:text-destructive shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <AllergyEntryForm onAdd={addEntry("allergies")} />
+                      </div>
+                    )}
+                  </div>
 
                   {!step2Valid && (
                     <p className="text-xs text-muted-foreground">
@@ -529,8 +676,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
               {step === 3 && (
                 <div className="p-6 space-y-4">
-                  <div className="rounded-xl border border-border bg-card p-5">
-                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Lifestyle")} *</h3>
+                  <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-primary">{t("Lifestyle")} *</h3>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <Label>{t("Smoking status")} *</Label>
@@ -560,6 +707,68 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         <Input id="substance" placeholder={t("None")} value={lifestyle.substance_use} onChange={setL("substance_use")} />
                       </div>
                     </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("The questions below are optional and answered voluntarily.")}
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {(lifestyle.smoking_status === "current" || lifestyle.smoking_status === "former") && (
+                        <div className="space-y-1.5">
+                          <Label htmlFor="tobacco">{t("Tobacco type and quantity")}</Label>
+                          <Input id="tobacco" placeholder={t("e.g. Cigarettes, 10/day")} value={lifestyle.tobacco_details} onChange={setL("tobacco_details")} />
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="vaping">{t("Vaping history")}</Label>
+                        <Input id="vaping" placeholder={t("e.g. Never / occasional")} value={lifestyle.vaping_history} onChange={setL("vaping_history")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="occupation">{t("Occupation")}</Label>
+                        <Input id="occupation" value={lifestyle.occupation} onChange={setL("occupation")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="occ_exposure">{t("Occupational exposures")}</Label>
+                        <Input id="occ_exposure" placeholder={t("e.g. Dust, chemicals — if any")} value={lifestyle.occupational_exposure} onChange={setL("occupational_exposure")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>{t("Physical activity level")}</Label>
+                        <Select value={lifestyle.physical_activity} onValueChange={(v) => setLifestyle((s) => ({ ...s, physical_activity: v }))}>
+                          <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sedentary">{t("Sedentary")}</SelectItem>
+                            <SelectItem value="light">{t("Light")}</SelectItem>
+                            <SelectItem value="moderate">{t("Moderate")}</SelectItem>
+                            <SelectItem value="active">{t("Active")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="diet">{t("Typical diet")}</Label>
+                        <Input id="diet" value={lifestyle.typical_diet} onChange={setL("typical_diet")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sleep">{t("Sleep concerns")}</Label>
+                        <Input id="sleep" value={lifestyle.sleep_concerns} onChange={setL("sleep_concerns")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="mobility">{t("Mobility / functional limitations")}</Label>
+                        <Input id="mobility" value={lifestyle.mobility_limitations} onChange={setL("mobility_limitations")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="living">{t("Living situation / caregiving needs")}</Label>
+                        <Input id="living" value={lifestyle.living_situation} onChange={setL("living_situation")} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>{t("Known consanguinity")}</Label>
+                        <Select value={lifestyle.consanguinity} onValueChange={(v) => setLifestyle((s) => ({ ...s, consanguinity: v }))}>
+                          <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t("None")}</SelectItem>
+                            <SelectItem value="known">{t("Yes, known")}</SelectItem>
+                            <SelectItem value="prefer_not_to_answer">{t("Prefer not to answer")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
 
                   {isFemale && (
@@ -575,6 +784,19 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     </div>
                   )}
 
+                  {isFemale && (
+                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                      <h3 className="text-sm font-semibold text-primary">{t("Reproductive & Urological History")}</h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t("Optional — answered voluntarily. This information is access-controlled and is not displayed unnecessarily.")}
+                      </p>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="urology">{t("Relevant urological or reproductive history")}</Label>
+                        <Input id="urology" value={lifestyle.urological_history} onChange={setL("urological_history")} />
+                      </div>
+                    </div>
+                  )}
+
                   {isFemale && lifestyle.marital_status === "married" && (
                     <div className="rounded-xl border border-border bg-card p-5 space-y-4">
                       <h3 className="text-sm font-semibold text-primary">{t("Pregnancy History")} *</h3>
@@ -586,6 +808,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                             <SelectContent>
                               <SelectItem value="not_pregnant">{t("Not pregnant")}</SelectItem>
                               <SelectItem value="pregnant">{t("Pregnant")}</SelectItem>
+                              <SelectItem value="unknown">{t("Unknown")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -629,7 +852,77 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                           </div>
                         ))}
                       </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t("The questions below are optional and answered voluntarily. This information is access-controlled.")}
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="preg_comps">{t("Significant pregnancy complications")}</Label>
+                          <Input id="preg_comps" value={lifestyle.pregnancy_complications} onChange={setL("pregnancy_complications")} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="menstrual">{t("Menstrual history")}</Label>
+                          <Input id="menstrual" value={lifestyle.menstrual_history} onChange={setL("menstrual_history")} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="contraception">{t("Contraception history")}</Label>
+                          <Input id="contraception" value={lifestyle.contraception_history} onChange={setL("contraception_history")} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="fertility">{t("Fertility-related history")}</Label>
+                          <Input id="fertility" value={lifestyle.fertility_history} onChange={setL("fertility_history")} />
+                        </div>
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <Label htmlFor="gynecology">{t("Relevant gynecological history")}</Label>
+                          <Input id="gynecology" value={lifestyle.gynecological_history} onChange={setL("gynecological_history")} />
+                        </div>
+                      </div>
                     </div>
+                  )}
+
+                  <MedicalListSection
+                    id="none_immunizations"
+                    title={`${t("Immunizations & Preventive Care")} *`}
+                    description={t("Vaccinations (childhood and adult, e.g. tetanus, hepatitis B, influenza), previous screening tests with dates and results, and preventive care history")}
+                    entries={medical.immunizations}
+                    entryLabel={(i) => `${immunizationKindLabel(i.kind, t)} — ${i.name}${i.date ? ` · ${i.date}` : ""}${i.result_notes ? ` · ${i.result_notes}` : ""}`}
+                    onRemove={removeEntry("immunizations")}
+                    noneChecked={noneFlags.immunizations}
+                    onNoneChange={toggleNone("immunizations")}
+                    noneLabel={t("No vaccination or screening records to add")}
+                  >
+                    <ImmunizationEntryForm onAdd={addEntry("immunizations")} />
+                    <div className="pt-1">
+                      <VaccinationDocumentUpload
+                        uploadedDocs={medical.uploadedDocs}
+                        uploading={uploadingVaxDoc}
+                        onFile={handleVaxFile}
+                        onRemove={removeEntry("uploadedDocs")}
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {t("Instead of entering every historical dose, you can upload your vaccination card or other supporting documents — they are saved in your Vaccination Records.")}
+                      </p>
+                    </div>
+                  </MedicalListSection>
+
+                  <MedicalListSection
+                    id="none_chronicCare"
+                    title={`${t("Chronic Care, Devices & Special Needs")} *`}
+                    description={t("Implanted devices (including pacemakers), prostheses, dialysis, home oxygen, mobility aids, hearing or visual assistance, accessibility requirements, care plans and advance directives")}
+                    entries={medical.chronicCare}
+                    entryLabel={(c) => `${chronicCareTypeLabel(c.item_type, t)} — ${c.title}${c.details ? ` · ${c.details}` : ""}`}
+                    onRemove={removeEntry("chronicCare")}
+                    noneChecked={noneFlags.chronicCare}
+                    onNoneChange={toggleNone("chronicCare")}
+                    noneLabel={t("None of these apply to me")}
+                  >
+                    <ChronicCareEntryForm onAdd={addEntry("chronicCare")} />
+                  </MedicalListSection>
+
+                  {!step3Valid && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("Answer the required questions marked with *.")}
+                    </p>
                   )}
                 </div>
               )}

@@ -23,6 +23,17 @@
       "type": "string",
       "description": "Standardized Arabic medical term selected by the patient during registration \u2014 shown in the Patient Portal when present"
     },
+    "history_type": {
+      "type": "string",
+      "enum": [
+        "existing_condition",
+        "previous_diagnosis",
+        "long_term_monitoring",
+        "other"
+      ],
+      "default": "existing_condition",
+      "description": "Structured medical-history bucket the entry belongs to \u2014 existing condition / chronic disease, previous diagnosis, long-term condition requiring monitoring, or other significant history"
+    },
     "category": {
       "type": "string",
       "enum": [
@@ -30,6 +41,20 @@
         "past_history"
       ],
       "default": "known_case"
+    },
+    "treating_facility": {
+      "type": "string",
+      "description": "Facility that diagnosed / treats the condition, as entered by the patient"
+    },
+    "current_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "resolved",
+        "being_monitored",
+        "unknown"
+      ],
+      "description": "Current status of the condition as reported by the patient \u2014 patient-reported, never clinically verified"
     },
     "details": {
       "type": "string"
@@ -75,6 +100,9 @@
     "update": {
       "$or": [
         {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
           "created_by_id": "{{user.id}}"
         },
         {
@@ -86,6 +114,9 @@
     },
     "delete": {
       "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
         {
           "created_by_id": "{{user.id}}"
         },

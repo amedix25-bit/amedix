@@ -18,6 +18,18 @@
     "name": {
       "type": "string"
     },
+    "medication_kind": {
+      "type": "string",
+      "enum": [
+        "prescription",
+        "non_prescription",
+        "vitamin_supplement",
+        "herbal",
+        "injection_therapy"
+      ],
+      "default": "prescription",
+      "description": "Kind of medication \u2014 prescription, non-prescription (OTC), vitamin/supplement, herbal product, or long-term injection / other therapy"
+    },
     "active_ingredient": {
       "type": "string",
       "description": "Active ingredient (generic name), when known \u2014 used for duplicate-therapy detection in medication reconciliation"
@@ -60,6 +72,19 @@
       "type": "string",
       "description": "Prescribed duration, e.g. '14 days'"
     },
+    "current_status": {
+      "type": "string",
+      "enum": [
+        "taking",
+        "discontinued",
+        "taken_occasionally"
+      ],
+      "description": "Current status of a patient-reported medication \u2014 currently taking, discontinued, or taken occasionally"
+    },
+    "prescribed_by": {
+      "type": "string",
+      "description": "Prescribing doctor or facility, if known \u2014 entered by the patient for reported medications"
+    },
     "prn": {
       "type": "boolean",
       "default": false,
@@ -81,6 +106,10 @@
       "type": "string",
       "description": "Additional notes entered by the patient (patient-reported medications)"
     },
+    "reason": {
+      "type": "string",
+      "description": "Indication / reason for the medication"
+    },
     "source": {
       "type": "string",
       "enum": [
@@ -98,10 +127,6 @@
       "type": "string",
       "format": "date",
       "description": "Automatically calculated from start date + duration. The medication becomes inactive once this date passes."
-    },
-    "reason": {
-      "type": "string",
-      "description": "Indication / reason for the medication"
     },
     "is_active": {
       "type": "boolean",

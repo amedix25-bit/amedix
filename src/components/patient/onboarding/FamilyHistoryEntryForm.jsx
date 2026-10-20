@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -19,6 +20,8 @@ export const FAMILY_CONDITIONS = [
   { value: "Kidney Disease", ar: "أمراض الكلى" },
   { value: "Sickle Cell Disease", ar: "فقر الدم المنجلي" },
   { value: "Hyperlipidemia", ar: "ارتفاع دهون الدم" },
+  { value: "Psychiatric or Neurological Disorder", ar: "اضطراب نفسي أو عصبي" },
+  { value: "Inherited / Genetic Condition", ar: "حالة وراثية" },
   { value: "Other", ar: "أخرى" },
 ];
 
@@ -27,6 +30,7 @@ export const FAMILY_RELATIONS = [
   { value: "mother", label: "Mother", ar: "الأم" },
   { value: "brother", label: "Brother", ar: "الأخ" },
   { value: "sister", label: "Sister", ar: "الأخت" },
+  { value: "children", label: "Child", ar: "الابن / الابنة" },
   { value: "other", label: "Other Relative", ar: "قريب آخر" },
 ];
 
@@ -41,13 +45,15 @@ export const familyConditionLabel = (entry, isArabic) =>
 
 // Save/Add entry form for the Family History section of patient registration.
 // Uses only selectable options; "Other" reveals a free-text input to specify
-// the condition.
+// the condition. Records the relative, the condition and the approximate age
+// at diagnosis when known — no family member's information is required.
 export default function FamilyHistoryEntryForm({ onAdd }) {
   const { t, isArabic } = usePatientLanguage();
   const [open, setOpen] = useState(true);
   const [condition, setCondition] = useState("");
   const [custom, setCustom] = useState("");
   const [relation, setRelation] = useState("");
+  const [ageAtDiagnosis, setAgeAtDiagnosis] = useState("");
 
   const isOther = condition === "Other";
   const canSave = !!condition && !!relation && (!isOther || custom.trim() !== "");
@@ -60,10 +66,12 @@ export default function FamilyHistoryEntryForm({ onAdd }) {
       condition: name,
       condition_ar: isArabic ? (isOther ? name : matched.ar) : "",
       relation,
+      ...(ageAtDiagnosis ? { age_at_diagnosis: ageAtDiagnosis } : {}),
     });
     setCondition("");
     setCustom("");
     setRelation("");
+    setAgeAtDiagnosis("");
     setOpen(false);
   };
 
@@ -91,7 +99,7 @@ export default function FamilyHistoryEntryForm({ onAdd }) {
           <Input placeholder={t("Please specify")} value={custom} onChange={(e) => setCustom(e.target.value)} />
         )}
       </div>
-      <div className="grid sm:grid-cols-[2fr_auto] gap-2">
+      <div className="grid sm:grid-cols-[2fr_1fr_1fr] gap-2">
         <Select value={relation} onValueChange={setRelation}>
           <SelectTrigger><SelectValue placeholder={t("Family member")} /></SelectTrigger>
           <SelectContent>
@@ -100,9 +108,15 @@ export default function FamilyHistoryEntryForm({ onAdd }) {
             ))}
           </SelectContent>
         </Select>
-        <Button type="button" onClick={save} disabled={!canSave}>
-          {t("Save")}
-        </Button>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">{t("Age at diagnosis (if known)")}</Label>
+          <Input placeholder={t("e.g. 60s")} value={ageAtDiagnosis} onChange={(e) => setAgeAtDiagnosis(e.target.value)} />
+        </div>
+        <div className="flex items-end">
+          <Button type="button" onClick={save} disabled={!canSave} className="w-full">
+            {t("Save")}
+          </Button>
+        </div>
       </div>
     </div>
   );

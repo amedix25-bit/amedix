@@ -39,19 +39,19 @@
     },
     "first_name_ar": {
       "type": "string",
-      "description": "Patient's first name in Arabic \u2014 \u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644\u060c exactly as printed on the official Arabic document"
+      "description": "Patient's first name in Arabic \u2014 \u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644, exactly as printed on the official Arabic document"
     },
     "father_name_ar": {
       "type": "string",
-      "description": "Patient's father's name in Arabic \u2014 \u0627\u0633\u0645 \u0627\u0644\u0623\u0628\u060c exactly as printed on the official Arabic document"
+      "description": "Patient's father's name in Arabic \u2014 \u0627\u0633\u0645 \u0627\u0644\u0623\u0628, exactly as printed on the official Arabic document"
     },
     "grandfather_name_ar": {
       "type": "string",
-      "description": "Patient's grandfather's name in Arabic \u2014 \u0627\u0633\u0645 \u0627\u0644\u062c\u062f\u060c exactly as printed on the official Arabic document"
+      "description": "Patient's grandfather's name in Arabic \u2014 \u0627\u0633\u0645 \u0627\u0644\u062c\u062f, exactly as printed on the official Arabic document"
     },
     "last_name_ar": {
       "type": "string",
-      "description": "Patient's last name in Arabic \u2014 \u0627\u0644\u0644\u0642\u0628\u060c exactly as printed on the official Arabic document"
+      "description": "Patient's last name in Arabic \u2014 \u0627\u0644\u0644\u0642\u0628, exactly as printed on the official Arabic document"
     },
     "date_of_birth": {
       "type": "string",
@@ -175,6 +175,14 @@
       ],
       "default": "never"
     },
+    "tobacco_details": {
+      "type": "string",
+      "description": "Tobacco type and quantity, if applicable \u2014 e.g. 'Cigarettes, 10/day'"
+    },
+    "vaping_history": {
+      "type": "string",
+      "description": "Vaping history, voluntarily disclosed"
+    },
     "alcohol_use": {
       "type": "string",
       "enum": [
@@ -186,7 +194,59 @@
       "default": "none"
     },
     "substance_use": {
-      "type": "string"
+      "type": "string",
+      "description": "Recreational substance use \u2014 voluntarily disclosed, optional"
+    },
+    "occupation": {
+      "type": "string",
+      "description": "Patient's occupation as entered during registration"
+    },
+    "occupational_exposure": {
+      "type": "string",
+      "description": "Relevant occupational exposures, e.g. dust, chemicals \u2014 optional"
+    },
+    "physical_activity": {
+      "type": "string",
+      "enum": [
+        "sedentary",
+        "light",
+        "moderate",
+        "active"
+      ],
+      "description": "Patient's physical activity level"
+    },
+    "typical_diet": {
+      "type": "string",
+      "description": "Typical diet, where clinically useful \u2014 optional free text"
+    },
+    "sleep_concerns": {
+      "type": "string",
+      "description": "Sleep concerns, if any \u2014 optional"
+    },
+    "mobility_limitations": {
+      "type": "string",
+      "description": "Mobility and functional limitations, if any \u2014 optional"
+    },
+    "living_situation": {
+      "type": "string",
+      "description": "Living situation or caregiving needs, if relevant to care \u2014 optional"
+    },
+    "consanguinity": {
+      "type": "string",
+      "enum": [
+        "none",
+        "known",
+        "prefer_not_to_answer"
+      ],
+      "description": "Known consanguinity \u2014 voluntarily disclosed; the patient may decline to answer"
+    },
+    "allergy_record_status": {
+      "type": "string",
+      "enum": [
+        "no_known_allergies",
+        "not_established"
+      ],
+      "description": "Section-level allergy state set at registration \u2014 NO_KNOWN_ALLERGIES: the patient reports no known allergies. NOT_ESTABLISHED: the patient is unsure / allergies not yet established. Empty when allergy entries exist. A patient's answer is never treated as clinically verified"
     },
     "marital_status": {
       "type": "string",
@@ -201,10 +261,11 @@
       "enum": [
         "not_applicable",
         "not_pregnant",
-        "pregnant"
+        "pregnant",
+        "unknown"
       ],
       "default": "not_applicable",
-      "description": "Pregnancy status of a married female patient \u2014 answered at registration"
+      "description": "Pregnancy status of a married female patient \u2014 answered at registration, including Unknown when the patient is unsure"
     },
     "gestational_age": {
       "type": "string"
@@ -235,6 +296,30 @@
     },
     "pregnancy_history": {
       "type": "string"
+    },
+    "pregnancy_complications": {
+      "type": "string",
+      "description": "Significant pregnancy complications, if any \u2014 access-controlled reproductive history"
+    },
+    "menstrual_history": {
+      "type": "string",
+      "description": "Menstrual history, when relevant \u2014 access-controlled reproductive history"
+    },
+    "contraception_history": {
+      "type": "string",
+      "description": "Relevant contraception history \u2014 access-controlled reproductive history"
+    },
+    "fertility_history": {
+      "type": "string",
+      "description": "Fertility-related history, if relevant \u2014 access-controlled reproductive history"
+    },
+    "gynecological_history": {
+      "type": "string",
+      "description": "Relevant gynecological history \u2014 access-controlled reproductive history"
+    },
+    "urological_history": {
+      "type": "string",
+      "description": "Relevant urological or reproductive history \u2014 access-controlled reproductive history"
     },
     "medication_info_completed": {
       "type": "boolean",

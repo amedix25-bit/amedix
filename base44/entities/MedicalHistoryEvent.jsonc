@@ -1,0 +1,126 @@
+{
+  "name": "MedicalHistoryEvent",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the history event belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "hospital_admission",
+        "er_visit",
+        "injury_accident",
+        "blood_transfusion",
+        "infectious_disease",
+        "treatment_complication",
+        "other"
+      ],
+      "description": "Structured event type \u2014 previous hospital admission, previous emergency department visit, major injury or accident, previous blood transfusion (with any transfusion reaction), history of infectious disease, previous complication of medical treatment, or other significant medical history"
+    },
+    "title": {
+      "type": "string",
+      "description": "What happened \u2014 diagnosis, procedure or event as entered by the patient"
+    },
+    "event_date": {
+      "type": "string",
+      "description": "Approximate date the event happened (free-form, as remembered by the patient)"
+    },
+    "treating_facility": {
+      "type": "string",
+      "description": "Hospital / facility where the event happened, if known"
+    },
+    "current_status": {
+      "type": "string",
+      "enum": [
+        "resolved",
+        "ongoing",
+        "unknown"
+      ],
+      "description": "Current status of the event as reported by the patient"
+    },
+    "reaction": {
+      "type": "string",
+      "description": "For blood transfusions \u2014 any transfusion reaction experienced"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any relevant notes"
+    }
+  },
+  "required": [
+    "patient_id",
+    "event_type",
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

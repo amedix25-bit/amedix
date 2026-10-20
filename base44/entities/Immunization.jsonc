@@ -1,0 +1,105 @@
+{
+  "name": "Immunization",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the immunization entry belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "vaccination",
+        "screening",
+        "preventive_care"
+      ],
+      "description": "VACCINATION: a vaccine dose (childhood or adult, e.g. tetanus, hepatitis B, influenza). SCREENING: a previous screening test with its date and result. PREVENTIVE_CARE: other preventive care history"
+    },
+    "name": {
+      "type": "string",
+      "description": "Vaccine, screening test or preventive care item, e.g. 'Tetanus booster', 'Mammography screening'"
+    },
+    "date": {
+      "type": "string",
+      "description": "Approximate date, if known (free-form as remembered by the patient)"
+    },
+    "result_notes": {
+      "type": "string",
+      "description": "Result / outcome for screenings, or any notes"
+    }
+  },
+  "required": [
+    "patient_id",
+    "kind",
+    "name"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

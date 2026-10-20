@@ -31,9 +31,18 @@
         "mother",
         "brother",
         "sister",
+        "children",
         "other"
       ],
-      "description": "Affected family member"
+      "description": "Affected family member \u2014 father, mother, sibling, children (when appropriate) or other relative"
+    },
+    "age_at_diagnosis": {
+      "type": "string",
+      "description": "Approximate age of the relative at diagnosis, if known (e.g. '60s')"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Any relevant notes about the family history entry"
     }
   },
   "required": [
@@ -72,6 +81,9 @@
     "update": {
       "$or": [
         {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
           "created_by_id": "{{user.id}}"
         },
         {
@@ -83,6 +95,9 @@
     },
     "delete": {
       "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
         {
           "created_by_id": "{{user.id}}"
         },
