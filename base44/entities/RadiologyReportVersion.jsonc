@@ -1,0 +1,121 @@
+{
+  "name": "RadiologyReportVersion",
+  "type": "object",
+  "properties": {
+    "imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest id the signed report version belongs to \u2014 every version stays permanently associated with its study"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20261016-E6O0"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id \u2014 the patient association of the report"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the requesting doctor account \u2014 used for Row Level Security"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the reporting radiologist \u2014 the reporting radiologist identity preserved on every version"
+    },
+    "radiologist_name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "description": "Report version \u2014 1 for the original signed report; each amendment creates the next version"
+    },
+    "report_text": {
+      "type": "string",
+      "description": "The full signed report text of this version"
+    },
+    "report_pdf_url": {
+      "type": "string",
+      "description": "PDF of this signed version"
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Structured section values of this signed version"
+    },
+    "is_amendment": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this version is an amendment of the previously signed report"
+    },
+    "amendment_reason": {
+      "type": "string",
+      "description": "Documented reason for the amendment"
+    },
+    "original_version_id": {
+      "type": "string",
+      "description": "Id of the signed version this amendment corrects \u2014 links the correction to the original"
+    },
+    "signed_datetime": {
+      "type": "string",
+      "description": "Date and time of the authenticated sign-off (ISO datetime)"
+    },
+    "signed_by_name": {
+      "type": "string",
+      "description": "Radiologist who signed this version"
+    }
+  },
+  "required": [
+    "imaging_request_id",
+    "version",
+    "radiologist_user_id",
+    "signed_datetime"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "data.radiologist_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

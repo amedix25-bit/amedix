@@ -22,6 +22,7 @@ const VIEW_TABS = [
   ["completed", "Completed"],
   ["urgent", "Urgent"],
   ["overdue", "Overdue"],
+  ["critical", "Critical Awaiting"],
 ];
 const REPORTABLE = ["ready_for_reporting", "performed", "examination_completed"];
 

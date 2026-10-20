@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
-  Inbox, UserCheck, PenLine, FileEdit, FileSignature, Siren, AlertTriangle, CheckCircle2, RefreshCw, Loader2,
+  Inbox, UserCheck, PenLine, FileEdit, FileSignature, Siren, AlertTriangle, CheckCircle2, RefreshCw, Loader2, ShieldAlert,
 } from "lucide-react";
 
 // Radiologist dashboard cards (Phase 4.1) — every card shows a live count
@@ -15,6 +15,7 @@ const CARDS = [
   { key: "awaiting_signature", label: "Awaiting Signature", icon: FileSignature, tone: "text-indigo-600 bg-indigo-500/10" },
   { key: "urgent", label: "Urgent Awaiting Interpretation", icon: Siren, tone: "text-red-600 bg-red-500/10" },
   { key: "overdue", label: "Overdue", icon: AlertTriangle, tone: "text-red-700 bg-red-500/10" },
+  { key: "critical", label: "Critical Awaiting Ack", icon: ShieldAlert, tone: "text-red-600 bg-red-100" },
   { key: "completed_today", label: "Completed Today", icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-500/10" },
 ];
 

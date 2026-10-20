@@ -45,6 +45,20 @@ export default async function(req: Request): Promise<Response> {
     );
     const draftByRequest: Map<string, any> = new Map(draftsPage.items.map((d: any) => [d.request_id, d]));
 
+    // Critical findings awaiting clinician acknowledgment (Phase 6)
+    let criticalAwaitingIds: Set<string> = new Set();
+    if (all.length) {
+      const logsPage = await base44.asServiceRole.entities.CriticalFindingLog.filter(
+        { imaging_request_id: { $in: all.map((r: any) => r.id) } },
+        { limit: 500 }
+      );
+      criticalAwaitingIds = new Set(
+        logsPage.items
+          .filter((l: any) => ["notified", "delivered", "escalated"].includes(l.status))
+          .map((l: any) => l.imaging_request_id)
+      );
+    }
+
     const rows = all.map((r: any) => {
       const stage = canonicalStage(r.workflow_status);
       const assigned = r.assigned_radiologist_user_id || null;
@@ -97,6 +111,7 @@ export default async function(req: Request): Promise<Response> {
       completed: (r) => ["final_report", "released"].includes(r.stage),
       urgent: (r) => ["Urgent", "Emergency"].includes(r.priority) && open(r),
       overdue: (r) => r.is_overdue,
+      critical: (r) => criticalAwaitingIds.has(r.id),
     };
     const counts: Record<string, number> = {};
     for (const [view, predicate] of Object.entries(views)) counts[view] = rows.filter(predicate).length;
@@ -105,6 +120,7 @@ export default async function(req: Request): Promise<Response> {
       ["final_report", "released"].includes(r.stage) &&
       String(r.finalized_datetime || r.released_datetime || "").slice(0, 10) === today
     ).length;
+    counts.critical_awaiting = rows.filter((r: any) => criticalAwaitingIds.has(r.id)).length;
 
     // ===== View selection + filters =====
     const body = await req.json().catch(() => ({}));

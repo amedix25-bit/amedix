@@ -1,0 +1,168 @@
+{
+  "name": "CriticalFindingLog",
+  "type": "object",
+  "properties": {
+    "imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest id \u2014 the study and report this critical communication belongs to"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20261016-E6O0"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the responsible clinical recipient \u2014 the requesting doctor"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "routed_hospital": {
+      "type": "string",
+      "description": "Facility the study was performed at"
+    },
+    "routed_hospital_user_id": {
+      "type": "string",
+      "description": "User id of the facility administrator \u2014 used for Row Level Security"
+    },
+    "finding_summary": {
+      "type": "string",
+      "description": "The critical finding communicated"
+    },
+    "recipient_user_id": {
+      "type": "string",
+      "description": "User id of the responsible clinical recipient for this communication"
+    },
+    "recipient_name": {
+      "type": "string",
+      "description": "Name of the responsible clinical recipient"
+    },
+    "notification_method": {
+      "type": "string",
+      "enum": [
+        "in_app",
+        "email",
+        "phone",
+        "messenger",
+        "other"
+      ],
+      "description": "Communication method used to deliver the critical result"
+    },
+    "notified_datetime": {
+      "type": "string",
+      "description": "Date and time the critical alert was generated (ISO datetime)"
+    },
+    "delivery_method": {
+      "type": "string",
+      "description": "How the alert was actually delivered"
+    },
+    "delivered_datetime": {
+      "type": "string",
+      "description": "Date and time the alert was recorded as delivered (ISO datetime)"
+    },
+    "acknowledged_datetime": {
+      "type": "string",
+      "description": "Date and time the responsible clinician acknowledged the critical result (ISO datetime)"
+    },
+    "acknowledged_by_name": {
+      "type": "string"
+    },
+    "escalation_hours": {
+      "type": "number",
+      "default": 24,
+      "description": "Configurable escalation window in hours \u2014 if the clinician has not acknowledged within this period the alert escalates per facility policy"
+    },
+    "escalation_deadline": {
+      "type": "string",
+      "description": "Date and time the unacknowledged alert becomes due for escalation (ISO datetime)"
+    },
+    "escalation_level": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many times this alert has escalated"
+    },
+    "escalated_datetime": {
+      "type": "string",
+      "description": "Date and time of the last escalation (ISO datetime)"
+    },
+    "communication_notes": {
+      "type": "string",
+      "description": "Documentation of the communication attempts, notes and fallback actions"
+    },
+    "resolved_datetime": {
+      "type": "string",
+      "description": "Date and time the communication was closed (ISO datetime)"
+    },
+    "resolved_by_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "notified",
+        "delivered",
+        "acknowledged",
+        "escalated",
+        "resolved"
+      ],
+      "default": "notified",
+      "description": "ALERT GENERATED (notified) \u2192 DELIVERED (delivered) \u2192 ACKNOWLEDGED (acknowledged), with ESCALATED while unacknowledged past the deadline"
+    },
+    "communicated_by_name": {
+      "type": "string",
+      "description": "Person completing the communication"
+    },
+    "communicated_by_user_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "imaging_request_id",
+    "finding_summary",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "data.routed_hospital_user_id": "{{user.id}}"
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

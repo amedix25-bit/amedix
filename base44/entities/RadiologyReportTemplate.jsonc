@@ -1,0 +1,84 @@
+{
+  "name": "RadiologyReportTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name, e.g. CT Brain"
+    },
+    "modality": {
+      "type": "string",
+      "description": "Modality the template applies to \u2014 X-Ray, CT, MRI, Ultrasound, Mammography, Other or Any"
+    },
+    "examination": {
+      "type": "string",
+      "description": "Examination pattern the template matches, e.g. Brain"
+    },
+    "institution_approved": {
+      "type": "boolean",
+      "default": false,
+      "description": "Institution-approved template \u2014 shared with every radiologist of the facility"
+    },
+    "owner_radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist who owns this personal template \u2014 empty for institution-approved templates"
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Default section content or guidance keyed by section key (indication, examination_performed, technique, comparison, findings, impressions, recommendations, critical_findings)"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the template was created (ISO datetime)"
+    }
+  },
+  "required": [
+    "name",
+    "sections"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.institution_approved": true
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

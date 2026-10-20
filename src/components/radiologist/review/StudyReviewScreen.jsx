@@ -54,7 +54,7 @@ export default function StudyReviewScreen({ requestId, user, radiologistProfile,
     );
   }
 
-  const { request, patient, conditions, prior_studies, prior_results } = data;
+  const { request, patient, conditions, prior_studies, prior_results, report_versions, critical_communications } = data;
   const ownershipLabel = ["final_report", "released"].includes(request.stage)
     ? "Finalized"
     : request.assigned_radiologist_user_id
@@ -129,6 +129,7 @@ export default function StudyReviewScreen({ requestId, user, radiologistProfile,
           study={request}
           user={user}
           radiologistProfile={radiologistProfile}
+          reportVersions={report_versions}
           onChanged={() => {
             load();
             if (onChanged) onChanged();

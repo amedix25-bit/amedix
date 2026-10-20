@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, CheckCircle2, FileText, Send, Loader2 } from "lucide-react";
+import { Upload, CheckCircle2, FileText, Send, Loader2, ShieldAlert, CircleCheck } from "lucide-react";
 import { STAGE_LABELS, STAGE_CHIP, canonicalStage, formatStageTime } from "@/lib/radiologyWorkflow";
 
 const PRIORITY_STYLES = {
@@ -15,6 +16,45 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
   const [reportText, setReportText] = useState("");
   const [clarification, setClarification] = useState("");
   const [responding, setResponding] = useState(false);
+  const [criticalLog, setCriticalLog] = useState(null);
+  const [criticalAcked, setCriticalAcked] = useState(null);
+  const [ackBusy, setAckBusy] = useState(false);
+
+  // Critical findings communication (Phase 6) — the responsible clinician
+  // acknowledges the critical result here.
+  useEffect(() => {
+    if (!img.is_critical) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke("radiologyCriticalComm", { action: "list", request_id: img.id });
+        if (cancelled) return;
+        const logs = res.data.logs || [];
+        setCriticalLog(logs.find((l) => ["notified", "delivered", "escalated"].includes(l.status)) || null);
+        setCriticalAcked(logs.find((l) => l.acknowledged_datetime) || null);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [img.id, img.is_critical]);
+
+  const acknowledgeCritical = async () => {
+    setAckBusy(true);
+    try {
+      await base44.functions.invoke("radiologyCriticalComm", {
+        action: "acknowledge",
+        log_id: criticalLog.id,
+        note: "Acknowledged in the Doctor Portal",
+      });
+      setCriticalAcked({ acknowledged_datetime: new Date().toISOString(), acknowledged_by_name: "You" });
+      setCriticalLog(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAckBusy(false);
+    }
+  };
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -111,6 +151,38 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
                 Send Response
               </Button>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Critical findings communication (Phase 6) */}
+      {img.is_critical && (
+        <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-3 space-y-2">
+          <p className="text-sm font-semibold text-red-700 flex items-center gap-1.5">
+            <ShieldAlert className="w-4 h-4" /> Critical Imaging Finding
+          </p>
+          {criticalLog ? (
+            <>
+              <p className="text-xs text-red-600">
+                Awaiting your acknowledgment — communicated via {criticalLog.notification_method || "in-app"}
+                {criticalLog.notified_datetime ? ` · ${new Date(criticalLog.notified_datetime).toLocaleString()}` : ""}
+                {criticalLog.escalation_level > 0 ? ` · escalated ×${criticalLog.escalation_level}` : ""}.
+              </p>
+              {criticalLog.finding_summary && (
+                <p className="text-xs text-red-700 font-medium">{criticalLog.finding_summary}</p>
+              )}
+              <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" disabled={ackBusy} onClick={acknowledgeCritical}>
+                {ackBusy && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Acknowledge Critical Finding
+              </Button>
+            </>
+          ) : criticalAcked ? (
+            <p className="text-xs text-emerald-700 flex items-center gap-1.5">
+              <CircleCheck className="w-3.5 h-3.5" />
+              Acknowledged {criticalAcked.acknowledged_datetime ? new Date(criticalAcked.acknowledged_datetime).toLocaleString() : ""}
+            </p>
+          ) : (
+            <p className="text-xs text-red-600">A critical finding was identified on this study — the radiology team will communicate it with you.</p>
           )}
         </div>
       )}

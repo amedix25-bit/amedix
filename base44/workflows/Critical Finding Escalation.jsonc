@@ -1,0 +1,45 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 * * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Tripoli",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "critical_finding_escalation",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "escalation_scan": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "radiologyCriticalEscalationScan",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Run escalation scan",
+            "description": "Escalate unacknowledged critical findings, email clinicians"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Critical Finding Escalation",
+  "description": "Hourly escalation scan for critical radiology findings awaiting clinician acknowledgment: escalates every open critical communication whose escalation window has passed and emails the responsible clinician per the documented fallback policy. The trace stays on the communication log even after the report is finalized."
+}

@@ -173,6 +173,89 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ ok: true });
     }
 
+    // ===== Amend a finalized report (Phase 5.4) =====
+    // A finalized report is NEVER silently overwritten: the amendment is a
+    // documented correction, linked to the original signed version.
+    if (rawAction === "amend_report") {
+      const radProfiles = await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id });
+      const radiologist = radProfiles[0];
+      if (!radiologist || radiologist.status !== "active") {
+        return Response.json({ error: "Only active radiologists can amend reports." }, { status: 403 });
+      }
+      const authorizedByPatient = (request.authorized_radiologist_user_ids || []).includes(user.id);
+      if (!authorizedByPatient && request.assigned_radiologist_user_id !== user.id) {
+        return Response.json({ error: "Only a radiologist working on this study can amend the report." }, { status: 403 });
+      }
+      const stage = canonicalStage(request.workflow_status);
+      if (!["final_report", "released"].includes(stage)) {
+        return Response.json({ error: "Only a finalized report can be amended." }, { status: 400 });
+      }
+      const reportText = String(payload.report || "").trim();
+      if (!reportText) return Response.json({ error: "The amended report text is required." }, { status: 400 });
+      const reason = String(payload.amendment_reason || "").trim();
+      if (!reason) return Response.json({ error: "Document the reason for the amendment." }, { status: 400 });
+
+      const nowIso = new Date().toISOString();
+      const versions = await base44.asServiceRole.entities.RadiologyReportVersion.filter(
+        { imaging_request_id: request.id }, { sort: "-version", limit: 1 });
+      const latest = versions.items[0] || null;
+      const newVersion = latest ? latest.version + 1 : 2;
+
+      const update: Record<string, any> = {
+        report: reportText,
+        updated_datetime: nowIso,
+        status_history: (() => {
+          const h = Array.isArray(request.status_history) ? [...request.status_history] : [];
+          h.push({
+            action: "report_amended",
+            from: stage,
+            to: stage,
+            by_name: radiologist.full_name,
+            by_role: "radiologist",
+            datetime: nowIso,
+            note: reason,
+          });
+          return h;
+        })(),
+      };
+      if (String(payload.report_pdf_url || "").trim()) update.report_file_url = String(payload.report_pdf_url).trim();
+      await base44.asServiceRole.entities.ImagingRequest.update(request.id, update);
+      await base44.asServiceRole.entities.RadiologyReportVersion.create({
+        imaging_request_id: request.id,
+        request_ref: request.request_id || "",
+        patient_id: request.patient_id,
+        patient_user_id: request.patient_user_id || "",
+        patient_cin: request.patient_cin || "",
+        patient_name: request.patient_name || "",
+        doctor_user_id: request.doctor_user_id || "",
+        radiologist_user_id: user.id,
+        radiologist_name: radiologist.full_name,
+        version: newVersion,
+        report_text: reportText,
+        report_pdf_url: String(payload.report_pdf_url || ""),
+        sections: payload.sections && typeof payload.sections === "object" ? payload.sections : {},
+        is_amendment: true,
+        amendment_reason: reason,
+        original_version_id: latest ? latest.id : "",
+        signed_datetime: nowIso,
+        signed_by_name: radiologist.full_name,
+      });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: radiologist.full_name,
+        actor_role: "radiologist",
+        action: "radiology_report_amended",
+        action_label: `amended radiology report to version ${newVersion}`,
+        patient_id: request.patient_id,
+        patient_cin: request.patient_cin,
+        patient_name: request.patient_name,
+        encounter_id: request.encounter_id,
+        document_id: request.request_id,
+        hospital: request.routed_hospital || request.doctor_hospital,
+      });
+      return Response.json({ ok: true });
+    }
+
     const action = ALIASES[rawAction] || rawAction;
     const transition = TRANSITIONS[action];
     if (!transition) return Response.json({ error: "Unknown workflow action." }, { status: 400 });
@@ -216,6 +299,40 @@ export default async function(req: Request): Promise<Response> {
       userId: user.id,
       payload,
     });
+
+    // Report integrity (Phase 5.3) — every finalized report is preserved as
+    // an immutable signed version record carrying the study association, the
+    // reporting radiologist identity, the sign-off date and time and the
+    // report version. Duplicate finalization is impossible (the transition
+    // only runs from ready_for_reporting / reporting_in_progress).
+    if (action === "finalize_report") {
+      try {
+        const versions = await base44.asServiceRole.entities.RadiologyReportVersion.filter(
+          { imaging_request_id: request.id }, { sort: "-version", limit: 1 });
+        const nextVersion = ((versions.items[0] && versions.items[0].version) || 0) + 1;
+        await base44.asServiceRole.entities.RadiologyReportVersion.create({
+          imaging_request_id: request.id,
+          request_ref: request.request_id || "",
+          patient_id: request.patient_id,
+          patient_user_id: request.patient_user_id || "",
+          patient_cin: request.patient_cin || "",
+          patient_name: request.patient_name || "",
+          doctor_user_id: request.doctor_user_id || "",
+          radiologist_user_id: user.id,
+          radiologist_name: radiologist ? radiologist.full_name : "",
+          version: nextVersion,
+          report_text: String(payload.report || request.report || ""),
+          report_pdf_url: String(payload.report_pdf_url || ""),
+          sections: payload.sections && typeof payload.sections === "object" ? payload.sections : {},
+          is_amendment: false,
+          original_version_id: "",
+          signed_datetime: new Date().toISOString(),
+          signed_by_name: radiologist ? radiologist.full_name : "",
+        });
+      } catch (err) {
+        console.error("Report version recording failed:", err);
+      }
+    }
 
     return Response.json({ ok: true, imaging_request: updated });
   } catch (error) {

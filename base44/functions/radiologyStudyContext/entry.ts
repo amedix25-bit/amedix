@@ -86,12 +86,15 @@ export default async function(req: Request): Promise<Response> {
       authorized_by_patient: (request.authorized_radiologist_user_ids || []).includes(user.id),
     };
 
-    const [patientPage, conditionsPage, priorRequestsPage, priorResultsPage] = await Promise.all([
-      svc.entities.PatientProfile.filter({ id: request.patient_id }),
-      svc.entities.MedicalCondition.filter({ patient_id: request.patient_id }, { limit: 100 }),
-      svc.entities.ImagingRequest.filter({ patient_id: request.patient_id }, { sort: "-request_datetime", limit: 100 }),
-      svc.entities.ImagingResult.filter({ patient_id: request.patient_id }, { sort: "-created_datetime", limit: 100 }),
-    ]);
+    const [patientPage, conditionsPage, priorRequestsPage, priorResultsPage, versionsPage, commLogsPage] =
+      await Promise.all([
+        svc.entities.PatientProfile.filter({ id: request.patient_id }),
+        svc.entities.MedicalCondition.filter({ patient_id: request.patient_id }, { limit: 100 }),
+        svc.entities.ImagingRequest.filter({ patient_id: request.patient_id }, { sort: "-request_datetime", limit: 100 }),
+        svc.entities.ImagingResult.filter({ patient_id: request.patient_id }, { sort: "-created_datetime", limit: 100 }),
+        svc.entities.RadiologyReportVersion.filter({ imaging_request_id: request.id }, { sort: "-version", limit: 50 }),
+        svc.entities.CriticalFindingLog.filter({ imaging_request_id: request.id }, { limit: 100 }),
+      ]);
     const patient = patientPage.items[0] || null;
 
     const prior = priorRequestsPage.items
@@ -102,6 +105,8 @@ export default async function(req: Request): Promise<Response> {
         request_id: p.request_id,
         scan_type: p.scan_type,
         examination: p.examination,
+        body_region: p.body_part || "",
+        facility: p.routed_hospital || p.doctor_hospital || "",
         stage: canonicalStage(p.workflow_status),
         finalized_datetime: p.final_report_datetime || p.released_datetime || p.date_completed || null,
         report: p.report || "",
@@ -138,6 +143,31 @@ export default async function(req: Request): Promise<Response> {
       })),
       prior_studies: prior,
       prior_results: priorResults,
+      report_versions: versionsPage.items.map((v: any) => ({
+        id: v.id,
+        version: v.version,
+        report_text: v.report_text || "",
+        report_pdf_url: v.report_pdf_url || "",
+        signed_datetime: v.signed_datetime || "",
+        signed_by_name: v.signed_by_name || "",
+        radiologist_name: v.radiologist_name || "",
+        is_amendment: !!v.is_amendment,
+        amendment_reason: v.amendment_reason || "",
+      })),
+      critical_communications: commLogsPage.items.map((l: any) => ({
+        id: l.id,
+        finding_summary: l.finding_summary || "",
+        recipient_name: l.recipient_name || "",
+        notification_method: l.notification_method || "",
+        notified_datetime: l.notified_datetime || "",
+        delivered_datetime: l.delivered_datetime || "",
+        acknowledged_datetime: l.acknowledged_datetime || "",
+        acknowledged_by_name: l.acknowledged_by_name || "",
+        escalation_level: l.escalation_level || 0,
+        escalation_deadline: l.escalation_deadline || "",
+        status: l.status || "",
+        communication_notes: l.communication_notes || "",
+      })),
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
