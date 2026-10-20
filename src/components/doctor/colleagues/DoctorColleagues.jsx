@@ -28,13 +28,21 @@ export default function DoctorColleagues({ doctorProfile }) {
 
   const load = async () => {
     try {
-      const [sent, received, verified] = await Promise.all([
+      const [sent, received, verified, dirRes] = await Promise.all([
         base44.entities.DoctorConnection.filter({ requester_doctor_id: doctorProfile.id }),
         base44.entities.DoctorConnection.filter({ recipient_doctor_id: doctorProfile.id }),
         base44.entities.DoctorProfile.filter({ is_verified: true }),
+        base44.functions.invoke("doctorDirectory"),
       ]);
+      // Only doctors with a real account, whose hospital (when set) is a
+      // registered facility — and never the doctor's own duplicate profiles.
+      const eligible = new Set(dirRes.data.doctor_ids || []);
       setConnections([...sent, ...received]);
-      setDoctors(verified.filter((d) => d.id !== doctorProfile.id));
+      setDoctors(verified.filter(
+        (d) => d.id !== doctorProfile.id &&
+          d.user_id !== doctorProfile.user_id &&
+          eligible.has(d.id)
+      ));
     } catch (err) {
       console.error(err);
     }
