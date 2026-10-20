@@ -80,6 +80,7 @@ export default async function (req) {
         cin: patient.cin,
         full_name: patient.full_name,
         user_id: patient.user_id,
+        allergy_record_status: patient.allergy_record_status || "",
       },
       medical_history,
       conditions,

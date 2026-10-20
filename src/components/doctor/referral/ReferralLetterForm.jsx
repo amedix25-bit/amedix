@@ -100,6 +100,48 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       try {
         const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
         setPatientDocs((res.data.documents || []).filter((d) => d.file_url));
+        // Auto-fill the clinical fields that match the referral letter format
+        // from the patient's My Health record — only fields the doctor has
+        // not already typed in. Everything stays editable.
+        const d = res.data || {};
+        const bits = (arr) => arr.filter(Boolean).join("\n");
+        const historyText = bits([
+          ...(d.conditions || []).map((c) =>
+            `${c.name}${c.date ? `, diagnosed ${c.date}` : ""}${
+              c.current_status === "active"
+                ? " (active)"
+                : c.current_status === "being_monitored"
+                  ? " (under monitoring)"
+                  : c.current_status === "resolved"
+                    ? " (resolved)"
+                    : ""
+            }`
+          ),
+          ...(d.medical_history || [])
+            .filter((e) => e.entry_type === "patient_seen" && e.date)
+            .map((e) => `Seen by ${e.doctor_name || "a doctor"} on ${e.date}${e.appointment_reason ? ` — ${e.appointment_reason}` : ""}`),
+        ]);
+        setForm((f) => ({
+          ...f,
+          past_medical_history: f.past_medical_history || historyText,
+          past_surgical_history:
+            f.past_surgical_history ||
+            bits((d.surgical || []).map((s) => `${s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}${s.reason ? ` — ${s.reason}` : ""}`)),
+          current_medications:
+            f.current_medications ||
+            bits(
+              (d.medications || [])
+                .filter((m) => m.is_active !== false)
+                .map((m) => `${m.name}${m.dose ? ` ${m.dose}` : ""}${m.frequency ? `, ${m.frequency}` : ""}`)
+            ),
+          allergies:
+            f.allergies ||
+            ((d.allergies || []).length
+              ? bits((d.allergies || []).map((a) => `${a.allergen}${a.reaction ? ` — ${a.reaction}` : ""}${a.severity ? ` (${a.severity})` : ""}`))
+              : (d.patient?.allergy_record_status || "") === "no_known_allergies"
+                ? "No known allergies (patient-reported)"
+                : ""),
+        }));
       } catch (err) {
         console.error(err);
       }
@@ -427,6 +469,9 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       </Section>
 
       <Section title="Clinical Information">
+        <p className="text-xs text-muted-foreground">
+          Past history, medications and allergies are pre-filled from the patient's My Health record where available — edit as needed.
+        </p>
         <Field label="Relevant Symptoms & Duration">
           <Textarea rows={2} value={form.symptoms_duration} onChange={set("symptoms_duration")} />
           {dict("symptoms_duration", "Relevant Symptoms & Duration")}
