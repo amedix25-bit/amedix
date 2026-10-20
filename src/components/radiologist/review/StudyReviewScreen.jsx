@@ -6,6 +6,7 @@ import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import StudyContextPanel from "@/components/radiologist/review/StudyContextPanel";
 import ImageViewer from "@/components/radiologist/review/ImageViewer";
 import ReportingWorkspace from "@/components/radiologist/review/ReportingWorkspace";
+import PacsOpenButton from "@/components/radiologist/review/PacsOpenButton";
 
 // Study review screen (Phase 4.3) — three areas in one view:
 // left: patient & clinical context · center: image viewer · right: reporting
@@ -107,6 +108,7 @@ export default function StudyReviewScreen({ requestId, user, radiologistProfile,
           onLoadComparison={(study) => setComparison(study)}
         />
         <div className="space-y-3">
+          <PacsOpenButton requestId={request.id} />
           <ImageViewer
             images={request.image_file_urls}
             requestId={request.id}

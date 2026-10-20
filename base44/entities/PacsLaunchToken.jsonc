@@ -1,0 +1,56 @@
+{
+  "name": "PacsLaunchToken",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Cryptographically random one-time launch token (UUID) embedded in the imaging-system viewer launch URL \u2014 the vendor validates it against this app's token endpoint"
+    },
+    "imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest record the launch was authorized for"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20261020-8F3K"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist the launch was authorized for"
+    },
+    "expires_datetime": {
+      "type": "string",
+      "description": "ISO datetime \u2014 the token expires 15 minutes after issue"
+    },
+    "used_datetime": {
+      "type": "string",
+      "description": "ISO datetime \u2014 set when the token is validated; a token is single use only"
+    }
+  },
+  "required": [
+    "token",
+    "imaging_request_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

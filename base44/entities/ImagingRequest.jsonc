@@ -299,6 +299,14 @@
       "type": "string",
       "description": "Department notes about the received images (e.g. source system, series count)"
     },
+    "study_instance_uid": {
+      "type": "string",
+      "description": "DICOM Study Instance UID of the examination in the facility's imaging system (PACS) \u2014 recorded by the department when the vendor provides it. Used together with the AMedix request ID to open the CORRECT study in the Imaging Viewer; never guessed from patient identifiers."
+    },
+    "accession_number": {
+      "type": "string",
+      "description": "Accession number of the examination in the facility's imaging system (PACS/RIS) \u2014 recorded by the department when available; the AMedix request reference is used when absent"
+    },
     "updated_datetime": {
       "type": "string",
       "description": "Date and time of the last status update (ISO datetime)"

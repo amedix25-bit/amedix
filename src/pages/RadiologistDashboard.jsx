@@ -12,13 +12,15 @@ import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNo
 import RadiologistOverview from "@/components/radiologist/RadiologistOverview";
 import RadiologistStudyBoard from "@/components/radiologist/RadiologistStudyBoard";
 import RadiologyWorklist from "@/components/radiologist/RadiologyWorklist";
+import ImagingViewerTab from "@/components/radiologist/viewer/ImagingViewerTab";
 import RadiologistColleagues from "@/components/radiologist/colleagues/RadiologistColleagues";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { Search, Bell, ClipboardList, LayoutDashboard, Users } from "lucide-react";
+import { Search, Bell, ClipboardList, LayoutDashboard, Users, Monitor } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "worklist", label: "Imaging Worklist", icon: ClipboardList },
+  { key: "viewer", label: "Imaging Viewer", icon: Monitor },
   { key: "find", label: "Find Patient", icon: Search },
   { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "notifications", label: "Notifications", icon: Bell },
@@ -100,6 +102,13 @@ export default function RadiologistDashboard() {
         )}
         {activeTab === "worklist" && profile && (
           <RadiologyWorklist radiologistProfile={profile} user={user} initialView={worklistView} />
+        )}
+        {activeTab === "viewer" && profile && user && (
+          <ImagingViewerTab
+            user={user}
+            radiologistProfile={profile}
+            onOpenReporting={() => { setWorklistView(null); setActiveTab("worklist"); }}
+          />
         )}
         {activeTab === "colleagues" && profile && (
           <RadiologistColleagues radiologistProfile={profile} />

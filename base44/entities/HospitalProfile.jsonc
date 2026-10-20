@@ -36,6 +36,42 @@
       "default": false,
       "description": "Whether this facility has a configured RADIOLOGY DEPARTMENT that receives imaging requests. When true, the administrator can open the Radiology Department Portal and doctors' imaging requests for this facility route to its worklist. When false, imaging requests for this facility are rejected with a clear routing error."
     },
+    "pacs_integration_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the facility's EXISTING imaging system (PACS / RIS / web viewer) is connected to AMedix. Configured by the hospital administrator after confirming the vendor's supported integration method \u2014 never assumed. When false, radiologists see images stored in AMedix only."
+    },
+    "pacs_integration_type": {
+      "type": "string",
+      "enum": [
+        "dicomweb",
+        "web_viewer",
+        "desktop_app",
+        "none"
+      ],
+      "default": "none",
+      "description": "How the facility's existing imaging software integrates: dicomweb \u2014 DICOMweb (QIDO/WADO) endpoint verified against the vendor; web_viewer \u2014 browser viewer opened through a launch URL template; desktop_app \u2014 desktop software that cannot be embedded (studies are opened manually by reference). Set only after the vendor confirms support."
+    },
+    "pacs_vendor_name": {
+      "type": "string",
+      "description": "Vendor / product name of the facility's imaging system, recorded by the administrator for the integration record"
+    },
+    "pacs_viewer_url_template": {
+      "type": "string",
+      "description": "Vendor-documented viewer launch URL template with placeholders {study_instance_uid}, {accession_number}, {request_id}, {patient_cin}, {launch_token}. Substituted server-side only \u2014 the template and any vendor credentials never reach the browser."
+    },
+    "pacs_dicomweb_base_url": {
+      "type": "string",
+      "description": "DICOMweb (QIDO-RS) base URL of the facility PACS, used server-side to VERIFY study availability before images are marked as available. Credentials, when the vendor requires them, are added as server-side secrets \u2014 never stored here in browser-readable form."
+    },
+    "pacs_vendor_notes": {
+      "type": "string",
+      "description": "Integration notes: vendor contact, agreed authentication method, launch capabilities confirmed by the imaging team"
+    },
+    "pacs_updated_datetime": {
+      "type": "string",
+      "description": "Date and time the imaging system connection was last changed (ISO datetime)"
+    },
     "status": {
       "type": "string",
       "enum": [
