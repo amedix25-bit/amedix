@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { canonicalStage } from "../../shared/radiologyWorkflow.ts";
+import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Authorized clinical context for the radiologist's study review screen —
 // the minimum authorized information for interpretation, never the entire
@@ -35,6 +36,21 @@ export default async function(req: Request): Promise<Response> {
     if (!authorized) {
       return Response.json({ error: "You are not authorized to view this study." }, { status: 403 });
     }
+
+    // Audit trail — every study access is recorded (Phase 9 auditability).
+    await logClinicalAudit(base44, {
+      actor_user_id: user.id,
+      actor_name: radiologist.full_name,
+      actor_role: "radiologist",
+      action: "radiology_study_accessed",
+      action_label: "opened a radiology study for review",
+      patient_id: request.patient_id,
+      patient_cin: request.patient_cin,
+      patient_name: request.patient_name,
+      encounter_id: request.encounter_id,
+      document_id: request.request_id,
+      hospital: request.routed_hospital || request.doctor_hospital,
+    });
 
     const stage = canonicalStage(request.workflow_status);
     const safeRequest = {

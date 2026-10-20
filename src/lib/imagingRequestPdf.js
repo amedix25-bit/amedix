@@ -12,10 +12,17 @@ const PRIORITY_COLORS = {
   Emergency: [185, 28, 28],
 };
 
+// Phase 9 — request references are not predictable: a cryptographic suffix of
+// 6 unambiguous characters (~28 bits) on top of the date prefix.
+const ID_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 export function makeImagingRequestId() {
   const d = new Date();
   const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-  return `IR-${ymd}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  let suffix = "";
+  for (const b of bytes) suffix += ID_CHARS[b % ID_CHARS.length];
+  return `IR-${ymd}-${suffix}`;
 }
 
 export function generateImagingRequestPdf(req) {

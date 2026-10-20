@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, CheckCircle2, FileText, Send, Loader2, ShieldAlert, CircleCheck } from "lucide-react";
 import { STAGE_LABELS, STAGE_CHIP, canonicalStage, formatStageTime } from "@/lib/radiologyWorkflow";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 
 const PRIORITY_STYLES = {
   Emergency: "bg-red-100 text-red-700 border-red-300",
@@ -131,9 +132,9 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
           <p className="text-xs font-semibold text-emerald-700 uppercase mb-1">Finalized Report</p>
           {img.report && <p className="text-sm text-emerald-900 whitespace-pre-wrap">{img.report}</p>}
           {img.report_file_url && (
-            <a href={img.report_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline mt-2 inline-block">
+            <ResolvedFileButton requestId={img.id} fileRef={img.report_file_url} className="text-xs text-emerald-600 underline mt-2 inline-block">
               Open Report (PDF)
-            </a>
+            </ResolvedFileButton>
           )}
         </div>
       )}

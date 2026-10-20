@@ -74,6 +74,17 @@ export default function RadiologyWorklist({ radiologistProfile, user, initialVie
     return () => clearTimeout(timer);
   }, [load]);
 
+  // Live updates — the worklist refreshes when studies change anywhere in the
+  // radiology workflow (Phase 10: accurate, consistent status and counts).
+  const loadRef = React.useRef(load);
+  loadRef.current = load;
+  useEffect(() => {
+    const unsubscribe = base44.entities.ImagingRequest.subscribe((event) => {
+      if (event.type === "create" || event.type === "update") loadRef.current();
+    });
+    return unsubscribe;
+  }, []);
+
   const set = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
 
   const claim = async (item) => {

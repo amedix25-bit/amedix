@@ -9,6 +9,8 @@ import {
   CheckCircle2, ExternalLink, Eye, Sparkles, FileEdit, X, GitCommitHorizontal,
 } from "lucide-react";
 import { generateRadiologyReportPdf } from "@/lib/radiologyReportPdf";
+import resolveRadiologyFile from "@/lib/radiologyFileUrl";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import ReportTemplatePicker from "@/components/radiologist/review/ReportTemplatePicker";
 import ReportPreviewDialog from "@/components/radiologist/review/ReportPreviewDialog";
 import CriticalCommunicationPanel from "@/components/radiologist/review/CriticalCommunicationPanel";
@@ -59,6 +61,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   const [amending, setAmending] = useState(false);
   const [amendmentReason, setAmendmentReason] = useState("");
   const [suggestion, setSuggestion] = useState(null); // { section, text }
+  const [savedJson, setSavedJson] = useState(JSON.stringify(EMPTY));
 
   const stage = study.stage;
   const assignedToMe = study.assigned_radiologist_user_id === user.id;
@@ -102,6 +105,32 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
     })();
     return () => { cancelled = true; };
   }, [study.id, user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Drafts survive interruptions (Phase 10) — autosave 4s after the last edit,
+  // and a browser warning while unsaved changes remain.
+  const dirty = draftLoaded && editable && JSON.stringify(sections) !== savedJson;
+  useEffect(() => {
+    if (!dirty || !editable) return;
+    const timer = setTimeout(async () => {
+      try {
+        await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections });
+        setSavedJson(JSON.stringify(sections));
+      } catch (err) {
+        console.error(err);
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [sections, dirty, editable]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   const applyTemplate = (tpl) => {
     const hasText = Object.values(sections).some((v) => v.trim());
@@ -152,6 +181,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   const saveDraft = () =>
     run("draft", async () => {
       await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections });
+      setSavedJson(JSON.stringify(sections));
       setHasDraft(true);
     }, "Draft saved");
 
@@ -195,14 +225,24 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       `RadiologyReport_${study.patient_cin}_${dateStr}.pdf`,
       { type: "application/pdf" }
     );
-    const { file_url: reportPdfUrl } = await base44.integrations.Core.UploadPublicFile({ file: pdfFile });
+    const { file_uri: reportPdfUrl } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile });
     return { reportPdfUrl, reportText: rows.map(([h, t]) => `${h}:\n${t.trim()}`).join("\n\n") };
   };
 
-  const finalize = () =>
+  const finalize = () => {
+    if (!(sections.findings || "").trim()) {
+      toast({ title: "Findings are required before finalizing the report.", variant: "destructive" });
+      return;
+    }
+    if (!(sections.impressions || "").trim()) {
+      toast({ title: "Impression is required before finalizing the report.", variant: "destructive" });
+      return;
+    }
+    // Consequential action — explicit confirmation (Phase 10).
+    if (!window.confirm("Sign and finalize this report? A signed, immutable report version will be recorded, and the report becomes ready for release.")) {
+      return;
+    }
     run("finalize", async () => {
-      if (!(sections.findings || "").trim()) throw new Error("Findings are required before finalizing the report.");
-      if (!(sections.impressions || "").trim()) throw new Error("Impression is required before finalizing the report.");
       const { reportPdfUrl, reportText } = await makePdf();
       await base44.functions.invoke("radiologyUpdateWorkflowStatus", {
         request_id: study.id,
@@ -212,8 +252,17 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
         sections,
       });
     }, "Report signed and finalized — awaiting release to the patient record");
+  };
 
-  const submitAmendment = () =>
+  const submitAmendment = () => {
+    if (!(sections.findings || "").trim()) {
+      toast({ title: "Findings are required in the amended report.", variant: "destructive" });
+      return;
+    }
+    // Consequential action — explicit confirmation (Phase 10).
+    if (!window.confirm("Sign this amendment? A new linked version will be recorded and the original signed report stays preserved.")) {
+      return;
+    }
     run("amend", async () => {
       if (!(sections.findings || "").trim()) throw new Error("Findings are required in the amended report.");
       const { reportPdfUrl, reportText } = await makePdf();
@@ -228,6 +277,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       setAmending(false);
       setAmendmentReason("");
     }, "Amendment signed — a new report version was recorded");
+  };
 
   const startAmendment = () => {
     const base = latestVersion && Object.keys(latestVersion.sections || {}).length
@@ -283,7 +333,12 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
     <div className="rounded-xl border border-border bg-card p-4 space-y-4 xl:max-h-[calc(100vh-220px)] overflow-y-auto">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm">Reporting Workspace</h3>
-        {statusChip}
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600">Autosaving draft…</span>
+          )}
+          {statusChip}
+        </div>
       </div>
 
       {/* Closed / finalized — read-only unless amending */}
@@ -319,11 +374,13 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
             </div>
           )}
           {(study.report_file_url || latestVersion?.report_pdf_url) && (
-            <a href={study.report_file_url || latestVersion.report_pdf_url} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">
-                <ExternalLink className="w-4 h-4 mr-2" /> Open Report PDF
-              </Button>
-            </a>
+            <ResolvedFileButton
+              requestId={study.id}
+              fileRef={study.report_file_url || latestVersion.report_pdf_url}
+              className="inline-flex items-center border border-input rounded-md px-3 py-2 text-sm hover:bg-accent disabled:opacity-50"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" /> Open Report PDF
+            </ResolvedFileButton>
           )}
           {canAmend && (
             <Button variant="outline" size="sm" onClick={startAmendment}>

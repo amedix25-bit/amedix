@@ -3,6 +3,12 @@ import { Button } from "@/components/ui/button";
 import { FileText, Image as ImageIcon, ScanLine } from "lucide-react";
 import { canonicalStage } from "@/lib/radiologyWorkflow";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import resolveRadiologyFile from "@/lib/radiologyFileUrl";
+
+const openStudyFile = async (requestId, ref) => {
+  const url = await resolveRadiologyFile(requestId, ref);
+  if (url) window.open(url, "_blank", "noopener");
+};
 
 // Department-routed studies (Phase 8.2): the finalized report and study
 // images live on the imaging request itself. Shown ONLY once the report is
@@ -35,12 +41,10 @@ export default function DepartmentFlowResults({ request }) {
         <p className="text-xs font-semibold text-emerald-700 uppercase">{t("Finalized Report")}</p>
         {report && <p className="text-sm whitespace-pre-wrap">{report}</p>}
         {request.report_file_url && (
-          <a href={request.report_file_url} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline">
-              <FileText className="w-4 h-4 mr-2" />
-              {t("Open Report (PDF)")}
-            </Button>
-          </a>
+          <Button variant="outline" onClick={() => openStudyFile(request.id, request.report_file_url)}>
+            <FileText className="w-4 h-4 mr-2" />
+            {t("Open Report (PDF)")}
+          </Button>
         )}
       </div>
 
@@ -55,13 +59,11 @@ export default function DepartmentFlowResults({ request }) {
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t("Study Images")}</p>
           <div className="flex flex-wrap gap-2">
-            {images.map((url, i) => (
-              <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                <Button>
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  {images.length > 1 ? `${t("View Image")} ${i + 1}` : t("View Image")}
-                </Button>
-              </a>
+            {images.map((ref, i) => (
+              <Button key={i} onClick={() => openStudyFile(request.id, ref)}>
+                <ImageIcon className="w-4 h-4 mr-2" />
+                {images.length > 1 ? `${t("View Image")} ${i + 1}` : t("View Image")}
+              </Button>
             ))}
           </div>
         </div>

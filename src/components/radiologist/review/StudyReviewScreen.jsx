@@ -109,7 +109,9 @@ export default function StudyReviewScreen({ requestId, user, radiologistProfile,
         <div className="space-y-3">
           <ImageViewer
             images={request.image_file_urls}
+            requestId={request.id}
             comparisonImages={comparison ? comparison.images : undefined}
+            comparisonRequestId={comparison ? comparison.id : undefined}
             comparisonLabel={comparison ? `${comparison.scan_type} — ${comparison.examination}` : ""}
           />
           {request.image_notes && (

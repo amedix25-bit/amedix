@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useResolvedImages } from "@/components/radiology/ResolvedFile";
 import {
   Maximize2, Minimize2, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, RotateCcw, FileText, Info, Loader2, ImageOff,
 } from "lucide-react";
@@ -211,7 +212,7 @@ function ViewerCore({ images, emptyLabel }) {
   );
 }
 
-export default function ImageViewer({ images, comparisonImages, comparisonLabel }) {
+export default function ImageViewer({ images, requestId, comparisonImages, comparisonRequestId, comparisonLabel }) {
   const hasComparison = Array.isArray(comparisonImages);
   const [tab, setTab] = useState("current");
 
@@ -219,7 +220,11 @@ export default function ImageViewer({ images, comparisonImages, comparisonLabel 
     if (!hasComparison) setTab("current");
   }, [hasComparison]);
 
-  const active = tab === "comparison" ? comparisonImages : images;
+  // Private study files are resolved to short-lived, access-checked URLs
+  // before display (Phase 9 protected file access).
+  const resolvedCurrent = useResolvedImages(images, requestId);
+  const resolvedComparison = useResolvedImages(comparisonImages, comparisonRequestId || requestId);
+  const active = tab === "comparison" ? resolvedComparison : resolvedCurrent;
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -243,11 +248,17 @@ export default function ImageViewer({ images, comparisonImages, comparisonLabel 
         )}
       </div>
 
-      <ViewerCore
-        key={tab}
-        images={active}
-        emptyLabel={tab === "comparison" ? "No images on the comparison study" : undefined}
-      />
+      {active === null ? (
+        <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Preparing study images...
+        </div>
+      ) : (
+        <ViewerCore
+          key={tab}
+          images={active}
+          emptyLabel={tab === "comparison" ? "No images on the comparison study" : undefined}
+        />
+      )}
 
       <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-2.5 text-[11px] text-muted-foreground">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />

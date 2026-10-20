@@ -80,8 +80,13 @@ export default async function(req) {
     // doctor_user_id is stamped server-side (never trusted from the client) so
     // the requesting doctor can see and manage the requests they sent.
     const nowIso = new Date().toISOString();
+    // Timestamps are stamped server-side (never trusted from the client) so
+    // duplicate prevention, SLA/overdue tracking and history always work.
     const imaging_request = await base44.asServiceRole.entities.ImagingRequest.create({
       ...payload,
+      request_datetime: payload.request_datetime || nowIso,
+      request_time: payload.request_time || nowIso.slice(11, 16),
+      date_requested: payload.date_requested || nowIso.slice(0, 10),
       doctor_user_id: user.id,
       workflow_status: "requested",
       status: "requested",
