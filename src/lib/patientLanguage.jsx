@@ -752,6 +752,153 @@ const AR = {
     "تعذّر تحميل ملاحظات هذه الزيارة. يرجى إعادة فتح الزيارة للمحاولة مجدداً.",
   "Instructions": "التعليمات",
   "Doctor Visits": "زيارات الطبيب",
+
+  // ─── Registration wizard (complete Arabic coverage) ───
+  "Medications & Allergies": "الأدوية والحساسية",
+  "Lifestyle & Preventive Care": "نمط الحياة والرعاية الوقائية",
+  "Could not upload the document. Please try again.": "تعذر رفع المستند. يرجى المحاولة مرة أخرى.",
+  "Answer the required questions marked with *.": "أجب عن الأسئلة الإلزامية المميزة بعلامة *.",
+
+  // Medical Conditions & Diagnoses section
+  "Medical Conditions & Diagnoses": "الحالات المرضية والتشخيصات",
+  "Existing conditions, chronic diseases, previous diagnoses and long-term conditions requiring monitoring":
+    "الحالات القائمة، الأمراض المزمنة، التشخيصات السابقة، والحالات طويلة الأمد التي تتطلب متابعة",
+  "No medical conditions or diagnoses": "لا توجد حالات مرضية أو تشخيصات",
+  "Existing condition / chronic disease": "حالة قائمة / مرض مزمن",
+  "Previous diagnosis": "تشخيص سابق",
+  "Long-term condition requiring monitoring": "حالة طويلة الأمد تتطلب متابعة",
+  "Other significant history": "تاريخ طبي مهم آخر",
+  "Active / ongoing": "نشطة / مستمرة",
+  "Resolved": "تم التعافي",
+  "Under monitoring": "تحت المتابعة",
+  "Approximate date of diagnosis": "تاريخ التشخيص التقريبي",
+  "Treating facility": "الجهة العلاجية",
+  "Current status": "الحالة الحالية",
+  "Relevant notes (optional)": "ملاحظات ذات صلة (اختياري)",
+
+  // Hospital Admissions & Significant History section
+  "Hospital Admissions & Significant History": "الدخول للمستشفى والتاريخ الطبي المهم",
+  "Previous hospital admissions, emergency department visits, injuries and accidents, blood transfusions, infectious diseases and complications of medical treatment":
+    "الدخول السابق للمستشفى، زيارات الطوارئ، الإصابات والحوادث، عمليات نقل الدم، الأمراض المعدية، ومضاعفات العلاج الطبي",
+  "No hospital admissions or significant history": "لا يوجد دخول سابق للمستشفى أو تاريخ طبي مهم",
+  "Previous hospital admission": "دخول سابق للمستشفى",
+  "Previous emergency department visit": "زيارة سابقة للطوارئ",
+  "Major injury or accident": "إصابة أو حادث كبير",
+  "Previous blood transfusion": "نقل دم سابق",
+  "History of infectious disease": "تاريخ مرض معدٍ",
+  "Complication of medical treatment": "مضاعفة من العلاج الطبي",
+  "Other significant medical history": "تاريخ طبي مهم آخر",
+  "What happened, e.g. Appendectomy admission": "ما حدث، مثال: دخول لاستئصال الزائدة الدودية",
+  "Approximate date": "تاريخ تقريبي",
+  "Treating facility, if known": "الجهة العلاجية، إن كانت معروفة",
+  "Ongoing": "مستمرة",
+  "Transfusion reaction, if any": "تفاعل نقل الدم، إن وُجد",
+  "Reaction": "التفاعل",
+
+  // Surgical history
+  "Every previous surgery or procedure": "كل عملية أو إجراء جراحي سابق",
+
+  // Family history
+  "Diseases or medical conditions that run in your family — mother, father, siblings, children or other relatives. You are not required to provide every family member's information.":
+    "أمراض أو حالات طبية منتشرة في عائلتك — الأم، الأب، الإخوة، الأبناء أو أقارب آخرين. لست مطالباً بتقديم معلومات كل فرد من العائلة.",
+  "Age at diagnosis": "عمر التشخيص",
+  "Age at diagnosis (if known)": "عمر التشخيص (إن كان معروفاً)",
+  "e.g. 60s": "مثال: الستينات",
+
+  // Medications section
+  "Current & Previous Medications": "الأدوية الحالية والسابقة",
+  "Prescription and non-prescription medicines, vitamins, supplements, herbal products, and long-term injections or therapies":
+    "الأدوية بوصفة ودون وصفة، الفيتامينات والمكملات، المنتجات العشبية، والحقن أو العلاجات طويلة الأمد",
+  "Prescription medication": "دواء بوصفة طبية",
+  "Non-prescription (OTC) medication": "دواء يصرف دون وصفة طبية",
+  "Vitamin / supplement": "فيتامين / مكمل غذائي",
+  "Herbal product": "منتج عشبي",
+  "Long-term injection / other therapy": "حقنة طويلة الأمد / علاج آخر",
+  "Reason for taking it": "سبب تناوله",
+  "Start date, if known": "تاريخ البدء، إن كان معروفاً",
+  "End date, if known": "تاريخ الانتهاء، إن كان معروفاً",
+  "Prescribing doctor / facility, if known": "الطبيب / الجهة الموصفة، إن كانت معروفة",
+  "Currently taking": "أتناوله حالياً",
+  "Taken occasionally": "أتناوله أحياناً",
+  "Not specified": "غير محدد",
+
+  // Allergies section
+  "Allergies & Adverse Reactions": "الحساسية والتفاعلات الضارة",
+  "Medication, food, latex, contrast-agent or other allergies and reactions. Your answers are saved as reported by you and are not treated as clinically verified.":
+    "حساسية من الأدوية أو الطعام أو اللاتكس أو مادة التباين أو غيرها، والتفاعلات الضارة. تُحفظ إجاباتك كما أجبت بها ولا تُعتبر موثقة سريرياً.",
+  "I have no known allergies": "لا توجد لديّ حساسية معروفة",
+  "My allergy status is not yet established — I am unsure": "لم يتم تحديد حالة حساسيتي بعد — لست متأكداً",
+  "Allergy (confirmed by me)": "حساسية (مؤكدة مني)",
+  "Side effect / intolerance": "أثر جانبي / عدم تحمل",
+  "Medication": "دوائية",
+  "Latex": "اللاتكس",
+  "Contrast agent": "مادة التباين",
+  "Substance causing the reaction, e.g. Penicillin": "المادة المسببة للتفاعل، مثال: البنسلين",
+  "Approximate date, if known": "تاريخ تقريبي، إن كان معروفاً",
+  "Treatment required, if any": "العلاج المطلوب، إن وُجد",
+
+  // Lifestyle
+  "The questions below are optional and answered voluntarily.": "الأسئلة أدناه اختيارية وتُجاب عنها طوعاً.",
+  "Tobacco type and quantity": "نوع التبغ وكميته",
+  "e.g. Cigarettes, 10/day": "مثال: سجائر، 10 يومياً",
+  "Vaping history": "تاريخ السجائر الإلكترونية",
+  "e.g. Never / occasional": "مثال: أبداً / أحياناً",
+  "Occupational exposures": "التعرض المهني",
+  "e.g. Dust, chemicals — if any": "مثال: غبار، مواد كيميائية — إن وُجد",
+  "Physical activity level": "مستوى النشاط البدني",
+  "Sedentary": "قليل الحركة",
+  "Light": "خفيف",
+  "Moderate": "متوسط",
+  "Active": "نشط",
+  "Typical diet": "النظام الغذائي المعتاد",
+  "Sleep concerns": "مشكلات النوم",
+  "Mobility / functional limitations": "محددات الحركة / الوظيفة",
+  "Living situation / caregiving needs": "الوضع المعيشي / احتياجات الرعاية",
+  "Known consanguinity": "زواج الأقارب المعروف",
+  "Yes, known": "نعم، معروف",
+  "Prefer not to answer": "أفضل عدم الإجابة",
+
+  // Reproductive & Urological History
+  "Reproductive & Urological History": "التاريخ التناسلي والبولي",
+  "Optional — answered voluntarily. This information is access-controlled and is not displayed unnecessarily.":
+    "اختياري — يُجاب عنه طوعاً. هذه المعلومات محمية بالوصول ولا تُعرض إلا عند الحاجة.",
+  "Relevant urological or reproductive history": "تاريخ بولي أو تناسلي ذو صلة",
+
+  // Pregnancy history
+  "Significant pregnancy complications": "مضاعفات حمل مهمة",
+  "Menstrual history": "تاريخ الحيض",
+  "Contraception history": "تاريخ منع الحمل",
+  "Fertility-related history": "تاريخ متعلق بالخصوبة",
+  "Relevant gynecological history": "تاريخ نسائي ذو صلة",
+
+  // Immunizations & Preventive Care
+  "Immunizations & Preventive Care": "التطعيمات والرعاية الوقائية",
+  "Vaccinations (childhood and adult, e.g. tetanus, hepatitis B, influenza), previous screening tests with dates and results, and preventive care history":
+    "التطعيمات (في الطفولة والكبار، مثل الكزازة والالتهاب الكبدي ب والإنفلونزا)، فحوصات التشخيص الوقائي السابقة بتواريخها ونتائجها، وتاريخ الرعاية الوقائية",
+  "No vaccination or screening records to add": "لا توجد سجلات تطعيم أو فحوصات وقائية لإضافتها",
+  "Instead of entering every historical dose, you can upload your vaccination card or other supporting documents — they are saved in your Vaccination Records.":
+    "بدلاً من إدخال كل جرعة سابقة، يمكنك رفع بطاقة التطعيم أو مستندات داعمة أخرى — تُحفظ ضمن سجلات التطعيم.",
+  "Vaccination": "تطعيم",
+  "Screening test": "فحص وقائي",
+  "Preventive care": "رعاية وقائية",
+  "e.g. Tetanus booster, Hepatitis B, Mammography": "مثال: جرعة الكزازة، الالتهاب الكبدي ب، تصوير الثدي",
+  "Result / notes (optional)": "النتيجة / ملاحظات (اختياري)",
+
+  // Chronic Care, Devices & Special Needs
+  "Chronic Care, Devices & Special Needs": "الرعاية المزمنة والأجهزة والاحتياجات الخاصة",
+  "Implanted devices (including pacemakers), prostheses, dialysis, home oxygen, mobility aids, hearing or visual assistance, accessibility requirements, care plans and advance directives":
+    "الأجهزة المزروعة (بما في ذلك منظمات ضربات القلب)، الأطراف الاصطناعية، غسيل الكلى، الأكسجين المنزلي، أجهزة مساعدة الحركة، المساعدة السمعية أو البصرية، متطلبات إمكانية الوصول، خطط الرعاية والتوجيهات المسبقة",
+  "None of these apply to me": "لا ينطبق عليّ أي مما سبق",
+  "Implanted medical device (e.g. pacemaker)": "جهاز طبي مزروع (مثل منظم ضربات القلب)",
+  "Prosthesis / surgical implant": "طعم / غرسة جراحية",
+  "Dialysis": "غسيل الكلى",
+  "Home oxygen / ongoing medical support": "أكسجين منزلي / دعم طبي مستمر",
+  "Mobility aid": "جهاز مساعدة على الحركة",
+  "Hearing / visual assistance": "مساعدة سمعية / بصرية",
+  "Communication / accessibility requirement": "متطلب تواصل / إمكانية وصول",
+  "Care plan for a chronic condition": "خطة رعاية لحالة مزمنة",
+  "Advance directive / care preferences": "توجيهات مسبقة / تفضيلات الرعاية",
+  "e.g. Pacemaker, Hearing aid": "مثال: منظم ضربات القلب، معينة سمعية",
 };
 
 // Dynamic notification messages are generated by backend functions with the
