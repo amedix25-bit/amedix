@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, CheckCircle2, FileText, Send } from "lucide-react";
+import { Upload, CheckCircle2, FileText, Send, Loader2 } from "lucide-react";
+import { STAGE_LABELS, STAGE_CHIP, canonicalStage, formatStageTime } from "@/lib/radiologyWorkflow";
 
 const PRIORITY_STYLES = {
   Emergency: "bg-red-100 text-red-700 border-red-300",
@@ -9,9 +10,11 @@ const PRIORITY_STYLES = {
   Routine: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-export default function ImagingRequestCard({ img, sharedResult, onUploadReport, onAttachFile }) {
+export default function ImagingRequestCard({ img, sharedResult, onUploadReport, onAttachFile, onRespondClarification }) {
   const [uploading, setUploading] = useState(false);
   const [reportText, setReportText] = useState("");
+  const [clarification, setClarification] = useState("");
+  const [responding, setResponding] = useState(false);
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -27,8 +30,8 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
               {img.priority}
             </span>
           )}
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-            {img.status}
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STAGE_CHIP[canonicalStage(img.workflow_status)] || (img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")}`}>
+            {STAGE_LABELS[canonicalStage(img.workflow_status)] || img.status}
           </span>
         </div>
       </div>
@@ -68,6 +71,49 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
         {img.doctor_hospital ? ` · ${img.doctor_hospital}` : ""}
         {" · "}{img.date_requested}{img.request_time ? ` at ${img.request_time}` : ""}
       </p>
+
+      {/* Radiology department workflow timestamps */}
+      {canonicalStage(img.workflow_status) !== "requested" && (
+        <div className="mt-3 rounded-lg border border-border p-3 text-xs space-y-1">
+          <p className="font-semibold text-muted-foreground uppercase">Radiology Department Progress</p>
+          <p><span className="text-muted-foreground">Scheduled: </span>{formatStageTime(img.scheduled_datetime) || "—"}</p>
+          <p><span className="text-muted-foreground">Examination completed: </span>{formatStageTime(img.performed_datetime) || "—"}</p>
+          <p><span className="text-muted-foreground">Report finalized: </span>{formatStageTime(img.final_report_datetime) || "—"}</p>
+          <p><span className="text-muted-foreground">Released to record: </span>{formatStageTime(img.released_datetime) || "—"}</p>
+        </div>
+      )}
+
+      {/* Department clarification — the doctor responds here */}
+      {canonicalStage(img.workflow_status) === "clarification_required" && img.clarification_request && (
+        <div className="mt-3 rounded-lg border border-orange-300 bg-orange-50 p-3 space-y-2">
+          <p className="text-sm font-medium text-orange-700">
+            The radiology department requested clarification: {img.clarification_request}
+          </p>
+          {img.clarification_response ? (
+            <p className="text-xs text-orange-600">Your response: {img.clarification_response}</p>
+          ) : (
+            <div className="space-y-2">
+              <Textarea rows={2} value={clarification} onChange={(e) => setClarification(e.target.value)} placeholder="Respond to the department's clarification..." />
+              <Button
+                size="sm"
+                disabled={responding || !clarification.trim()}
+                onClick={async () => {
+                  setResponding(true);
+                  try {
+                    await onRespondClarification(img.id, clarification.trim());
+                    setClarification("");
+                  } finally {
+                    setResponding(false);
+                  }
+                }}
+              >
+                {responding && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+                Send Response
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {sharedResult && (
         <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">

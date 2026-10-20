@@ -1,11 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { canonicalStage } from "../../shared/radiologyWorkflow.ts";
 
-// Imaging Worklist for the authorized radiologist — every imaging request the
-// PATIENT authorized THIS radiologist for (per-request authorization), with
-// its radiology workflow stage (Request → Scheduled → Performed →
-// Interpretation → Final Report → Released). The radiologist never sees
-// requests — or any other patient information — they are not authorized to
-// access.
+// Imaging worklist for the authorized radiologist. Two sources, one workflow:
+// 1. studies the PATIENT authorized THIS radiologist for (per-request
+//    authorization), and
+// 2. studies the facility's radiology department ASSIGNED to this
+//    radiologist.
+// The radiologist never sees requests — or any patient information — beyond
+// these two grants.
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,7 +21,12 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const requests = await base44.asServiceRole.entities.ImagingRequest.filter(
-      { authorized_radiologist_user_ids: user.id },
+      {
+        $or: [
+          { authorized_radiologist_user_ids: user.id },
+          { assigned_radiologist_user_id: user.id },
+        ],
+      },
       "-request_datetime",
       200
     );
@@ -40,8 +47,11 @@ export default async function(req: Request): Promise<Response> {
       request_datetime: r.request_datetime,
       encounter_id: r.encounter_id,
       workflow_status: r.workflow_status || "requested",
+      stage: canonicalStage(r.workflow_status),
+      is_assigned: r.assigned_radiologist_user_id === user.id,
       is_critical: r.is_critical || false,
       has_report: !!(r.report || r.report_file_url),
+      images_count: (r.image_file_urls || []).length,
     }));
 
     return Response.json({ worklist });

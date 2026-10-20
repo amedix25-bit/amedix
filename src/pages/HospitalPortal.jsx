@@ -10,15 +10,17 @@ import HospitalDoctorsSection from "@/components/hospital/portal/HospitalDoctors
 import HospitalReceptionistsSection from "@/components/hospital/portal/HospitalReceptionistsSection";
 import HospitalProfileSection from "@/components/hospital/portal/HospitalProfileSection";
 import HospitalLabPanelsSection from "@/components/hospital/portal/HospitalLabPanelsSection";
+import HospitalRadiologySection from "@/components/hospital/portal/HospitalRadiologySection";
 import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone, Radiation } from "lucide-react";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "patients", label: "Manage Patients", icon: ClipboardList },
   { key: "doctors", label: "Manage Doctors", icon: Stethoscope },
   { key: "panels", label: "Lab Panels", icon: FlaskConical },
+  { key: "radiology", label: "Radiology Dept.", icon: Radiation },
   { key: "staff", label: "Receptionists", icon: UserCog },
   { key: "partnership", label: "Partnership", icon: Megaphone },
   { key: "profile", label: "Profile", icon: Building2 },
@@ -71,6 +73,7 @@ export default function HospitalPortal() {
         {activeTab === "patients" && <HospitalManagePatientsSection profile={profile} />}
         {activeTab === "doctors" && <HospitalDoctorsSection profile={profile} />}
         {activeTab === "panels" && <HospitalLabPanelsSection profile={profile} />}
+        {activeTab === "radiology" && <HospitalRadiologySection profile={profile} onUpdate={setProfile} />}
         {activeTab === "staff" && <HospitalReceptionistsSection profile={profile} />}
         {activeTab === "partnership" && (
           <PartnerSubscriptionSection partnerType="hospital" profile={profile} />

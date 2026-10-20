@@ -31,6 +31,7 @@ import PharmacyRegister from '@/pages/PharmacyRegister';
 import PharmacyPortal from '@/pages/PharmacyPortal';
 import Pharmacist from '@/pages/Pharmacist';
 import RadiologistDashboard from '@/pages/RadiologistDashboard';
+import RadiologyDepartmentPortal from '@/pages/RadiologyDepartmentPortal';
 import { AppLanguageProvider } from '@/lib/appLanguage';
 
 const AuthenticatedApp = () => {
@@ -75,6 +76,7 @@ const AuthenticatedApp = () => {
         <Route path="/patient" element={<PatientDashboard />} />
         <Route path="/doctor" element={<DoctorDashboard />} />
         <Route path="/radiologist" element={<RadiologistDashboard />} />
+        <Route path="/radiology-department" element={<RadiologyDepartmentPortal />} />
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/lab-portal" element={<LabPortal />} />

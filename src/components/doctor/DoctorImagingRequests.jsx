@@ -64,6 +64,7 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin }) {
         clinical_indication: form.clinical_indication.trim(),
         working_diagnosis: form.working_diagnosis.trim(),
         priority: form.priority,
+        requested_date: form.requested_date || "",
         contrast: showContrast ? form.contrast : "Not applicable",
         ...(contrastSelected ? {
           contrast_allergy: form.contrast_allergy,
@@ -95,6 +96,20 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin }) {
       setView("list");
       load();
     } catch (err) { console.error(err); }
+  };
+
+  const handleRespondClarification = async (id, text) => {
+    try {
+      await base44.functions.invoke("radiologyUpdateWorkflowStatus", {
+        request_id: id,
+        action: "respond_clarification",
+        clarification: text,
+      });
+      load();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || err.message);
+    }
   };
 
   const handleUploadReport = async (id, text) => {
@@ -154,7 +169,7 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin }) {
       ) : (
         <div className="space-y-3">
           {items.map((img) => (
-            <ImagingRequestCard key={img.id} img={img} sharedResult={sharedByRequest[img.id]} onUploadReport={handleUploadReport} onAttachFile={handleFileUpload} />
+            <ImagingRequestCard key={img.id} img={img} sharedResult={sharedByRequest[img.id]} onUploadReport={handleUploadReport} onAttachFile={handleFileUpload} onRespondClarification={handleRespondClarification} />
           ))}
         </div>
       ))}

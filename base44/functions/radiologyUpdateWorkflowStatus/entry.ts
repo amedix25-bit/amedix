@@ -1,18 +1,17 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { TRANSITIONS, applyTransition } from "../../shared/radiologyWorkflow.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
-// Radiology workflow transitions — Request → Scheduled → Performed →
-// Interpretation → Final Report → Released — plus the Critical Finding
-// notification. Only a radiologist the PATIENT authorized for THIS SPECIFIC
-// request can act on it, and every transition is timestamped and recorded in
-// the Audit Log. Releasing the report completes the request; nothing is ever
-// deleted or overwritten.
-const NEXT_STEPS: Record<string, { from: string; to: string; field: string; label: string }> = {
-  schedule: { from: "requested", to: "scheduled", field: "scheduled_datetime", label: "scheduled the imaging" },
-  perform: { from: "scheduled", to: "performed", field: "performed_datetime", label: "marked the imaging performed" },
-  start_interpretation: { from: "performed", to: "interpretation", field: "interpretation_datetime", label: "started interpretation" },
-  finalize_report: { from: "interpretation", to: "final_report", field: "final_report_datetime", label: "finalized the final radiology report" },
-  release: { from: "final_report", to: "released", field: "released_datetime", label: "released the radiology report to the patient record" },
+// Radiology workflow transitions — the shared one-workflow chain
+// (requested → under_review → accepted/clarification → scheduled →
+// in_progress → examination_completed → images → ready_for_reporting →
+// reporting_in_progress → final_report → released, cancel from any active
+// stage). Callers allowed here: the patient-authorized radiologist, the
+// assigned radiologist, the facility's radiology department, or the
+// requesting doctor (clarification response only).
+const ALIASES: Record<string, string> = {
+  perform: "complete_examination",
+  start_interpretation: "start_reporting",
 };
 
 export default async function(req: Request): Promise<Response> {
@@ -24,36 +23,30 @@ export default async function(req: Request): Promise<Response> {
     const body = await req.json();
     const payload = body && typeof body === "object" ? body : {};
     const requestId = String(payload.request_id || "");
-    const action = String(payload.action || "");
+    const rawAction = String(payload.action || "");
     if (!requestId) return Response.json({ error: "Select the imaging request." }, { status: 400 });
 
-    const profiles = await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id });
-    const radiologist = profiles[0];
-    if (!radiologist) return Response.json({ error: "Only radiologists can update the imaging workflow." }, { status: 403 });
-
     const found = await base44.asServiceRole.entities.ImagingRequest.filter({ id: requestId });
-    const request = found.find((r) => (r.authorized_radiologist_user_ids || []).includes(user.id));
-    if (!request) return Response.json({ error: "Imaging request not found or not authorized for you." }, { status: 404 });
-
-    const nowIso = new Date().toISOString();
+    const request = found[0];
+    if (!request) return Response.json({ error: "Imaging request not found." }, { status: 404 });
 
     // ===== Critical Finding Notification =====
-    if (action === "flag_critical") {
+    if (rawAction === "flag_critical") {
+      const radProfiles = await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id });
+      const radiologist = radProfiles[0];
+      if (!radiologist) return Response.json({ error: "Only radiologists can flag critical findings." }, { status: 403 });
+      if (!(request.authorized_radiologist_user_ids || []).includes(user.id) && request.assigned_radiologist_user_id !== user.id) {
+        return Response.json({ error: "Imaging request not authorized for you." }, { status: 403 });
+      }
       if (request.is_critical) return Response.json({ ok: true, already_flagged: true });
+      const nowIso = new Date().toISOString();
       await base44.asServiceRole.entities.ImagingRequest.update(request.id, {
         is_critical: true,
         critical_notified_datetime: nowIso,
       });
-      let doctorUserId: string | null = null;
-      try {
-        const doctors = await base44.asServiceRole.entities.DoctorProfile.filter({ id: request.doctor_id });
-        doctorUserId = doctors[0]?.user_id || null;
-      } catch (e) {
-        doctorUserId = null;
-      }
-      if (doctorUserId) {
+      if (request.doctor_user_id) {
         await base44.asServiceRole.entities.DoctorNotification.create({
-          doctor_user_id: doctorUserId,
+          doctor_user_id: request.doctor_user_id,
           doctor_id: request.doctor_id,
           type: "critical_finding",
           title: "CRITICAL Imaging Finding",
@@ -95,42 +88,51 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ ok: true });
     }
 
-    // ===== Forward workflow transitions =====
-    const step = NEXT_STEPS[action];
-    if (!step) return Response.json({ error: "Unknown workflow action." }, { status: 400 });
-    const current = request.workflow_status || "requested";
-    if (current !== step.from) {
+    const action = ALIASES[rawAction] || rawAction;
+    const transition = TRANSITIONS[action];
+    if (!transition) return Response.json({ error: "Unknown workflow action." }, { status: 400 });
+
+    // ===== Resolve acting roles =====
+    const [radProfiles, hospitalProfiles] = await Promise.all([
+      base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id }),
+      base44.asServiceRole.entities.HospitalProfile.filter({ user_id: user.id }),
+    ]);
+    const radiologist = radProfiles[0] || null;
+    const hospital = hospitalProfiles[0] || null;
+
+    const isAuthorizedRadiologist = !!radiologist && (
+      (request.authorized_radiologist_user_ids || []).includes(user.id) ||
+      request.assigned_radiologist_user_id === user.id
+    );
+    const isDepartment = !!hospital && !!hospital.radiology_department_enabled && request.routed_hospital_user_id === user.id;
+    const isRequestingDoctor = request.doctor_user_id === user.id;
+
+    const allowed =
+      (transition.actor === "department" && isDepartment) ||
+      (transition.actor === "radiologist" && isAuthorizedRadiologist) ||
+      (transition.actor === "doctor" && isRequestingDoctor);
+    if (!allowed) {
+      return Response.json({ error: "You are not allowed to perform this action on this request." }, { status: 403 });
+    }
+
+    // Never two radiologists independently reporting the same study.
+    if (transition.actor === "radiologist" &&
+        request.assigned_radiologist_user_id &&
+        request.assigned_radiologist_user_id !== user.id) {
       return Response.json(
-        { error: `This request is at the "${current}" stage — that action is not available now.` },
-        { status: 400 }
+        { error: "This study is assigned to another radiologist — ask the department to reassign it." },
+        { status: 409 }
       );
     }
-    if (action === "finalize_report" && !request.report && !request.report_file_url) {
-      return Response.json({ error: "Submit the radiology report before finalizing it." }, { status: 400 });
-    }
 
-    const update: Record<string, any> = { workflow_status: step.to, [step.field]: nowIso };
-    if (action === "release") {
-      update.status = "completed";
-      update.date_completed = nowIso.slice(0, 10);
-    }
-    await base44.asServiceRole.entities.ImagingRequest.update(request.id, update);
-
-    await logClinicalAudit(base44, {
-      actor_user_id: user.id,
-      actor_name: radiologist.full_name,
-      actor_role: "radiologist",
-      action: `imaging_${action}`,
-      action_label: step.label,
-      patient_id: request.patient_id,
-      patient_cin: request.patient_cin,
-      patient_name: request.patient_name,
-      encounter_id: request.encounter_id,
-      document_id: request.request_id,
-      hospital: request.doctor_hospital,
+    const updated = await applyTransition(base44, request, action, {
+      name: user.full_name || (isDepartment ? "Radiology Department" : request.doctor_name || ""),
+      role: transition.actor,
+      userId: user.id,
+      payload,
     });
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, imaging_request: updated });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

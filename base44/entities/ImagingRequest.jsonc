@@ -75,6 +75,10 @@
       "default": "Routine",
       "description": "Priority of the request"
     },
+    "requested_date": {
+      "type": "string",
+      "description": "Scheduling preference from the referring doctor \u2014 preferred date for the examination, where supported. Advisory only; the department sets the actual schedule"
+    },
     "contrast": {
       "type": "string",
       "enum": [
@@ -162,30 +166,142 @@
       },
       "description": "User ids of radiologists the PATIENT authorized for THIS SPECIFIC request only. Added server-side when the patient accepts the radiologist's access request \u2014 this is the Row Level Security gate for radiologist reads. Never grants access to the rest of the patient's record."
     },
+    "routed_hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator whose facility the request is routed to \u2014 the facility's RADIOLOGY DEPARTMENT, resolved server-side from the doctor's hospital at creation. The department worklist is keyed on this field; requests are never routed to an individual radiologist."
+    },
+    "routed_hospital": {
+      "type": "string",
+      "description": "Name of the facility the request was routed to (the radiology department's hospital)"
+    },
+    "assigned_radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist the department internally assigned this study to \u2014 optional; set by the department coordinator or via a radiologist claim. Never set at request creation."
+    },
+    "assigned_radiologist_name": {
+      "type": "string",
+      "description": "Name of the assigned radiologist"
+    },
+    "assigned_datetime": {
+      "type": "string",
+      "description": "Date and time the study was assigned (ISO datetime)"
+    },
+    "assignment_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "assigned / claimed / unassigned / reassigned"
+          },
+          "radiologist_user_id": {
+            "type": "string"
+          },
+          "radiologist_name": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      },
+      "description": "Internal study assignment history \u2014 every assign / claim / unassign / reassignment with who, when and why"
+    },
     "workflow_status": {
       "type": "string",
       "enum": [
         "requested",
+        "under_review",
+        "clarification_required",
+        "accepted",
         "scheduled",
+        "in_progress",
         "performed",
+        "examination_completed",
+        "images_awaiting_transfer",
+        "ready_for_reporting",
         "interpretation",
+        "reporting_in_progress",
         "final_report",
-        "released"
+        "released",
+        "cancelled"
       ],
       "default": "requested",
-      "description": "Radiology workflow stage \u2014 Request \u2192 Scheduled \u2192 Performed \u2192 Interpretation \u2192 Final Report \u2192 Released. Every transition is timestamped and recorded in the Audit Log."
+      "description": "Radiology workflow stage \u2014 Submitted (requested) \u2192 Under Departmental Review \u2192 Accepted (or Clarification Required) \u2192 Scheduled \u2192 Examination In Progress \u2192 Examination Completed \u2192 Images Awaiting Transfer \u2192 Ready for Reporting \u2192 Reporting In Progress \u2192 Report Finalized \u2192 Released; Cancelled is possible from any active stage. Legacy records may hold 'performed' (\u2248 examination_completed) or 'interpretation' (\u2248 reporting_in_progress). Every transition is timestamped and recorded in the Audit Log."
+    },
+    "under_review_datetime": {
+      "type": "string",
+      "description": "Date and time the department moved the request under review (ISO datetime)"
+    },
+    "clarification_datetime": {
+      "type": "string",
+      "description": "Date and time the department requested clarification (ISO datetime)"
+    },
+    "clarification_request": {
+      "type": "string",
+      "description": "Clarification the department asked the referring doctor for"
+    },
+    "clarification_response": {
+      "type": "string",
+      "description": "The referring doctor's response to the clarification request"
+    },
+    "clarification_response_datetime": {
+      "type": "string",
+      "description": "Date and time the doctor responded to the clarification request (ISO datetime)"
+    },
+    "accepted_datetime": {
+      "type": "string",
+      "description": "Date and time the department accepted the request (ISO datetime)"
     },
     "scheduled_datetime": {
       "type": "string",
       "description": "Date and time the imaging was scheduled (ISO datetime)"
     },
+    "in_progress_datetime": {
+      "type": "string",
+      "description": "Date and time the examination was started (ISO datetime)"
+    },
     "performed_datetime": {
       "type": "string",
-      "description": "Date and time the imaging was performed (ISO datetime)"
+      "description": "Date and time the imaging was performed / examination completed (ISO datetime)"
     },
-    "interpretation_datetime": {
+    "images_received_datetime": {
       "type": "string",
-      "description": "Date and time interpretation started (ISO datetime)"
+      "description": "Date and time the images were recorded as received (ISO datetime)"
+    },
+    "ready_datetime": {
+      "type": "string",
+      "description": "Date and time the study was marked ready for reporting (ISO datetime)"
+    },
+    "reporting_datetime": {
+      "type": "string",
+      "description": "Date and time reporting started (ISO datetime)"
+    },
+    "image_file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Image files / received studies associated with this request \u2014 uploaded by the department staff (PDF or image files in-app; external DICOM/PACS transfer is not part of the in-app flow)"
+    },
+    "image_notes": {
+      "type": "string",
+      "description": "Department notes about the received images (e.g. source system, series count)"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time of the last status update (ISO datetime)"
     },
     "final_report_datetime": {
       "type": "string",
@@ -194,6 +310,55 @@
     "released_datetime": {
       "type": "string",
       "description": "Date and time the final report was released to the patient record (ISO datetime)"
+    },
+    "cancel_reason": {
+      "type": "string",
+      "description": "Documented reason the request was cancelled"
+    },
+    "cancelled_datetime": {
+      "type": "string",
+      "description": "Date and time the request was cancelled (ISO datetime)"
+    },
+    "cancelled_by_name": {
+      "type": "string",
+      "description": "Who cancelled the request"
+    },
+    "status_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Workflow action that fired"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "by_role": {
+            "type": "string",
+            "description": "department / radiologist / doctor"
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "to",
+          "datetime"
+        ]
+      },
+      "description": "Full status history \u2014 every workflow transition with actor, timestamps and notes"
     },
     "preparation_notes": {
       "type": "string",
@@ -260,6 +425,12 @@
         },
         {
           "data.authorized_radiologist_user_ids": "{{user.id}}"
+        },
+        {
+          "data.routed_hospital_user_id": "{{user.id}}"
+        },
+        {
+          "data.assigned_radiologist_user_id": "{{user.id}}"
         },
         {
           "user_condition": {

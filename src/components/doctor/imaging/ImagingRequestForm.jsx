@@ -35,6 +35,7 @@ const EMPTY_FORM = {
   clinical_indication: "",
   working_diagnosis: "",
   priority: "Routine",
+  requested_date: "",
   contrast: "",
   contrast_allergy: "",
   previous_contrast_reaction: "",
@@ -165,6 +166,11 @@ export default function ImagingRequestForm({ doctorProfile, initialCin, onSubmit
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Preferred Date</Label>
+          <Input type="date" value={form.requested_date} onChange={(e) => set("requested_date")(e.target.value)} />
+          <p className="text-xs text-muted-foreground">Optional scheduling preference — the radiology department confirms the actual appointment.</p>
         </div>
         {showContrast && (
           <div className="space-y-2">

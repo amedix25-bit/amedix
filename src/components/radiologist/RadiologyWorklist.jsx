@@ -3,40 +3,23 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ClipboardList, Loader2 } from "lucide-react";
+import { STAGE_LABELS, STAGE_CHIP, STAGE_ORDER, canonicalStage } from "@/lib/radiologyWorkflow";
 
-// Imaging Worklist of the dedicated Radiology Portal — every imaging request
-// the PATIENT authorized THIS radiologist for, with the radiology workflow
-// Request → Scheduled → Performed → Interpretation → Final Report → Released.
-// Radiologists only ever see requests they are authorized to access.
-const STAGE_LABELS = {
-  requested: "Requested",
-  scheduled: "Scheduled",
-  performed: "Performed",
-  interpretation: "Interpretation",
-  final_report: "Final Report",
-  released: "Released",
-};
+// Imaging worklist of the dedicated Radiologist Portal. Two sources, one
+// workflow: studies the PATIENT authorized this radiologist for, and studies
+// the facility's radiology department ASSIGNED to this radiologist (or left
+// unassigned for claiming in the department portal). Workflow:
+// Request → Review → Schedule → Examination → Images → Reporting →
+// Final Report → Released.
 const NEXT_ACTION = {
-  requested: { action: "schedule", label: "Schedule" },
-  scheduled: { action: "perform", label: "Mark Performed" },
-  performed: { action: "start_interpretation", label: "Start Interpretation" },
+  ready_for_reporting: { action: "start_reporting", label: "Start Reporting" },
+  performed: { action: "start_reporting", label: "Start Reporting" },
+  reporting_in_progress: { action: "finalize_report", label: "Finalize Report" },
   interpretation: { action: "finalize_report", label: "Finalize Report" },
-  final_report: { action: "release", label: "Release Report" },
 };
 const ACTION_TO_STAGE = {
-  schedule: "scheduled",
-  perform: "performed",
-  start_interpretation: "interpretation",
+  start_reporting: "reporting_in_progress",
   finalize_report: "final_report",
-  release: "released",
-};
-const STAGE_CHIP = {
-  requested: "bg-secondary text-secondary-foreground",
-  scheduled: "bg-blue-500/15 text-blue-600",
-  performed: "bg-teal-500/15 text-teal-600",
-  interpretation: "bg-amber-500/15 text-amber-600",
-  final_report: "bg-purple-500/15 text-purple-600",
-  released: "bg-emerald-500/15 text-emerald-600",
 };
 
 export default function RadiologyWorklist({ radiologistProfile }) {
@@ -104,31 +87,33 @@ export default function RadiologyWorklist({ radiologistProfile }) {
     return (
       <div className="rounded-xl border border-border bg-card text-center py-12 text-muted-foreground">
         <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">No authorized imaging requests yet.</p>
+        <p className="text-sm">No imaging studies for you yet.</p>
         <p className="text-xs mt-1">
-          Requests appear here only after a patient explicitly authorizes you for them.
+          Studies appear here when a patient explicitly authorizes you, or when your facility's
+          radiology department assigns one to you.
         </p>
       </div>
     );
   }
 
-  const stageOrder = ["requested", "scheduled", "performed", "interpretation", "final_report", "released"];
   const sorted = [...items].sort(
-    (a, b) => stageOrder.indexOf(a.workflow_status) - stageOrder.indexOf(b.workflow_status)
+    (a, b) => STAGE_ORDER.indexOf(a.stage || canonicalStage(a.workflow_status)) - STAGE_ORDER.indexOf(b.stage || canonicalStage(b.workflow_status))
   );
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-4">
         <p className="text-xs text-muted-foreground">
-          Radiology workflow: Request → Scheduled → Performed → Interpretation → Final Report → Released.
-          Every step is timestamped and recorded in the Audit Log. Submit the report from the patient's
-          imaging request before finalizing it.
+          Radiology workflow: Submitted → Under Departmental Review → Accepted → Scheduled → Examination →
+          Images → Reporting → Final Report → Released. Reporting steps are yours; scheduling and image
+          transfer are handled by the department. Submit the report from the patient's imaging request
+          before finalizing it.
         </p>
       </div>
       <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
         {sorted.map((item) => {
-          const next = NEXT_ACTION[item.workflow_status];
+          const stage = item.stage || canonicalStage(item.workflow_status);
+          const next = NEXT_ACTION[stage];
           const busyKey = `${item.id}:${next?.action}`;
           return (
             <div key={item.id} className="p-4 space-y-3">
@@ -140,6 +125,8 @@ export default function RadiologyWorklist({ radiologistProfile }) {
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {item.request_id} · {item.scan_type} — {item.examination}
+                    {item.is_assigned && " · assigned to you"}
+                    {item.images_count > 0 && ` · ${item.images_count} image file(s)`}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Requested by Dr. {item.doctor_name} · {item.doctor_hospital} ·{" "}
@@ -150,8 +137,8 @@ export default function RadiologyWorklist({ radiologistProfile }) {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${STAGE_CHIP[item.workflow_status] || "bg-secondary"}`}>
-                    {STAGE_LABELS[item.workflow_status]}
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${STAGE_CHIP[stage] || "bg-secondary"}`}>
+                    {STAGE_LABELS[stage]}
                   </span>
                   {item.priority && item.priority !== "Routine" && (
                     <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-500/10 text-red-600">
@@ -176,7 +163,12 @@ export default function RadiologyWorklist({ radiologistProfile }) {
                     {next.label}
                   </Button>
                 )}
-                {item.workflow_status !== "released" && !item.is_critical && (
+                {stage === "final_report" && (
+                  <span className="text-xs text-muted-foreground self-center">
+                    Report finalized — awaiting release to the patient record by the department.
+                  </span>
+                )}
+                {stage !== "released" && stage !== "cancelled" && stage !== "final_report" && !item.is_critical && (
                   <Button
                     size="sm"
                     variant="destructive"
