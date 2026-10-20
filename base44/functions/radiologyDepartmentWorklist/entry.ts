@@ -101,6 +101,11 @@ export default async function(req: Request): Promise<Response> {
       clarification_response: r.clarification_response || null,
       updated_datetime: r.updated_datetime || r.request_datetime,
       is_overdue: isOverdue(r),
+      second_opinion_requested: (() => {
+        const last = [...(r.status_history || [])].reverse()
+          .find((h: any) => ["second_opinion_requested", "unassigned", "reassigned", "work_released"].includes(h.action));
+        return !!last && last.action === "second_opinion_requested";
+      })(),
     }));
     if (payload.overdue) rows = rows.filter((r: any) => r.is_overdue);
 

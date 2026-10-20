@@ -1,0 +1,48 @@
+{
+  "name": "ReportDraft",
+  "type": "object",
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "ImagingRequest id the draft belongs to \u2014 the draft lives on its own record keyed to the study; the underlying imaging record is never duplicated"
+    },
+    "request_ref": {
+      "type": "string",
+      "description": "Imaging request reference, e.g. IR-20261016-E6O0"
+    },
+    "radiologist_user_id": {
+      "type": "string",
+      "description": "User id of the radiologist who owns this draft \u2014 one draft per radiologist per study"
+    },
+    "radiologist_name": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Report section values keyed by section key (findings, impressions, measurements, observations, notes)"
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the draft was last saved (ISO datetime)"
+    }
+  },
+  "required": [
+    "request_id",
+    "radiologist_user_id"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

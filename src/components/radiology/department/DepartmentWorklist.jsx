@@ -220,6 +220,11 @@ export default function DepartmentWorklist({ mode, initialFilter }) {
                       OVERDUE
                     </span>
                   )}
+                  {item.second_opinion_requested && (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-purple-500/15 text-purple-600">
+                      2nd Opinion
+                    </span>
+                  )}
                 </div>
               </div>
               {item.clarification_request && (

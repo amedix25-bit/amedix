@@ -173,7 +173,12 @@ export async function applyTransition(base44: any, request: any, action: string,
     update.cancelled_by_name = actor.name;
     update.cancelled_datetime = now;
   } else if (action === "finalize_report") {
-    if (!request.report && !request.report_file_url) throw new Error("Submit the radiology report before finalizing it.");
+    const submittedReport = String(payload.report || "").trim();
+    if (submittedReport) update.report = submittedReport;
+    if (String(payload.report_pdf_url || "").trim()) update.report_file_url = String(payload.report_pdf_url).trim();
+    if (!request.report && !request.report_file_url && !submittedReport && !update.report_file_url) {
+      throw new Error("Submit the radiology report before finalizing it.");
+    }
     update.final_report_datetime = now;
   } else {
     update[t.field] = now;

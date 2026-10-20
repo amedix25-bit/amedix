@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { TRANSITIONS, applyTransition } from "../../shared/radiologyWorkflow.ts";
+import { TRANSITIONS, applyTransition, setAssignment, historyEntry } from "../../shared/radiologyWorkflow.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Radiology workflow transitions — the shared one-workflow chain
@@ -84,6 +84,91 @@ export default async function(req: Request): Promise<Response> {
         encounter_id: request.encounter_id,
         document_id: request.request_id,
         hospital: request.doctor_hospital,
+      });
+      return Response.json({ ok: true });
+    }
+
+    // ===== Study ownership — claim / release work / second-opinion request =====
+    // The study always belongs to the department workflow; assignment only
+    // records who is actively working on it. One radiologist at a time.
+    if (["claim_study", "release_work", "request_second_opinion"].includes(rawAction)) {
+      const radProfiles = await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id });
+      const radiologist = radProfiles[0];
+      if (!radiologist || radiologist.status !== "active") {
+        return Response.json({ error: "Only active radiologists can perform this action." }, { status: 403 });
+      }
+      const authorizedByPatient = (request.authorized_radiologist_user_ids || []).includes(user.id);
+      const isAssignedToMe = request.assigned_radiologist_user_id === user.id;
+      const isFacilityRadiologist =
+        String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim();
+      const stage = canonicalStage(request.workflow_status);
+
+      if (rawAction === "claim_study") {
+        if (!authorizedByPatient && !isFacilityRadiologist) {
+          return Response.json({ error: "This study is not available for you to claim." }, { status: 403 });
+        }
+        if (request.assigned_radiologist_user_id) {
+          return Response.json({
+            error: request.assigned_radiologist_user_id === user.id
+              ? "This study is already assigned to you."
+              : "This study was just claimed by another radiologist.",
+          }, { status: 409 });
+        }
+        if (!["ready_for_reporting", "performed", "examination_completed"].includes(stage)) {
+          return Response.json({ error: "This study is not ready for reporting yet." }, { status: 400 });
+        }
+        const updated = await setAssignment(base44, request, {
+          action: "claimed",
+          radiologist_user_id: user.id,
+          radiologist_name: radiologist.full_name,
+          by_name: radiologist.full_name,
+          reason: String(payload.reason || "Claimed from the Radiologist Portal"),
+        });
+        return Response.json({ ok: true, imaging_request: updated });
+      }
+
+      if (rawAction === "release_work") {
+        if (!isAssignedToMe) {
+          return Response.json({ error: "This study is not assigned to you." }, { status: 403 });
+        }
+        const unassigned = await setAssignment(base44, request, {
+          action: "unassigned",
+          by_name: radiologist.full_name,
+          reason: String(payload.reason || "Released back to the department pool"),
+        });
+        if (["reporting_in_progress", "interpretation"].includes(stage)) {
+          const history = Array.isArray(unassigned.status_history) ? [...unassigned.status_history] : [];
+          history.push({
+            action: "work_released",
+            from: "reporting_in_progress",
+            to: "ready_for_reporting",
+            by_name: radiologist.full_name,
+            by_role: "radiologist",
+            datetime: new Date().toISOString(),
+            note: String(payload.reason || "Released back to the department pool"),
+          });
+          await base44.asServiceRole.entities.ImagingRequest.update(request.id, {
+            workflow_status: "ready_for_reporting",
+            updated_datetime: new Date().toISOString(),
+            status_history: history,
+          });
+        }
+        return Response.json({ ok: true });
+      }
+
+      // request_second_opinion — a controlled request routed to the
+      // department, which decides on reassignment or collaboration.
+      if (!authorizedByPatient && !isAssignedToMe) {
+        return Response.json({ error: "Only a radiologist working on this study can request a second opinion." }, { status: 403 });
+      }
+      if (["final_report", "released", "cancelled"].includes(stage)) {
+        return Response.json({ error: "This study is already closed." }, { status: 400 });
+      }
+      const note = String(payload.note || "").trim();
+      if (!note) return Response.json({ error: "Describe why you are requesting a second opinion." }, { status: 400 });
+      await base44.asServiceRole.entities.ImagingRequest.update(request.id, {
+        status_history: historyEntry(request, "second_opinion_requested", stage, stage, radiologist.full_name, "radiologist", note),
+        updated_datetime: new Date().toISOString(),
       });
       return Response.json({ ok: true });
     }

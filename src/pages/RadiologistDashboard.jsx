@@ -10,6 +10,7 @@ import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPati
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
 import RadiologistNotificationsBell from "@/components/radiologist/RadiologistNotificationsBell";
 import RadiologistOverview from "@/components/radiologist/RadiologistOverview";
+import RadiologistStudyBoard from "@/components/radiologist/RadiologistStudyBoard";
 import RadiologyWorklist from "@/components/radiologist/RadiologyWorklist";
 import RadiologistColleagues from "@/components/radiologist/colleagues/RadiologistColleagues";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
@@ -31,6 +32,7 @@ export default function RadiologistDashboard() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pendingMode, setPendingMode] = useState(null);
+  const [worklistView, setWorklistView] = useState(null);
 
   useEffect(() => {
     loadProfile();
@@ -65,6 +67,11 @@ export default function RadiologistDashboard() {
     setPendingMode(target === "my_patients" ? "my" : "add");
   };
 
+  const openFromBoard = (view, completedToday = false) => {
+    setWorklistView({ view, completedToday });
+    setActiveTab("worklist");
+  };
+
   return (
     <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
@@ -86,10 +93,13 @@ export default function RadiologistDashboard() {
         </div>
 
         {activeTab === "overview" && profile && (
-          <RadiologistOverview profile={profile} onProfileUpdate={setProfile} />
+          <div className="space-y-6">
+            <RadiologistStudyBoard onOpenView={openFromBoard} />
+            <RadiologistOverview profile={profile} onProfileUpdate={setProfile} />
+          </div>
         )}
         {activeTab === "worklist" && profile && (
-          <RadiologyWorklist radiologistProfile={profile} />
+          <RadiologyWorklist radiologistProfile={profile} user={user} initialView={worklistView} />
         )}
         {activeTab === "colleagues" && profile && (
           <RadiologistColleagues radiologistProfile={profile} />
