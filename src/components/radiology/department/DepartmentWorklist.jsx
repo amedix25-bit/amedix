@@ -53,6 +53,17 @@ export default function DepartmentWorklist({ mode, initialFilter }) {
     return () => clearTimeout(timer);
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Phase 8.4 — the worklist updates live when examination or image
+  // availability statuses change anywhere in the radiology workflow.
+  const filtersRef = React.useRef(filters);
+  filtersRef.current = filters;
+  useEffect(() => {
+    const unsubscribe = base44.entities.ImagingRequest.subscribe((event) => {
+      if (event.type === "create" || event.type === "update") load(filtersRef.current);
+    });
+    return unsubscribe;
+  }, [load]);
+
   const set = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
 
   const claim = async (item) => {

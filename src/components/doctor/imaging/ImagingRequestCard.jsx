@@ -117,9 +117,24 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
         <div className="mt-3 rounded-lg border border-border p-3 text-xs space-y-1">
           <p className="font-semibold text-muted-foreground uppercase">Radiology Department Progress</p>
           <p><span className="text-muted-foreground">Scheduled: </span>{formatStageTime(img.scheduled_datetime) || "—"}</p>
+          <p><span className="text-muted-foreground">Images received: </span>{formatStageTime(img.images_received_datetime) || "—"}</p>
+          <p><span className="text-muted-foreground">Ready for reporting: </span>{formatStageTime(img.ready_datetime) || "—"}</p>
           <p><span className="text-muted-foreground">Examination completed: </span>{formatStageTime(img.performed_datetime) || "—"}</p>
           <p><span className="text-muted-foreground">Report finalized: </span>{formatStageTime(img.final_report_datetime) || "—"}</p>
           <p><span className="text-muted-foreground">Released to record: </span>{formatStageTime(img.released_datetime) || "—"}</p>
+        </div>
+      )}
+
+      {/* Finalized report — authorized access for the requesting doctor (Phase 8.1) */}
+      {["final_report", "released"].includes(canonicalStage(img.workflow_status)) && (img.report || img.report_file_url) && (
+        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <p className="text-xs font-semibold text-emerald-700 uppercase mb-1">Finalized Report</p>
+          {img.report && <p className="text-sm text-emerald-900 whitespace-pre-wrap">{img.report}</p>}
+          {img.report_file_url && (
+            <a href={img.report_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline mt-2 inline-block">
+              Open Report (PDF)
+            </a>
+          )}
         </div>
       )}
 

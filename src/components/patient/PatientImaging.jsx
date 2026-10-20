@@ -4,6 +4,7 @@ import { Image as ImageIcon, FileText, ScanLine, Loader2 } from "lucide-react";
 import PatientImagingResults from "@/components/patient/PatientImagingResults";
 import { capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { STAGE_LABELS, STAGE_CHIP, canonicalStage } from "@/lib/radiologyWorkflow";
 
 // Patient Portal → Imaging. Each imaging record shows only two large options:
 // View Request (opens the original request PDF) and View Results (opens the
@@ -52,13 +53,21 @@ export default function PatientImaging({ patientId }) {
                 <p className="font-medium">{t(img.scan_type)} — {img.examination}</p>
                 <p className="text-sm text-muted-foreground mt-1">{t("Requested by Dr.")}{img.doctor_name}</p>
                 <p className="text-xs text-muted-foreground mt-1">{img.date_requested}</p>
+                {(img.scheduled_datetime || img.requested_date) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {img.scheduled_datetime
+                      ? `${t("Scheduled")}: ${new Date(img.scheduled_datetime).toLocaleString()}`
+                      : `${t("Requested for")}: ${img.requested_date}`}
+                  </p>
+                )}
               </div>
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                  STAGE_CHIP[canonicalStage(img.workflow_status)] ||
+                  (img.status === "completed" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700")
                 }`}
               >
-                {t(capitalize(img.status || ""))}
+                {STAGE_LABELS[canonicalStage(img.workflow_status)] || t(capitalize(img.status || ""))}
               </span>
             </div>
 

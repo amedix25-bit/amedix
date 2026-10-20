@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Image as ImageIcon, Loader2, ScanLine, Send } from "lucide-react";
 import SendImagingResultToDoctor from "@/components/patient/SendImagingResultToDoctor";
+import DepartmentFlowResults from "@/components/patient/DepartmentFlowResults";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 // Patient Portal → Imaging → View Results.
@@ -60,13 +61,7 @@ export default function PatientImagingResults({ request, onBack }) {
           <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("Loading results...")}
         </div>
       ) : groups.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-2xl">
-          <ScanLine className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>{t("No results yet")}</p>
-          <p className="text-xs mt-1">
-            {t("The radiologist's finalized report PDF and study images will appear here once submitted.")}
-          </p>
-        </div>
+        <DepartmentFlowResults request={request} />
       ) : (
         groups.map(({ radiologistName, results }) => (
           <div key={radiologistName} className="space-y-3">
