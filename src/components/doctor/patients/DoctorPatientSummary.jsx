@@ -9,18 +9,37 @@ export default function DoctorPatientSummary({ patient }) {
   const [allergies, setAllergies] = useState(null);
   const [conditions, setConditions] = useState(null);
   const [meds, setMeds] = useState(null);
+  // ICD-11 codes resolved from the TerminologyCode catalog — shown beside each
+  // known condition (standards alignment, Phase 1).
+  const [conditionCodes, setConditionCodes] = useState({});
 
   useEffect(() => {
     setAllergies(null);
     setConditions(null);
     setMeds(null);
+    setConditionCodes({});
     const load = async () => {
       try {
         const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
         const d = res.data;
         setAllergies(d.allergies || []);
-        setConditions((d.conditions || []).filter((c) => c.category === "known_case"));
+        const known = (d.conditions || []).filter((c) => c.category === "known_case");
+        setConditions(known);
         setMeds((d.medications || []).filter((m) => medicationStatus(m, todayStr()) === "active").map((m) => m.name));
+        const names = [...new Set(known.map((c) => c.name).filter(Boolean))];
+        if (names.length) {
+          try {
+            const lookup = await base44.functions.invoke("terminologyLookup", {
+              concept_type: "medical_condition",
+              terms: names,
+            });
+            const map = {};
+            (lookup.data.matched || []).forEach((m) => { map[m.term] = m.code; });
+            setConditionCodes(map);
+          } catch (err) {
+            console.error(err);
+          }
+        }
       } catch (err) {
         console.error(err);
       }
@@ -73,7 +92,11 @@ export default function DoctorPatientSummary({ patient }) {
           ? null
           : conditions.length > 0
             ? conditions
-                .map((c) => doctorText("MedicalCondition", c, "name", c.name))
+                .map((c) => {
+                  const label = doctorText("MedicalCondition", c, "name", c.name);
+                  const code = conditionCodes[c.name];
+                  return label ? (code ? `${label} (ICD-11: ${code})` : label) : "";
+                })
                 .filter(Boolean)
                 .join(", ")
             : "None recorded",

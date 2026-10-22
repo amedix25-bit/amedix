@@ -1,0 +1,72 @@
+{
+  "name": "TerminologyCode",
+  "type": "object",
+  "properties": {
+    "concept_type": {
+      "type": "string",
+      "enum": [
+        "medical_condition",
+        "lab_test",
+        "imaging_modality"
+      ],
+      "description": "Kind of clinical concept this entry maps - a medical condition / diagnosis, a laboratory test or panel, or an imaging modality"
+    },
+    "term": {
+      "type": "string",
+      "description": "The AMedix English term this entry maps - exactly the term used in the app's records (e.g. 'Hypertension', 'Complete Blood Count (CBC)', 'X-Ray')"
+    },
+    "term_ar": {
+      "type": "string",
+      "description": "The Arabic term the patient-facing registration stores for this concept, when it exists - allows Arabic patient entries to resolve to the same standard code"
+    },
+    "coding_system": {
+      "type": "string",
+      "enum": [
+        "ICD-11-MMS",
+        "LOINC",
+        "DICOM-MODALITY"
+      ],
+      "description": "The standard the code comes from - ICD-11 Morbidity/Mortality statistics (WHO), LOINC (laboratory tests and observations) or the DICOM modality codes (medical imaging). SNOMED CT is intentionally excluded: Libya is not a SNOMED CT member country and production use would require an individual license"
+    },
+    "system_uri": {
+      "type": "string",
+      "description": "Canonical FHIR system URI for this coding, e.g. http://id.who.int/icd/release/11/mms for ICD-11 MMS or http://loinc.org for LOINC - so every mapping is directly usable as a FHIR CodeableConcept"
+    },
+    "code": {
+      "type": "string",
+      "description": "The standard code - an ICD-11 stem or block code, a LOINC code, or a DICOM modality code (DX, CT, MR, US, MG)"
+    },
+    "code_display": {
+      "type": "string",
+      "description": "The standard display name of the code as published by its owner"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional note - e.g. broad lay terms mapped to an ICD-11 block (range) code rather than a single stem code, or flags for codes that should be reviewed by a clinical lead"
+    }
+  },
+  "required": [
+    "concept_type",
+    "term",
+    "coding_system",
+    "code"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

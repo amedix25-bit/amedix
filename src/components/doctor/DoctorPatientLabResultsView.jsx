@@ -6,13 +6,31 @@ import { Eye, FileText, Loader2 } from "lucide-react";
 export default function DoctorPatientLabResultsView({ patientId }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  // LOINC codes resolved from the TerminologyCode catalog — shown beside each
+  // test type (standards alignment, Phase 1).
+  const [testCodes, setTestCodes] = useState({});
 
   useEffect(() => {
     const load = async () => {
       if (!patientId) return;
       try {
         const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patientId });
-        setItems(res.data.lab_results || []);
+        const results = res.data.lab_results || [];
+        setItems(results);
+        const names = [...new Set(results.map((r) => r.test_type).filter(Boolean))];
+        if (names.length) {
+          try {
+            const lookup = await base44.functions.invoke("terminologyLookup", {
+              concept_type: "lab_test",
+              terms: names,
+            });
+            const map = {};
+            (lookup.data.matched || []).forEach((m) => { map[m.term] = m.code; });
+            setTestCodes(map);
+          } catch (err) {
+            console.error(err);
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -45,7 +63,12 @@ export default function DoctorPatientLabResultsView({ patientId }) {
             <div key={r.id} className="rounded-lg border border-border p-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-medium">{r.test_type}</p>
+                  <p className="text-sm font-medium">
+                    {r.test_type}
+                    {testCodes[r.test_type] ? (
+                      <span className="ms-2 text-xs font-normal text-muted-foreground">LOINC: {testCodes[r.test_type]}</span>
+                    ) : null}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">Test date: {r.test_date}{r.lab_name ? ` · ${r.lab_name}` : ""}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Submitted {r.submitted_date ? new Date(r.submitted_date).toLocaleDateString() : ""} by {r.submitted_by_name}
