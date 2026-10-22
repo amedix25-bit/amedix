@@ -174,9 +174,6 @@
     "read": {
       "$or": [
         {
-          "data.patient_user_id": "{{user.id}}"
-        },
-        {
           "created_by_id": "{{user.id}}"
         },
         {

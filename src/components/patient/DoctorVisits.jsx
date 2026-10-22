@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, Stethoscope, ChevronLeft, MapPin, Clock, FileText, ChevronRight, ClipboardList } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
-import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
 import VisitOrders from "@/components/patient/visits/VisitOrders";
 import { Button } from "@/components/ui/button";
 
@@ -92,19 +91,21 @@ function DoctorVisitDetail({ visit, onBack }) {
       setItems(null);
       setError("");
       try {
-        const [docs, notes] = await Promise.all([
+        const [docs, notesRes] = await Promise.all([
           base44.entities.ClinicalDocument.filter(
             { patient_id: visit.patient_id, encounter_id: visit.encounter_id, status: "signed" },
             "-created_datetime"
           ),
-          base44.entities.ClinicalNote.filter(
-            { patient_id: visit.patient_id, encounter_id: visit.encounter_id },
-            "-date"
-          ),
+          // Doctors' clinical notes are never shown in full — the patient sees
+          // only the diagnosis recorded on each note (server-enforced).
+          base44.functions.invoke("patientNoteDiagnoses", {
+            patient_id: visit.patient_id,
+            encounter_id: visit.encounter_id,
+          }),
         ]);
         const list = [
           ...docs.map((d) => ({ kind: "document", ...d })),
-          ...notes.map((n) => ({ kind: "note", ...n })),
+          ...(notesRes.data.notes || []).map((n) => ({ kind: "note", ...n })),
         ];
         list.sort((a, b) => new Date(b.created_datetime || b.date || 0) - new Date(a.created_datetime || a.date || 0));
         setItems(list);
@@ -117,12 +118,11 @@ function DoctorVisitDetail({ visit, onBack }) {
   }, [visit.patient_id, visit.encounter_id]);
 
   const openPdf = (item) => {
+    // Only signed clinical documents have a PDF — clinical notes are not
+    // exposed to patients.
     if (item.kind === "document" && item.pdf_url) {
       window.open(item.pdf_url, "_blank");
-      return;
     }
-    const doc = generateClinicalNotePdf(item);
-    window.open(doc.output("bloburl"), "_blank");
   };
 
   return (
@@ -231,20 +231,15 @@ function ClinicalItemCard({ item, ar, open, onToggle, onOpenPdf }) {
               </div>
             ) : null
           )}
-          {!isDoc && (
-            <>
-              {item.diagnosis && <NoteField label={t("Diagnosis")} value={ar(item.diagnosis)} />}
-              {item.history && <NoteField label={t("History")} value={ar(item.history)} />}
-              {item.physical_examination && <NoteField label={t("Physical Examination")} value={ar(item.physical_examination)} />}
-              {item.notes && <NoteField label={t("Notes")} value={ar(item.notes)} />}
-              {item.prescription && <NoteField label={t("Prescription")} value={ar(item.prescription)} />}
-              {item.recommendations && <NoteField label={t("Recommendations")} value={ar(item.recommendations)} />}
-            </>
+          {!isDoc && item.diagnosis && (
+            <NoteField label={t("Diagnosis")} value={ar(item.diagnosis)} />
           )}
-          <Button variant="outline" size="sm" onClick={onOpenPdf}>
-            <FileText className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
-            {t("View PDF")}
-          </Button>
+          {isDoc && (
+            <Button variant="outline" size="sm" onClick={onOpenPdf}>
+              <FileText className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+              {t("View PDF")}
+            </Button>
+          )}
         </div>
       )}
     </div>

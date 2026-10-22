@@ -13,8 +13,9 @@ export default function CurrentDiagnosisSection({ number, patient }) {
     const load = async () => {
       if (!patient?.id) return;
       try {
-        const notes = await base44.entities.ClinicalNote.filter({ patient_id: patient.id }, "-date");
-        setLatest(notes[0] || null);
+        // Diagnosis only — the clinical note itself is never exposed to the patient.
+        const res = await base44.functions.invoke("patientNoteDiagnoses", { patient_id: patient.id });
+        setLatest((res.data.notes || [])[0] || null);
       } catch (err) {
         console.error(err);
       } finally {

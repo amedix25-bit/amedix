@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
-import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
 
-// Documents → Clinical Notes. Read-only list of every clinical note saved by
-// the patient's doctors. Each note can be opened as a PDF directly from here.
+// Documents → Clinical Notes. The patient sees ONLY the diagnosis recorded on
+// each note — the note itself is never shown. Diagnosis-only entries are
+// served by the backend after a permission check.
 export default function ClinicalNotesSection({ patient }) {
   const { t, locale } = usePatientLanguage();
   const [notes, setNotes] = useState(null);
@@ -16,8 +15,8 @@ export default function ClinicalNotesSection({ patient }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await base44.entities.ClinicalNote.filter({ patient_id: patient.id }, "-date");
-        setNotes(data);
+        const res = await base44.functions.invoke("patientNoteDiagnoses", { patient_id: patient.id });
+        setNotes(res.data.notes || []);
       } catch (err) {
         console.error(err);
         setNotes([]);
@@ -25,11 +24,6 @@ export default function ClinicalNotesSection({ patient }) {
     };
     if (patient?.id) load();
   }, [patient?.id]);
-
-  const openPdf = (note) => {
-    const doc = generateClinicalNotePdf(note);
-    window.open(doc.output("bloburl"), "_blank");
-  };
 
   const fmtDate = (d) => {
     if (!d) return "";
@@ -60,22 +54,18 @@ export default function ClinicalNotesSection({ patient }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">{t("Clinical notes saved by your doctors appear here automatically.")}</p>
+      <p className="text-xs text-muted-foreground">{t("Diagnoses recorded by your doctors appear here. Clinical note contents are visible to your doctors only.")}</p>
       {notes.map((note) => (
         <div
           key={note.id}
-          className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3"
+          className="rounded-xl border border-border bg-card p-4"
         >
           <div className="min-w-0">
             <p className="font-medium truncate">{fmtDate(note.date)} — {t("Dr.")} {note.doctor_name}</p>
-            <p className="text-xs text-muted-foreground line-clamp-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {t("Provisional Diagnosis")}: {ar(note.diagnosis)}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => openPdf(note)}>
-            <FileText className="w-4 h-4 mr-1.5 rtl:ml-1.5 rtl:mr-0" />
-            {t("View PDF")}
-          </Button>
         </div>
       ))}
     </div>
