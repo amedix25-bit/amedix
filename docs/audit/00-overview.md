@@ -40,6 +40,12 @@ Portal-level detail: `01-patient.md`, `02-doctor.md`, `03-laboratory.md`,
 `04-radiology.md`, `05-pharmacy.md`, `06-hospital.md`, cross-cutting detail:
 `07-cross-cutting.md`.
 
+Deliverables: `08-security-controls.md` (OWASP ASVS evaluation — verified vs
+test-required vs external), `09-fhir-mapping.md` (standards-to-feature
+mapping matrix), `10-risk-register.md` (risk register, prioritized changes,
+implementation plan, external requirements), `11-test-plan.md` (acceptance
+tests per category).
+
 ## Top risks (priority order)
 
 1. **XC-01 / LB-03** — clinical documents, patient uploads, referral letters, lab
