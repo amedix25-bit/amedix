@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Bell, CheckCheck, FileText } from "lucide-react";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import { Button } from "@/components/ui/button";
 
 // Doctor Portal → Notifications bell. When a patient shares an imaging
@@ -122,17 +123,17 @@ export default function DoctorNotificationsBell({ userId, onNavigate, onOpenRefe
                       <span className="text-[11px] text-muted-foreground mt-0.5 block">{timeAgo(n.datetime)}</span>
                     </span>
                     {n.report_pdf_url && (
-                      <a
-                        href={n.report_pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <ClinicalFileButton
+                        kind="imaging_result"
+                        id={n.related_id}
+                        fileRef={n.report_pdf_url}
                         onClick={(e) => e.stopPropagation()}
                         title="Open the shared report (PDF)"
                         className="self-center inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline shrink-0"
                       >
                         <FileText className="w-4 h-4" />
                         PDF
-                      </a>
+                      </ClinicalFileButton>
                     )}
                   </div>
                 ))

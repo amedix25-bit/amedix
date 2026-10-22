@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import QrScanner from "@/components/lab/technician/QrScanner";
 import {
   AlertTriangle,
@@ -152,14 +153,14 @@ export default function ScanRequestQrFlow({ session, onClose }) {
 
             <div className="flex flex-wrap gap-2 mt-3">
               {request.pdf_url && (
-                <Button size="sm" variant="outline" onClick={() => window.open(request.pdf_url, "_blank")}>
+                <ClinicalFileButton kind="lab_request" id={request.id} fileRef={request.pdf_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
                   <FileText className="w-4 h-4 mr-1" /> View Lab Request PDF
-                </Button>
+                </ClinicalFileButton>
               )}
               {request.result_file_url && (
-                <Button size="sm" variant="outline" onClick={() => window.open(request.result_file_url, "_blank")}>
+                <ClinicalFileButton kind="lab_request" id={request.id} fileRef={request.result_file_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
                   <FileText className="w-4 h-4 mr-1" /> {request.result_file_name || "View Result File"}
-                </Button>
+                </ClinicalFileButton>
               )}
             </div>
           </div>

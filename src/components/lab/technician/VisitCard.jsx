@@ -3,6 +3,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2, Upload } from "lucide-react";
 import VisitStatusBadge from "@/components/lab/VisitStatusBadge";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 const MAX_FILE_BYTES = 3 * 1024 * 1024;
 
@@ -99,10 +100,10 @@ export default function VisitCard({ visit, busy, onAction }) {
           </Button>
         )}
         {visit.status === "patient_notified" && visit.result_file_url && (
-          <Button size="sm" variant="outline" onClick={() => window.open(visit.result_file_url, "_blank")}>
+          <ClinicalFileButton kind="lab_patient_visit" id={visit.id} fileRef={visit.result_file_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
             <FileText className="w-4 h-4 mr-1" />
             View Report
-          </Button>
+          </ClinicalFileButton>
         )}
       </div>
       {visit.results_ready_at && (

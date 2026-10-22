@@ -69,7 +69,8 @@ export default function PatientLabResults({ patient }) {
     }
     setSubmitting(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+      const file_url = file_uri;
       const testType = form.test_type === "Other" ? form.custom_type.trim() : form.test_type;
       await base44.entities.PatientLabResult.create({
         patient_id: patient.id,

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Upload, CheckCircle2, FileText, Send, Loader2, ShieldAlert, CircleCheck } from "lucide-react";
 import { STAGE_LABELS, STAGE_CHIP, canonicalStage, formatStageTime } from "@/lib/radiologyWorkflow";
 import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 const PRIORITY_STYLES = {
   Emergency: "bg-red-100 text-red-700 border-red-300",
@@ -213,19 +214,17 @@ export default function ImagingRequestCard({ img, sharedResult, onUploadReport, 
             <p className="text-xs text-emerald-600 mt-1">Shared {new Date(sharedResult.datetime).toLocaleString()}</p>
           )}
           {sharedResult.report_pdf_url && (
-            <a href={sharedResult.report_pdf_url} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white">
-                <FileText className="w-4 h-4 mr-1" /> Open Report (PDF)
-              </Button>
-            </a>
+            <ClinicalFileButton kind="imaging_result" id={sharedResult.id} fileRef={sharedResult.report_pdf_url} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-3 text-sm font-medium mt-2">
+              <FileText className="w-4 h-4 mr-1" /> Open Report (PDF)
+            </ClinicalFileButton>
           )}
         </div>
       )}
 
       {img.pdf_url && (
-        <a href={img.pdf_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary underline">
+        <ResolvedFileButton requestId={img.id} fileRef={img.pdf_url} className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary underline">
           <FileText className="w-3.5 h-3.5" /> Request PDF
-        </a>
+        </ResolvedFileButton>
       )}
 
       {img.status === "requested" && (

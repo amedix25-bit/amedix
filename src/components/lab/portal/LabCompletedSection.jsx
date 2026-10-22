@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import { FileText, CheckCircle2, Loader2, Banknote } from "lucide-react";
 
 export default function LabCompletedSection({ profile }) {
@@ -59,9 +60,9 @@ export default function LabCompletedSection({ profile }) {
                 </div>
               </div>
               {r.result_file_url && (
-                <Button size="sm" variant="outline" onClick={() => window.open(r.result_file_url, "_blank")}>
+                <ClinicalFileButton kind="lab_request" id={r.id} fileRef={r.result_file_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
                   <FileText className="w-4 h-4 mr-1" /> Results PDF
-                </Button>
+                </ClinicalFileButton>
               )}
             </div>
           </div>

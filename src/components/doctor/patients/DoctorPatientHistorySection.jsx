@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import PatientHealth from "@/components/patient/PatientHealth";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
 import { Stethoscope, Image as ImageIcon, FlaskConical, CalendarDays, ExternalLink, Loader2 } from "lucide-react";
+import resolveClinicalFile from "@/lib/clinicalFileUrl";
+import resolveRadiologyFile from "@/lib/radiologyFileUrl";
 
 const ICONS = {
   seen: <Stethoscope className="w-4 h-4" />,
@@ -46,6 +48,7 @@ export default function DoctorPatientHistorySection({ patient }) {
               title: `Imaging: ${r.scan_type}${r.examination ? ` — ${r.examination}` : ""}`,
               detail: `Requested by ${r.doctor_name || "—"}${r.status ? ` · ${r.status}` : ""}`,
               url: r.pdf_url,
+              file: r.pdf_url ? { kind: "radiology", id: r.id } : null,
             })),
             ...labs.map((l) => ({
               id: `l-${l.id}`,
@@ -54,6 +57,7 @@ export default function DoctorPatientHistorySection({ patient }) {
               title: `Laboratory Result: ${l.test_type}`,
               detail: l.lab_name ? `Performed at ${l.lab_name}` : "",
               url: l.file_url,
+              file: l.file_url ? { kind: "patient_lab_result", id: l.id } : null,
             })),
             ...appts.map((a) => ({
               id: `a-${a.id}`,
@@ -100,7 +104,16 @@ export default function DoctorPatientHistorySection({ patient }) {
                   {e.url && (
                     <button
                       type="button"
-                      onClick={() => window.open(e.url, "_blank")}
+                      onClick={async () => {
+                        if (!e.url) return;
+                        let url = e.url;
+                        if (!/^https?:/i.test(e.url) && e.file) {
+                          url = e.file.kind === "radiology"
+                            ? await resolveRadiologyFile(e.file.id, e.url)
+                            : await resolveClinicalFile(e.file.kind, e.file.id, e.url);
+                        }
+                        if (url) window.open(url, "_blank");
+                      }}
                       className="text-xs text-primary underline inline-flex items-center gap-0.5 mt-1"
                     >
                       Open <ExternalLink className="w-3 h-3" />

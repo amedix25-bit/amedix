@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { HeartPulse, LogOut, FlaskConical, Upload, Users, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLabSession, clearLabSession } from "@/lib/labSession";
+import resolveClinicalFile from "@/lib/clinicalFileUrl";
 import TechnicianLogin from "@/components/lab/technician/TechnicianLogin";
 import TechnicianWorkspace from "@/components/lab/technician/TechnicianWorkspace";
 import TechnicianNotificationsBar from "@/components/lab/technician/TechnicianNotificationsBar";
@@ -34,9 +35,10 @@ export default function LabTechnician() {
     );
   }
 
-  const handleOpenNotification = (n) => {
+  const handleOpenNotification = async (n) => {
     if (n.target === "result" && n.result_file_url) {
-      window.open(n.result_file_url, "_blank");
+      const url = await resolveClinicalFile("lab_request", n.lab_request_id, n.result_file_url);
+      if (url) window.open(url, "_blank");
       return;
     }
     setTab("patients");

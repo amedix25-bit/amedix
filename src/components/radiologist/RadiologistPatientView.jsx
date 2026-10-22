@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, FileText, Image as ImageIcon, Plus, Loader2, ExternalLink, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import RadiologyRecordForm from "@/components/radiologist/RadiologyRecordForm";
 
 // Radiologist Portal → authorized patient workspace.
@@ -115,15 +116,15 @@ export default function RadiologistPatientView({ patient, radiologistProfile, us
                   </p>
                   {r.findings && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{r.findings}</p>}
                   {r.file_url && (
-                    <a
-                      href={r.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <ClinicalFileButton
+                      kind="radiology_record"
+                      id={r.id}
+                      fileRef={r.file_url}
                       className="inline-flex items-center gap-1 text-xs text-primary underline mt-2"
                     >
                       <ExternalLink className="w-3 h-3" />
                       Open {r.file_name || "file"}
-                    </a>
+                    </ClinicalFileButton>
                   )}
                 </div>
               </div>

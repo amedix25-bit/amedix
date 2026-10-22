@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Eye, FileText, Loader2 } from "lucide-react";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 export default function DoctorPatientLabResultsView({ patientId }) {
   const [items, setItems] = useState([]);
@@ -78,10 +79,15 @@ export default function DoctorPatientLabResultsView({ patientId }) {
                   Patient-submitted
                 </span>
               </div>
-              <Button size="sm" variant="outline" className="mt-2" onClick={() => window.open(r.file_url, "_blank")}>
+              <ClinicalFileButton
+                kind="patient_lab_result"
+                id={r.id}
+                fileRef={r.file_url}
+                className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium mt-2"
+              >
                 <FileText className="w-4 h-4 mr-1" />
                 View Report
-              </Button>
+              </ClinicalFileButton>
             </div>
           ))}
         </div>

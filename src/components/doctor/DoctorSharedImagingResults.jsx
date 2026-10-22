@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2, Send } from "lucide-react";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 // Doctor Portal → Imaging → View Imaging Requested.
 // Imaging results the patient explicitly shared with this doctor via
@@ -83,11 +84,15 @@ export default function DoctorSharedImagingResults({ userId }) {
               </div>
               {n.report_pdf_url && (
                 <div className="mt-3">
-                  <a href={n.report_pdf_url} target="_blank" rel="noopener noreferrer" onClick={() => markRead(n)}>
-                    <Button size="sm">
-                      <FileText className="w-4 h-4 mr-1" /> Open Report (PDF)
-                    </Button>
-                  </a>
+                  <ClinicalFileButton
+                    kind="imaging_result"
+                    id={n.related_id}
+                    fileRef={n.report_pdf_url}
+                    onClick={() => markRead(n)}
+                    className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 text-sm font-medium"
+                  >
+                    <FileText className="w-4 h-4 mr-1" /> Open Report (PDF)
+                  </ClinicalFileButton>
                 </div>
               )}
             </div>

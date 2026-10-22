@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { getTests, groupTestsByCategory, normalizeLabStatus } from "@/lib/labRequestUtils";
 import { ArrowLeft, FileText, CheckCircle2, Loader2, FlaskConical, Building2 } from "lucide-react";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 export default function LabRequestDetail() {
   const { id } = useParams();
@@ -109,11 +110,9 @@ export default function LabRequestDetail() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {lab.pdf_url && (
-            <a href={lab.pdf_url} target="_blank" rel="noopener noreferrer">
-              <Button>
-                <FileText className="w-4 h-4 mr-2" />View PDF
-              </Button>
-            </a>
+            <ClinicalFileButton kind="lab_request" id={lab.id} fileRef={lab.pdf_url} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 text-sm font-medium">
+              <FileText className="w-4 h-4 mr-2" />View PDF
+            </ClinicalFileButton>
           )}
           {status === "results" && (
             <Button variant="outline" onClick={() => setShowResults(!showResults)}>
@@ -127,14 +126,14 @@ export default function LabRequestDetail() {
             <p className="text-sm font-semibold text-emerald-800 mb-1">Laboratory Results{lab.date_completed ? ` — ${lab.date_completed}` : ""}</p>
             {lab.result && <p className="text-sm text-emerald-800 whitespace-pre-wrap">{lab.result}</p>}
             {lab.result_file_url && (
-              <a
-                href={lab.result_file_url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <ClinicalFileButton
+                kind="lab_request"
+                id={lab.id}
+                fileRef={lab.result_file_url}
                 className="text-xs text-emerald-600 underline mt-2 inline-block"
               >
                 View result file
-              </a>
+              </ClinicalFileButton>
             )}
           </div>
         )}

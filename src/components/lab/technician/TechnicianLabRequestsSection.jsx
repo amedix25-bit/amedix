@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import ScanRequestQrFlow from "@/components/lab/technician/ScanRequestQrFlow";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { Eye, FileText, FlaskConical, Loader2, QrCode, Upload } from "lucide-react";
@@ -182,34 +183,36 @@ export default function TechnicianLabRequestsSection({ session }) {
             Tests: {(r.tests || []).join(", ") || "—"}
           </p>
           {r.pdf_url && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-3"
-              onClick={() => window.open(r.pdf_url, "_blank")}
+            <ClinicalFileButton
+              kind="lab_request"
+              id={r.id}
+              fileRef={r.pdf_url}
+              className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium mt-3"
             >
               <FileText className="w-4 h-4 mr-1" /> View Lab Request PDF
-            </Button>
+            </ClinicalFileButton>
           )}
           {normalizeLabStatus(r.status) === "results" && (
             <div className="mt-3 flex flex-wrap gap-2">
               {r.result_file_url && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => window.open(r.result_file_url, "_blank")}
+                <ClinicalFileButton
+                  kind="lab_request"
+                  id={r.id}
+                  fileRef={r.result_file_url}
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium"
                 >
                   <Eye className="w-4 h-4 mr-1" /> View Results
-                </Button>
+                </ClinicalFileButton>
               )}
               {r.corrected_result_file_url && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => window.open(r.corrected_result_file_url, "_blank")}
+                <ClinicalFileButton
+                  kind="lab_request"
+                  id={r.id}
+                  fileRef={r.corrected_result_file_url}
+                  className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium"
                 >
                   <Eye className="w-4 h-4 mr-1" /> View Corrected Results
-                </Button>
+                </ClinicalFileButton>
               )}
               <Button size="sm" disabled={busyId === r.id} onClick={() => verifyResult(r)}>
                 {busyId === r.id && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}

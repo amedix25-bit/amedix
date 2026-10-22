@@ -125,8 +125,8 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin }) {
 
   const handleFileUpload = async (id, file) => {
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.ImagingRequest.update(id, { report_file_url: file_url });
+      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+      await base44.entities.ImagingRequest.update(id, { report_file_url: file_uri });
       load();
     } catch (err) { console.error(err); }
   };

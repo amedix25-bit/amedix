@@ -5,6 +5,7 @@ import { ArrowLeft, FileText, Image as ImageIcon, Loader2, ScanLine, Send } from
 import SendImagingResultToDoctor from "@/components/patient/SendImagingResultToDoctor";
 import DepartmentFlowResults from "@/components/patient/DepartmentFlowResults";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 // Patient Portal → Imaging → View Results.
 // Each completed imaging result is displayed under the radiologist's name:
@@ -72,19 +73,15 @@ export default function PatientImagingResults({ request, onBack }) {
             {results.map((r) => (
               <div key={r.id} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex flex-wrap gap-2">
-                  <a href={r.report_pdf_url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline">
-                      <FileText className="w-4 h-4 mr-2" />
-                      {t("Open Report (PDF)")}
-                    </Button>
-                  </a>
+                  <ClinicalFileButton kind="imaging_result" id={r.id} fileRef={r.report_pdf_url} className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
+                    <FileText className="w-4 h-4 mr-2" />
+                    {t("Open Report (PDF)")}
+                  </ClinicalFileButton>
                   {(r.images || []).map((img, i) => (
-                    <a key={i} href={img.file_url} target="_blank" rel="noopener noreferrer">
-                      <Button>
-                        <ImageIcon className="w-4 h-4 mr-2" />
-                        {(r.images || []).length > 1 ? `${t("View Image")} ${i + 1}` : t("View Image")}
-                      </Button>
-                    </a>
+                    <ClinicalFileButton key={i} kind="imaging_result" id={r.id} fileRef={img.file_url} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 text-sm font-medium">
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      {(r.images || []).length > 1 ? `${t("View Image")} ${i + 1}` : t("View Image")}
+                    </ClinicalFileButton>
                   ))}
                   <Button
                     variant="outline"

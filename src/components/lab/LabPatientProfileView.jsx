@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import VisitStatusBadge from "@/components/lab/VisitStatusBadge";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { AlertCircle, ArrowLeft, Calendar, Droplet, FileText, Loader2, ShieldCheck, User } from "lucide-react";
 
@@ -110,21 +111,17 @@ export default function LabPatientProfileView({ session, patientId, onBack }) {
                 </div>
                 <p className="text-xs text-muted-foreground">Tests: {r.tests.join(", ") || "—"}</p>
                 {r.pdf_url && (
-                  <Button size="sm" variant="outline" onClick={() => window.open(r.pdf_url, "_blank")}>
+                  <ClinicalFileButton kind="lab_request" id={r.id} fileRef={r.pdf_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
                     <FileText className="w-4 h-4 mr-1" /> View Lab Request PDF
-                  </Button>
+                  </ClinicalFileButton>
                 )}
                 {r.status === "results" && (
                   <div className="rounded-lg bg-secondary/60 p-3 space-y-1.5">
                     <p className="text-xs font-semibold">Laboratory Results</p>
                     {r.result_file_url ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => window.open(r.result_file_url, "_blank")}
-                      >
+                      <ClinicalFileButton kind="lab_request" id={r.id} fileRef={r.result_file_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
                         <FileText className="w-4 h-4 mr-1" /> Results PDF
-                      </Button>
+                      </ClinicalFileButton>
                     ) : (
                       <p className="text-xs text-muted-foreground">Results file unavailable.</p>
                     )}
@@ -171,13 +168,9 @@ export default function LabPatientProfileView({ session, patientId, onBack }) {
                 <div className="flex items-center gap-2">
                   <VisitStatusBadge status={v.status} />
                   {v.result_file_url && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(v.result_file_url, "_blank")}
-                    >
+                    <ClinicalFileButton kind="lab_patient_visit" id={v.id} fileRef={v.result_file_url} className="inline-flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent h-9 px-3 text-sm font-medium">
                       Results PDF
-                    </Button>
+                    </ClinicalFileButton>
                   )}
                 </div>
               </div>

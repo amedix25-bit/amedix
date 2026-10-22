@@ -2,6 +2,7 @@ import React from "react";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { getTests, groupTestsByCategory } from "@/lib/labRequestUtils";
 import { ChevronRight, FileText, CheckCircle2, FileWarning } from "lucide-react";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 export default function DoctorLabHistoryRow({ r, onOpen }) {
   const tests = getTests(r);
@@ -59,13 +60,16 @@ export default function DoctorLabHistoryRow({ r, onOpen }) {
           </span>
         )}
         {r.pdf_url && (
-          <span
-            onClick={(e) => { e.stopPropagation(); window.open(r.pdf_url, "_blank"); }}
+          <ClinicalFileButton
+            kind="lab_request"
+            id={r.id}
+            fileRef={r.pdf_url}
+            onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs font-medium hover:bg-accent"
             title="Open Laboratory Request PDF"
           >
             <FileText className="w-3 h-3" /> PDF
-          </span>
+          </ClinicalFileButton>
         )}
       </div>
     </button>

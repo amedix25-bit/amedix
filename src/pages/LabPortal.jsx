@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
+import resolveClinicalFile from "@/lib/clinicalFileUrl";
 import LabDashboardSection from "@/components/lab/portal/LabDashboardSection";
 import LabRequestsSection from "@/components/lab/portal/LabRequestsSection";
 import LabPendingTestsSection from "@/components/lab/portal/LabPendingTestsSection";
@@ -75,9 +76,10 @@ export default function LabPortal() {
             </p>
           </div>
           <NotificationsBell
-            onOpenNotification={(n) => {
+            onOpenNotification={async (n) => {
               if (n.target === "result" && n.result_file_url) {
-                window.open(n.result_file_url, "_blank");
+                const url = await resolveClinicalFile("lab_request", n.lab_request_id, n.result_file_url);
+                if (url) window.open(url, "_blank");
                 return;
               }
               setActiveTab("patients");
