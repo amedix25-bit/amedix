@@ -62,7 +62,7 @@ export default function HospitalPortal() {
   }
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Hospital Portal">
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Hospital Portal" accent="hospital">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">{t(navItems.find((n) => n.key === activeTab)?.label)}</h1>

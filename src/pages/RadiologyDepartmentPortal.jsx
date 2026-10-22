@@ -89,7 +89,7 @@ export default function RadiologyDepartmentPortal() {
       navItems={isDept ? navItems : navItems.filter((n) => n.key !== "analytics")}
       activeKey={activeTab}
       onNavClick={setActiveTab}
-      roleLabel="Radiology Department"
+      roleLabel="Radiology Department" accent="radiology"
     >
       <div className="p-4 lg:p-6 max-w-6xl mx-auto">
         <div className="mb-6">

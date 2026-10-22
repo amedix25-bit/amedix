@@ -66,7 +66,7 @@ export default function LabPortal() {
   }
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Lab Portal">
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Lab Portal" accent="lab">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>

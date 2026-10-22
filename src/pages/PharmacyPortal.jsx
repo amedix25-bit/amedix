@@ -63,7 +63,7 @@ export default function PharmacyPortal() {
   }
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Pharmacy Portal">
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Pharmacy Portal" accent="pharmacy">
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>

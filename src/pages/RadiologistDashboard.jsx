@@ -75,7 +75,7 @@ export default function RadiologistDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
+    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" accent="radiology" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>

@@ -6,8 +6,9 @@ import { useAppLanguage } from "@/lib/appLanguage";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
+import { getPortalAccent } from "@/lib/portalAccent";
 
-export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, children }) {
+export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -18,7 +19,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="hidden lg:flex w-64 flex-col border-r rtl:border-l rtl:border-r-0 border-border bg-sidebar">
-        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} />
+        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} accent={accent} />
       </aside>
 
       {sidebarOpen && (
@@ -28,7 +29,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
             <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-muted-foreground z-10">
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} />
+            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} accent={accent} />
           </aside>
         </div>
       )}
@@ -53,8 +54,9 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   );
 }
 
-function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo, sidebarAction }) {
+function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo, sidebarAction, accent = "patient" }) {
   const { t } = useAppLanguage();
+  const accentCfg = getPortalAccent(accent);
   return (
     <>
       <div className="p-6 border-b border-sidebar-border">
@@ -62,7 +64,11 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
           <Logo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
           <div className="min-w-0">
             <span className="font-bold text-2xl tracking-tight leading-tight block">AMedix</span>
-            {roleLabel && <p className="text-xs text-sidebar-foreground/60">{t(roleLabel)}</p>}
+            {roleLabel && (
+              <p className={`text-xs font-medium ${accentCfg.heading}`}>
+                {t(roleLabel)}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -77,12 +83,13 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
               onClick={() => onNavClick(item.key)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left leading-snug transition-colors ${
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  ? accentCfg.activeNav
                   : "text-sidebar-foreground hover:bg-sidebar-accent"
               }`}
             >
-              <Icon className="w-5 h-5" />
-              {t(item.label)}
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="truncate">{t(item.label)}</span>
+              {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />}
             </button>
           );
         })}

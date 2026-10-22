@@ -41,6 +41,10 @@ module.exports = {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
+  			success: 'hsl(var(--success))',
+  			warning: 'hsl(var(--warning))',
+  			critical: 'hsl(var(--critical))',
+  			info: 'hsl(var(--info))',
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
@@ -60,6 +64,15 @@ module.exports = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
+  			},
+  			portal: {
+  				patient: 'hsl(var(--accent-patient))',
+  				doctor: 'hsl(var(--accent-doctor))',
+  				lab: 'hsl(var(--accent-lab))',
+  				radiology: 'hsl(var(--accent-radiology))',
+  				pharmacy: 'hsl(var(--accent-pharmacy))',
+  				hospital: 'hsl(var(--accent-hospital))',
+  				insurance: 'hsl(var(--accent-insurance))'
   			}
   		},
   		fontFamily: {
