@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import DocumentFields from "@/components/doctor/encounters/DocumentFields";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
+import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
+import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
+import PatientAlertHeader from "@/components/doctor/notes/PatientAlertHeader";
 import { X, Search, Loader2, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
 
 // "General Clinical Note" — the universal free-text note with no
@@ -32,6 +35,11 @@ const EMPTY = {
   recommendations: "",
 };
 
+// Universal Specialty-Based Clinical Notes interface — the same reusable
+// accordion form adapts to every specialty: the doctor's verified specialty
+// loads its own note types and structured template, all presented as compact,
+// independently collapsible sections with completion status and jump
+// navigation. Data flows, permissions and workflows are unchanged.
 export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onNavigateTab, preselectedPatient }) {
   const [form, setForm] = useState(EMPTY);
   const [patient, setPatient] = useState(preselectedPatient || null);
@@ -97,6 +105,24 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     setGateLoading(false);
   };
 
+  // Universal accordion state — sections expand/collapse independently and
+  // entered information is preserved because all values live in this form's
+  // state regardless of which section is open.
+  const [openIds, setOpenIds] = useState(() => new Set(["encounter"]));
+  const toggleSection = (id) =>
+    setOpenIds((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const jumpTo = (id) => {
+    setOpenIds((s) => new Set([...s, id]));
+    setTimeout(() => {
+      document.getElementById(`note-section-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
   const restoreDraft = (d) => {
     setDraftId(d.id);
     if (d.specialty_doc_type) setDocType(d.specialty_doc_type);
@@ -113,6 +139,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     if (Array.isArray(d.medications)) setMedications(d.medications);
     if (Array.isArray(d.selected_lab_request_ids)) setSelectedLabs(new Set(d.selected_lab_request_ids));
     if (Array.isArray(d.selected_imaging_request_ids)) setSelectedImaging(new Set(d.selected_imaging_request_ids));
+    if (d.form_data && (d.form_data.history || d.form_data.physical_examination)) setOpenIds((s) => new Set([...s, "encounter"]));
   };
 
   useEffect(() => {
@@ -203,6 +230,44 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     }
   };
 
+  // Autosave — every entry is saved to the reliable per-patient draft a
+  // moment after the doctor stops typing, with visible save-status feedback.
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
+  const autosaveSuppress = useRef(true);
+  const anyVital = Object.values(form.vitals || {}).some((v) => String(v).trim());
+  const noteHasContent =
+    (docType && docType !== GENERAL_KEY) ||
+    photoUris.length > 0 ||
+    (form.history || "").trim() ||
+    (form.physical_examination || "").trim() ||
+    (form.recommendations || "").trim() ||
+    (form.provisional_diagnoses || []).some((d) => d.trim()) ||
+    anyVital ||
+    Object.values(dataValues).some((v) => v !== undefined && v !== null && String(v).trim() !== "") ||
+    medications.some((m) => m.name.trim()) ||
+    selectedLabs.size > 0 ||
+    selectedImaging.size > 0;
+
+  useEffect(() => {
+    if (!patient) return;
+    if (autosaveSuppress.current) {
+      autosaveSuppress.current = false;
+      return;
+    }
+    if (!noteHasContent && !draftId) return;
+    const t = setTimeout(async () => {
+      try {
+        setSaveStatus("saving");
+        await saveDraft();
+        setSaveStatus("saved");
+      } catch (err) {
+        console.error(err);
+        setSaveStatus("error");
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [form, dataValues, photoUris, docType, medications, selectedLabs, selectedImaging, patient]);
+
   const saveDraftAndContinueToLabs = async () => {
     if (!patient) {
       setError("Find the patient first.");
@@ -231,11 +296,13 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     }
     if (!form.location) {
       setError("Select the location of the encounter.");
+      jumpTo("encounter");
       return;
     }
     const diagnoses = (form.provisional_diagnoses || []).map((d) => d.trim()).filter(Boolean);
     if (diagnoses.length === 0) {
       setError("Provisional diagnosis is required.");
+      jumpTo("diagnosis");
       return;
     }
     const meds = medications.filter((m) => m.name.trim());
@@ -321,11 +388,288 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     }
   };
 
+  // Universal section map — one reusable accordion adapts to the loaded
+  // specialty template; general sections appear only when they apply and
+  // doctors are never forced to complete irrelevant specialty sections.
+  const diagnosesFilled = (form.provisional_diagnoses || []).some((d) => d.trim());
+  const specialtyFilled = hasSpecialtyFields
+    ? activeDef.fields.filter((f) => String(dataValues[f.key] ?? "").trim() !== "").length
+    : 0;
+  const sections = [
+    { id: "encounter", title: "Encounter Details", required: true, complete: !!(form.location && form.encounter_datetime) },
+    ...(myDocs.length > 0 ? [{ id: "noteType", title: "Note Type", complete: !!docType }] : []),
+    ...(hasSpecialtyFields
+      ? [{ id: "template", title: activeDef.label, complete: specialtyFilled > 0, hint: `${specialtyFilled}/${activeDef.fields.length} fields` }]
+      : []),
+    ...(activeDef && activeDef.photos ? [{ id: "photos", title: "Clinical Photographs", complete: photoUris.length > 0 }] : []),
+    ...(isGeneralNote
+      ? [
+          { id: "history", title: "History", complete: !!(form.history || "").trim() },
+          { id: "vitals", title: "Vital Signs", complete: anyVital },
+          { id: "exam", title: "Physical Examination", complete: !!(form.physical_examination || "").trim() },
+        ]
+      : []),
+    { id: "diagnosis", title: "Provisional Diagnosis", required: true, complete: diagnosesFilled },
+    ...(isGeneralNote ? [{ id: "recommendations", title: "Doctor's Recommendations", complete: !!(form.recommendations || "").trim() }] : []),
+  ];
+
+  const renderSectionBody = (id) => {
+    switch (id) {
+      case "encounter":
+        return (
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Date/Time Patient Was Seen *</Label>
+              <Input
+                type="datetime-local"
+                value={form.encounter_datetime}
+                onChange={(e) => setForm({ ...form, encounter_datetime: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Location of Visit *</Label>
+              <Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}>
+                <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+                <SelectContent>
+                  {["ER", "Clinic", "Ward", "ICU", "Other"].map((l) => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+      case "noteType":
+        return (
+          <div className="space-y-2">
+            <Label>Note Type — {mySpecialty} (auto-detected)</Label>
+            <Select
+              value={docType}
+              onValueChange={(v) => {
+                setDocType(v);
+                setDataValues({});
+                if (!getDocDef(v)?.photos) setPhotoUris([]);
+                if (v !== GENERAL_KEY) setOpenIds((s) => new Set([...s, "template"]));
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
+              <SelectContent className="max-h-80">
+                <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
+                {myDocs.map((d) => (
+                  <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              AMedix detected your verified specialty and loaded its note types and template — no need to select a specialty.
+            </p>
+          </div>
+        );
+      case "template":
+        return (
+          <div className="space-y-3">
+            {activeDef.workflow && (
+              <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-card border border-border p-2">
+                {activeDef.workflow.map((stage, i) => (
+                  <span key={stage} className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                      {stage}
+                    </span>
+                    {i < activeDef.workflow.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </span>
+                ))}
+              </div>
+            )}
+            <DocumentFields
+              defs={activeDef.fields}
+              values={dataValues}
+              onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
+              specialty={mySpecialty}
+            />
+            <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty sections are simply not saved.</p>
+          </div>
+        );
+      case "photos":
+        return (
+          <div className="space-y-1.5">
+            <Label>Clinical Photographs ({photoUris.length}/6)</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handlePhotos}
+              disabled={uploadingPhotos || photoUris.length >= 6}
+            />
+            {uploadingPhotos && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading photographs...
+              </p>
+            )}
+            {photoUris.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {photoUris.map((uri) => (
+                  <span key={uri} className="text-xs bg-secondary px-2 py-1 rounded-md flex items-center gap-1.5">
+                    Photograph attached
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUris((s) => s.filter((u) => u !== uri))}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Remove photograph"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Photographs are attached to this note, stored privately, and follow the same permission, access control,
+              audit and patient privacy rules as all clinical information.
+            </p>
+          </div>
+        );
+      case "history":
+        return (
+          <div className="space-y-2">
+            <Label>History</Label>
+            <Textarea
+              value={form.history}
+              onChange={(e) => setForm({ ...form, history: e.target.value })}
+              rows={3}
+              placeholder="Presenting complaint and history"
+            />
+            <MedicalDictationButton
+              value={form.history}
+              onChange={(v) => setForm({ ...form, history: v })}
+              specialty={mySpecialty}
+              contextLabel="History — presenting complaint, review of systems and history of present illness"
+            />
+          </div>
+        );
+      case "vitals":
+        return (
+          <div className="space-y-2">
+            <Label>Vital Signs</Label>
+            <VitalSignsForm value={form.vitals} onChange={(v) => setForm({ ...form, vitals: v })} />
+          </div>
+        );
+      case "exam":
+        return (
+          <div className="space-y-2">
+            <Label>Physical Examination</Label>
+            <Textarea
+              value={form.physical_examination}
+              onChange={(e) => setForm({ ...form, physical_examination: e.target.value })}
+              rows={3}
+            />
+            <MedicalDictationButton
+              value={form.physical_examination}
+              onChange={(v) => setForm({ ...form, physical_examination: v })}
+              specialty={mySpecialty}
+              contextLabel="Physical examination findings"
+            />
+            {patient && (
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <ExaminationsTab patient={patient} doctorProfile={doctorProfile} />
+              </div>
+            )}
+          </div>
+        );
+      case "diagnosis":
+        return (
+          <div className="space-y-2">
+            <Label>Provisional Diagnosis *</Label>
+            {(form.provisional_diagnoses || [""]).map((d, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  value={d}
+                  onChange={(e) => {
+                    const next = [...form.provisional_diagnoses];
+                    next[i] = e.target.value;
+                    setForm({ ...form, provisional_diagnoses: next });
+                  }}
+                  placeholder={i === 0 ? "Primary provisional diagnosis" : `Provisional diagnosis ${i + 1}`}
+                  required={i === 0}
+                />
+                <MedicalDictationButton
+                  value={d}
+                  onChange={(v) => {
+                    const next = [...form.provisional_diagnoses];
+                    next[i] = v;
+                    setForm({ ...form, provisional_diagnoses: next });
+                  }}
+                  specialty={mySpecialty}
+                  contextLabel="Provisional diagnosis"
+                />
+                {(form.provisional_diagnoses || []).length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setForm({ ...form, provisional_diagnoses: form.provisional_diagnoses.filter((_, idx) => idx !== i) })
+                    }
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setForm({ ...form, provisional_diagnoses: [...(form.provisional_diagnoses || []), ""] })}
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Add Provisional Diagnosis
+            </Button>
+          </div>
+        );
+      case "recommendations":
+        return (
+          <div className="space-y-2">
+            <Label className="text-primary">Doctor's Recommendations</Label>
+            <Textarea
+              value={form.recommendations}
+              onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
+              rows={3}
+              placeholder="Recommendations, follow-up instructions, lifestyle advice, referrals..."
+            />
+            <MedicalDictationButton
+              value={form.recommendations}
+              onChange={(v) => setForm({ ...form, recommendations: v })}
+              specialty={mySpecialty}
+              contextLabel="Doctor's recommendations — follow-up and treatment instructions"
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-5 space-y-5">
-      <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Write Clinical Note</h3>
-        <button type="button" onClick={onCancel} className="text-muted-foreground"><X className="w-5 h-5" /></button>
+      <div className="flex justify-between items-center gap-3">
+        <h3 className="font-semibold shrink-0">Write Clinical Note</h3>
+        <div className="flex items-center gap-3 min-w-0">
+          {patient && saveStatus === "saving" && (
+            <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5 shrink-0">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving draft…
+            </span>
+          )}
+          {patient && saveStatus === "saved" && (
+            <span className="text-xs text-emerald-700 inline-flex items-center gap-1.5 shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Draft saved
+            </span>
+          )}
+          {patient && saveStatus === "error" && (
+            <span className="text-xs text-destructive shrink-0">Autosave failed — your entries stay on screen</span>
+          )}
+          <button type="button" onClick={onCancel} className="text-muted-foreground shrink-0"><X className="w-5 h-5" /></button>
+        </div>
       </div>
 
       {!preselectedPatient ? (
@@ -346,24 +690,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       ) : null}
 
       {patient && (
-        <div className="rounded-xl border border-border bg-muted/40 p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            AMedix Patient &amp; Visit Information — attached automatically from the unified Patient Record
-          </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 text-xs text-muted-foreground">
-            <p>Patient: <span className="text-foreground font-medium">{patient.full_name}</span></p>
-            <p>CIN: <span className="text-foreground font-medium">{patient.cin}</span></p>
-            <p>Date of Birth: <span className="text-foreground font-medium">{patient.date_of_birth || "—"}</span></p>
-            <p>Doctor: <span className="text-foreground font-medium">Dr. {doctorProfile.full_name}</span></p>
-            <p>Specialty: <span className="text-foreground font-medium">{mySpecialty}</span></p>
-            <p>Hospital / Clinic: <span className="text-foreground font-medium">{doctorProfile.hospital || "—"}</span></p>
-            <p>Department: <span className="text-foreground font-medium">{mySpecialty}</span></p>
-            <p>Visit: <span className="text-foreground font-medium">Linked automatically on save</span></p>
-            <p>Allergies: <span className="text-foreground font-medium">{patient.allergies || "None recorded"}</span></p>
-            <p>Current Medications: <span className="text-foreground font-medium">{recordContext && recordContext.meds.length > 0 ? recordContext.meds.join(", ") : "None"}</span></p>
-            <p className="sm:col-span-2">Previous History: <span className="text-foreground font-medium">{recordContext && recordContext.conditions.length > 0 ? recordContext.conditions.join("; ") : "No recorded history"}</span></p>
-          </div>
-        </div>
+        <PatientAlertHeader
+          patient={patient}
+          doctorProfile={doctorProfile}
+          meds={recordContext?.meds || []}
+          conditions={recordContext?.conditions || []}
+        />
       )}
 
       {patient && (
@@ -385,223 +717,32 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         )
       )}
 
-      {myDocs.length > 0 && (
-        <div className="space-y-2">
-          <Label>Note Type — {mySpecialty} (auto-detected)</Label>
-          <Select value={docType} onValueChange={(v) => { setDocType(v); setDataValues({}); if (!getDocDef(v)?.photos) setPhotoUris([]); }}>
-            <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
-            <SelectContent className="max-h-80">
-              <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
-              {myDocs.map((d) => (
-                <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            AMedix detected your verified specialty and loaded its note types and template — no need to select a specialty.
-          </p>
-        </div>
-      )}
-
-      {hasSpecialtyFields && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-          <p className="text-sm font-semibold">{activeDef.label}</p>
-          {activeDef.workflow && (
-            <div className="flex flex-wrap items-center gap-1.5 rounded-lg bg-card border border-border p-2">
-              {activeDef.workflow.map((stage, i) => (
-                <span key={stage} className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
-                    {stage}
-                  </span>
-                  {i < activeDef.workflow.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />}
-                </span>
-              ))}
-            </div>
-          )}
-          <DocumentFields
-            defs={activeDef.fields}
-            values={dataValues}
-            onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
-            specialty={mySpecialty}
-          />
-        </div>
-      )}
-
-      {activeDef && activeDef.photos && (
-        <div className="space-y-1.5">
-          <Label>Clinical Photographs ({photoUris.length}/6)</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handlePhotos}
-            disabled={uploadingPhotos || photoUris.length >= 6}
-          />
-          {uploadingPhotos && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading photographs...
-            </p>
-          )}
-          {photoUris.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {photoUris.map((uri) => (
-                <span key={uri} className="text-xs bg-secondary px-2 py-1 rounded-md flex items-center gap-1.5">
-                  Photograph attached
-                  <button
-                    type="button"
-                    onClick={() => setPhotoUris((s) => s.filter((u) => u !== uri))}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Remove photograph"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Photographs are attached to this note, stored privately, and follow the same permission, access control,
-            audit and patient privacy rules as all clinical information.
-          </p>
-        </div>
-      )}
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Date/Time Patient Was Seen *</Label>
-          <Input
-            type="datetime-local"
-            value={form.encounter_datetime}
-            onChange={(e) => setForm({ ...form, encounter_datetime: e.target.value })}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Location of Visit *</Label>
-          <Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}>
-            <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
-            <SelectContent>
-              {["ER", "Clinic", "Ward", "ICU", "Other"].map((l) => (
-                <SelectItem key={l} value={l}>{l}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {isGeneralNote && (
-        <>
-          <div className="space-y-2">
-            <Label>History</Label>
-            <Textarea
-              value={form.history}
-              onChange={(e) => setForm({ ...form, history: e.target.value })}
-              rows={3}
-              placeholder="Presenting complaint and history"
-            />
-            <MedicalDictationButton
-              value={form.history}
-              onChange={(v) => setForm({ ...form, history: v })}
-              specialty={mySpecialty}
-              contextLabel="History — presenting complaint, review of systems and history of present illness"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Vital Signs</Label>
-            <VitalSignsForm value={form.vitals} onChange={(v) => setForm({ ...form, vitals: v })} />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Physical Examination</Label>
-            <Textarea
-              value={form.physical_examination}
-              onChange={(e) => setForm({ ...form, physical_examination: e.target.value })}
-              rows={3}
-            />
-            <MedicalDictationButton
-              value={form.physical_examination}
-              onChange={(v) => setForm({ ...form, physical_examination: v })}
-              specialty={mySpecialty}
-              contextLabel="Physical examination findings"
-            />
-            {patient && (
-              <div className="rounded-xl border border-border bg-muted/30 p-4">
-                <ExaminationsTab patient={patient} doctorProfile={doctorProfile} />
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      <div className="space-y-2">
-        <Label>Provisional Diagnosis *</Label>
-        {(form.provisional_diagnoses || [""]).map((d, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <Input
-              value={d}
-              onChange={(e) => {
-                const next = [...form.provisional_diagnoses];
-                next[i] = e.target.value;
-                setForm({ ...form, provisional_diagnoses: next });
-              }}
-              placeholder={i === 0 ? "Primary provisional diagnosis" : `Provisional diagnosis ${i + 1}`}
-              required={i === 0}
-            />
-            <MedicalDictationButton
-              value={d}
-              onChange={(v) => {
-                const next = [...form.provisional_diagnoses];
-                next[i] = v;
-                setForm({ ...form, provisional_diagnoses: next });
-              }}
-              specialty={mySpecialty}
-              contextLabel="Provisional diagnosis"
-            />
-            {(form.provisional_diagnoses || []).length > 1 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() =>
-                  setForm({ ...form, provisional_diagnoses: form.provisional_diagnoses.filter((_, idx) => idx !== i) })
-                }
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setForm({ ...form, provisional_diagnoses: [...(form.provisional_diagnoses || []), ""] })}
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Provisional Diagnosis
-        </Button>
-      </div>
-
-      {isGeneralNote && (
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
-          <Label className="text-primary">Doctor's Recommendations</Label>
-          <Textarea
-            value={form.recommendations}
-            onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
-            rows={3}
-            placeholder="Recommendations, follow-up instructions, lifestyle advice, referrals..."
-          />
-          <MedicalDictationButton
-            value={form.recommendations}
-            onChange={(v) => setForm({ ...form, recommendations: v })}
-            specialty={mySpecialty}
-            contextLabel="Doctor's recommendations — follow-up and treatment instructions"
-          />
-        </div>
-      )}
-
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {patient && (
+        <div className="space-y-3">
+          <NoteSectionNav
+            sections={sections}
+            onJump={jumpTo}
+            onExpandAll={() => setOpenIds(new Set(sections.map((s) => s.id)))}
+            onCollapseAll={() => setOpenIds(new Set())}
+          />
+          {sections.map((s) => (
+            <NoteAccordionSection
+              key={s.id}
+              id={s.id}
+              title={s.title}
+              required={s.required}
+              complete={s.complete}
+              hint={s.hint}
+              open={openIds.has(s.id)}
+              onToggle={() => toggleSection(s.id)}
+            >
+              {renderSectionBody(s.id)}
+            </NoteAccordionSection>
+          ))}
+        </div>
+      )}
 
       <Button type="submit" disabled={saving || !checkedIn} title={!checkedIn ? LOCKED_MESSAGE : undefined}>
         {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
