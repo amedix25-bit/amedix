@@ -5,8 +5,16 @@
     "patient_id": {
       "type": "string"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 set server-side when the appointment is created, used for Row Level Security so only the patient of the appointment (and their doctor) can see and manage it"
+    },
     "doctor_id": {
       "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 set server-side when the appointment is created, used for Row Level Security"
     },
     "patient_cin": {
       "type": "string"
@@ -96,5 +104,61 @@
     "doctor_id",
     "date",
     "time"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

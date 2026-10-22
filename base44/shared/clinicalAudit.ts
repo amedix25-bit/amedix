@@ -32,6 +32,7 @@ export async function logClinicalAudit(base44: any, entry: any): Promise<void> {
       action: entry.action,
       action_label: entry.action_label || entry.action,
       patient_id: entry.patient_id || "",
+      patient_user_id: entry.patient_user_id || "",
       patient_cin: entry.patient_cin || "",
       patient_name: entry.patient_name || "",
       encounter_id: entry.encounter_id || "",

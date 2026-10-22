@@ -91,7 +91,7 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin }) {
         doctor_license: doctorProfile.license_number,
       });
       const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${payload.date_requested}.pdf`, { type: "application/pdf" });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
       await base44.functions.invoke("createImagingRequest", { ...payload, pdf_url: file_url });
       setView("list");
       load();

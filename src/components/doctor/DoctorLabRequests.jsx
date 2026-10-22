@@ -222,7 +222,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       const doc = generateLabRequestPdf(payload);
       await addRequestBarcode(doc, payload.request_id);
       const pdfFile = new File([doc.output("blob")], `LabRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
+      const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
       const created = (await base44.functions.invoke("createLabRequest", { ...payload, pdf_url: file_url })).data.lab_request;
       if (draftContext?.patient && p.id === draftContext.patient.id) {
         try {

@@ -3,6 +3,7 @@ import { Camera, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import DocumentRow from "@/components/patient/documents/DocumentRow";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,35 +85,13 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
       {docs.length > 0 && (
         <div className="space-y-2">
           {docs.map((doc) => (
-            <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-border bg-background p-2">
-              {doc.file_url ? (
-                <Image
-                  src={doc.file_url}
-                  alt={doc.title}
-                  className="w-12 h-12 rounded-md overflow-hidden shrink-0"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center shrink-0">
-                  <category.icon className="w-5 h-5 text-muted-foreground" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{displayTitle(doc.title)}</p>
-                <p className="text-xs text-muted-foreground">{doc.date}</p>
-              </div>
-              {doc.file_url && (
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline shrink-0" onClick={() => onView?.(doc)}>
-                  {t("View")}
-                </a>
-              )}
-              <button
-                onClick={() => setDeleteTarget(doc)}
-                className="text-muted-foreground hover:text-destructive shrink-0"
-                aria-label={t("Delete document")}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            <DocumentRow
+              key={doc.id}
+              doc={{ ...doc, title: displayTitle(doc.title) }}
+              icon={category.icon}
+              onView={onView}
+              onDelete={() => setDeleteTarget(doc)}
+            />
           ))}
         </div>
       )}

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, FileText, Loader2, Plus, Upload, X } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 const TEST_TYPES = [
   "Complete Blood Count (CBC)",
@@ -220,10 +221,10 @@ export default function PatientLabResults({ patient }) {
               <p className="text-xs text-muted-foreground mt-2">
                 {t("Submitted")} {r.submitted_date ? new Date(r.submitted_date).toLocaleDateString(locale) : ""} — {r.submitted_by_name}
               </p>
-              <Button size="sm" variant="outline" className="mt-3" onClick={() => window.open(r.file_url, "_blank")}>
+              <ClinicalFileButton kind="patient_lab_result" id={r.id} fileRef={r.file_url} className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 mt-3">
                 <FileText className="w-4 h-4 mr-1" />
                 {t("View Lab Result")}
-              </Button>
+              </ClinicalFileButton>
             </div>
           ))}
         </div>

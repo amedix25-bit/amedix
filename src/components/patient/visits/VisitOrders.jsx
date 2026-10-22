@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, Pill, FlaskConical, ScanLine, ChevronRight, FileText } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
@@ -111,10 +112,18 @@ export default function VisitOrders({ visit }) {
             <Row label={t("Indication")} value={ar(lab.indication)} />
             <Row label={t("Instructions:")} value={ar(lab.instructions)} />
             {lab.result && <Row label={t("Result")} value={ar(lab.result)} />}
-            <PdfLinks links={[
-              lab.pdf_url && { label: t("Download request PDF"), url: lab.pdf_url },
-              lab.result_file_url && { label: t("View result file"), url: lab.result_file_url },
-            ].filter(Boolean)} />
+            <div className="flex flex-wrap gap-3">
+              {lab.pdf_url && (
+                <ClinicalFileButton kind="lab_request" id={lab.id} fileRef={lab.pdf_url} className="text-xs text-primary underline inline-flex items-center gap-1">
+                  <FileText className="w-3 h-3" /> {t("Download request PDF")}
+                </ClinicalFileButton>
+              )}
+              {lab.result_file_url && (
+                <ClinicalFileButton kind="lab_request" id={lab.id} fileRef={lab.result_file_url} className="text-xs text-emerald-600 underline inline-flex items-center gap-1">
+                  <FileText className="w-3 h-3" /> {t("View result file")}
+                </ClinicalFileButton>
+              )}
+            </div>
           </div>
         ),
       }),

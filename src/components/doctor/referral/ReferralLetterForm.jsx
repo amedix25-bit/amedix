@@ -258,7 +258,7 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         `Referral_${patient.cin}_${referral_number}.pdf`,
         { type: "application/pdf" }
       );
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file: pdfFile });
+      const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
 
       // A referral addressed to a colleague is sent right away; otherwise
       // it stays a draft until the doctor sends it.

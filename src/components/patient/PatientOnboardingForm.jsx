@@ -112,7 +112,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     setUploadingVaxDoc(true);
     setError("");
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file }); // stored privately
       setMedical((m) => ({ ...m, uploadedDocs: [...m.uploadedDocs, { file_url, file_name: file.name }] }));
     } catch (err) {
       console.error(err);

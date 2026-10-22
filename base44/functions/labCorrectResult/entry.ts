@@ -43,13 +43,13 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const file = new File([base64ToBytes(fileB64)], fileName, { type: fileType });
-    const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+    const up = await base44.asServiceRole.integrations.Core.UploadPrivateFile({ file }); // stored privately
     const nowIso = new Date().toISOString();
 
     const patientProfile = await base44.asServiceRole.entities.PatientProfile.get(labRequest.patient_id);
     // The original result / result_file_url are deliberately left untouched.
     await base44.asServiceRole.entities.LabRequest.update(labRequest.id, {
-      corrected_result_file_url: up.file_url,
+      corrected_result_file_url: up.file_uri,
       corrected_result_file_name: fileName,
       correction_reason: correctionReason,
       corrected_by_name: tech.full_name,

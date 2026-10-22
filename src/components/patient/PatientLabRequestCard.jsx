@@ -5,6 +5,7 @@ import { normalizeLabStatus } from "@/lib/labRequestUtils";
 import { Building2, FileText, ShieldCheck } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 export default function PatientLabRequestCard({ group, patientId, onRequestUpdated }) {
   const { t, locale } = usePatientLanguage();
@@ -35,9 +36,8 @@ export default function PatientLabRequestCard({ group, patientId, onRequestUpdat
   const result = consolidated
     ? first.result
     : group.map((l) => l.result).filter(Boolean).join("\n");
-  const resultFile = consolidated
-    ? first.result_file_url
-    : (group.find((l) => l.result_file_url) || {}).result_file_url;
+  const resultFileRec = consolidated ? first : (group.find((l) => l.result_file_url) || null);
+  const resultFile = resultFileRec ? resultFileRec.result_file_url : null;
 
   const byCategory = new Map();
   tests.forEach((tc) => {
@@ -104,14 +104,14 @@ export default function PatientLabRequestCard({ group, patientId, onRequestUpdat
         <div className="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
           {result && <p className="text-sm text-emerald-800 whitespace-pre-wrap">{result}</p>}
           {resultFile && (
-            <a
-              href={resultFile}
-              target="_blank"
-              rel="noopener noreferrer"
+            <ClinicalFileButton
+              kind="lab_request"
+              id={resultFileRec.id}
+              fileRef={resultFile}
               className="text-xs text-emerald-600 underline mt-2 inline-block"
             >
               {t("View result file")}
-            </a>
+            </ClinicalFileButton>
           )}
         </div>
       )}

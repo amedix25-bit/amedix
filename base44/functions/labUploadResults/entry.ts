@@ -45,8 +45,8 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const file = new File([base64ToBytes(fileB64)], fileName, { type: fileType });
-    const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
-    const fileUrl = up.file_url;
+    const up = await base44.asServiceRole.integrations.Core.UploadPrivateFile({ file }); // stored privately
+    const fileUrl = up.file_uri;
     const nowIso = new Date().toISOString();
 
     await base44.asServiceRole.entities.LabPatientVisit.update(visit.id, {

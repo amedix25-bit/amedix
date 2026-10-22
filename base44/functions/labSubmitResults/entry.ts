@@ -57,14 +57,14 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const file = new File([base64ToBytes(fileB64)], fileName, { type: fileType });
-    const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+    const up = await base44.asServiceRole.integrations.Core.UploadPrivateFile({ file }); // stored privately
     const nowIso = new Date().toISOString();
     const today = nowIso.slice(0, 10);
 
     // Associate results + payment with the exact request, and mark it completed
     await base44.asServiceRole.entities.LabRequest.update(labRequest.id, {
       status: "results",
-      result_file_url: up.file_url,
+      result_file_url: up.file_uri,
       result_file_name: fileName,
       result: "Laboratory report uploaded and available to the patient.",
       date_completed: today,
@@ -85,7 +85,7 @@ export default async function(req: Request): Promise<Response> {
       patient_cin: labRequest.patient_cin,
       lab_request_id: labRequest.id,
       request_ref: labRequest.request_id,
-      result_file_url: up.file_url,
+      result_file_url: up.file_uri,
       target: 'result',
       is_read: false,
     });
@@ -100,7 +100,7 @@ export default async function(req: Request): Promise<Response> {
       patient_cin: labRequest.patient_cin,
       lab_request_id: labRequest.id,
       request_ref: labRequest.request_id,
-      result_file_url: up.file_url,
+      result_file_url: up.file_uri,
       target: 'patient_profile',
       is_read: false,
     });
@@ -111,7 +111,7 @@ export default async function(req: Request): Promise<Response> {
       if (v.laboratory_id !== tech.laboratory_id) continue;
       await base44.asServiceRole.entities.LabPatientVisit.update(v.id, {
         status: "patient_notified",
-        result_file_url: up.file_url,
+        result_file_url: up.file_uri,
         result_file_name: fileName,
         results_uploaded_at: nowIso,
         results_ready_at: nowIso,
@@ -128,7 +128,7 @@ export default async function(req: Request): Promise<Response> {
       test_type: (labRequest.tests || []).map((t) => t.name).join(", ") || "Laboratory tests",
       test_date: labRequest.date_requested || today,
       lab_name: labRequest.lab_name || tech.laboratory_name,
-      file_url: up.file_url,
+      file_url: up.file_uri,
       file_name: fileName,
       submitted_date: nowIso,
       submitted_by_name: `${tech.laboratory_name} — ${tech.full_name}`,

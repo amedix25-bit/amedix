@@ -26,6 +26,10 @@
       "type": "string",
       "description": "PatientProfile id the action concerns"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account the action concerns \u2014 used for Row Level Security so the patient can see the audit entries about their own record, and nobody else's"
+    },
     "patient_cin": {
       "type": "string"
     },
@@ -58,6 +62,21 @@
     "datetime"
   ],
   "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.actor_user_id": "{{user.id}}"
+        },
+        {
+          "data.patient_user_id": "{{user.id}}"
+        }
+      ]
+    },
     "create": {
       "user_condition": {
         "role": "admin"

@@ -75,7 +75,7 @@ export default function PatientDocuments({ patient }) {
     setUploadingButton(buttonId);
     setError("");
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file }); // stored privately
       const multi = category.buttons.length > 1;
       await base44.entities.MedicalDocument.create({
         patient_id: patient.id,

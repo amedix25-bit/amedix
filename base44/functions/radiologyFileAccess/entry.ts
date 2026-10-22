@@ -41,7 +41,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     // The file must belong to THIS study — no signing of arbitrary paths.
-    const allowed = new Set([request.report_file_url || "", ...(request.image_file_urls || [])]);
+    const allowed = new Set([request.report_file_url || "", request.pdf_url || "", ...(request.image_file_urls || [])]);
     if (!allowed.has(fileUri)) {
       const versions = await svc.entities.RadiologyReportVersion.filter(
         { imaging_request_id: request.id }, { limit: 100 });

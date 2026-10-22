@@ -86,11 +86,11 @@ export default function RadiologistSubmitResults({ request, user, radiologistPro
         `ImagingReport_${request.patient_cin}_${dateStr}.pdf`,
         { type: "application/pdf" }
       );
-      const { file_url: reportPdfUrl } = await base44.integrations.Core.UploadPublicFile({ file: pdfFile });
+      const { file_uri: reportPdfUrl } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
 
       const images = [];
       for (const f of files) {
-        const { file_url } = await base44.integrations.Core.UploadPublicFile({ file: f });
+        const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: f }); // stored privately
         images.push({ file_url, file_name: f.name });
       }
 

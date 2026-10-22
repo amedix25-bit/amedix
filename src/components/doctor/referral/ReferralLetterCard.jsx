@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 export const STATUS_STYLES = {
   draft: "bg-slate-100 text-slate-600",
@@ -66,9 +67,14 @@ export default function ReferralLetterCard({ referral, doctorName, onUpdated }) 
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {referral.pdf_url && (
-            <a href={referral.pdf_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+            <ClinicalFileButton
+              kind="referral_letter"
+              id={referral.id}
+              fileRef={referral.pdf_url}
+              className="text-sm text-primary hover:underline"
+            >
               View PDF
-            </a>
+            </ClinicalFileButton>
           )}
           {referral.status === "draft" && (
             <Button size="sm" variant="outline" disabled={busy} onClick={() => changeStatus("sent", "sent")}>

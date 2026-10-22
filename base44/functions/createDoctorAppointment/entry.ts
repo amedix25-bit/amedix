@@ -27,6 +27,10 @@ export default async function(req) {
     }
     const patient = patients[0];
 
+    // Resolve the doctor's profile to the user ids used by access rules.
+    const doctorProfiles = await base44.entities.DoctorProfile.filter({ id: doctor_id });
+    const doctorProfile = doctorProfiles[0];
+
     // Verify the doctor has approved access to this patient.
     const accessReqs = await base44.entities.AccessRequest.filter({ patient_id: patient.id, doctor_id, status: 'approved' });
     if (accessReqs.length === 0) {
@@ -53,7 +57,9 @@ export default async function(req) {
 
     const appointment = await base44.entities.Appointment.create({
       patient_id: patient.id,
+      patient_user_id: patient.user_id,
       doctor_id,
+      doctor_user_id: doctorProfile ? doctorProfile.user_id : user.id,
       patient_cin: patient.cin,
       patient_name: patient.full_name,
       doctor_name: doctor_name || '',

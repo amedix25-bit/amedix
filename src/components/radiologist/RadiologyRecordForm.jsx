@@ -51,7 +51,7 @@ export default function RadiologyRecordForm({ patient, radiologistProfile, user,
     }
     setSaving(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file }); // stored privately
       await base44.entities.RadiologyRecord.create({
         patient_id: patient.id,
         patient_user_id: patient.user_id,
