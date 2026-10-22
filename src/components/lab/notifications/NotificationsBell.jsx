@@ -11,7 +11,7 @@ import {
 import { useLabNotifications } from "@/hooks/useLabNotifications";
 
 const TYPE_STYLES = {
-  new_request: "bg-teal-50 text-teal-700 border-teal-200",
+  new_request: "bg-blue-50 text-blue-700 border-blue-200",
   results_uploaded: "bg-sky-50 text-sky-700 border-sky-200",
   request_completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
   request_updated: "bg-amber-50 text-amber-700 border-amber-200",

@@ -16,7 +16,7 @@ export const TOOTH_STATUSES = [
   { key: "filled", label: "Filled / Restored", cls: "bg-blue-500/85 text-white border-blue-500" },
   { key: "crown", label: "Crown", cls: "bg-amber-400 text-amber-950 border-amber-500" },
   { key: "root_canal", label: "Root Canal Treated", cls: "bg-purple-500/85 text-white border-purple-500" },
-  { key: "implant", label: "Implant", cls: "bg-teal-500/85 text-white border-teal-500" },
+  { key: "implant", label: "Implant", cls: "bg-blue-500/85 text-white border-blue-500" },
   { key: "missing", label: "Missing / Extracted", cls: "bg-slate-300 text-slate-600 border-slate-400 line-through" },
 ];
 

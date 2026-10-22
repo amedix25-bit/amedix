@@ -276,7 +276,7 @@ export default function RadiologyWorklist({ radiologistProfile, user, initialVie
                       {STAGE_LABELS[item.stage]}
                     </span>
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      item.ownership === "mine" ? "bg-teal-500/15 text-teal-700"
+                      item.ownership === "mine" ? "bg-blue-500/15 text-blue-700"
                       : item.ownership === "finalized" ? "bg-emerald-500/15 text-emerald-700"
                       : item.ownership === "other" ? "bg-purple-500/15 text-purple-700"
                       : "bg-amber-500/15 text-amber-700"}`}>

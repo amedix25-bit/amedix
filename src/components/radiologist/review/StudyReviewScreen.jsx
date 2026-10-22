@@ -83,7 +83,7 @@ export default function StudyReviewScreen({ requestId, user, radiologistProfile,
             {STAGE_LABELS[request.stage]}
           </span>
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-            ownershipLabel === "Assigned to you" ? "bg-teal-500/15 text-teal-700"
+            ownershipLabel === "Assigned to you" ? "bg-blue-500/15 text-blue-700"
             : ownershipLabel === "Finalized" ? "bg-emerald-500/15 text-emerald-700"
             : ownershipLabel === "Unassigned" ? "bg-amber-500/15 text-amber-700"
             : "bg-purple-500/15 text-purple-700"}`}>

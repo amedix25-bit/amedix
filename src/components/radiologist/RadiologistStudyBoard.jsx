@@ -9,7 +9,7 @@ import {
 // from the radiologist's authorized studies and opens the matching worklist.
 const CARDS = [
   { key: "available", label: "Available for Reporting", icon: Inbox, tone: "text-purple-600 bg-purple-500/10" },
-  { key: "mine", label: "Assigned to Me", icon: UserCheck, tone: "text-teal-600 bg-teal-500/10" },
+  { key: "mine", label: "Assigned to Me", icon: UserCheck, tone: "text-blue-600 bg-blue-500/10" },
   { key: "in_progress", label: "In Progress", icon: PenLine, tone: "text-blue-600 bg-blue-500/10" },
   { key: "drafts", label: "Draft Reports", icon: FileEdit, tone: "text-amber-600 bg-amber-500/10" },
   { key: "awaiting_signature", label: "Awaiting Signature", icon: FileSignature, tone: "text-indigo-600 bg-indigo-500/10" },

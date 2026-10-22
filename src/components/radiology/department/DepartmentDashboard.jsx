@@ -6,7 +6,7 @@ const CARDS = [
   { key: "new_requests", label: "New Requests", filter: { status: "requested" }, chip: "bg-secondary text-secondary-foreground" },
   { key: "awaiting_review", label: "Awaiting Review", filter: { status: "under_review" }, chip: "bg-blue-500/15 text-blue-600" },
   { key: "scheduled_examinations", label: "Scheduled Examinations", filter: { status: "scheduled" }, chip: "bg-blue-500/15 text-blue-600" },
-  { key: "in_progress", label: "Examinations In Progress", filter: { status: "in_progress" }, chip: "bg-teal-500/15 text-teal-600" },
+  { key: "in_progress", label: "Examinations In Progress", filter: { status: "in_progress" }, chip: "bg-blue-500/15 text-blue-600" },
   { key: "images_awaiting_transfer", label: "Images Awaiting Transfer", filter: { status: "images_awaiting_transfer" }, chip: "bg-amber-500/15 text-amber-600" },
   { key: "ready_for_reporting", label: "Ready for Reporting", filter: { status: "ready_for_reporting" }, chip: "bg-purple-500/15 text-purple-600" },
   { key: "reports_in_progress", label: "Reports In Progress", filter: { status: "reporting_in_progress" }, chip: "bg-purple-500/15 text-purple-600" },

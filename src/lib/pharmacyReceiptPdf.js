@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 
-const TEAL = [12, 98, 92];
+const TEAL = [23, 50, 77]; // #17324D dark blue
 const DARK = [23, 40, 45];
 const GRAY = [105, 115, 120];
 const LIGHT = [236, 245, 244];

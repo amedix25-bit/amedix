@@ -7,7 +7,7 @@ export const LAB_STATUS = {
   authorized: {
     label: "AUTHORIZED / SENT TO LABORATORY",
     description: "Authorized by you and sent to the laboratory",
-    className: "bg-teal-50 text-teal-700 border-teal-200",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
   },
   pending: {
     label: "PENDING",
