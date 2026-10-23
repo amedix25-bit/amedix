@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { logSectionEdit } from "../../shared/sectionEditLog.ts";
 
 // The check-in-gated clinical record creator. Examinations, prescribed
 // medications and diagnoses are ONLY written through this function: the
@@ -75,6 +76,7 @@ export default async function(req) {
         patient_name: patient.full_name,
         source: record.source || "doctor_prescribed",
       });
+      await logSectionEdit(base44, patient, "medications", doctor, `Added medication ${med.name}`);
       return Response.json({ record_id: med.id });
     }
 
@@ -120,6 +122,70 @@ export default async function(req) {
         }
       }
       return Response.json({ record_id: diag.id });
+    }
+
+    // ── My Health section edits (doctor, check-in gated) ──
+    // Doctors may correct the patient's recorded history during an active
+    // visit. Every change is recorded in the HealthSectionEdit log and shown
+    // in both portals as "Dr. <name> edited <datetime>".
+    if (kind === "condition" || kind === "surgery" || kind === "allergy") {
+      const action = String(body.action || "create");
+      const map = {
+        condition: { entity: base44.asServiceRole.entities.MedicalCondition, section: "known_case", required: "name", allowed: ["name", "name_ar", "category", "current_status", "details", "date"], label: "condition" },
+        surgery: { entity: base44.asServiceRole.entities.SurgicalHistory, section: "surgical_history", required: "surgery_type", allowed: ["surgery_type", "surgery_date", "reason", "complications", "outcome"], label: "surgery" },
+        allergy: { entity: base44.asServiceRole.entities.Allergy, section: "allergies", required: "allergen", allowed: ["allergen", "allergy_type", "entry_type", "reaction", "severity"], label: "allergy" },
+      };
+      const cfg = map[kind];
+
+      if (action === "delete") {
+        if (!record.id) return Response.json({ error: "Record id is required." }, { status: 400 });
+        await cfg.entity.delete(record.id);
+        await logSectionEdit(base44, patient, body.section || cfg.section, doctor, `Removed a ${cfg.label} entry`);
+        return Response.json({ record_id: record.id });
+      }
+
+      const payload = {};
+      for (const field of cfg.allowed) {
+        if (record[field] !== undefined && record[field] !== null) payload[field] = record[field];
+      }
+      if (!String(payload[cfg.required] || "").trim()) {
+        return Response.json({ error: `${cfg.required} is required.` }, { status: 400 });
+      }
+      const sectionKey = body.section || payload.category || cfg.section;
+      let recordId;
+      if (action === "update") {
+        if (!record.id) return Response.json({ error: "Record id is required." }, { status: 400 });
+        await cfg.entity.update(record.id, payload);
+        recordId = record.id;
+      } else {
+        const saved = await cfg.entity.create({
+          ...payload,
+          patient_id: patient.id,
+          patient_user_id: patient.user_id,
+          patient_cin: patient.cin,
+          patient_name: patient.full_name,
+        });
+        recordId = saved.id;
+      }
+      await logSectionEdit(base44, patient, sectionKey, doctor, `${action === "update" ? "Updated" : "Added"} a ${cfg.label} entry`);
+      return Response.json({ record_id: recordId });
+    }
+
+    if (kind === "pregnancy") {
+      if (patient.gender !== "female") {
+        return Response.json({ error: "Pregnancy information applies to female patients only." }, { status: 400 });
+      }
+      const fields = ["pregnancy_status", "gestational_age", "estimated_due_date", "pregnancy_history"];
+      const updates = {};
+      for (const field of fields) {
+        if (record[field] !== undefined) updates[field] = record[field];
+      }
+      if (Object.keys(updates).length === 0) {
+        return Response.json({ error: "No pregnancy fields to update." }, { status: 400 });
+      }
+      await base44.asServiceRole.entities.PatientProfile.update(patient.id, updates);
+      await logSectionEdit(base44, patient, "pregnancy", doctor, "Updated pregnancy information");
+      return Response.json({ record_id: patient.id });
     }
 
     return Response.json({ error: "Unknown record kind." }, { status: 400 });

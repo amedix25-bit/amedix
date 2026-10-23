@@ -2,18 +2,27 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import SectionCard from "./SectionCard";
 import InfoRow from "./InfoRow";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTranslations";
 
-export default function SurgicalSection({ number, patient, doctorView }) {
+// My Health point 5 — Past Surgical History. Read-only for the patient; the
+// doctor may add, edit or remove entries during an active visit (check-in
+// gated, recorded with their name).
+export default function SurgicalSection({ number, patient, doctorView, editable }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
-  // Doctor Portal display value — English translation of patient-entered
-  // Arabic text; unchanged for English values and in the Patient Portal.
   const dv = (s, field) => (doctorView ? doctorText("SurgicalHistory", s, field, s[field]) : s[field]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [logRefresh, setLogRefresh] = useState(0);
 
   const load = useCallback(async () => {
     if (!patient?.id) return;
@@ -31,8 +40,126 @@ export default function SurgicalSection({ number, patient, doctorView }) {
     load();
   }, [load]);
 
+  const startAdd = () => {
+    setError("");
+    setForm({ id: null, surgery_type: "", surgery_date: "", reason: "", complications: "", outcome: "" });
+    setOpen(true);
+  };
+
+  const startEdit = (s) => {
+    setError("");
+    setForm({
+      id: s.id,
+      surgery_type: s.surgery_type || "",
+      surgery_date: s.surgery_date || "",
+      reason: s.reason || "",
+      complications: s.complications || "",
+      outcome: s.outcome || "",
+    });
+    setOpen(true);
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!form.surgery_type.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      await base44.functions.invoke("createClinicalRecord", {
+        kind: "surgery",
+        patient_id: patient.id,
+        action: form.id ? "update" : "create",
+        record: {
+          id: form.id || undefined,
+          surgery_type: form.surgery_type.trim(),
+          surgery_date: form.surgery_date || undefined,
+          reason: form.reason,
+          complications: form.complications,
+          outcome: form.outcome,
+        },
+      });
+      setForm(null);
+      setLogRefresh((v) => v + 1);
+      await load();
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.error || "Could not save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (s) => {
+    if (!window.confirm(t("Remove this entry?"))) return;
+    try {
+      await base44.functions.invoke("createClinicalRecord", {
+        kind: "surgery",
+        patient_id: patient.id,
+        action: "delete",
+        record: { id: s.id },
+      });
+      setLogRefresh((v) => v + 1);
+      await load();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <SectionCard number={number} title={t("Past Surgical History")}>
+    <SectionCard
+      number={number}
+      title={t("Past Surgical History")}
+      open={open}
+      onOpenChange={setOpen}
+      patient={patient}
+      sectionKey="surgical_history"
+      editLogRefresh={logRefresh}
+      action={
+        editable && !form ? (
+          <Button size="sm" variant="outline" onClick={startAdd}>
+            <Plus className="w-4 h-4 mr-1" /> {t("Add")}
+          </Button>
+        ) : undefined
+      }
+    >
+      {form && (
+        <form onSubmit={save} className="mb-4 rounded-lg border border-border p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">{form.id ? t("Edit Surgery") : t("Add Surgery")}</p>
+            <button type="button" onClick={() => setForm(null)} className="text-muted-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{t("Surgery type")} *</Label>
+              <Input value={form.surgery_type} onChange={(e) => setForm({ ...form, surgery_type: e.target.value })} placeholder={t("Type of surgery, e.g. Appendectomy")} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("Date")}</Label>
+              <Input type="date" value={form.surgery_date} onChange={(e) => setForm({ ...form, surgery_date: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("Reason / Indication")}</Label>
+              <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("Complications")}</Label>
+              <Input value={form.complications} onChange={(e) => setForm({ ...form, complications: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("Recovery / Outcome")}</Label>
+              <Input value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })} />
+            </div>
+          </div>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <Button type="submit" size="sm" disabled={saving}>
+            {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
+            {t("Save")}
+          </Button>
+        </form>
+      )}
+
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -55,7 +182,19 @@ export default function SurgicalSection({ number, patient, doctorView }) {
                       ? doctorText("SurgicalHistory", s, "surgery_type", s.surgery_type) ?? <TranslatingPlaceholder />
                       : s.surgery_type_ar || s.surgery_type}
                   </p>
-                  {s.surgery_date && <span className="text-xs text-muted-foreground shrink-0">{s.surgery_date}</span>}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {s.surgery_date && <span className="text-xs text-muted-foreground">{s.surgery_date}</span>}
+                    {editable && (
+                      <>
+                        <button type="button" onClick={() => startEdit(s)} className="text-muted-foreground hover:text-foreground">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={() => remove(s)} className="text-muted-foreground hover:text-destructive">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
                   <InfoRow label={t("Reason / Indication")} value={dv(s, "reason")} />

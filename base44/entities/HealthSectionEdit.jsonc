@@ -1,0 +1,69 @@
+{
+  "name": "HealthSectionEdit",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the edited section belongs to"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account - used so the patient can read the edit history of their own record"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string",
+      "description": "My Health section key that was edited - known_case, past_history, surgical_history, medications, allergies, pregnancy"
+    },
+    "actor_user_id": {
+      "type": "string",
+      "description": "User id of the person who made the edit"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Display name of the person who made the edit, e.g. the doctor's name - shown as 'Dr. <name> edited <datetime>'"
+    },
+    "actor_role": {
+      "type": "string",
+      "enum": [
+        "doctor",
+        "admin"
+      ]
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the edit (ISO datetime)"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short human-readable summary of what was changed"
+    }
+  },
+  "required": [
+    "patient_id",
+    "section",
+    "actor_name",
+    "datetime"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -17,6 +17,8 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
   const dv = (m, field) => (doctorView ? doctorText("Medication", m, field, m[field]) : m[field]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [logRefresh, setLogRefresh] = useState(0);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -55,6 +57,7 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
       setName("");
       setStartDate("");
       setShowAdd(false);
+      setLogRefresh((v) => v + 1);
       load();
     } catch (err) {
       console.error(err);
@@ -85,9 +88,21 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
     <SectionCard
       number={number}
       title={t("Medications")}
+      open={open}
+      onOpenChange={setOpen}
+      patient={patient}
+      sectionKey="medications"
+      editLogRefresh={logRefresh}
       action={
         editable ? (
-          <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setShowAdd(true);
+              setOpen(true);
+            }}
+          >
             <Plus className="w-4 h-4 mr-1" /> {t("Add")}
           </Button>
         ) : undefined
