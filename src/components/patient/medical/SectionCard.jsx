@@ -61,32 +61,32 @@ export default function SectionCard({
     : "";
 
   return (
-    <div className="rounded-xl border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 p-5 pb-0">
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-center justify-between gap-3 px-5 py-4">
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="min-w-0 flex-1 text-left rtl:text-right"
+          className="group min-w-0 flex-1 flex items-center gap-3 text-left rtl:text-right"
           aria-expanded={open}
         >
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">
-              {number}
-            </span>
-            <span className="truncate">{title}</span>
-            <ChevronDown
-              className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-            />
+          <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center font-semibold shrink-0 shadow-sm">
+            {number}
+          </span>
+          <h3 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors truncate">
+            {title}
           </h3>
+          <ChevronDown
+            className={`w-5 h-5 text-muted-foreground group-hover:text-primary shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          />
         </button>
         {action}
       </div>
       {edited && (
-        <p className="text-xs text-muted-foreground px-5 mt-1">
+        <p className="text-xs text-muted-foreground px-5 pb-3 -mt-1">
           {t("Dr.")} {edited.actor_name} {t("edited")} {editedWhen}
         </p>
       )}
-      {open && <div className="p-5 pt-4">{children}</div>}
+      {open && <div className="px-5 pb-5 pt-1 border-t border-border/60">{children ? <div className="pt-4">{children}</div> : children}</div>}
     </div>
   );
 }
