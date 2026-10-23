@@ -107,6 +107,146 @@ export default async function(req: Request): Promise<Response> {
     const payload = body && typeof body === "object" ? body : {};
     const action = String(payload.action || "status");
     const requestId = String(payload.request_id || "").trim();
+
+    // ===== OHIF connection test — facility-administrator-only end-to-end
+    // verification. The embedded OHIF integration is marked Connected ONLY
+    // after this test: (1) reaches the deployed OHIF instance and (2)
+    // retrieves at least one study from the facility's DICOMweb archive.
+    // No imaging request is involved and no other configuration is changed.
+    if (action === "ohif_test") {
+      const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
+      const profileId = String(payload.hospital_profile_id || "").trim();
+      const facility =
+        (profileId ? hospitals.find((h: any) => h.id === profileId) : null) ||
+        hospitals.find((h: any) => h.pacs_integration_enabled && h.pacs_integration_type === "ohif_embedded") ||
+        hospitals[0] ||
+        null;
+      if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
+      const setOhifStatus = async (status: string) => {
+        await svc.entities.HospitalProfile.update(facility.id, { ohif_connection_status: status });
+      };
+
+      if (!facility.pacs_integration_enabled || facility.pacs_integration_type !== "ohif_embedded") {
+        return json({
+          tested: false,
+          connection_status: "pending_configuration",
+          message: "Select the OHIF Viewer (embedded) integration type and enable the connection first — the test runs against that deployment.",
+        }, 409);
+      }
+      const ohifBase = String(facility.ohif_base_url || "").trim().replace(/\/+$/, "");
+      if (!ohifBase) {
+        return json({
+          tested: false,
+          connection_status: "pending_configuration",
+          message: "Deployment required — the OHIF Base URL is empty. Deploy the facility's approved OHIF instance (never the public demo), record its https:// address, then run this test. The integration stays Pending configuration and launching stays disabled until the test passes.",
+        }, 409);
+      }
+      if (!/^https:\/\//i.test(ohifBase)) {
+        await setOhifStatus("verification_failed");
+        return json({
+          tested: false,
+          connection_status: "verification_failed",
+          message: "The recorded OHIF Base URL is not an https:// address — only HTTPS deployments may be connected. Correct it and run the test again.",
+        }, 409);
+      }
+      const dicomwebBase = String(facility.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
+      if (!dicomwebBase) {
+        return json({
+          tested: false,
+          connection_status: "pending_configuration",
+          message: "The end-to-end test needs the facility archive's DICOMweb (QIDO) Base URL to verify study retrieval. Record it, then run the test again.",
+        }, 409);
+      }
+      if (!isHttpUrl(dicomwebBase)) {
+        await setOhifStatus("verification_failed");
+        return json({
+          tested: false,
+          connection_status: "verification_failed",
+          message: "The DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — correct it and run the test again.",
+        }, 409);
+      }
+      // Step 1 — the OHIF deployment itself is reachable and serving.
+      try {
+        const probe = await fetch(ohifBase, { signal: AbortSignal.timeout(10000) });
+        if (probe.status >= 500) {
+          await setOhifStatus("verification_failed");
+          return json({
+            tested: false,
+            connection_status: "verification_failed",
+            message: `The OHIF deployment answered with HTTP ${probe.status} — it is not serving correctly yet.`,
+          }, 409);
+        }
+      } catch {
+        await setOhifStatus("verification_failed");
+        return json({
+          tested: false,
+          connection_status: "verification_failed",
+          message: "The OHIF deployment could not be reached — it may not be deployed yet or the address is incorrect.",
+        }, 409);
+      }
+      // Step 2 — authorized end-to-end study retrieval from the facility archive.
+      let studiesFound = 0;
+      try {
+        const probe = await fetch(`${dicomwebBase}/studies?limit=1`, {
+          signal: AbortSignal.timeout(10000),
+          headers: { Accept: "application/dicom+json" },
+        });
+        if (probe.status === 401 || probe.status === 403) {
+          await setOhifStatus("verification_failed");
+          return json({
+            tested: false,
+            connection_status: "verification_failed",
+            message: "The archive requires authentication for its DICOMweb endpoint — vendor service credentials must be configured as server-side secrets first.",
+          }, 409);
+        }
+        if (!probe.ok) {
+          await setOhifStatus("verification_failed");
+          return json({
+            tested: false,
+            connection_status: "verification_failed",
+            message: `The facility archive answered with HTTP ${probe.status} — study retrieval failed.`,
+          }, 409);
+        }
+        const rows = await probe.json().catch(() => []);
+        studiesFound = Array.isArray(rows) ? rows.length : 0;
+        if (studiesFound === 0) {
+          await setOhifStatus("verification_failed");
+          return json({
+            tested: false,
+            connection_status: "verification_failed",
+            message: "The archive answered, but no study could be retrieved from it — at least one study must be retrievable for the end-to-end test to pass.",
+          }, 409);
+        }
+      } catch {
+        await setOhifStatus("verification_failed");
+        return json({
+          tested: false,
+          connection_status: "verification_failed",
+          message: "The facility archive could not be reached — study retrieval failed. It may be offline or the DICOMweb endpoint is incorrect.",
+        }, 409);
+      }
+      const testedDatetime = new Date().toISOString();
+      await svc.entities.HospitalProfile.update(facility.id, {
+        ohif_connection_status: "connected",
+        ohif_connection_tested_datetime: testedDatetime,
+      });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: "hospital",
+        action: "radiology_ohif_connection_test",
+        action_label: "ran the embedded OHIF end-to-end study-retrieval test — the integration is now Connected",
+        hospital: facility.hospital_name || "",
+      });
+      return json({
+        tested: true,
+        connection_status: "connected",
+        tested_datetime: testedDatetime,
+        studies_retrieved: studiesFound,
+        message: `End-to-end test passed — ${studiesFound} study(ies) retrieved from the facility archive through the deployed OHIF integration. The integration is now Connected.`,
+      });
+    }
+
     if (!requestId) return json({ error: "Select the imaging request." }, 400);
 
     const found = await svc.entities.ImagingRequest.filter({ id: requestId });
@@ -130,6 +270,14 @@ export default async function(req: Request): Promise<Response> {
       viewer_configured: pacsEnabled ? !!String(pacsProfile.pacs_viewer_url_template || "").trim() : false,
       dicomweb_configured: pacsEnabled ? !!String(pacsProfile.pacs_dicomweb_base_url || "").trim() : false,
       ohif_configured: pacsEnabled && pacsMode === "ohif_embedded" ? !!String(pacsProfile.ohif_base_url || "").trim() : false,
+      ohif_connection_status:
+        pacsEnabled && pacsMode === "ohif_embedded"
+          ? String(pacsProfile.ohif_connection_status || "pending_configuration")
+          : "not_applicable",
+      ohif_connected:
+        pacsEnabled &&
+        pacsMode === "ohif_embedded" &&
+        String(pacsProfile.ohif_connection_status || "pending_configuration") === "connected",
     };
 
     if (action === "status") {
@@ -295,10 +443,15 @@ export default async function(req: Request): Promise<Response> {
           "This facility is not connected with an embedded OHIF deployment. The hospital administrator selects the OHIF Viewer (embedded) integration type and records the deployment's https:// Base URL in the Hospital Portal, Radiology Department tab, Imaging System Connection."
         );
       }
+      if (String(pacsProfile.ohif_connection_status || "pending_configuration") !== "connected") {
+        return refuseOhif(
+          "Launching is disabled — the embedded OHIF integration is Pending configuration. Deployment of the facility's approved OHIF instance is required, and the hospital administrator must pass the end-to-end study-retrieval test in the Hospital Portal (Radiology Department tab, Imaging System Connection) before studies can be opened."
+        );
+      }
       const ohifBase = String(pacsProfile.ohif_base_url || "").trim().replace(/\/+$/, "");
       if (!ohifBase) {
         return refuseOhif(
-          "The OHIF deployment is connected, but its Base URL is not recorded yet. The hospital administrator must record it in the Hospital Portal, Radiology Department tab, Imaging System Connection."
+          "The connected OHIF integration has no Base URL recorded — the hospital administrator must correct this in the Hospital Portal, Radiology Department tab, Imaging System Connection."
         );
       }
       if (!/^https:\/\//i.test(ohifBase)) {

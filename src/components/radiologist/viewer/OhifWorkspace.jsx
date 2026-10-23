@@ -60,6 +60,8 @@ export default function OhifWorkspace({ requestId, status }) {
     }
   };
 
+  const connStatus = status.pacs?.ohif_connection_status || "pending_configuration";
+  const connected = connStatus === "connected";
   const deployed = !!status.pacs?.ohif_configured;
   const mappingOk = !!status.study_instance_uid;
 
@@ -91,11 +93,11 @@ export default function OhifWorkspace({ requestId, status }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => open("embed")} disabled={launching}>
+          <Button size="sm" onClick={() => open("embed")} disabled={launching || !connected}>
             {launching ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <MonitorPlay className="w-4 h-4 mr-1.5" />}
             Open Study
           </Button>
-          <Button size="sm" variant="outline" onClick={() => open("new_tab")} disabled={launching}>
+          <Button size="sm" variant="outline" onClick={() => open("new_tab")} disabled={launching || !connected}>
             <ExternalLink className="w-4 h-4 mr-1.5" />
             Open Viewer in new tab
           </Button>
@@ -105,11 +107,15 @@ export default function OhifWorkspace({ requestId, status }) {
       {/* Integration status — every stage reported separately */}
       <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
         {stage(
-          "OHIF deployment",
-          deployed ? "ok" : "fail",
-          deployed
-            ? "configured by the hospital administrator (embedded deployment, HTTPS)"
-            : "not configured — no approved OHIF deployment is recorded for this facility"
+          "OHIF integration",
+          connected ? "ok" : connStatus === "verification_failed" ? "fail" : "warn",
+          connected
+            ? "Connected — the end-to-end study-retrieval test passed"
+            : connStatus === "verification_failed"
+              ? "the last connection test failed — the hospital administrator must correct the deployment and re-run it"
+              : deployed
+                ? "pending configuration — the OHIF address is recorded but the end-to-end study-retrieval test has not passed yet; launching is disabled"
+                : "pending configuration — no approved OHIF deployment is recorded yet; deployment required"
         )}
         {stage(
           "Study mapping",
@@ -188,17 +194,16 @@ export default function OhifWorkspace({ requestId, status }) {
         </div>
       )}
 
-      {!deployed && (
-        <div className="rounded-lg bg-muted/50 p-3">
-          <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+      {!connected && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs text-amber-800 flex items-start gap-1.5">
             <HelpCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
             <span>
-              Integration not configured. To enable embedded viewing, the hospital's PACS administrator deploys an
-              approved OHIF instance (never the public demo for real patient data) with its datasource pointed at the
-              facility archive, and the administrator records in the Hospital Portal, Radiology Department tab,
-              "Imaging System Connection": the OHIF integration type, the deployment's https:// Base URL and, where the
-              vendor provides one, the DICOMweb (QIDO) endpoint. The department records the Study Instance UID on each
-              request. Until then, use the manual imaging workflow below.
+              Launching is disabled — the embedded OHIF integration is not Connected yet.
+              {deployed
+                ? " The recorded deployment has not passed the end-to-end study-retrieval test; the hospital administrator corrects the configuration and re-runs the test in the Hospital Portal, Radiology Department tab, Imaging System Connection."
+                : " Deployment of the facility's approved OHIF instance (never the public demo for real patient data) is required first; the administrator then records its https:// Base URL and passes the end-to-end study-retrieval test in the Hospital Portal, Radiology Department tab, Imaging System Connection."}
+              Until then, use the manual imaging workflow below.
             </span>
           </p>
         </div>

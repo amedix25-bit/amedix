@@ -240,7 +240,9 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                       {status.pacs?.enabled && (
                         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-sky-500/10 text-sky-700">
                           <Server className="w-3.5 h-3.5" />
-                          Facility imaging system connected{status.pacs.vendor_name ? ` — ${status.pacs.vendor_name}` : ""}
+                          {status.pacs.mode === "ohif_embedded" && !status.pacs.ohif_connected
+                            ? `Facility imaging system — OHIF pending configuration${status.pacs.vendor_name ? ` — ${status.pacs.vendor_name}` : ""}`
+                            : `Facility imaging system connected${status.pacs.vendor_name ? ` — ${status.pacs.vendor_name}` : ""}`}
                         </span>
                       )}
                     </div>

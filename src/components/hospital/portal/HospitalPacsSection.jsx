@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 // Hospital Portal — Radiology Department tab. Imaging System Connection (PACS):
@@ -22,6 +22,23 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
     ohif_route_template: profile.ohif_route_template || "",
   });
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  // A deployable OHIF address: a well-formed https:// URL on a real host —
+  // never the public OHIF demo or a reserved example/placeholder domain.
+  const isValidOhifUrl = (value) => {
+    try {
+      const u = new URL(value);
+      if (u.protocol !== "https:" || !u.hostname || u.username || u.password) return false;
+      const host = u.hostname.toLowerCase();
+      const blocked = ["ohif.org", "www.ohif.org", "demo.ohif.org", "o.ohif.org", "example.com", "www.example.com", "example.org", "example.net", "localhost"];
+      return !blocked.includes(host) && !host.endsWith(".example") && !host.endsWith(".test") && !host.endsWith(".local");
+    } catch {
+      return false;
+    }
+  };
+  const connectionStatus = profile.ohif_connection_status || "pending_configuration";
 
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
 
@@ -49,20 +66,22 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
     }
     const ohifBase = form.ohif_base_url.trim();
     const ohifRoute = form.ohif_route_template.trim();
-    // An embedded OHIF deployment must be the facility's OWN https deployment —
-    // never the public demo, which must not receive real patient information.
-    if (form.pacs_integration_type === "ohif_embedded" && !/^https:\/\//i.test(ohifBase)) {
+    // An embedded OHIF deployment must be the facility's OWN DEPLOYED https
+    // instance — never the public demo or a placeholder address. An empty Base
+    // URL is allowed while deployment is pending: the integration then stays
+    // "Pending configuration" and launching stays disabled.
+    if (form.pacs_integration_type === "ohif_embedded" && ohifBase && !isValidOhifUrl(ohifBase)) {
       toast({
         title: "Invalid OHIF Base URL",
-        description: "The embedded OHIF deployment must be recorded as an https:// address (e.g. https://ohif.hospital.example). Never use the public OHIF demo for real patient data.",
+        description: "Enter the https:// address of your own deployed, approved OHIF instance (e.g. https://ohif.your-hospital.com). The public OHIF demo and placeholder or example addresses are not accepted. Leave it empty while deployment is still pending.",
         variant: "destructive",
       });
       return;
     }
-    if (ohifRoute && !/^https:\/\//i.test(ohifRoute)) {
+    if (ohifRoute && !isValidOhifUrl(ohifRoute)) {
       toast({
         title: "Invalid OHIF route template",
-        description: "The route template must be an https:// URL (e.g. https://ohif.hospital.example/viewer?StudyInstanceUIDs={study_instance_uid}).",
+        description: "The route template must be an https:// URL of your own deployment (e.g. https://ohif.your-hospital.com/viewer?StudyInstanceUIDs={study_instance_uid}).",
         variant: "destructive",
       });
       return;
@@ -78,6 +97,17 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
         pacs_vendor_notes: form.pacs_vendor_notes.trim(),
         ohif_base_url: ohifBase,
         ohif_route_template: ohifRoute,
+        // The Connected state is earned only through the end-to-end test. It is
+        // preserved when saving an unchanged OHIF configuration, and reset to
+        // Pending configuration whenever the Base URL, route template, enable
+        // state or integration type changes.
+        ohif_connection_status:
+          form.pacs_integration_enabled &&
+          form.pacs_integration_type === "ohif_embedded" &&
+          ohifBase === String(profile.ohif_base_url || "").trim() &&
+          ohifRoute === String(profile.ohif_route_template || "").trim()
+            ? (profile.ohif_connection_status || "pending_configuration")
+            : "pending_configuration",
         pacs_updated_datetime: new Date().toISOString(),
       });
       if (onUpdate) onUpdate(updated);
@@ -86,6 +116,36 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
       toast({ title: "Could not save the connection", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // End-to-end verification — the ONLY path that marks the integration
+  // Connected. Server-side: reaches the deployment and retrieves a study
+  // from the facility archive through its DICOMweb (QIDO) endpoint.
+  const runConnectionTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await base44.functions.invoke("radiologyPacsAccess", {
+        action: "ohif_test",
+        hospital_profile_id: profile.id,
+      });
+      setTestResult(res.data);
+      if (onUpdate && res.data.connection_status) {
+        onUpdate({ ...profile, ohif_connection_status: res.data.connection_status, ohif_connection_tested_datetime: res.data.tested_datetime });
+      }
+    } catch (err) {
+      const data = (err.response && err.response.data) || {};
+      setTestResult({
+        tested: false,
+        connection_status: data.connection_status || "verification_failed",
+        message: data.message || data.error || err.message,
+      });
+      if (onUpdate && data.connection_status) {
+        onUpdate({ ...profile, ohif_connection_status: data.connection_status });
+      }
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -98,6 +158,21 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
             Connect AMedix to the hospital's EXISTING imaging software — radiologists open the authorized study in your
             system from the Imaging Viewer tab. Confirm the supported integration method with your imaging vendor first.
           </p>
+          {form.pacs_integration_type === "ohif_embedded" && form.pacs_integration_enabled && (
+            <p className={`mt-1.5 inline-flex text-xs font-medium px-2 py-0.5 rounded-full ${
+              connectionStatus === "connected"
+                ? "bg-emerald-500/10 text-emerald-700"
+                : connectionStatus === "verification_failed"
+                  ? "bg-red-500/10 text-red-700"
+                  : "bg-amber-500/10 text-amber-700"
+            }`}>
+              {connectionStatus === "connected"
+                ? "Connected — end-to-end study-retrieval test passed"
+                : connectionStatus === "verification_failed"
+                  ? "Verification failed — correct the configuration and run the test again"
+                  : "Pending configuration — deployment required"}
+            </p>
+          )}
         </div>
         <label className="flex items-center gap-2 text-sm shrink-0 mt-0.5">
           <input
@@ -105,7 +180,7 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
             checked={form.pacs_integration_enabled}
             onChange={(e) => setForm((s) => ({ ...s, pacs_integration_enabled: e.target.checked }))}
           />
-          Connected
+          Enabled
         </label>
       </div>
       {form.pacs_integration_enabled && (
@@ -172,11 +247,12 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
                 <Input
                   value={form.ohif_base_url}
                   onChange={set("ohif_base_url")}
-                  placeholder="https://ohif.hospital.example"
+                  placeholder="https://ohif.your-hospital-domain"
                 />
                 <p className="text-xs text-muted-foreground">
-                  https:// only. Substituted server-side; only the verified Study Instance UID is placed in the study
-                  route — never patient name, CIN or credentials.
+                  https:// only — your own DEPLOYED instance, never the public OHIF demo. It may stay empty while
+                  deployment is pending; the integration then stays "Pending configuration" and launching is disabled.
+                  Only the verified Study Instance UID is placed in the study route — never patient name, CIN or credentials.
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -189,6 +265,30 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
                 <p className="text-xs text-muted-foreground">
                   Record only the route your deployed OHIF version documents. Placeholders: {"{study_instance_uid}"} {"{accession_number}"}.
                 </p>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-xs text-muted-foreground flex-1 min-w-[16rem]">
+                    The integration is marked <span className="font-semibold">Connected</span> only after this test: AMedix
+                    reaches your deployed OHIF instance and retrieves a study from your facility archive through its
+                    DICOMweb (QIDO) endpoint. Changing the Base URL or route template resets the status to Pending configuration.
+                  </p>
+                  <Button type="button" variant="outline" size="sm" onClick={runConnectionTest} disabled={testing}>
+                    {testing ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-1.5" />}
+                    Run connection test
+                  </Button>
+                </div>
+                {testResult && (
+                  <p className={`text-xs rounded-md px-2.5 py-1.5 border ${
+                    testResult.connection_status === "connected"
+                      ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                      : testResult.connection_status === "verification_failed"
+                        ? "text-red-700 bg-red-50 border-red-200"
+                        : "text-amber-700 bg-amber-50 border-amber-200"
+                  }`}>
+                    {testResult.message}
+                  </p>
+                )}
               </div>
             </>
           )}

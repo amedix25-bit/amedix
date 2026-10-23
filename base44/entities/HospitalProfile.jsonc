@@ -67,11 +67,25 @@
     },
     "ohif_base_url": {
       "type": "string",
-      "description": "HTTPS base URL of the facility's OWN approved OHIF Viewer deployment (e.g. https://ohif.hospital.example) \u2014 recorded by the administrator. Never the public OHIF demo, which must not receive real patient information. Used server-side to build the study route; no patient name, CIN or credential is ever placed in the URL."
+      "description": "HTTPS base URL of the facility's OWN deployed, approved OHIF Viewer instance \u2014 recorded by the administrator ONLY after the instance is actually deployed. May stay empty while deployment is pending; the integration then remains Pending configuration and launching stays disabled. Never the public OHIF demo, which must not receive real patient information. Used server-side to build the study route; no patient name, CIN or credential is ever placed in the URL."
     },
     "ohif_route_template": {
       "type": "string",
       "description": "Optional documented OHIF study route template overriding the default /viewer?StudyInstanceUIDs={study_instance_uid} route \u2014 placeholders {study_instance_uid} and {accession_number}, substituted server-side. Must be https. Record only the route the deployed OHIF version documents."
+    },
+    "ohif_connection_status": {
+      "type": "string",
+      "enum": [
+        "pending_configuration",
+        "connected",
+        "verification_failed"
+      ],
+      "default": "pending_configuration",
+      "description": "Embedded OHIF integration state \u2014 set ONLY by the server-side end-to-end test, never by hand: pending_configuration \u2014 no deployment recorded yet, or the recorded deployment has not passed the authorized end-to-end study-retrieval test (launching disabled); connected \u2014 the test reached the deployment and retrieved studies from the facility archive; verification_failed \u2014 the last test failed. Changing the OHIF Base URL or route template resets the status to pending_configuration."
+    },
+    "ohif_connection_tested_datetime": {
+      "type": "string",
+      "description": "Date and time the embedded OHIF end-to-end study-retrieval test last passed (ISO datetime)"
     },
     "pacs_vendor_notes": {
       "type": "string",
