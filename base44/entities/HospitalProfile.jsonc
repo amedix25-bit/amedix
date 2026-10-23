@@ -59,11 +59,25 @@
     },
     "pacs_viewer_url_template": {
       "type": "string",
-      "description": "Vendor-documented viewer launch URL template with placeholders {study_instance_uid}, {accession_number}, {request_id}, {patient_cin}, {launch_token}. Substituted server-side only \u2014 the template and any vendor credentials never reach the browser."
+      "description": "Vendor-documented viewer launch URL template with placeholders {study_instance_uid}, {accession_number}, {request_id}, {launch_token}. Substituted server-side only \u2014 the template and any vendor credentials never reach the browser. Patient identifiers (names, CINs) are never permitted in viewer URLs."
     },
     "pacs_dicomweb_base_url": {
       "type": "string",
       "description": "DICOMweb (QIDO-RS) base URL of the facility PACS, used server-side to VERIFY study availability before images are marked as available. Credentials, when the vendor requires them, are added as server-side secrets \u2014 never stored here in browser-readable form."
+    },
+    "pacs_dicomweb_auth_type": {
+      "type": "string",
+      "enum": [
+        "none",
+        "bearer",
+        "basic"
+      ],
+      "default": "none",
+      "description": "The facility-approved authentication method for its DICOMweb endpoint \u2014 none, Bearer token, or Basic (user:password). Recorded by the administrator from the vendor's documented requirements; the credential VALUE itself is never stored here."
+    },
+    "pacs_dicomweb_auth_secret_name": {
+      "type": "string",
+      "description": "NAME of the server-side secret holding this facility's DICOMweb service credential (e.g. PACS_ACME_TOKEN) \u2014 configured in the dashboard Secrets page. Only the secret's NAME is stored here; the value never appears in this record, the browser, URLs or logs."
     },
     "ohif_base_url": {
       "type": "string",
@@ -71,7 +85,7 @@
     },
     "ohif_route_template": {
       "type": "string",
-      "description": "Optional documented OHIF study route template overriding the default /viewer?StudyInstanceUIDs={study_instance_uid} route \u2014 placeholders {study_instance_uid} and {accession_number}, substituted server-side. Must be https. Record only the route the deployed OHIF version documents."
+      "description": "Optional documented OHIF study route template overriding the default /viewer?StudyInstanceUIDs={study_instance_uid} route \u2014 placeholders {study_instance_uid} and {accession_number} only, substituted server-side. Must be https. Record only the route the deployed OHIF version documents."
     },
     "ohif_connection_status": {
       "type": "string",
@@ -81,11 +95,28 @@
         "verification_failed"
       ],
       "default": "pending_configuration",
-      "description": "Embedded OHIF integration state \u2014 set ONLY by the server-side end-to-end test, never by hand: pending_configuration \u2014 no deployment recorded yet, or the recorded deployment has not passed the authorized end-to-end study-retrieval test (launching disabled); connected \u2014 the test reached the deployment and retrieved studies from the facility archive; verification_failed \u2014 the last test failed. Changing the OHIF Base URL or route template resets the status to pending_configuration."
+      "description": "Embedded OHIF integration state \u2014 set ONLY by the server-side end-to-end test, never by hand: pending_configuration \u2014 no deployment recorded yet, or the recorded deployment has not passed the authorized end-to-end study-retrieval test (launching disabled); connected \u2014 the test reached the deployment and retrieved studies from the facility archive; verification_failed \u2014 the last test failed. Saving any change to the integration configuration (endpoints, routes, authentication, enable state or integration type) resets the status to pending_configuration."
     },
     "ohif_connection_tested_datetime": {
       "type": "string",
       "description": "Date and time the embedded OHIF end-to-end study-retrieval test last passed (ISO datetime)"
+    },
+    "pacs_config_version": {
+      "type": "integer",
+      "default": 1,
+      "description": "Version of this facility's imaging integration configuration \u2014 incremented by the server every time a relevant configuration field is changed. A version change always invalidates the previous successful verification."
+    },
+    "pacs_last_test_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Result of the last connection test \u2014 { tested_datetime, outcome (connected/failed/pending_configuration), simulated (true when the result is a development-mode SIMULATION, never a real verification), checks: [{key, label, outcome (passed/failed/not_tested), message}], message }. Simulated results are clearly flagged and never set the integration to Connected."
+    },
+    "pacs_onboarding_completed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Keys of the imaging-integration onboarding checklist steps the administrator marked complete"
     },
     "pacs_vendor_notes": {
       "type": "string",

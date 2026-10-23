@@ -6,7 +6,7 @@ import ImageViewer from "@/components/radiologist/review/ImageViewer";
 import PacsOpenButton from "@/components/radiologist/review/PacsOpenButton";
 import OhifWorkspace from "@/components/radiologist/viewer/OhifWorkspace";
 import {
-  Monitor, RefreshCw, Loader2, ShieldCheck, ImageOff, Server, ArrowLeft, Database, AlertTriangle,
+  Monitor, RefreshCw, Loader2, ShieldCheck, ImageOff, Server, ArrowLeft, Database, AlertTriangle, FlaskConical,
 } from "lucide-react";
 
 // Imaging Viewer tab — opens the authorized study's examination in the
@@ -264,14 +264,19 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                       </p>
                     )}
                     {!status.pacs?.enabled && (
-                      <div className="rounded-lg bg-muted/50 p-3">
-                        <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                        <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                          <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+                          Development mode — no hospital PACS connected.
+                        </p>
+                        <p className="text-xs text-amber-800/80 mt-1 flex items-start gap-1.5">
                           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          This facility has not connected its imaging system yet. The hospital administrator connects it in the
-                          Hospital Portal, Radiology Department tab, "Imaging System Connection", after confirming with the vendor:
-                          the vendor and product name, whether it offers DICOMweb, a web viewer or an embedded OHIF deployment, the vendor-documented viewer
-                          launch URL template ({`{study_instance_uid}`}, {`{accession_number}`}, {`{launch_token}`} placeholders), and
-                          whether desktop software supports automatic study launching. Until then, review images stored in AMedix below.
+                          No real imaging system is connected for this facility, so nothing here represents a verified
+                          hospital PACS integration. Imaging workflows can be tested with images stored in AMedix
+                          (including synthetic test studies) and are clearly separated from real facility imaging. The
+                          hospital administrator connects the production system in the Hospital Portal, Radiology
+                          Department tab, "Imaging System Connection" — each facility has its own configuration, and
+                          AMedix verifies it end-to-end before any real study launch is enabled.
                         </p>
                       </div>
                     )}

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { secrets } from 'base44:runtime';
 import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
@@ -6,19 +7,78 @@ import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 // imaging software (PACS / RIS / web viewer / desktop application).
 //
 // Security model:
-// - The PACS configuration lives on the facility HospitalProfile and is never
-//   readable by radiologists (Row Level Security) — every launch is built and
-//   authorized SERVER-SIDE, so no vendor URL template or credential reaches
-//   the browser.
+// - The imaging integration configuration lives on EACH FACILITY's own
+//   HospitalProfile — there is no global PACS URL. Every configuration is
+//   edited and tested only by that facility's authorized administrator,
+//   through this function (never directly from the browser).
+// - The PACS configuration is never readable by radiologists (Row Level
+//   Security) — every launch is built and authorized SERVER-SIDE, so no
+//   vendor URL template or credential reaches the browser.
+// - DICOMweb (QIDO) verification runs server-side with the facility-approved
+//   authentication method; the credential VALUE lives only in a server-side
+//   secret referenced by NAME in the configuration.
 // - Launch tokens ({launch_token} placeholder) are cryptographically random,
 //   single use and expire after 15 minutes; vendors validate them through the
 //   GET endpoint of this function.
-// - Every launch is recorded in the clinical audit log.
+// - Every launch, refusal, configuration change and connection test is
+//   recorded in the clinical audit log.
 // - Studies are matched by the AMedix request ID and the DICOM Study Instance
-//   UID recorded by the department — never by patient name alone.
+//   UID recorded by the department — never by patient name alone, and never
+//   by a UID without confirming it against the facility's own archive.
+// - DEVELOPMENT MODE: while no hospital PACS is connected, the integration is
+//   in development mode — test flows use clearly-flagged SIMULATED responses.
+//   A simulated result is NEVER marked Connected and never implies that a
+//   real PACS integration has been verified.
+
+const ALLOWED_LAUNCH_PLACEHOLDERS = ["study_instance_uid", "accession_number", "request_id", "launch_token"];
+// Patient identifiers must never travel in viewer URLs — {patient_cin} is
+// intentionally NOT in the allowed set and is rejected with an actionable
+// message wherever it appears.
 
 function json(data: any, status = 200): Response {
   return Response.json(data, { status });
+}
+
+function templatePlaceholders(template: string): string[] {
+  const found = String(template).match(/\{([a-z_]+)\}/g) || [];
+  return found.map((p) => p.slice(1, -1));
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+// A DOCUMENTED launch URL is either a web endpoint (https://...) or the
+// vendor's own documented custom protocol handler (scheme://...). A bare
+// filesystem path (e.g. /Applications/Viewer.app) is NOT launchable and is
+// rejected with a clear setup message — never guessed into a launch.
+function isDocumentedLaunchUrl(value: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+}
+
+// A deployable OHIF address: a well-formed https:// URL on a real host —
+// never the public OHIF demo or a reserved example/placeholder domain.
+function isValidOhifUrl(value: string): boolean {
+  try {
+    const u = new URL(value);
+    if (u.protocol !== "https:" || !u.hostname || u.username || u.password) return false;
+    const host = u.hostname.toLowerCase();
+    const blocked = ["ohif.org", "www.ohif.org", "demo.ohif.org", "o.ohif.org", "example.com", "www.example.com", "example.org", "example.net", "localhost"];
+    return !blocked.includes(host) && !host.endsWith(".example") && !host.endsWith(".test") && !host.endsWith(".local");
+  } catch {
+    return false;
+  }
+}
+
+// Server-side launch-URL substitution: placeholders are replaced with
+// URL-encoded values, and only identifiers the workflow actually needs —
+// never patient names, CINs or credentials.
+function buildLaunchUrl(template: string, values: Record<string, string>): string {
+  let url = template;
+  for (const [key, value] of Object.entries(values)) {
+    url = url.split(`{${key}}`).join(encodeURIComponent(value));
+  }
+  return url;
 }
 
 // Returns the authorized actor role ("radiologist" | "department") or null.
@@ -56,24 +116,159 @@ async function loadFacilityPacs(base44: any, request: any): Promise<any | null> 
   return byName || pages[0] || null;
 }
 
-function buildLaunchUrl(template: string, values: Record<string, string>): string {
-  let url = template;
-  for (const [key, value] of Object.entries(values)) {
-    url = url.split(`{${key}}`).join(encodeURIComponent(value));
+// FACILITY-SCOPED derived connection status — the single honest summary of
+// where this facility's imaging integration stands:
+//   development_mode      no imaging system connected at all (test-only phase)
+//   disabled              configured before, but switched off
+//   pending_configuration saved, but the required end-to-end test has not passed
+//   connected             the required end-to-end checks passed
+//   failed                the last required check failed
+function derivePacsStatus(h: any): string {
+  if (!h.pacs_integration_enabled) {
+    const configured =
+      String(h.pacs_integration_type || "none") !== "none" ||
+      String(h.pacs_vendor_name || "").trim().length > 0;
+    return configured ? "disabled" : "development_mode";
   }
-  return url;
+  const type = String(h.pacs_integration_type || "none");
+  if (type === "ohif_embedded") {
+    const s = String(h.ohif_connection_status || "pending_configuration");
+    return s === "connected" ? "connected" : s === "verification_failed" ? "failed" : "pending_configuration";
+  }
+  const outcome = String((h.pacs_last_test_result || {}).outcome || "");
+  if (outcome === "connected") return "connected";
+  if (outcome === "failed") return "failed";
+  return "pending_configuration";
 }
 
-// A DOCUMENTED launch URL is either a web endpoint (https://...) or the
-// vendor's own documented custom protocol handler (scheme://...). A bare
-// filesystem path (e.g. /Applications/Viewer.app) is NOT launchable and is
-// rejected with a clear setup message — never guessed into a launch.
-function isHttpUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
+// Server-side DICOMweb authentication — the facility-approved method, with
+// the credential read ONLY from a server-side secret (referenced by name in
+// the configuration). The credential value never reaches the browser, URLs
+// or logs.
+async function dicomwebHeaders(facility: any): Promise<{ headers: Record<string, string>; error: string | null }> {
+  const headers: Record<string, string> = { Accept: "application/dicom+json" };
+  const type = String(facility.pacs_dicomweb_auth_type || "none");
+  const secretName = String(facility.pacs_dicomweb_auth_secret_name || "").trim();
+  if (type === "none" || !secretName) return { headers, error: null };
+  let credential: string | null = null;
+  try {
+    credential = secrets.get(secretName) || null;
+  } catch {
+    credential = null;
+  }
+  if (!credential) {
+    return {
+      headers,
+      error: `The server-side secret "${secretName}" holding this facility's DICOMweb service credential is not configured (Dashboard — Secrets). Add the credential the vendor approved, with exactly that secret name.`,
+    };
+  }
+  if (type === "bearer") {
+    headers.Authorization = `Bearer ${credential}`;
+  } else {
+    // Basic — the secret holds "user:password" (or a pre-encoded base64 pair).
+    const encoded = credential.includes(":") ? btoa(credential) : credential;
+    headers.Authorization = `Basic ${encoded}`;
+  }
+  return { headers, error: null };
 }
 
-function isDocumentedLaunchUrl(value: string): boolean {
-  return /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+type Check = { key: string; label: string; outcome: string; message: string };
+
+// Secure, server-side DICOMweb (QIDO) verification — reachability,
+// authentication and study retrieval, each reported separately. When a test
+// Study Instance UID is supplied, the retrieved identifiers must MATCH it —
+// a study is never assumed to belong to the facility from a UID alone.
+async function runDicomwebChecks(dicomwebBase: string, facility: any, testStudyUid: string): Promise<Check[]> {
+  const checks: Check[] = [];
+  const { headers, error: credentialError } = await dicomwebHeaders(facility);
+  if (credentialError) {
+    checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "not_tested", message: "Not tested — the service credential is not available on the server." });
+    checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "failed", message: credentialError });
+    checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — authentication did not pass." });
+    if (testStudyUid) {
+      checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "not_tested", message: "Not tested — authentication did not pass." });
+    }
+    return checks;
+  }
+  const authConfigured = String(facility.pacs_dicomweb_auth_type || "none") !== "none";
+  let rows: any[] = [];
+  try {
+    const probe = await fetch(`${dicomwebBase}/studies?limit=1`, { signal: AbortSignal.timeout(10000), headers });
+    if (probe.status === 401 || probe.status === 403) {
+      checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "passed", message: "The endpoint answered, but it requires authentication." });
+      checks.push({
+        key: "dicomweb_auth",
+        label: "DICOMweb authentication",
+        outcome: "failed",
+        message: "The endpoint rejected the request (HTTP 401/403). Record the vendor's approved authentication method and add its service credential as a server-side secret, then run the test again. Authentication is never bypassed.",
+      });
+      checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — authentication did not pass." });
+      if (testStudyUid) {
+        checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "not_tested", message: "Not tested — authentication did not pass." });
+      }
+      return checks;
+    }
+    if (!probe.ok) {
+      checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "failed", message: `The endpoint answered with HTTP ${probe.status} — it is not serving studies correctly.` });
+      checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "not_tested", message: "Not tested — the endpoint is not reachable in a working state." });
+      checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — the endpoint is not reachable in a working state." });
+      if (testStudyUid) {
+        checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "not_tested", message: "Not tested — the endpoint is not reachable in a working state." });
+      }
+      return checks;
+    }
+    rows = await probe.json().catch(() => []);
+    checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "passed", message: "The endpoint answered and serves DICOMweb study queries." });
+    checks.push({
+      key: "dicomweb_auth",
+      label: "DICOMweb authentication",
+      outcome: "passed",
+      message: authConfigured
+        ? "The endpoint accepted the facility's configured service credential."
+        : "The endpoint answered without authentication — acceptable only for the facility's approved test environment; production deployments must require authentication.",
+    });
+    checks.push({
+      key: "study_retrieval",
+      label: "Study retrieval (QIDO)",
+      outcome: Array.isArray(rows) && rows.length > 0 ? "passed" : "failed",
+      message: Array.isArray(rows) && rows.length > 0
+        ? `Retrieved ${rows.length} study(ies) from the facility archive through its DICOMweb endpoint.`
+        : "The endpoint answered, but no study could be retrieved from it — at least one study must be retrievable for the end-to-end test to pass.",
+    });
+  } catch {
+    checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "failed", message: "The endpoint could not be reached — it may be offline, firewalled, or the base URL is incorrect." });
+    checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "not_tested", message: "Not tested — the endpoint could not be reached." });
+    checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — the endpoint could not be reached." });
+    if (testStudyUid) {
+      checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "not_tested", message: "Not tested — the endpoint could not be reached." });
+    }
+    return checks;
+  }
+  if (testStudyUid) {
+    try {
+      const probe = await fetch(`${dicomwebBase}/studies?StudyInstanceUID=${encodeURIComponent(testStudyUid)}`, {
+        signal: AbortSignal.timeout(10000),
+        headers,
+      });
+      const rows2 = probe.ok ? await probe.json().catch(() => []) : [];
+      const matched = Array.isArray(rows2) && rows2.some(
+        (r: any) => String(r?.["0020000D"]?.Value?.[0] || "") === testStudyUid
+      );
+      checks.push({
+        key: "identifier_match",
+        label: "Test study identifier match",
+        outcome: matched ? "passed" : "failed",
+        message: matched
+          ? "The archive returned exactly the expected test study — the facility and study identifiers match."
+          : probe.ok
+            ? "The archive answered, but the expected test study was not found in it (or its identifiers did not match) — a study is never assumed to belong to the facility from a UID alone."
+            : `The archive answered with HTTP ${probe.status} for the test study query.`,
+      });
+    } catch {
+      checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "failed", message: "The archive could not be reached during the test-study check." });
+    }
+  }
+  return checks;
 }
 
 export default async function(req: Request): Promise<Response> {
@@ -100,7 +295,7 @@ export default async function(req: Request): Promise<Response> {
       return json({ valid: true, request_ref: record.request_ref || "" });
     }
 
-    // ===== POST — status / verify / launch
+    // ===== POST — save_config / connection_test / status / verify / launch
     const user = await base44.auth.me();
     if (!user) return json({ error: "Unauthorized" }, 401);
     const body = await req.json().catch(() => ({}));
@@ -108,12 +303,110 @@ export default async function(req: Request): Promise<Response> {
     const action = String(payload.action || "status");
     const requestId = String(payload.request_id || "").trim();
 
-    // ===== OHIF connection test — facility-administrator-only end-to-end
-    // verification. The embedded OHIF integration is marked Connected ONLY
-    // after this test: (1) reaches the deployed OHIF instance and (2)
-    // retrieves at least one study from the facility's DICOMweb archive.
-    // No imaging request is involved and no other configuration is changed.
-    if (action === "ohif_test") {
+    // ===== CONFIGURATION SAVE — facility-administrator-only, server-validated.
+    // Required fields are enforced per integration method; URL templates are
+    // checked for permitted placeholders; patient identifiers are never
+    // permitted in viewer URLs; and ANY relevant change invalidates the
+    // previous successful verification and bumps the configuration version.
+    if (action === "save_config") {
+      const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
+      const profileId = String(payload.hospital_profile_id || "").trim();
+      const facility =
+        (profileId ? hospitals.find((h: any) => h.id === profileId) : null) ||
+        hospitals[0] ||
+        null;
+      if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
+      const config = payload.config && typeof payload.config === "object" ? payload.config : {};
+      const enabled = !!config.pacs_integration_enabled;
+      const type = enabled ? String(config.pacs_integration_type || "none") : "none";
+      if (enabled && !["dicomweb", "web_viewer", "desktop_app", "ohif_embedded"].includes(type)) {
+        return json({ error: "Unknown integration type." }, 400);
+      }
+      const vendor = String(config.pacs_vendor_name || "").trim();
+      const template = String(config.pacs_viewer_url_template || "").trim();
+      const dicomwebBase = String(config.pacs_dicomweb_base_url || "").trim();
+      const ohifBase = String(config.ohif_base_url || "").trim();
+      const ohifRoute = String(config.ohif_route_template || "").trim();
+      const notes = String(config.pacs_vendor_notes || "").trim();
+      const authType = String(config.pacs_dicomweb_auth_type || "none");
+      const authSecret = String(config.pacs_dicomweb_auth_secret_name || "").trim().toUpperCase();
+
+      const errors: string[] = [];
+      if (enabled && !vendor) errors.push("Vendor / product name is required for every integration method.");
+      if (dicomwebBase && !isHttpUrl(dicomwebBase)) errors.push("The DICOMweb (QIDO) Base URL must be a valid http(s) endpoint (e.g. https://pacs.example.com/dicom-web).");
+      if (enabled && type === "dicomweb" && !dicomwebBase) errors.push("The DICOMweb / PACS integration method requires the DICOMweb (QIDO) Base URL.");
+      if (enabled && type === "web_viewer" && !template) errors.push("The web viewer method requires the vendor's documented viewer launch URL template.");
+      if (template) {
+        if (!isDocumentedLaunchUrl(template)) errors.push("The viewer launch URL template must be a web or protocol URL (for example https://... or scheme://...) — a local file path cannot be launched from AMedix.");
+        const bad = templatePlaceholders(template).filter((p) => !ALLOWED_LAUNCH_PLACEHOLDERS.includes(p));
+        if (bad.length) {
+          errors.push(
+            `The launch template uses unsupported placeholder(s): {${bad.join("}, {")}}. Supported: {study_instance_uid}, {accession_number}, {request_id}, {launch_token}. {patient_cin} is no longer permitted — patient identifiers must never appear in viewer URLs.`
+          );
+        }
+      }
+      if (enabled && type === "ohif_embedded" && ohifBase && !isValidOhifUrl(ohifBase)) {
+        errors.push("The OHIF Base URL must be the https:// address of the facility's own approved deployment — the public OHIF demo and placeholder or example addresses are rejected. It may stay empty while deployment is pending.");
+      }
+      if (ohifRoute) {
+        if (!/^https:\/\//i.test(ohifRoute)) errors.push("The OHIF route template must be an https:// URL of the facility's own deployment.");
+        const bad = ohifRoute && templatePlaceholders(ohifRoute).filter((p) => !["study_instance_uid", "accession_number"].includes(p));
+        if (bad && bad.length) errors.push(`The OHIF route template uses unsupported placeholder(s): {${bad.join("}, {")}}. Only {study_instance_uid} and {accession_number} are documented for OHIF routes.`);
+      }
+      if (!["none", "bearer", "basic"].includes(authType)) errors.push("Unknown DICOMweb authentication method — use none, bearer or basic.");
+      if (authType !== "none") {
+        if (!authSecret) errors.push("Record the NAME of the server-side secret holding the vendor's service credential (the credential value itself is never stored in this configuration).");
+        else if (!/^[A-Z][A-Z0-9_]{2,}$/.test(authSecret)) errors.push("The secret reference must be a secret NAME (e.g. PACS_VENDOR_TOKEN) — never the credential value itself.");
+      }
+      if (errors.length) return json({ error: errors.join(" ") }, 400);
+
+      // Invalidation: any change to the endpoints, route, authentication,
+      // enable state or integration type voids the previous verification.
+      const relevantChanged =
+        enabled !== !!facility.pacs_integration_enabled ||
+        type !== String(facility.pacs_integration_type || "none") ||
+        template !== String(facility.pacs_viewer_url_template || "").trim() ||
+        dicomwebBase !== String(facility.pacs_dicomweb_base_url || "").trim() ||
+        ohifBase !== String(facility.ohif_base_url || "").trim() ||
+        ohifRoute !== String(facility.ohif_route_template || "").trim() ||
+        authType !== String(facility.pacs_dicomweb_auth_type || "none") ||
+        authSecret !== String(facility.pacs_dicomweb_auth_secret_name || "").trim();
+      const version = relevantChanged ? (Number(facility.pacs_config_version) || 1) + 1 : Number(facility.pacs_config_version) || 1;
+      const update: any = {
+        pacs_integration_enabled: enabled,
+        pacs_integration_type: type,
+        pacs_vendor_name: vendor,
+        pacs_viewer_url_template: template,
+        pacs_dicomweb_base_url: dicomwebBase,
+        pacs_vendor_notes: notes,
+        ohif_base_url: ohifBase,
+        ohif_route_template: ohifRoute,
+        pacs_dicomweb_auth_type: authType,
+        pacs_dicomweb_auth_secret_name: authType === "none" ? "" : authSecret,
+        pacs_updated_datetime: new Date().toISOString(),
+        pacs_config_version: version,
+      };
+      if (relevantChanged) update.ohif_connection_status = "pending_configuration";
+      const updated = await svc.entities.HospitalProfile.update(facility.id, update);
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: "hospital",
+        action: "radiology_pacs_config_saved",
+        action_label: `updated the imaging integration configuration for ${facility.hospital_name || "the facility"} (configuration version ${version})${relevantChanged ? " — the previous verification was invalidated" : ""}`,
+        hospital: facility.hospital_name || "",
+      });
+      return json({ ok: true, config_version: version, verification_invalidated: relevantChanged, profile: updated });
+    }
+
+    // ===== CONNECTION TEST — facility-administrator-only end-to-end
+    // verification. Each check is reported separately (passed / failed /
+    // not tested). The integration is marked Connected ONLY when every
+    // REQUIRED check for the selected method passes against the REAL
+    // configured environment. In development mode (no hospital PACS
+    // configured) the test returns a clearly-flagged SIMULATED response and
+    // never changes any connection status.
+    if (action === "connection_test" || action === "ohif_test") {
       const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
       const profileId = String(payload.hospital_profile_id || "").trim();
       const facility =
@@ -122,128 +415,154 @@ export default async function(req: Request): Promise<Response> {
         hospitals[0] ||
         null;
       if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
-      const setOhifStatus = async (status: string) => {
-        await svc.entities.HospitalProfile.update(facility.id, { ohif_connection_status: status });
-      };
+      const testStudyUid = String(payload.test_study_uid || "").trim();
 
-      if (!facility.pacs_integration_enabled || facility.pacs_integration_type !== "ohif_embedded") {
+      // Development mode — nothing is configured: report a SIMULATED result,
+      // clearly labelled, and never mark anything Connected.
+      if (!facility.pacs_integration_enabled || String(facility.pacs_integration_type || "none") === "none") {
         return json({
           tested: false,
-          connection_status: "pending_configuration",
-          message: "Select the OHIF Viewer (embedded) integration type and enable the connection first — the test runs against that deployment.",
-        }, 409);
-      }
-      const ohifBase = String(facility.ohif_base_url || "").trim().replace(/\/+$/, "");
-      if (!ohifBase) {
-        return json({
-          tested: false,
-          connection_status: "pending_configuration",
-          message: "Deployment required — the OHIF Base URL is empty. Deploy the facility's approved OHIF instance (never the public demo), record its https:// address, then run this test. The integration stays Pending configuration and launching stays disabled until the test passes.",
-        }, 409);
-      }
-      if (!/^https:\/\//i.test(ohifBase)) {
-        await setOhifStatus("verification_failed");
-        return json({
-          tested: false,
-          connection_status: "verification_failed",
-          message: "The recorded OHIF Base URL is not an https:// address — only HTTPS deployments may be connected. Correct it and run the test again.",
-        }, 409);
-      }
-      const dicomwebBase = String(facility.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
-      if (!dicomwebBase) {
-        return json({
-          tested: false,
-          connection_status: "pending_configuration",
-          message: "The end-to-end test needs the facility archive's DICOMweb (QIDO) Base URL to verify study retrieval. Record it, then run the test again.",
-        }, 409);
-      }
-      if (!isHttpUrl(dicomwebBase)) {
-        await setOhifStatus("verification_failed");
-        return json({
-          tested: false,
-          connection_status: "verification_failed",
-          message: "The DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — correct it and run the test again.",
-        }, 409);
-      }
-      // Step 1 — the OHIF deployment itself is reachable and serving.
-      try {
-        const probe = await fetch(ohifBase, { signal: AbortSignal.timeout(10000) });
-        if (probe.status >= 500) {
-          await setOhifStatus("verification_failed");
-          return json({
-            tested: false,
-            connection_status: "verification_failed",
-            message: `The OHIF deployment answered with HTTP ${probe.status} — it is not serving correctly yet.`,
-          }, 409);
-        }
-      } catch {
-        await setOhifStatus("verification_failed");
-        return json({
-          tested: false,
-          connection_status: "verification_failed",
-          message: "The OHIF deployment could not be reached — it may not be deployed yet or the address is incorrect.",
-        }, 409);
-      }
-      // Step 2 — authorized end-to-end study retrieval from the facility archive.
-      let studiesFound = 0;
-      try {
-        const probe = await fetch(`${dicomwebBase}/studies?limit=1`, {
-          signal: AbortSignal.timeout(10000),
-          headers: { Accept: "application/dicom+json" },
+          simulated: true,
+          development_mode: true,
+          connection_status: "development_mode",
+          checks: [
+            { key: "configuration", label: "Facility configuration", outcome: "not_tested", message: "Development mode — no hospital PACS connected. No real imaging endpoint is configured for this facility." },
+          ],
+          message: "Development mode — no hospital PACS connected. This is a SIMULATED test response for development only: no real imaging system was contacted, and no connection was marked Connected. A real integration is marked Connected only after the end-to-end test passes against the facility's configured environment.",
         });
-        if (probe.status === 401 || probe.status === 403) {
-          await setOhifStatus("verification_failed");
-          return json({
-            tested: false,
-            connection_status: "verification_failed",
-            message: "The archive requires authentication for its DICOMweb endpoint — vendor service credentials must be configured as server-side secrets first.",
-          }, 409);
-        }
-        if (!probe.ok) {
-          await setOhifStatus("verification_failed");
-          return json({
-            tested: false,
-            connection_status: "verification_failed",
-            message: `The facility archive answered with HTTP ${probe.status} — study retrieval failed.`,
-          }, 409);
-        }
-        const rows = await probe.json().catch(() => []);
-        studiesFound = Array.isArray(rows) ? rows.length : 0;
-        if (studiesFound === 0) {
-          await setOhifStatus("verification_failed");
-          return json({
-            tested: false,
-            connection_status: "verification_failed",
-            message: "The archive answered, but no study could be retrieved from it — at least one study must be retrievable for the end-to-end test to pass.",
-          }, 409);
-        }
-      } catch {
-        await setOhifStatus("verification_failed");
-        return json({
-          tested: false,
-          connection_status: "verification_failed",
-          message: "The facility archive could not be reached — study retrieval failed. It may be offline or the DICOMweb endpoint is incorrect.",
-        }, 409);
       }
+
+      const type = String(facility.pacs_integration_type || "none");
+      const checks: Check[] = [];
+      let requiredKeys: string[] = [];
+      const dicomwebBase = String(facility.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
+      const template = String(facility.pacs_viewer_url_template || "").trim();
+
+      // Launch-template validation (web viewer / desktop launch methods).
+      if (type === "web_viewer" || type === "desktop_app") {
+        if (template && isDocumentedLaunchUrl(template) && templatePlaceholders(template).every((p) => ALLOWED_LAUNCH_PLACEHOLDERS.includes(p))) {
+          checks.push({ key: "launch_template", label: "Viewer launch template", outcome: "passed", message: "The recorded launch template is a valid web or protocol URL with supported placeholders only." });
+        } else if (type === "web_viewer") {
+          checks.push({ key: "launch_template", label: "Viewer launch template", outcome: "failed", message: "The recorded launch template is missing or invalid — it must be the vendor's documented web or protocol URL with supported placeholders only." });
+        } else {
+          checks.push({ key: "launch_template", label: "Viewer launch template", outcome: "not_tested", message: "Desktop integration — no launch template recorded, so the study is opened manually with the accession number." });
+        }
+        if (type === "web_viewer") requiredKeys.push("launch_template");
+      }
+
+      // Embedded OHIF — the deployment itself must be reachable and serving.
+      if (type === "ohif_embedded") {
+        const ohifBase = String(facility.ohif_base_url || "").trim().replace(/\/+$/, "");
+        requiredKeys.push("ohif_endpoint");
+        if (!ohifBase) {
+          checks.push({ key: "ohif_endpoint", label: "OHIF deployment", outcome: "not_tested", message: "Pending configuration — the OHIF Base URL is empty. Deploy the facility's approved OHIF instance (never the public demo) and record its https:// address." });
+        } else if (!/^https:\/\//i.test(ohifBase)) {
+          checks.push({ key: "ohif_endpoint", label: "OHIF deployment", outcome: "failed", message: "The recorded OHIF Base URL is not an https:// address — only HTTPS deployments may be connected." });
+        } else {
+          try {
+            const probe = await fetch(ohifBase, { signal: AbortSignal.timeout(10000) });
+            checks.push(
+              probe.status < 500
+                ? { key: "ohif_endpoint", label: "OHIF deployment", outcome: "passed", message: "The deployed OHIF instance is reachable and serving." }
+                : { key: "ohif_endpoint", label: "OHIF deployment", outcome: "failed", message: `The OHIF deployment answered with HTTP ${probe.status} — it is not serving correctly yet.` }
+            );
+          } catch {
+            checks.push({ key: "ohif_endpoint", label: "OHIF deployment", outcome: "failed", message: "The OHIF deployment could not be reached — it may not be deployed yet or the address is incorrect." });
+          }
+        }
+        requiredKeys.push("dicomweb_reach", "study_retrieval");
+        if (!dicomwebBase) {
+          checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "not_tested", message: "Not tested — the facility archive's DICOMweb (QIDO) Base URL is not recorded. The end-to-end test needs it to verify study retrieval." });
+          checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "not_tested", message: "Not tested — no DICOMweb endpoint is recorded." });
+          checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — no DICOMweb endpoint is recorded." });
+          if (testStudyUid) {
+            checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "not_tested", message: "Not tested — no DICOMweb endpoint is recorded." });
+          }
+        } else if (!isHttpUrl(dicomwebBase)) {
+          checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "failed", message: "The DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — correct it and run the test again." });
+          checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "not_tested", message: "Not tested — the endpoint URL is invalid." });
+          checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — the endpoint URL is invalid." });
+        } else {
+          checks.push(...(await runDicomwebChecks(dicomwebBase, facility, testStudyUid)));
+        }
+      }
+
+      // DICOMweb / PACS method — the archive itself is the integration.
+      if (type === "dicomweb") {
+        requiredKeys.push("dicomweb_reach", "study_retrieval");
+        if (!dicomwebBase) {
+          checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "not_tested", message: "Not tested — the DICOMweb (QIDO) Base URL is not recorded." });
+          checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "not_tested", message: "Not tested — no DICOMweb endpoint is recorded." });
+          checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — no DICOMweb endpoint is recorded." });
+          if (testStudyUid) {
+            checks.push({ key: "identifier_match", label: "Test study identifier match", outcome: "not_tested", message: "Not tested — no DICOMweb endpoint is recorded." });
+          }
+        } else if (!isHttpUrl(dicomwebBase)) {
+          checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "failed", message: "The DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — correct it and run the test again." });
+          checks.push({ key: "dicomweb_auth", label: "DICOMweb authentication", outcome: "not_tested", message: "Not tested — the endpoint URL is invalid." });
+          checks.push({ key: "study_retrieval", label: "Study retrieval (QIDO)", outcome: "not_tested", message: "Not tested — the endpoint URL is invalid." });
+        } else {
+          checks.push(...(await runDicomwebChecks(dicomwebBase, facility, testStudyUid)));
+        }
+      }
+
+      // Web viewer / desktop with a configured archive — the archive is
+      // verified as part of the end-to-end test when the vendor provides a
+      // DICOMweb endpoint.
+      if ((type === "web_viewer" || type === "desktop_app") && dicomwebBase) {
+        if (!isHttpUrl(dicomwebBase)) {
+          checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "failed", message: "The DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — correct it and run the test again." });
+        } else {
+          checks.push(...(await runDicomwebChecks(dicomwebBase, facility, testStudyUid)));
+        }
+      }
+
+      const requiredChecks = checks.filter((c) => requiredKeys.includes(c.key) || c.key === "identifier_match");
+      const anyRequiredFailed = requiredChecks.some((c) => c.outcome === "failed");
+      const allRequiredPassed = requiredChecks.length > 0 && requiredChecks.every((c) => c.outcome === "passed");
+      const outcome = anyRequiredFailed ? "failed" : allRequiredPassed ? "connected" : "pending_configuration";
       const testedDatetime = new Date().toISOString();
-      await svc.entities.HospitalProfile.update(facility.id, {
-        ohif_connection_status: "connected",
-        ohif_connection_tested_datetime: testedDatetime,
-      });
+
+      const update: any = {
+        pacs_last_test_result: {
+          tested_datetime: testedDatetime,
+          outcome,
+          simulated: false,
+          checks,
+          message:
+            outcome === "connected"
+              ? "All required end-to-end checks passed against the configured facility environment."
+              : outcome === "failed"
+                ? "One or more required checks failed — the integration cannot be marked Connected until they pass."
+                : "Some required checks are not complete yet — the integration stays Pending configuration.",
+        },
+      };
+      if (type === "ohif_embedded") {
+        update.ohif_connection_status = outcome === "connected" ? "connected" : outcome === "failed" ? "verification_failed" : "pending_configuration";
+        if (outcome === "connected") update.ohif_connection_tested_datetime = testedDatetime;
+      }
+      await svc.entities.HospitalProfile.update(facility.id, update);
       await logClinicalAudit(base44, {
         actor_user_id: user.id,
         actor_name: user.full_name,
         actor_role: "hospital",
-        action: "radiology_ohif_connection_test",
-        action_label: "ran the embedded OHIF end-to-end study-retrieval test — the integration is now Connected",
+        action: "radiology_pacs_connection_test",
+        action_label: `ran the imaging integration connection test for ${facility.hospital_name || "the facility"} — outcome: ${outcome}`,
         hospital: facility.hospital_name || "",
       });
+      const summary =
+        outcome === "connected"
+          ? "End-to-end test passed — every required check succeeded against the configured facility environment. The integration is now Connected."
+          : outcome === "failed"
+            ? "One or more required checks failed — see the per-check results below. The integration is NOT Connected."
+            : "Some required checks are not complete yet — the integration stays Pending configuration. Complete the configuration and run the test again.";
       return json({
         tested: true,
-        connection_status: "connected",
+        simulated: false,
+        connection_status: outcome,
         tested_datetime: testedDatetime,
-        studies_retrieved: studiesFound,
-        message: `End-to-end test passed — ${studiesFound} study(ies) retrieved from the facility archive through the deployed OHIF integration. The integration is now Connected.`,
+        checks,
+        message: summary,
       });
     }
 
@@ -265,6 +584,7 @@ export default async function(req: Request): Promise<Response> {
 
     const pacsSummary = {
       enabled: pacsEnabled,
+      development_mode: !pacsEnabled,
       mode: pacsMode,
       vendor_name: pacsEnabled ? (pacsProfile.pacs_vendor_name || "") : "",
       viewer_configured: pacsEnabled ? !!String(pacsProfile.pacs_viewer_url_template || "").trim() : false,
@@ -278,6 +598,9 @@ export default async function(req: Request): Promise<Response> {
         pacsEnabled &&
         pacsMode === "ohif_embedded" &&
         String(pacsProfile.ohif_connection_status || "pending_configuration") === "connected",
+      connection_status: pacsProfile ? derivePacsStatus(pacsProfile) : "development_mode",
+      config_version: pacsProfile ? Number(pacsProfile.pacs_config_version) || 1 : 0,
+      last_test_result: pacsProfile ? pacsProfile.pacs_last_test_result || null : null,
     };
 
     if (action === "status") {
@@ -296,7 +619,7 @@ export default async function(req: Request): Promise<Response> {
 
     if (action === "verify") {
       if (!pacsEnabled) {
-        return json({ verified: false, message: "This facility has not connected an imaging system yet." }, 409);
+        return json({ verified: false, development_mode: true, message: "Development mode — no hospital PACS connected for this facility, so study availability cannot be verified on an imaging system." }, 409);
       }
       const dicomwebBase = String(pacsProfile.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
       if (!dicomwebBase) {
@@ -311,6 +634,10 @@ export default async function(req: Request): Promise<Response> {
       if (!studyUid) {
         return json({ verified: false, message: "The DICOM Study Instance UID is not recorded for this study yet, so availability on the imaging system cannot be verified." }, 409);
       }
+      const { headers, error: credentialError } = await dicomwebHeaders(pacsProfile);
+      if (credentialError) {
+        return json({ verified: false, message: credentialError }, 409);
+      }
       let verified = false;
       let httpStatus: number | null = null;
       let studiesFound = 0;
@@ -318,7 +645,7 @@ export default async function(req: Request): Promise<Response> {
       try {
         const probe = await fetch(`${dicomwebBase}/studies?StudyInstanceUID=${encodeURIComponent(studyUid)}&limit=1`, {
           signal: AbortSignal.timeout(10000),
-          headers: { Accept: "application/dicom+json" },
+          headers,
         });
         httpStatus = probe.status;
         if (probe.ok) {
@@ -326,10 +653,10 @@ export default async function(req: Request): Promise<Response> {
           studiesFound = Array.isArray(rows) ? rows.length : 0;
           verified = studiesFound > 0;
           message = verified
-            ? "The study was found on the facility imaging system."
+            ? "The study was found on the facility imaging system (matched against the facility's own archive, not the UID alone)."
             : "The imaging system answered, but this Study Instance UID was not found on it.";
         } else if (probe.status === 401 || probe.status === 403) {
-          message = "The facility imaging system requires authentication for its DICOMweb endpoint — vendor credentials must be configured as server-side secrets.";
+          message = "The facility imaging system rejected the request — its approved service credential is missing or refused. The hospital administrator must configure it in Imaging System Connection.";
         } else {
           message = `The facility imaging system answered with HTTP ${probe.status}.`;
         }
@@ -343,8 +670,9 @@ export default async function(req: Request): Promise<Response> {
       if (!pacsEnabled) {
         return json({
           mode: "none",
+          development_mode: true,
           launch_url: null,
-          message: "This facility's imaging system is not connected yet. The hospital administrator must connect it in the Hospital Portal (Radiology Department tab — Imaging System Connection) after confirming the vendor's supported integration method.",
+          message: "Development mode — no hospital PACS connected for this facility. The hospital administrator connects the production imaging system in the Hospital Portal (Radiology Department tab — Imaging System Connection) after confirming the vendor's supported integration method; AMedix then verifies it end-to-end before real study launching is enabled.",
         }, 409);
       }
       const template = String(pacsProfile.pacs_viewer_url_template || "").trim();
@@ -363,6 +691,11 @@ export default async function(req: Request): Promise<Response> {
         });
         return json({ mode: pacsMode, launch_url: null, launch_attempted: true, launch_outcome: "refused", message }, 409);
       };
+      if (template.includes("{patient_cin}")) {
+        return refuseLaunch(
+          "The recorded Viewer Launch URL Template contains {patient_cin} — patient identifiers must never appear in viewer URLs. The hospital administrator must replace it in Imaging System Connection (supported placeholders: {study_instance_uid}, {accession_number}, {request_id}, {launch_token})."
+        );
+      }
       if (pacsMode === "desktop_app" && !(template && isDocumentedLaunchUrl(template))) {
         const vendor = pacsProfile.pacs_vendor_name || "the vendor";
         return refuseLaunch(
@@ -401,7 +734,6 @@ export default async function(req: Request): Promise<Response> {
         study_instance_uid: studyUid,
         accession_number: accession,
         request_id: request.request_id || "",
-        patient_cin: request.patient_cin || "",
         launch_token: tokenValue,
       });
       await logClinicalAudit(base44, {
@@ -420,10 +752,12 @@ export default async function(req: Request): Promise<Response> {
 
     // ===== OHIF — embedded viewer launch for facilities running their OWN
     // approved OHIF deployment. The study is opened through OHIF's documented
-    // routing; the URL carries ONLY the Study Instance UID (and, when the
-    // deployment's route requires it, the accession number) — never patient
-    // name, CIN or credentials. Study availability is confirmed against the
-    // facility's DICOMweb (QIDO) archive endpoint when one is configured.
+    // routing; the URL carries ONLY the verified Study Instance UID (and, when
+    // the deployment's route requires it, the accession number) — never
+    // patient name, CIN or credentials. Launching is permitted ONLY when the
+    // facility's end-to-end verification is Connected; study identity is
+    // confirmed against the facility's DICOMweb (QIDO) archive endpoint, and
+    // the study is matched to the facility — never assumed from a UID alone.
     if (action === "ohif_launch") {
       const refuseOhif = async (message: string): Promise<Response> => {
         await logClinicalAudit(base44, {
@@ -467,8 +801,9 @@ export default async function(req: Request): Promise<Response> {
           "The DICOM Study Instance UID is not recorded for this study, so OHIF cannot open the right examination. The department must record it on the imaging request; the AMedix request reference alone is not a valid study identifier."
         );
       }
-      // Confirm the study exists in the archive (when AMedix has a DICOMweb
-      // endpoint) BEFORE opening the viewer — never open a guessed study.
+      // Confirm the study exists in the facility archive (when AMedix has a
+      // DICOMweb endpoint) BEFORE opening the viewer — never open a guessed
+      // study, and never rely on the UID alone without facility matching.
       let availability = "unconfirmed";
       let availabilityMessage =
         "Study availability could not be confirmed — no DICOMweb (QIDO) endpoint is configured for this facility, so AMedix cannot verify the study exists in the archive before opening OHIF.";
@@ -479,16 +814,20 @@ export default async function(req: Request): Promise<Response> {
             "The configured DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — the hospital administrator must correct it in Imaging System Connection."
           );
         }
+        const { headers, error: credentialError } = await dicomwebHeaders(pacsProfile);
+        if (credentialError) {
+          return refuseOhif(credentialError);
+        }
         try {
           const probe = await fetch(`${dicomwebBase}/studies?StudyInstanceUID=${encodeURIComponent(studyUid)}&limit=1`, {
             signal: AbortSignal.timeout(10000),
-            headers: { Accept: "application/dicom+json" },
+            headers,
           });
           if (probe.ok) {
             const rows = await probe.json().catch(() => []);
             if (Array.isArray(rows) && rows.length > 0) {
               availability = "verified";
-              availabilityMessage = "The study was found in the facility imaging archive.";
+              availabilityMessage = "The study was found in the facility imaging archive (matched against this facility's own archive, not the UID alone).";
             } else {
               return refuseOhif(
                 "The facility archive answered, but this Study Instance UID was not found in it — the study mapping must be corrected before OHIF is opened, so no unrelated study can be loaded."
@@ -496,7 +835,7 @@ export default async function(req: Request): Promise<Response> {
             }
           } else if (probe.status === 401 || probe.status === 403) {
             return refuseOhif(
-              "The facility archive requires authentication for its DICOMweb endpoint — the vendor's service credentials must be configured as server-side secrets before studies can be opened."
+              "The facility archive rejected the request — its approved service credential is missing or refused. The hospital administrator must configure it in Imaging System Connection."
             );
           } else {
             return refuseOhif(`The facility archive answered with HTTP ${probe.status} — the study could not be confirmed.`);
