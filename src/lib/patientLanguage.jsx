@@ -670,6 +670,7 @@ const AR = {
   "Every doctor visit appears here. Click a visit to see its notes.": "كل زيارة طبية تظهر هنا. اضغط على الزيارة لعرض ملاحظاتها.",
   "No doctor visits yet": "لا توجد زيارات طبية بعد",
   "No clinical notes for this visit": "لا توجد ملاحظات سريرية لهذه الزيارة",
+  "No diagnosis for this visit": "لا يوجد تشخيص لهذه الزيارة",
   "Clinical Note": "ملاحظة سريرية",
   "History": "التاريخ المرضي",
   "Physical Examination": "الفحص السريري",

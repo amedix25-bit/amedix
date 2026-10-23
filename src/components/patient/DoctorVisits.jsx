@@ -153,7 +153,7 @@ function DoctorVisitDetail({ visit, onBack }) {
       <div>
         <p className="text-sm font-semibold mb-2 flex items-center gap-1.5">
           <FileText className="w-4 h-4" />
-          {t("Clinical Notes")}
+          {t("Diagnosis")}
         </p>
         {error ? (
           <p role="alert" className="text-sm text-destructive">{t(error)}</p>
@@ -164,7 +164,7 @@ function DoctorVisitDetail({ visit, onBack }) {
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-4 text-center text-sm text-muted-foreground">
-            {t("No clinical notes for this visit")}
+            {t("No diagnosis for this visit")}
           </div>
         ) : (
           <div className="space-y-3">
