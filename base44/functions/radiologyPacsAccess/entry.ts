@@ -443,9 +443,12 @@ export default async function(req: Request): Promise<Response> {
           "This facility is not connected with an embedded OHIF deployment. The hospital administrator selects the OHIF Viewer (embedded) integration type and records the deployment's https:// Base URL in the Hospital Portal, Radiology Department tab, Imaging System Connection."
         );
       }
-      if (String(pacsProfile.ohif_connection_status || "pending_configuration") !== "connected") {
+      const ohifState = String(pacsProfile.ohif_connection_status || "pending_configuration");
+      if (ohifState !== "connected") {
         return refuseOhif(
-          "Launching is disabled — the embedded OHIF integration is Pending configuration. Deployment of the facility's approved OHIF instance is required, and the hospital administrator must pass the end-to-end study-retrieval test in the Hospital Portal (Radiology Department tab, Imaging System Connection) before studies can be opened."
+          ohifState === "verification_failed"
+            ? "Launching is disabled — the last end-to-end study-retrieval test failed. The hospital administrator corrects the deployment configuration and re-runs the test in the Hospital Portal (Radiology Department tab, Imaging System Connection)."
+            : "Launching is disabled — the embedded OHIF integration is Pending configuration. Deployment of the facility's approved OHIF instance is required, and the hospital administrator must pass the end-to-end study-retrieval test in the Hospital Portal (Radiology Department tab, Imaging System Connection) before studies can be opened."
         );
       }
       const ohifBase = String(pacsProfile.ohif_base_url || "").trim().replace(/\/+$/, "");
