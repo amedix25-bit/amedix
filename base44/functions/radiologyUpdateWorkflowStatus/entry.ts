@@ -296,6 +296,16 @@ export default async function(req: Request): Promise<Response> {
       );
     }
 
+    // Claim-first — a study is taken from the shared unclaimed queue (or
+    // assigned by the department) before any radiologist reports on it.
+    if (transition.actor === "radiologist" && transition.require_assignment &&
+        request.assigned_radiologist_user_id !== user.id) {
+      return Response.json(
+        { error: "Take this case from the unclaimed queue before reporting on it." },
+        { status: 409 }
+      );
+    }
+
     const updated = await applyTransition(base44, request, action, {
       name: user.full_name || (isDepartment ? "Radiology Department" : request.doctor_name || ""),
       role: transition.actor,
@@ -338,7 +348,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     return Response.json({ ok: true, imaging_request: updated });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: error.statusCode || 500 });
   }
 }

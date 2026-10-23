@@ -271,6 +271,23 @@ export async function applyTransition(base44: any, request: any, action: string,
 // recorded with who, when and why. Prevents silent concurrent reporting:
 // a study can only ever be assigned to one radiologist at a time.
 export async function setAssignment(base44: any, request: any, assignment: Record<string, any>) {
+  // Concurrency guard — the claim check ran moments ago on a possibly stale
+  // read. Re-read the study immediately before writing: of two radiologists
+  // claiming the same study simultaneously, only the one that still finds it
+  // unassigned succeeds; the other receives a 409.
+  if (assignment.action === "claimed") {
+    const fresh = await base44.asServiceRole.entities.ImagingRequest.filter({ id: request.id });
+    const current = fresh[0];
+    if (current && current.assigned_radiologist_user_id) {
+      const err: any = new Error(
+        current.assigned_radiologist_user_id === assignment.radiologist_user_id
+          ? "This study is already assigned to you."
+          : "This study was just claimed by another radiologist."
+      );
+      err.statusCode = 409;
+      throw err;
+    }
+  }
   const now = nowIso();
   const history = Array.isArray(request.assignment_history) ? [...request.assignment_history] : [];
   history.push({

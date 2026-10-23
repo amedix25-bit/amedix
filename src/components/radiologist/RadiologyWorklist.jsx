@@ -15,7 +15,7 @@ const MODALITIES = ["X-Ray", "CT", "MRI", "Ultrasound", "Mammography", "Other"];
 const PRIORITIES = ["Routine", "Urgent", "Emergency"];
 const VIEW_TABS = [
   ["mine", "My Assigned"],
-  ["available", "Available"],
+  ["available", "Unclaimed Cases"],
   ["in_progress", "In Progress"],
   ["drafts", "Draft Reports"],
   ["awaiting_signature", "Awaiting Signature"],
@@ -275,6 +275,12 @@ export default function RadiologyWorklist({ radiologistProfile, user, initialVie
                           : `${item.assigned_radiologist_name} is reporting since ${new Date(item.reporting_since).toLocaleString()}`}
                       </p>
                     )}
+                    {item.ownership === "other" && !item.reporting_since && item.assigned_datetime && (
+                      <p className="text-xs text-purple-600 mt-0.5">
+                        Claimed by Dr. {item.assigned_radiologist_name} ·{" "}
+                        {new Date(item.assigned_datetime).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${STAGE_CHIP[item.stage] || "bg-secondary"}`}>
@@ -316,7 +322,7 @@ export default function RadiologyWorklist({ radiologistProfile, user, initialVie
                   {claimable && (
                     <Button size="sm" disabled={claiming === item.id} onClick={() => claim(item)}>
                       {claiming === item.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Hand className="w-4 h-4 mr-1" />}
-                      Claim Study
+                      Take Case
                     </Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => setSelectedId(item.id)}>

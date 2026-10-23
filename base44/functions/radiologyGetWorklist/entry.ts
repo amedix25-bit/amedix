@@ -89,6 +89,7 @@ export default async function(req: Request): Promise<Response> {
         stage,
         ownership,
         assigned_radiologist_name: r.assigned_radiologist_name || null,
+        assigned_datetime: r.assigned_datetime || null,
         reporting_since: stage === "reporting_in_progress" ? (r.reporting_datetime || null) : null,
         images_count: (r.image_file_urls || []).length,
         image_notes: r.image_notes || "",
@@ -106,7 +107,8 @@ export default async function(req: Request): Promise<Response> {
     const views: Record<string, (r: any) => boolean> = {
       available: (r) => r.ownership === "unassigned" && REPORTABLE.includes(r.stage),
       mine: (r) => r.ownership === "mine",
-      in_progress: (r) => r.stage === "reporting_in_progress" && r.ownership === "mine",
+      in_progress: (r) => (r.ownership === "mine" || r.ownership === "other") &&
+        !["final_report", "released", "cancelled"].includes(r.stage),
       drafts: (r) => r.has_draft && !["released", "cancelled"].includes(r.stage),
       awaiting_signature: (r) => r.stage === "final_report" && r.ownership !== "other",
       completed: (r) => ["final_report", "released"].includes(r.stage),
