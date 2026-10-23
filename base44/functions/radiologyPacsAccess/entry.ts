@@ -129,6 +129,7 @@ export default async function(req: Request): Promise<Response> {
       vendor_name: pacsEnabled ? (pacsProfile.pacs_vendor_name || "") : "",
       viewer_configured: pacsEnabled ? !!String(pacsProfile.pacs_viewer_url_template || "").trim() : false,
       dicomweb_configured: pacsEnabled ? !!String(pacsProfile.pacs_dicomweb_base_url || "").trim() : false,
+      ohif_configured: pacsEnabled && pacsMode === "ohif_embedded" ? !!String(pacsProfile.ohif_base_url || "").trim() : false,
     };
 
     if (action === "status") {
@@ -267,6 +268,119 @@ export default async function(req: Request): Promise<Response> {
         hospital: request.routed_hospital || request.doctor_hospital,
       });
       return json({ mode: pacsMode, launch_url: launchUrl, launch_token_expires_in_minutes: expiresInMinutes });
+    }
+
+    // ===== OHIF — embedded viewer launch for facilities running their OWN
+    // approved OHIF deployment. The study is opened through OHIF's documented
+    // routing; the URL carries ONLY the Study Instance UID (and, when the
+    // deployment's route requires it, the accession number) — never patient
+    // name, CIN or credentials. Study availability is confirmed against the
+    // facility's DICOMweb (QIDO) archive endpoint when one is configured.
+    if (action === "ohif_launch") {
+      const refuseOhif = async (message: string): Promise<Response> => {
+        await logClinicalAudit(base44, {
+          actor_user_id: user.id,
+          actor_name: user.full_name,
+          actor_role: actorRole,
+          action: "radiology_pacs_launch_refused",
+          action_label: "attempted to open the study in the embedded OHIF viewer — launch refused",
+          patient_id: request.patient_id,
+          document_id: request.request_id,
+          hospital: request.routed_hospital || request.doctor_hospital,
+        });
+        return json({ mode: pacsMode, launch_url: null, launch_attempted: true, launch_outcome: "refused", message }, 409);
+      };
+      if (pacsMode !== "ohif_embedded") {
+        return refuseOhif(
+          "This facility is not connected with an embedded OHIF deployment. The hospital administrator selects the OHIF Viewer (embedded) integration type and records the deployment's https:// Base URL in the Hospital Portal, Radiology Department tab, Imaging System Connection."
+        );
+      }
+      const ohifBase = String(pacsProfile.ohif_base_url || "").trim().replace(/\/+$/, "");
+      if (!ohifBase) {
+        return refuseOhif(
+          "The OHIF deployment is connected, but its Base URL is not recorded yet. The hospital administrator must record it in the Hospital Portal, Radiology Department tab, Imaging System Connection."
+        );
+      }
+      if (!/^https:\/\//i.test(ohifBase)) {
+        return refuseOhif(
+          "The recorded OHIF Base URL is not an https:// address. Only HTTPS deployments may be embedded — the hospital administrator must correct it in Imaging System Connection."
+        );
+      }
+      if (!studyUid) {
+        return refuseOhif(
+          "The DICOM Study Instance UID is not recorded for this study, so OHIF cannot open the right examination. The department must record it on the imaging request; the AMedix request reference alone is not a valid study identifier."
+        );
+      }
+      // Confirm the study exists in the archive (when AMedix has a DICOMweb
+      // endpoint) BEFORE opening the viewer — never open a guessed study.
+      let availability = "unconfirmed";
+      let availabilityMessage =
+        "Study availability could not be confirmed — no DICOMweb (QIDO) endpoint is configured for this facility, so AMedix cannot verify the study exists in the archive before opening OHIF.";
+      const dicomwebBase = String(pacsProfile.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
+      if (dicomwebBase) {
+        if (!isHttpUrl(dicomwebBase)) {
+          return refuseOhif(
+            "The configured DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — the hospital administrator must correct it in Imaging System Connection."
+          );
+        }
+        try {
+          const probe = await fetch(`${dicomwebBase}/studies?StudyInstanceUID=${encodeURIComponent(studyUid)}&limit=1`, {
+            signal: AbortSignal.timeout(10000),
+            headers: { Accept: "application/dicom+json" },
+          });
+          if (probe.ok) {
+            const rows = await probe.json().catch(() => []);
+            if (Array.isArray(rows) && rows.length > 0) {
+              availability = "verified";
+              availabilityMessage = "The study was found in the facility imaging archive.";
+            } else {
+              return refuseOhif(
+                "The facility archive answered, but this Study Instance UID was not found in it — the study mapping must be corrected before OHIF is opened, so no unrelated study can be loaded."
+              );
+            }
+          } else if (probe.status === 401 || probe.status === 403) {
+            return refuseOhif(
+              "The facility archive requires authentication for its DICOMweb endpoint — the vendor's service credentials must be configured as server-side secrets before studies can be opened."
+            );
+          } else {
+            return refuseOhif(`The facility archive answered with HTTP ${probe.status} — the study could not be confirmed.`);
+          }
+        } catch {
+          return refuseOhif(
+            "The facility archive could not be reached — it may be offline or the DICOMweb endpoint is incorrect. OHIF was not opened."
+          );
+        }
+      }
+      const routeTemplate = String(pacsProfile.ohif_route_template || "").trim();
+      let launchUrl: string;
+      if (routeTemplate) {
+        if (!/^https:\/\//i.test(routeTemplate)) {
+          return refuseOhif(
+            "The recorded OHIF route template is not an https:// URL — the hospital administrator must correct it in Imaging System Connection."
+          );
+        }
+        launchUrl = buildLaunchUrl(routeTemplate, { study_instance_uid: studyUid, accession_number: accession });
+      } else {
+        launchUrl = `${ohifBase}/viewer?StudyInstanceUIDs=${encodeURIComponent(studyUid)}`;
+      }
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: actorRole,
+        action: "radiology_pacs_study_launched",
+        action_label: "opened the study in the embedded OHIF viewer",
+        patient_id: request.patient_id,
+        encounter_id: request.encounter_id,
+        document_id: request.request_id,
+        hospital: request.routed_hospital || request.doctor_hospital,
+      });
+      return json({
+        mode: "ohif_embedded",
+        launch_url: launchUrl,
+        viewer_base: ohifBase,
+        study_availability: availability,
+        availability_message: availabilityMessage,
+      });
     }
 
     return json({ error: "Unknown action." }, 400);

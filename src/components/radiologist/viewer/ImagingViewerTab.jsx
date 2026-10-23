@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import ImageViewer from "@/components/radiologist/review/ImageViewer";
 import PacsOpenButton from "@/components/radiologist/review/PacsOpenButton";
+import OhifWorkspace from "@/components/radiologist/viewer/OhifWorkspace";
 import {
   Monitor, RefreshCw, Loader2, ShieldCheck, ImageOff, Server, ArrowLeft, Database, AlertTriangle,
 } from "lucide-react";
@@ -245,7 +246,7 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {status.pacs?.enabled && (
+                      {status.pacs?.enabled && status.pacs.mode !== "ohif_embedded" && (
                         <PacsOpenButton requestId={selected.id} pacsStatus={status.pacs} />
                       )}
                       {status.pacs?.enabled && status.pacs.dicomweb_configured && status.study_instance_uid && (
@@ -266,13 +267,18 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                           This facility has not connected its imaging system yet. The hospital administrator connects it in the
                           Hospital Portal, Radiology Department tab, "Imaging System Connection", after confirming with the vendor:
-                          the vendor and product name, whether it offers DICOMweb or a web viewer, the vendor-documented viewer
+                          the vendor and product name, whether it offers DICOMweb, a web viewer or an embedded OHIF deployment, the vendor-documented viewer
                           launch URL template ({`{study_instance_uid}`}, {`{accession_number}`}, {`{launch_token}`} placeholders), and
                           whether desktop software supports automatic study launching. Until then, review images stored in AMedix below.
                         </p>
                       </div>
                     )}
                   </div>
+
+                  {/* Embedded OHIF workspace for facilities running their own approved OHIF deployment */}
+                  {status.pacs?.enabled && status.pacs.mode === "ohif_embedded" && (
+                    <OhifWorkspace requestId={selected.id} status={status} />
+                  )}
 
                   {/* In-app viewer for AMedix-stored images */}
                   {status.amedix_images > 0 ? (

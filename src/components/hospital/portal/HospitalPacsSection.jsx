@@ -18,6 +18,8 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
     pacs_viewer_url_template: profile.pacs_viewer_url_template || "",
     pacs_dicomweb_base_url: profile.pacs_dicomweb_base_url || "",
     pacs_vendor_notes: profile.pacs_vendor_notes || "",
+    ohif_base_url: profile.ohif_base_url || "",
+    ohif_route_template: profile.ohif_route_template || "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -45,6 +47,26 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
       });
       return;
     }
+    const ohifBase = form.ohif_base_url.trim();
+    const ohifRoute = form.ohif_route_template.trim();
+    // An embedded OHIF deployment must be the facility's OWN https deployment —
+    // never the public demo, which must not receive real patient information.
+    if (form.pacs_integration_type === "ohif_embedded" && !/^https:\/\//i.test(ohifBase)) {
+      toast({
+        title: "Invalid OHIF Base URL",
+        description: "The embedded OHIF deployment must be recorded as an https:// address (e.g. https://ohif.hospital.example). Never use the public OHIF demo for real patient data.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (ohifRoute && !/^https:\/\//i.test(ohifRoute)) {
+      toast({
+        title: "Invalid OHIF route template",
+        description: "The route template must be an https:// URL (e.g. https://ohif.hospital.example/viewer?StudyInstanceUIDs={study_instance_uid}).",
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     try {
       const updated = await base44.entities.HospitalProfile.update(profile.id, {
@@ -54,6 +76,8 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
         pacs_viewer_url_template: form.pacs_viewer_url_template.trim(),
         pacs_dicomweb_base_url: form.pacs_dicomweb_base_url.trim(),
         pacs_vendor_notes: form.pacs_vendor_notes.trim(),
+        ohif_base_url: ohifBase,
+        ohif_route_template: ohifRoute,
         pacs_updated_datetime: new Date().toISOString(),
       });
       if (onUpdate) onUpdate(updated);
@@ -97,7 +121,17 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
                 <option value="dicomweb">DICOMweb / PACS (browser viewer)</option>
                 <option value="web_viewer">Web viewer launch URL</option>
                 <option value="desktop_app">Desktop application (cannot be embedded)</option>
+                <option value="ohif_embedded">OHIF Viewer (embedded workspace)</option>
               </select>
+              {form.pacs_integration_type === "ohif_embedded" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Record your facility's OWN approved OHIF deployment below — never the public OHIF demo for real patient
+                  data. AMedix opens the study through the documented route
+                  /viewer?StudyInstanceUIDs={"{study_instance_uid}"} unless a custom route template is recorded. The
+                  DICOMweb (QIDO) Base URL above is used to verify the study exists in your archive before the viewer is
+                  opened; the department records the Study Instance UID on each imaging request.
+                </p>
+              )}
               {form.pacs_integration_type === "desktop_app" && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Desktop software opens outside the browser. AMedix can only launch it automatically if the vendor
@@ -131,6 +165,33 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
               placeholder="https://pacs.example.com/dicom-web"
             />
           </div>
+          {form.pacs_integration_type === "ohif_embedded" && (
+            <>
+              <div className="space-y-1.5">
+                <Label>OHIF Base URL (your approved deployment)</Label>
+                <Input
+                  value={form.ohif_base_url}
+                  onChange={set("ohif_base_url")}
+                  placeholder="https://ohif.hospital.example"
+                />
+                <p className="text-xs text-muted-foreground">
+                  https:// only. Substituted server-side; only the verified Study Instance UID is placed in the study
+                  route — never patient name, CIN or credentials.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>OHIF Route Template (optional — documented route override)</Label>
+                <Input
+                  value={form.ohif_route_template}
+                  onChange={set("ohif_route_template")}
+                  placeholder="https://ohif.hospital.example/viewer?StudyInstanceUIDs={study_instance_uid}"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Record only the route your deployed OHIF version documents. Placeholders: {"{study_instance_uid}"} {"{accession_number}"}.
+                </p>
+              </div>
+            </>
+          )}
           <div className="space-y-1.5">
             <Label>Vendor Integration Notes</Label>
             <Input
