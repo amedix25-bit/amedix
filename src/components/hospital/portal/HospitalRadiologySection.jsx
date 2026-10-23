@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Loader2, Radiation, ExternalLink } from "lucide-react";
 import DepartmentRadiologistMembers from "@/components/hospital/portal/DepartmentRadiologistMembers";
+import HospitalPacsSection from "@/components/hospital/portal/HospitalPacsSection";
 
 // Hospital Portal — Radiology Department configuration. Enabling the
 // department routes every imaging request doctors submit for this facility
@@ -74,6 +75,7 @@ export default function HospitalRadiologySection({ profile, onUpdate }) {
               </p>
             </div>
             <DepartmentRadiologistMembers profile={profile} />
+            <HospitalPacsSection profile={profile} onUpdate={onUpdate} />
           </>
         )}
       </div>
