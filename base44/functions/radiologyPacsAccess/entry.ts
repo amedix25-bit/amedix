@@ -64,6 +64,18 @@ function buildLaunchUrl(template: string, values: Record<string, string>): strin
   return url;
 }
 
+// A DOCUMENTED launch URL is either a web endpoint (https://...) or the
+// vendor's own documented custom protocol handler (scheme://...). A bare
+// filesystem path (e.g. /Applications/Viewer.app) is NOT launchable and is
+// rejected with a clear setup message — never guessed into a launch.
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function isDocumentedLaunchUrl(value: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
+}
+
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
@@ -141,6 +153,12 @@ export default async function(req: Request): Promise<Response> {
       if (!dicomwebBase) {
         return json({ verified: false, message: "The facility imaging system has no DICOMweb (QIDO) endpoint configured for availability verification." }, 409);
       }
+      if (!isHttpUrl(dicomwebBase)) {
+        return json({
+          verified: false,
+          message: "The configured DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — the hospital administrator must correct it in the Hospital Portal, Radiology Department tab, Imaging System Connection.",
+        }, 409);
+      }
       if (!studyUid) {
         return json({ verified: false, message: "The DICOM Study Instance UID is not recorded for this study yet, so availability on the imaging system cannot be verified." }, 409);
       }
@@ -177,22 +195,45 @@ export default async function(req: Request): Promise<Response> {
         return json({
           mode: "none",
           launch_url: null,
-          message: "This facility's imaging system is not connected yet. The hospital administrator must connect it in the Hospital Portal (Profile — Imaging System Connection) after confirming the vendor's supported integration method.",
+          message: "This facility's imaging system is not connected yet. The hospital administrator must connect it in the Hospital Portal (Radiology Department tab — Imaging System Connection) after confirming the vendor's supported integration method.",
         }, 409);
       }
-      if (pacsMode === "desktop_app") {
-        return json({
-          mode: "desktop_app",
-          launch_url: null,
-          message: `The facility's imaging software is a desktop application that cannot be opened from the browser. Open the study in the desktop software using the request reference ${request.request_id || ""} — automatic study launching requires the vendor's documented launch method.`,
-        });
-      }
       const template = String(pacsProfile.pacs_viewer_url_template || "").trim();
+      // Every refused attempt is audited with its reason — and carries no more
+      // patient data than the request reference itself.
+      const refuseLaunch = async (message: string): Promise<Response> => {
+        await logClinicalAudit(base44, {
+          actor_user_id: user.id,
+          actor_name: user.full_name,
+          actor_role: actorRole,
+          action: "radiology_pacs_launch_refused",
+          action_label: "attempted to open the study in the facility imaging system — launch refused",
+          patient_id: request.patient_id,
+          document_id: request.request_id,
+          hospital: request.routed_hospital || request.doctor_hospital,
+        });
+        return json({ mode: pacsMode, launch_url: null, launch_attempted: true, launch_outcome: "refused", message }, 409);
+      };
+      if (pacsMode === "desktop_app" && !(template && isDocumentedLaunchUrl(template))) {
+        const vendor = pacsProfile.pacs_vendor_name || "the vendor";
+        return refuseLaunch(
+          `The facility's imaging software (${vendor}) is a desktop application and no vendor-documented launch URL or protocol is recorded, so AMedix cannot open the study automatically. ` +
+          `Open the study manually in the desktop software using the accession number${accession ? ` ${accession}` : ` (AMedix reference ${request.request_id || ""})`}. ` +
+          `To enable automatic launching, the hospital administrator must record the vendor's documented launch URL or protocol in the Hospital Portal, Radiology Department tab, Imaging System Connection.`
+        );
+      }
       if (!template) {
-        return json({ mode: pacsMode, launch_url: null, message: "The facility imaging system is connected, but no viewer launch URL template is configured yet." }, 409);
+        return refuseLaunch("The facility imaging system is connected, but no viewer launch URL template is configured yet.");
+      }
+      if (!isDocumentedLaunchUrl(template)) {
+        return refuseLaunch(
+          "The recorded Viewer Launch URL Template is not a valid web or protocol launch URL — it looks like a local file path. The hospital administrator must record the vendor's DOCUMENTED launch URL or protocol (for example https://... or scheme://...) in the Hospital Portal, Radiology Department tab, Imaging System Connection."
+        );
       }
       if (template.includes("{study_instance_uid}") && !studyUid) {
-        return json({ mode: pacsMode, launch_url: null, message: "The DICOM Study Instance UID is not recorded for this study, so the imaging system cannot be opened to the right examination. The department must record it on the imaging request." }, 409);
+        return refuseLaunch(
+          "The DICOM Study Instance UID is not recorded for this study, so the imaging system cannot be opened to the right examination. The department must record it on the imaging request."
+        );
       }
       let tokenValue = "";
       let expiresInMinutes = 0;
@@ -221,8 +262,6 @@ export default async function(req: Request): Promise<Response> {
         action: "radiology_pacs_study_launched",
         action_label: "opened the study in the facility imaging system",
         patient_id: request.patient_id,
-        patient_cin: request.patient_cin,
-        patient_name: request.patient_name,
         encounter_id: request.encounter_id,
         document_id: request.request_id,
         hospital: request.routed_hospital || request.doctor_hospital,

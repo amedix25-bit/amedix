@@ -25,6 +25,26 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const template = form.pacs_viewer_url_template.trim();
+    const dicomweb = form.pacs_dicomweb_base_url.trim();
+    // A launch template must be the vendor's DOCUMENTED web or protocol URL —
+    // a local file path (e.g. /Applications/Viewer.app) is never launchable.
+    if (template && !/^[a-z][a-z0-9+.-]*:\/\//i.test(template)) {
+      toast({
+        title: "Invalid launch URL template",
+        description: "It must be the vendor's documented launch URL or protocol (e.g. https://... or scheme://...). A local file path cannot be launched from AMedix.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (dicomweb && !/^https?:\/\//i.test(dicomweb)) {
+      toast({
+        title: "Invalid DICOMweb base URL",
+        description: "It must be a valid http(s) endpoint (e.g. https://pacs.example.com/dicom-web).",
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     try {
       const updated = await base44.entities.HospitalProfile.update(profile.id, {
@@ -78,6 +98,13 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
                 <option value="web_viewer">Web viewer launch URL</option>
                 <option value="desktop_app">Desktop application (cannot be embedded)</option>
               </select>
+              {form.pacs_integration_type === "desktop_app" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Desktop software opens outside the browser. AMedix can only launch it automatically if the vendor
+                  documents a launch URL or protocol (e.g. scheme://...) — record it below; otherwise radiologists open
+                  the study manually with the accession number, and the department records the Study Instance UID on each request.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Vendor / Product Name</Label>

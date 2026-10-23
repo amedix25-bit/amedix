@@ -186,10 +186,23 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                 <div className="mt-3 grid sm:grid-cols-2 gap-2 text-sm">
                   <p><span className="text-muted-foreground">Patient:</span> {selected.patient_name}</p>
                   <p><span className="text-muted-foreground">CIN:</span> <span className="font-medium">{selected.patient_cin}</span></p>
-                  {status?.study_instance_uid && (
-                    <p className="sm:col-span-2 truncate">
-                      <span className="text-muted-foreground">Study Instance UID:</span>{" "}
+                  <p className="sm:col-span-2">
+                    <span className="text-muted-foreground">Study identifier:</span>{" "}
+                    {status === null ? (
+                      "checking..."
+                    ) : status.study_instance_uid ? (
                       <span className="font-mono text-xs">{status.study_instance_uid}</span>
+                    ) : (
+                      <span className="text-amber-700">
+                        no DICOM Study Instance UID recorded — the department must record it on the imaging request before
+                        the imaging system can be opened to the right examination
+                      </span>
+                    )}
+                  </p>
+                  {status?.accession_number && (
+                    <p className="sm:col-span-2">
+                      <span className="text-muted-foreground">Accession number:</span>{" "}
+                      <span className="font-mono text-xs">{status.accession_number}</span>
                     </p>
                   )}
                 </div>
@@ -252,10 +265,10 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                         <p className="text-xs text-muted-foreground flex items-start gap-1.5">
                           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                           This facility has not connected its imaging system yet. The hospital administrator connects it in the
-                          Hospital Portal — Profile, "Imaging System Connection", after confirming with the vendor: the vendor and
-                          product name, whether it offers DICOMweb or a web viewer, the viewer launch URL template
-                          ({`{study_instance_uid}`}, {`{accession_number}`}, {`{launch_token}`} placeholders), and whether desktop
-                          software supports automatic study launching. Until then, review images stored in AMedix below.
+                          Hospital Portal, Radiology Department tab, "Imaging System Connection", after confirming with the vendor:
+                          the vendor and product name, whether it offers DICOMweb or a web viewer, the vendor-documented viewer
+                          launch URL template ({`{study_instance_uid}`}, {`{accession_number}`}, {`{launch_token}`} placeholders), and
+                          whether desktop software supports automatic study launching. Until then, review images stored in AMedix below.
                         </p>
                       </div>
                     )}
