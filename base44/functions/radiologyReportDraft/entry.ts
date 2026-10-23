@@ -43,17 +43,7 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: "This study is closed — drafts are no longer editable." }, { status: 400 });
     }
 
-    // Draft isolation — once a study is being reported by one radiologist,
-    // other department radiologists may read it but cannot save a competing
-    // draft (patient-authorized radiologists keep their own access).
-    if (request.assigned_radiologist_user_id &&
-        request.assigned_radiologist_user_id !== user.id &&
-        !(request.authorized_radiologist_user_ids || []).includes(user.id)) {
-      return Response.json(
-        { error: "This study is being reported by another radiologist — its report is locked to them." },
-        { status: 409 }
-      );
-    }
+
 
     const now = new Date().toISOString();
     const draftData: Record<string, any> = {

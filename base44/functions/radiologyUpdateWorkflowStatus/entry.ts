@@ -36,7 +36,13 @@ export default async function(req: Request): Promise<Response> {
       const radProfiles = await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id });
       const radiologist = radProfiles[0];
       if (!radiologist) return Response.json({ error: "Only radiologists can flag critical findings." }, { status: 403 });
-      if (!(request.authorized_radiologist_user_ids || []).includes(user.id) && request.assigned_radiologist_user_id !== user.id) {
+      const critAuth = isAuthorizedForFacility(
+        await authorizedFacilities(base44, radiologist),
+        request.routed_hospital_user_id,
+        request.routed_hospital
+      );
+      if (!(request.authorized_radiologist_user_ids || []).includes(user.id) &&
+          request.assigned_radiologist_user_id !== user.id && !critAuth) {
         return Response.json({ error: "Imaging request not authorized for you." }, { status: 403 });
       }
       if (request.is_critical) return Response.json({ ok: true, already_flagged: true });
@@ -161,7 +167,7 @@ export default async function(req: Request): Promise<Response> {
 
       // request_second_opinion — a controlled request routed to the
       // department, which decides on reassignment or collaboration.
-      if (!authorizedByPatient && !isAssignedToMe) {
+      if (!authorizedByPatient && !isAssignedToMe && !isFacilityRadiologist) {
         return Response.json({ error: "Only a radiologist working on this study can request a second opinion." }, { status: 403 });
       }
       if (["final_report", "released", "cancelled"].includes(stage)) {
@@ -186,7 +192,12 @@ export default async function(req: Request): Promise<Response> {
         return Response.json({ error: "Only active radiologists can amend reports." }, { status: 403 });
       }
       const authorizedByPatient = (request.authorized_radiologist_user_ids || []).includes(user.id);
-      if (!authorizedByPatient && request.assigned_radiologist_user_id !== user.id) {
+      const isFacilityRad = isAuthorizedForFacility(
+        await authorizedFacilities(base44, radiologist),
+        request.routed_hospital_user_id,
+        request.routed_hospital
+      );
+      if (!authorizedByPatient && request.assigned_radiologist_user_id !== user.id && !isFacilityRad) {
         return Response.json({ error: "Only a radiologist working on this study can amend the report." }, { status: 403 });
       }
       const stage = canonicalStage(request.workflow_status);
@@ -271,9 +282,15 @@ export default async function(req: Request): Promise<Response> {
     const radiologist = radProfiles[0] || null;
     const hospital = hospitalProfiles[0] || null;
 
+    const isFacilityRadiologist = !!radiologist && isAuthorizedForFacility(
+      await authorizedFacilities(base44, radiologist),
+      request.routed_hospital_user_id,
+      request.routed_hospital
+    );
     const isAuthorizedRadiologist = !!radiologist && (
       (request.authorized_radiologist_user_ids || []).includes(user.id) ||
-      request.assigned_radiologist_user_id === user.id
+      request.assigned_radiologist_user_id === user.id ||
+      isFacilityRadiologist
     );
     const isDepartment = !!hospital && !!hospital.radiology_department_enabled && request.routed_hospital_user_id === user.id;
     const isRequestingDoctor = request.doctor_user_id === user.id;
@@ -286,20 +303,11 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: "You are not allowed to perform this action on this request." }, { status: 403 });
     }
 
-    // Never two radiologists independently reporting the same study.
-    if (transition.actor === "radiologist" &&
-        request.assigned_radiologist_user_id &&
-        request.assigned_radiologist_user_id !== user.id) {
-      return Response.json(
-        { error: "This study is assigned to another radiologist — ask the department to reassign it." },
-        { status: 409 }
-      );
-    }
-
-    // Claim-first — a study is taken from the shared unclaimed queue (or
-    // assigned by the department) before any radiologist reports on it.
+    // Open collaboration — assignment records who took the study, but any
+    // radiologist authorized for the department may also work on it.
+    // Claim-first only applies to the unclaimed pool.
     if (transition.actor === "radiologist" && transition.require_assignment &&
-        request.assigned_radiologist_user_id !== user.id) {
+        !request.assigned_radiologist_user_id) {
       return Response.json(
         { error: "Take this case from the unclaimed queue before reporting on it." },
         { status: 409 }

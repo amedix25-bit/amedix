@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import {
-  Loader2, Save, Send, Lock, AlertTriangle, Hand, Undo2, Users, FileSignature,
+  Loader2, Save, Send, AlertTriangle, Hand, Undo2, Users, FileSignature,
   CheckCircle2, ExternalLink, Eye, Sparkles, FileEdit, X, GitCommitHorizontal,
 } from "lucide-react";
 import { generateRadiologyReportPdf } from "@/lib/radiologyReportPdf";
@@ -67,11 +67,14 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   const assignedToMe = study.assigned_radiologist_user_id === user.id;
   const assignedOther = !!study.assigned_radiologist_user_id && !assignedToMe;
   const closed = ["final_report", "released", "cancelled"].includes(stage);
-  const authorized = study.authorized_by_patient || assignedToMe;
+  // Open collaboration — assignment records who took the study, but any
+  // logged-in radiologist of the department may also work on it.
+  const assignedToAnyone = !!study.assigned_radiologist_user_id;
+  const authorized = study.authorized_by_patient || assignedToAnyone;
   const claimable = !study.assigned_radiologist_user_id &&
     ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
-  const canStart = assignedToMe && ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
-  const editable = assignedToMe && ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress"].includes(stage);
+  const canStart = assignedToAnyone && ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
+  const editable = assignedToAnyone && ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress"].includes(stage);
   const canAmend = authorized && ["final_report", "released"].includes(stage);
   const latestVersion = (reportVersions && reportVersions.length) ? reportVersions[0] : null;
 
@@ -425,15 +428,14 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
         </div>
       )}
 
-      {/* Another radiologist holds the study — concurrency lock */}
+      {/* Assignment info — open collaboration, never a lock */}
       {assignedOther && !closed && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
-          <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800">
-            {stage === "reporting_in_progress" ? "Currently being reported" : "Assigned"} by{" "}
-            <span className="font-semibold">{study.assigned_radiologist_name}</span>
-            {study.reporting_since ? ` since ${new Date(study.reporting_since).toLocaleString()}` : ""}.
-            Editing is locked to prevent duplicate reporting — ask the department for reassignment or a second opinion.
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-start gap-2">
+          <Users className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-800">
+            Assigned to <span className="font-semibold">{study.assigned_radiologist_name}</span>
+            {study.reporting_since ? ` — reporting since ${new Date(study.reporting_since).toLocaleString()}` : ""}.
+            You can also open and report this study — every radiologist of the department may work on it.
           </p>
         </div>
       )}
@@ -530,7 +532,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       )}
 
       {/* Study-level actions */}
-      {(assignedToMe || claimable) && !closed && !amending && (
+      {(assignedToMe || assignedOther || claimable) && !closed && !amending && (
         <div className="pt-2 border-t border-border space-y-2">
           {!study.is_critical && (
             <Button variant="destructive" size="sm" onClick={flagCritical} disabled={!!busy}>
