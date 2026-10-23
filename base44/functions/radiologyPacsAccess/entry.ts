@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Imaging Viewer integration — secure bridge to the facility's EXISTING
@@ -31,7 +32,11 @@ async function authorizeStudy(base44: any, user: any, request: any): Promise<str
     const authorized =
       (request.authorized_radiologist_user_ids || []).includes(user.id) ||
       request.assigned_radiologist_user_id === user.id ||
-      String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim();
+      isAuthorizedForFacility(
+        await authorizedFacilities(base44, radiologist),
+        request.routed_hospital_user_id,
+        request.routed_hospital
+      );
     if (authorized) return "radiologist";
   }
   const hospitals = await base44.asServiceRole.entities.HospitalProfile.filter({ user_id: user.id });

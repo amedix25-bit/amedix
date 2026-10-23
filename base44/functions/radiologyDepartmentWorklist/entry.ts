@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { canonicalStage, isOverdue, LEGACY_STAGE_MAP } from "../../shared/radiologyWorkflow.ts";
+import { authorizedFacilities } from "../../shared/radiologyMembership.ts";
 
 // Radiology Department worklist + dashboard counts. Authorized callers:
 // the facility's radiology department (hospital administrator with the
@@ -25,8 +26,15 @@ export default async function(req: Request): Promise<Response> {
     if (hospital && hospital.radiology_department_enabled) {
       scope = { routed_hospital_user_id: user.id };
       mode = "department";
-    } else if (radiologist && String(radiologist.hospital || "").trim()) {
-      scope = { routed_hospital: radiologist.hospital };
+    } else if (radiologist && radiologist.status === "active") {
+      const auth = await authorizedFacilities(base44, radiologist);
+      if (auth.names.length === 0) {
+        return Response.json(
+          { error: "You are not associated with any facility's radiology department yet." },
+          { status: 403 }
+        );
+      }
+      scope = { routed_hospital: { $in: auth.names } };
       mode = "radiologist";
     } else {
       return Response.json(

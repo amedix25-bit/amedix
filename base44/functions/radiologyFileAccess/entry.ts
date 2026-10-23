@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 
 // Protected radiology file access (Phase 9). Private study images and report
 // PDFs are resolved to SHORT-LIVED signed URLs ONLY for users authorized on
@@ -34,7 +35,11 @@ export default async function(req: Request): Promise<Response> {
       (request.authorized_radiologist_user_ids || []).includes(user.id) ||
       request.assigned_radiologist_user_id === user.id ||
       (!!radiologist && radiologist.status === "active" &&
-        String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim()) ||
+        isAuthorizedForFacility(
+          await authorizedFacilities(base44, radiologist),
+          request.routed_hospital_user_id,
+          request.routed_hospital
+        )) ||
       user.role === "admin";
     if (!authorized) {
       return Response.json({ error: "You are not authorized to access this file." }, { status: 403 });

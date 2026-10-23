@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
 import RadiologistSpecialtySelect from "@/components/radiologist/RadiologistSpecialtySelect";
+import RadiologistFacilitySwitcher from "@/components/radiologist/RadiologistFacilitySwitcher";
 import { isRadiologySpecialty } from "@/lib/radiologyAccess";
 import RadiologistFindPatient from "@/components/radiologist/RadiologistFindPatient";
 import RadiologistNotifications from "@/components/radiologist/RadiologistNotifications";
@@ -35,6 +36,7 @@ export default function RadiologistDashboard() {
   const [loading, setLoading] = useState(true);
   const [pendingMode, setPendingMode] = useState(null);
   const [worklistView, setWorklistView] = useState(null);
+  const [facilityFilter, setFacilityFilter] = useState("");
 
   useEffect(() => {
     loadProfile();
@@ -84,6 +86,9 @@ export default function RadiologistDashboard() {
               {profile?.full_name}
               {profile ? <RadiologistSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
             </p>
+            {profile ? (
+              <RadiologistFacilitySwitcher profile={profile} value={facilityFilter} onChange={setFacilityFilter} />
+            ) : null}
           </div>
           {user && (
             <RadiologistNotificationsBell
@@ -101,7 +106,7 @@ export default function RadiologistDashboard() {
           </div>
         )}
         {activeTab === "worklist" && profile && (
-          <RadiologyWorklist radiologistProfile={profile} user={user} initialView={worklistView} />
+          <RadiologyWorklist radiologistProfile={profile} user={user} initialView={worklistView} initialFacility={facilityFilter} />
         )}
         {activeTab === "viewer" && profile && user && (
           <ImagingViewerTab

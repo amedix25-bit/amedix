@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { canonicalStage, isOverdue } from "../../shared/radiologyWorkflow.ts";
+import { authorizedFacilities } from "../../shared/radiologyMembership.ts";
 
 // Radiologist worklist + dashboard counts. ONE database query for every study
 // this radiologist may access:
@@ -25,14 +26,14 @@ export default async function(req: Request): Promise<Response> {
     if (!radiologist || radiologist.status !== "active") {
       return Response.json({ error: "Only active radiologists can view this worklist." }, { status: 403 });
     }
-    const facility = String(radiologist.hospital || "").trim();
+    const auth = await authorizedFacilities(base44, radiologist);
 
     const page = await base44.asServiceRole.entities.ImagingRequest.filter(
       {
         $or: [
           { authorized_radiologist_user_ids: user.id },
           { assigned_radiologist_user_id: user.id },
-          { routed_hospital: facility },
+          ...(auth.names.length ? [{ routed_hospital: { $in: auth.names } }] : []),
         ],
       },
       { sort: "-request_datetime", limit: 500 }

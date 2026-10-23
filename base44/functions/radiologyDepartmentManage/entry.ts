@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { canonicalStage, applyTransition, setAssignment, TRANSITIONS } from "../../shared/radiologyWorkflow.ts";
+import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 
 // Radiology Department request management + internal study assignment.
 // Department staff (the hospital administrator with the radiology department
@@ -32,7 +33,11 @@ export default async function(req: Request): Promise<Response> {
 
     const isDepartment = !!hospital && !!hospital.radiology_department_enabled && request.routed_hospital_user_id === user.id;
     const isFacilityRadiologist = !!radiologist && radiologist.status === "active" &&
-      String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim();
+      isAuthorizedForFacility(
+        await authorizedFacilities(base44, radiologist),
+        request.routed_hospital_user_id,
+        request.routed_hospital
+      );
 
     // ===== Assignment actions =====
     if (action === "assign" || action === "reassign" || action === "unassign" || action === "claim") {
@@ -83,6 +88,13 @@ export default async function(req: Request): Promise<Response> {
       const target = targets[0];
       if (!target || target.status !== "active") {
         return Response.json({ error: "Radiologist not found or not active." }, { status: 400 });
+      }
+      const targetAuth = await authorizedFacilities(base44, target);
+      if (!isAuthorizedForFacility(targetAuth, hospital ? hospital.user_id : "", hospital ? hospital.hospital_name : "")) {
+        return Response.json(
+          { error: "That radiologist is not associated with this facility's radiology department." },
+          { status: 400 }
+        );
       }
       if (request.assigned_radiologist_user_id === targetUserId) {
         return Response.json({ error: "This study is already assigned to that radiologist." }, { status: 400 });

@@ -34,11 +34,11 @@ const DEFAULT_FILTERS = {
 // Radiologist worklist (Phase 4.2) — one workflow, eight views, server-side
 // filters. Opening a study shows exactly who owns it: unassigned, assigned to
 // you, assigned to another radiologist, or already finalized.
-export default function RadiologyWorklist({ radiologistProfile, user, initialView }) {
+export default function RadiologyWorklist({ radiologistProfile, user, initialView, initialFacility }) {
   const { toast } = useToast();
   const [view, setView] = useState(initialView?.view || "mine");
   const [completedToday, setCompletedToday] = useState(!!initialView?.completedToday);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState({ ...DEFAULT_FILTERS, facility: initialFacility || "" });
   const [data, setData] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [claiming, setClaiming] = useState("");
@@ -50,6 +50,11 @@ export default function RadiologyWorklist({ radiologistProfile, user, initialVie
       setSelectedId(null);
     }
   }, [initialView]);
+
+  // Facility switcher selection — narrows the worklist to one authorized facility.
+  useEffect(() => {
+    setFilters((f) => ({ ...f, facility: initialFacility || "" }));
+  }, [initialFacility]);
 
   const load = useCallback(async () => {
     try {
@@ -213,7 +218,7 @@ export default function RadiologyWorklist({ radiologistProfile, user, initialVie
               variant="ghost"
               size="sm"
               className="w-full"
-              onClick={() => { setFilters(DEFAULT_FILTERS); setCompletedToday(false); }}
+              onClick={() => { setFilters({ ...DEFAULT_FILTERS, facility: initialFacility || "" }); setCompletedToday(false); }}
             >
               <FilterX className="w-4 h-4 mr-1" /> Clear filters
             </Button>

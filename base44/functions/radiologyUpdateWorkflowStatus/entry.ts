@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { TRANSITIONS, applyTransition, setAssignment, historyEntry } from "../../shared/radiologyWorkflow.ts";
+import { TRANSITIONS, applyTransition, setAssignment, historyEntry, canonicalStage } from "../../shared/radiologyWorkflow.ts";
+import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Radiology workflow transitions — the shared one-workflow chain
@@ -99,8 +100,10 @@ export default async function(req: Request): Promise<Response> {
       }
       const authorizedByPatient = (request.authorized_radiologist_user_ids || []).includes(user.id);
       const isAssignedToMe = request.assigned_radiologist_user_id === user.id;
-      const isFacilityRadiologist =
-        String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim();
+      const auth = await authorizedFacilities(base44, radiologist);
+      const isFacilityRadiologist = isAuthorizedForFacility(
+        auth, request.routed_hospital_user_id, request.routed_hospital
+      );
       const stage = canonicalStage(request.workflow_status);
 
       if (rawAction === "claim_study") {

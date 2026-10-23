@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Critical findings communication (Phase 6) — a dedicated, traceable workflow
@@ -40,7 +41,11 @@ export default async function(req: Request): Promise<Response> {
     const isRadiologist = !!radiologist && radiologist.status === "active" && request && (
       (request.authorized_radiologist_user_ids || []).includes(user.id) ||
       request.assigned_radiologist_user_id === user.id ||
-      String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim()
+      isAuthorizedForFacility(
+        await authorizedFacilities(base44, radiologist),
+        request.routed_hospital_user_id,
+        request.routed_hospital
+      )
     );
     const isDepartment = !!hospital && !!hospital.radiology_department_enabled && request &&
       request.routed_hospital_user_id === user.id;
@@ -62,8 +67,11 @@ export default async function(req: Request): Promise<Response> {
         logs = await svc.entities.CriticalFindingLog.filter(
           { routed_hospital_user_id: user.id }, { sort: "-created_date", limit: 100 });
       } else if (radiologist) {
-        logs = await svc.entities.CriticalFindingLog.filter(
-          { routed_hospital: radiologist.hospital }, { sort: "-created_date", limit: 100 });
+        const auth = await authorizedFacilities(base44, radiologist);
+        logs = auth.names.length
+          ? await svc.entities.CriticalFindingLog.filter(
+              { routed_hospital: { $in: auth.names } }, { sort: "-created_date", limit: 100 })
+          : [];
       } else {
         return Response.json({ error: "Not authorized." }, { status: 403 });
       }

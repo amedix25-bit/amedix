@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { canonicalStage } from "../../shared/radiologyWorkflow.ts";
+import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 
 // Persistent draft reports for the Radiologist Portal. The draft lives on its
 // own ReportDraft record keyed to the imaging request — the underlying imaging
@@ -28,7 +29,11 @@ export default async function(req: Request): Promise<Response> {
     const authorized =
       (request.authorized_radiologist_user_ids || []).includes(user.id) ||
       request.assigned_radiologist_user_id === user.id ||
-      String(radiologist.hospital || "").trim() === String(request.routed_hospital || "").trim();
+      isAuthorizedForFacility(
+        await authorizedFacilities(base44, radiologist),
+        request.routed_hospital_user_id,
+        request.routed_hospital
+      );
     if (!authorized) {
       return Response.json({ error: "This study is not available for you." }, { status: 403 });
     }

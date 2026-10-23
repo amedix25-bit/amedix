@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Loader2, Radiation, ExternalLink } from "lucide-react";
+import DepartmentRadiologistMembers from "@/components/hospital/portal/DepartmentRadiologistMembers";
 
 // Hospital Portal — Radiology Department configuration. Enabling the
 // department routes every imaging request doctors submit for this facility
@@ -60,17 +61,20 @@ export default function HospitalRadiologySection({ profile, onUpdate }) {
           </div>
         </div>
         {enabled && (
-          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border">
-            <Link to="/radiology-department">
-              <Button>
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Radiology Department Portal
-              </Button>
-            </Link>
-            <p className="text-xs text-muted-foreground">
-              Radiologists registered with {profile.hospital_name} can also open the portal to claim and report studies.
-            </p>
-          </div>
+          <>
+            <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border">
+              <Link to="/radiology-department">
+                <Button>
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Radiology Department Portal
+                </Button>
+              </Link>
+              <p className="text-xs text-muted-foreground">
+                Radiologists associated with {profile.hospital_name} can also open the portal to claim and report studies.
+              </p>
+            </div>
+            <DepartmentRadiologistMembers profile={profile} />
+          </>
         )}
       </div>
     </div>
