@@ -35,7 +35,36 @@
     },
     "hospital": {
       "type": "string",
-      "description": "Hospital / imaging center"
+      "description": "Legacy home facility (hospital / imaging center) the radiologist registered with \u2014 kept for backward compatibility. Additional facility memberships are granted by facility administrators in authorized_facilities."
+    },
+    "authorized_facilities": {
+      "type": "array",
+      "description": "Facility radiology departments this radiologist is authorized for \u2014 granted by each facility's administrator (never self-declared). A radiologist working at multiple facilities has one entry per facility and can switch between them. The legacy home facility above remains valid on its own.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hospital_user_id": {
+            "type": "string",
+            "description": "User id of the facility's administrator (HospitalProfile.user_id) \u2014 links the membership to the facility ID, never just a name"
+          },
+          "hospital_name": {
+            "type": "string",
+            "description": "Facility name at the time the membership was granted"
+          },
+          "added_datetime": {
+            "type": "string",
+            "description": "Date and time the administrator granted the membership (ISO datetime)"
+          },
+          "added_by_name": {
+            "type": "string",
+            "description": "Administrator who granted the membership"
+          }
+        },
+        "required": [
+          "hospital_user_id",
+          "hospital_name"
+        ]
+      }
     },
     "license_number": {
       "type": "string"
