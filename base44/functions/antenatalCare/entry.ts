@@ -122,13 +122,13 @@ export default async function(req) {
       const labIds = itemRecords.map((r) => r.linked_lab_request_id).filter(Boolean);
       const imgIds = itemRecords.map((r) => r.linked_imaging_request_id).filter(Boolean);
       const [labRes, imgRes] = await Promise.allSettled([
-        labIds.length > 0 ? sr.entities.LabRequest.filter({ id: { $in: labIds } }, { limit: 200 }) : [],
-        imgIds.length > 0 ? sr.entities.ImagingRequest.filter({ id: { $in: imgIds } }, { limit: 200 }) : [],
+        labIds.length > 0 ? sr.entities.LabRequest.filter({ id: { $in: labIds } }, { limit: 200 }) : { items: [] },
+        imgIds.length > 0 ? sr.entities.ImagingRequest.filter({ id: { $in: imgIds } }, { limit: 200 }) : { items: [] },
       ]);
       const labById = {};
-      (labRes.status === "fulfilled" ? labRes.value : []).forEach((l) => { labById[l.id] = l; });
+      ((labRes.status === "fulfilled" ? labRes.value.items || [] : [])).forEach((l) => { labById[l.id] = l; });
       const imgById = {};
-      (imgRes.status === "fulfilled" ? imgRes.value : []).forEach((i) => { imgById[i.id] = i; });
+      ((imgRes.status === "fulfilled" ? imgRes.value.items || [] : [])).forEach((i) => { imgById[i.id] = i; });
       const linkState = (rec, kind) => {
         if (!rec) return null;
         const id = kind === "lab" ? rec.linked_lab_request_id : rec.linked_imaging_request_id;
