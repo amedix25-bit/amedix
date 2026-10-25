@@ -48,10 +48,11 @@ function WindowCard({ window: w, onRecordItem, busyKey }) {
   const open = ACTIVE_STATES.includes(w.state);
   const [expanded, setExpanded] = useState(open);
   return (
-    <div className={`rounded-xl border ${w.state === "overdue" ? "border-red-300" : "border-border"} bg-card overflow-hidden`}>
+    <div className={`rounded-xl border ${w.highlight ? "border-indigo-400 ring-1 ring-indigo-200" : w.state === "overdue" ? "border-red-300" : "border-border"} bg-card overflow-hidden`}>
       <button type="button" onClick={() => setExpanded(!expanded)} className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-accent/50">
         {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
         <span className="font-medium flex-1 min-w-0 truncate">{w.label}</span>
+        {w.highlight && <span className="hidden sm:inline-block rounded-full bg-indigo-100 text-indigo-800 px-2 py-0.5 text-xs font-semibold shrink-0">Recommended window</span>}
         {w.open_count > 0 && <span className="text-xs text-muted-foreground">{w.open_count} open</span>}
         <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 ${WINDOW_CHIP[w.state]}`}>{WINDOW_LABEL[w.state]}</span>
       </button>
@@ -76,6 +77,24 @@ function ItemRow({ item, windowKey, onRecordItem, busy }) {
       <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${ITEM_CHIP[item.state]}`}>{ITEM_LABEL[item.state]}</span>
       {item.state === "ordered" && item.lab_link?.state === "awaiting_results" && <span className="text-xs text-muted-foreground">Lab request {item.lab_link.request_id}</span>}
       {item.state === "ordered" && item.img_link?.state === "awaiting_results" && <span className="text-xs text-muted-foreground">Imaging request {item.img_link.request_id}</span>}
+      {item.img_link?.state === "results_available" && (
+        <div className="w-full rounded-lg bg-green-50 border border-green-200 p-2 text-xs text-green-900">
+          <span className="font-semibold">Final report available</span> — imaging request {item.img_link.request_id}
+          {item.img_link.final_report_datetime && <span> · {new Date(item.img_link.final_report_datetime).toLocaleDateString()}</span>}
+          {item.img_link.report && (
+            <details className="mt-1">
+              <summary className="cursor-pointer font-medium">View report</summary>
+              <p className="whitespace-pre-wrap mt-1">{item.img_link.report}</p>
+            </details>
+          )}
+        </div>
+      )}
+      {item.record?.outcome === "abnormal" && (
+        <div className="w-full rounded-lg bg-amber-50 border border-amber-300 p-2 text-xs text-amber-900">
+          <span className="font-semibold">Abnormal finding</span> — not a confirmed diagnosis until clinically assessed.
+          {item.record.followup_plan ? <span className="block mt-0.5">Plan: {item.record.followup_plan}</span> : <span className="block mt-0.5 font-semibold">Management / follow-up plan missing — document it for clinician review.</span>}
+        </div>
+      )}
       {!done && !busy && ACTIVE_STATES.includes(item.state) && (
         <div className="flex gap-1.5">
           <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRecordItem(item, windowKey, "completed")}>Done</Button>

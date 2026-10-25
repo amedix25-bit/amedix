@@ -3,6 +3,9 @@ import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import {
   computeDating,
   evaluateSchedule,
+  evaluateAutomations,
+  applySettings,
+  normalizeSettings,
   evaluateFlags,
   DEFAULT_WINDOWS,
   todayStr,
@@ -39,6 +42,7 @@ export default async function(req) {
         record = await sr.entities.AntenatalScheduleConfig.update(existing.id, {
           name: String(cfg.name || existing.name),
           windows: cfg.windows,
+          settings: normalizeSettings(cfg.settings),
           is_active: cfg.is_active === true,
           version: (existing.version || 1) + 1,
           updated_datetime: now,
@@ -48,6 +52,7 @@ export default async function(req) {
         record = await sr.entities.AntenatalScheduleConfig.create({
           name: String(cfg.name || "Antenatal protocol"),
           windows: cfg.windows,
+          settings: normalizeSettings(cfg.settings),
           is_active: cfg.is_active === true,
           version: 1,
           updated_datetime: now,
@@ -93,7 +98,11 @@ export default async function(req) {
     if (!patient) return Response.json({ error: "Patient not found." }, { status: 404 });
     const pregnancy = pregnancies.status === "fulfilled" && (pregnancies.value.items || []).length > 0 ? pregnancies.value.items[0] : null;
     const config = configs.status === "fulfilled" && configs.value.length > 0 ? configs.value[0] : null;
-    const windows = config && Array.isArray(config.windows) && config.windows.length > 0 ? config.windows : DEFAULT_WINDOWS;
+    const settings = normalizeSettings(config?.settings);
+    const windows = applySettings(
+      config && Array.isArray(config.windows) && config.windows.length > 0 ? config.windows : DEFAULT_WINDOWS,
+      settings
+    );
 
     const patientIdent = {
       patient_user_id: patient.user_id || "",
@@ -127,7 +136,19 @@ export default async function(req) {
         const linked = kind === "lab" ? labById[id] : imgById[id];
         if (!linked) return { state: "not_found", request_id: "" };
         const done = kind === "lab" ? linked.status === "results" : linked.status === "completed";
-        return { state: done ? "results_available" : "awaiting_results", request_id: linked.request_id || "", status: linked.status };
+        const base = { state: done ? "results_available" : "awaiting_results", request_id: linked.request_id || "", status: linked.status };
+        if (kind === "img") {
+          // The imaging request flows through the existing AMedix radiology
+          // workflow: the final report reaches the pregnancy record through it.
+          return {
+            ...base,
+            workflow_status: linked.workflow_status || "",
+            report: done ? String(linked.report || "") : "",
+            final_report_datetime: linked.final_report_datetime || "",
+            released_datetime: linked.released_datetime || "",
+          };
+        }
+        return base;
       };
       const scheduleOut = schedule.map((w) => ({
         ...w,
@@ -143,6 +164,7 @@ export default async function(req) {
           };
         }),
       }));
+      const automations = evaluateAutomations(dating, pregnancy, scheduleOut, itemRecords, settings, todayStr());
       return Response.json({
         patient: {
           id: patient.id,
@@ -154,6 +176,8 @@ export default async function(req) {
         pregnancy,
         dating,
         schedule: scheduleOut,
+        automations,
+        settings,
         flags,
         computed_risk_flags,
         config: config ? { id: config.id, name: config.name, version: config.version } : { name: "WHO / Libyan default schedule (not yet configured)", version: null },
@@ -295,9 +319,18 @@ export default async function(req) {
       const itemKey = String(payload.item_key || "");
       if (!itemKey) return Response.json({ error: "Item key is required." }, { status: 400 });
       const now = new Date().toISOString();
+      const outcome = payload.outcome === "abnormal" || payload.outcome === "normal" ? payload.outcome : "";
+      const followupPlan = String(payload.followup_plan || "").trim();
+      if (outcome === "abnormal" && !followupPlan) {
+        // Any abnormal finding requires a documented management or follow-up
+        // plan before it can be filed as completed.
+        return Response.json({ error: "A documented management or follow-up plan is required when recording an abnormal finding." }, { status: 400 });
+      }
       const data = {
         status,
         notes: String(payload.notes || "").slice(0, 1000),
+        outcome,
+        followup_plan: followupPlan.slice(0, 1000),
         item_label: String(payload.item_label || ""),
         window_key: String(payload.window_key || ""),
         linked_lab_request_id: payload.linked_lab_request_id ? String(payload.linked_lab_request_id) : "",
@@ -326,6 +359,23 @@ export default async function(req) {
         hospital: doctor.hospital || "",
       });
       return Response.json({ ok: true, item: saved });
+    }
+
+    if (action === "list_open_imaging_requests") {
+      // Open imaging requests of this patient, so the doctor can link an
+      // existing radiology order (created through the normal imaging
+      // workflow) to a schedule item.
+      const page = await sr.entities.ImagingRequest.filter({ patient_id: patientId, status: "requested" }, { sort: "-request_datetime", limit: 50 });
+      const requests = (page.items || []).map((r) => ({
+        id: r.id,
+        request_id: r.request_id || "",
+        scan_type: r.scan_type || "",
+        examination: r.examination || "",
+        priority: r.priority || "",
+        workflow_status: r.workflow_status || "",
+        request_datetime: r.request_datetime || "",
+      }));
+      return Response.json({ ok: true, requests });
     }
 
     return Response.json({ error: "Unknown action." }, { status: 400 });

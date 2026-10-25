@@ -43,6 +43,18 @@
     "notes": {
       "type": "string"
     },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "abnormal"
+      ],
+      "description": "Clinician-documented outcome of the completed item. A screening finding recorded as ABNORMAL is never treated as a confirmed diagnosis without appropriate clinical assessment"
+    },
+    "followup_plan": {
+      "type": "string",
+      "description": "Documented management or follow-up plan \u2014 REQUIRED when the outcome is abnormal, so every abnormal finding carries an appropriate plan for clinician review"
+    },
     "linked_lab_request_id": {
       "type": "string",
       "description": "LabRequest id this item was ordered through, when applicable \u2014 the request's status determines whether results are available"

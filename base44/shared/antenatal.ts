@@ -1,6 +1,7 @@
 // Shared antenatal care engine: gestational age calculation, the default
-// WHO / Libyan-protocol schedule structure and the schedule evaluation used by
-// the antenatalCare backend function. Pure helpers — no SDK access.
+// WHO / Libyan-protocol schedule structure (first through post-dates
+// pregnancy), the schedule evaluation and the automation rules used by the
+// antenatalCare backend function. Pure helpers — no SDK access.
 
 export const MS_DAY = 86400000;
 export const GESTATION_DAYS = 280; // 40 weeks + 0 days (Naegele)
@@ -98,9 +99,9 @@ export function nextContact(gaDays) {
   return { contact_no: null, week: null, label: "Past the scheduled contact schedule — post-term follow-up", current: false };
 }
 
-// The default schedule structure — WHO recommendations with the first
-// trimester as specified. Exact eligibility, timing and repeat intervals are
-// configurable through the AntenatalScheduleConfig entity.
+// The default schedule structure — WHO recommendations across the whole
+// pregnancy. Exact eligibility, timing and repeat intervals are configurable
+// through the AntenatalScheduleConfig entity.
 export const DEFAULT_WINDOWS = [
   {
     key: "first_trimester",
@@ -139,50 +140,73 @@ export const DEFAULT_WINDOWS = [
     ],
   },
   {
+    key: "second_early",
+    label: "Second trimester (13-20 weeks)",
+    weeks_from: 13,
+    weeks_to: 20,
+    contact_no: 2,
+    items: [
+      { key: "maternal_history_update_13_20", label: "Maternal history updates and blood pressure measurement", category: "screening" },
+      { key: "previous_results_review", label: "Review of previous screening results", category: "assessment" },
+      { key: "anemia_followup_13_20", label: "Follow-up of anemia or other identified conditions", category: "assessment" },
+      { key: "medications_review_second", label: "Review of medications and supplementation", category: "assessment" },
+      { key: "fetal_assessment_second", label: "Fetal assessment as clinically indicated", category: "assessment", optional: true },
+      { key: "additional_testing_second", label: "Additional screening or diagnostic testing when indicated by history, risk factors or previous findings", category: "screening", optional: true },
+    ],
+  },
+  {
     key: "anomaly_scan",
     label: "Fetal anomaly ultrasound (18-22 weeks)",
     weeks_from: 18,
     weeks_to: 22,
     contact_no: 2,
+    highlight: true,
     items: [
       { key: "anomaly_ultrasound", label: "Fetal anomaly (anatomy) ultrasound, 18-22 weeks", category: "imaging" },
     ],
   },
   {
-    key: "second_contact",
-    label: "Second trimester contact (20-26 weeks)",
-    weeks_from: 20,
-    weeks_to: 26,
-    contact_no: 2,
+    key: "second_late",
+    label: "Second trimester (21-27 weeks)",
+    weeks_from: 21,
+    weeks_to: 27,
+    contact_no: 3,
     items: [
-      { key: "bp_second", label: "Blood pressure measurement", category: "screening" },
-      { key: "weight_second", label: "Weight measurement", category: "screening", optional: true },
-      { key: "symptom_review_second", label: "Review symptoms, fetal movements and warning signs", category: "assessment" },
-      { key: "supplementation_second", label: "Review nutritional supplementation", category: "prevention", optional: true },
+      { key: "bp_symptoms_21_27", label: "Blood pressure and relevant symptom assessment", category: "screening" },
+      { key: "fetal_growth_review_21_27", label: "Review of fetal growth and ultrasound findings", category: "assessment" },
+      { key: "fetal_movement_21_27", label: "Assessment of fetal movement when appropriate", category: "assessment" },
+      { key: "hematologic_repeat_21_27", label: "Repeat hematologic assessment when recommended or clinically indicated", category: "laboratory", optional: true },
+      { key: "blood_group_rh_review", label: "Review of blood group, Rh status and any required preventive management", category: "assessment" },
+      { key: "outstanding_review_21_27", label: "Review of outstanding investigations and abnormal findings", category: "assessment", optional: true },
     ],
   },
   {
     key: "gdm_testing",
-    label: "Gestational diabetes testing (24-28 weeks)",
+    label: "Gestational diabetes screening (24-28 weeks)",
     weeks_from: 24,
     weeks_to: 28,
     contact_no: 3,
     items: [
-      { key: "gdm_screen", label: "Gestational diabetes testing (75g OGTT or per applicable protocol)", category: "laboratory" },
-      { key: "cbc_gdm", label: "Repeat hemoglobin / full blood count (per protocol)", category: "laboratory", optional: true },
+      { key: "gdm_screen", label: "Gestational diabetes screening (75g OGTT or per applicable protocol)", category: "laboratory" },
+      { key: "cbc_gdm", label: "Repeat hematologic assessment (per protocol)", category: "laboratory", optional: true },
     ],
   },
   {
-    key: "third_contact",
-    label: "Third trimester contact (28-34 weeks)",
+    key: "third_early",
+    label: "Third trimester (28-32 weeks)",
     weeks_from: 28,
-    weeks_to: 34,
+    weeks_to: 32,
     contact_no: 4,
     items: [
-      { key: "bp_third", label: "Blood pressure measurement", category: "screening" },
-      { key: "hb_repeat_third", label: "Repeat hemoglobin assessment (per protocol)", category: "laboratory", optional: true },
-      { key: "anti_d_rh", label: "Anti-D immunoglobulin for Rh-negative patients (28 weeks, per protocol)", category: "prevention", optional: true },
-      { key: "fetal_growth_third", label: "Assess fetal growth (fundal height / clinical assessment)", category: "assessment" },
+      { key: "bp_preec_28_32", label: "Blood pressure and assessment for symptoms of pre-eclampsia", category: "screening" },
+      { key: "fetal_growth_wellbeing_28_32", label: "Review of fetal growth and well-being", category: "assessment" },
+      { key: "gdm_results_review", label: "Review of gestational diabetes results and management", category: "assessment" },
+      { key: "anemia_followup_28_32", label: "Follow-up of anemia and other identified conditions", category: "assessment" },
+      { key: "rh_anti_d_review", label: "Review of Rh status and anti-D prophylaxis when indicated", category: "prevention" },
+      { key: "immunization_review_third", label: "Review of immunization requirements", category: "screening", optional: true },
+      { key: "additional_labs_28_32", label: "Additional laboratory investigations when indicated", category: "laboratory", optional: true },
+      { key: "fetal_movement_28_32", label: "Assessment of fetal movement", category: "assessment" },
+      { key: "prior_abnormal_review", label: "Follow-up of previous abnormal findings", category: "assessment", optional: true },
     ],
   },
   {
@@ -196,31 +220,98 @@ export const DEFAULT_WINDOWS = [
     ],
   },
   {
-    key: "late_contact",
-    label: "Late preterm contact (36-38 weeks)",
-    weeks_from: 36,
-    weeks_to: 38,
-    contact_no: 6,
+    key: "third_late",
+    label: "Third trimester (33-36 weeks)",
+    weeks_from: 33,
+    weeks_to: 36,
+    contact_no: 5,
     items: [
-      { key: "bp_late", label: "Blood pressure measurement", category: "screening" },
-      { key: "presentation_check", label: "Assess fetal presentation and position", category: "assessment" },
-      { key: "gbs_screen", label: "Group B streptococcus screening (per applicable protocol)", category: "laboratory", optional: true },
-      { key: "birth_plan_edu", label: "Education: birth plan and danger signs review", category: "education", optional: true },
+      { key: "bp_symptoms_33_36", label: "Blood pressure and symptom assessment", category: "screening" },
+      { key: "growth_presentation_33_36", label: "Fetal growth and presentation assessment when appropriate", category: "assessment" },
+      { key: "fetal_movement_33_36", label: "Fetal movement assessment", category: "assessment" },
+      { key: "risk_review_33_36", label: "Review of current maternal and fetal risk factors", category: "assessment" },
+      { key: "prev_complications_review", label: "Review of previous pregnancy complications", category: "assessment", optional: true },
+      { key: "birth_planning", label: "Birth planning and delivery-related risk assessment", category: "education" },
+      { key: "outstanding_review_33_36", label: "Review of outstanding investigations and referrals", category: "assessment", optional: true },
+    ],
+  },
+  {
+    key: "gbs_screening",
+    label: "Group B streptococcus screening (35-37 weeks)",
+    weeks_from: 35,
+    weeks_to: 37,
+    contact_no: 6,
+    institution_dependent: true,
+    items: [
+      { key: "gbs_screen", label: "Group B streptococcus screening", category: "laboratory" },
     ],
   },
   {
     key: "term_contact",
-    label: "Term and post-term contact (40-42 weeks)",
+    label: "Term pregnancy (37-40 weeks)",
+    weeks_from: 37,
+    weeks_to: 40,
+    contact_no: 7,
+    checklist: true,
+    items: [
+      { key: "bp_preec_term", label: "Blood pressure and assessment for pre-eclampsia", category: "screening" },
+      { key: "fetal_movement_term", label: "Fetal movement assessment", category: "assessment" },
+      { key: "presentation_exam_term", label: "Fetal presentation and relevant clinical examination", category: "assessment" },
+      { key: "labor_signs_edu", label: "Review of labor symptoms and warning signs", category: "education" },
+      { key: "delivery_plan_review", label: "Birth planning and intended delivery location", category: "education" },
+      { key: "risk_review_term", label: "Review of maternal and fetal risk factors", category: "assessment" },
+      { key: "monitoring_referral_term", label: "Assessment of the need for additional monitoring or referral", category: "assessment", optional: true },
+    ],
+  },
+  {
+    key: "post_dates",
+    label: "Beyond 40 weeks (post-dates)",
     weeks_from: 40,
-    weeks_to: 42,
+    weeks_to: 44,
     contact_no: 8,
     items: [
-      { key: "bp_term", label: "Blood pressure measurement", category: "screening" },
-      { key: "fetal_wellbeing_term", label: "Fetal wellbeing assessment (movements, CTG or ultrasound per protocol)", category: "assessment" },
-      { key: "postterm_plan", label: "Post-term management plan discussion", category: "education", optional: true },
+      { key: "maternal_fetal_assessment_post", label: "Maternal and fetal assessment", category: "assessment" },
+      { key: "movement_warning_review_post", label: "Fetal movement and warning symptom review", category: "assessment" },
+      { key: "fetal_surveillance_post", label: "Appropriate fetal surveillance according to the locally approved protocol", category: "screening", optional: true },
+      { key: "delivery_planning_review_post", label: "Review of delivery planning", category: "education" },
+      { key: "indication_assessment_post", label: "Assessment of indications and timing for induction of labor", category: "assessment" },
+      { key: "escalation_review_post", label: "Referral or escalation when clinically indicated", category: "assessment", optional: true },
     ],
   },
 ];
+
+// Normalizes the institution-level protocol settings stored on the schedule
+// configuration. The Group B streptococcus strategy is institution-dependent:
+// nothing is assumed about which strategy an institution follows.
+export function normalizeSettings(settings) {
+  const s = settings && typeof settings === "object" ? settings : {};
+  return {
+    gbs_strategy_enabled: s.gbs_strategy_enabled === true,
+    gbs_weeks_from: Number.isFinite(s.gbs_weeks_from) ? s.gbs_weeks_from : 35,
+    gbs_weeks_to: Number.isFinite(s.gbs_weeks_to) ? s.gbs_weeks_to : 37,
+    post_dates_pathway: String(s.post_dates_pathway || "").trim(),
+  };
+}
+
+// Applies the institutional settings to the window list: the Group B
+// streptococcus window only exists when the strategy is configured, and uses
+// the institution's configured gestational-age window.
+export function applySettings(windows, settings) {
+  const s = normalizeSettings(settings);
+  return (windows || [])
+    .filter((w) => w.key !== "gbs_screening" || s.gbs_strategy_enabled)
+    .map((w) => {
+      if (w.key === "gbs_screening") {
+        return {
+          ...w,
+          weeks_from: s.gbs_weeks_from,
+          weeks_to: s.gbs_weeks_to,
+          label: `Group B streptococcus screening (${s.gbs_weeks_from}-${s.gbs_weeks_to} weeks)`,
+        };
+      }
+      return w;
+    });
+}
 
 // Item state per item key, evaluated against the current gestational age and
 // the recorded item history. Dating changes re-evaluate the schedule but never
@@ -249,6 +340,8 @@ export function evaluateSchedule(dating, windows, itemRecords) {
           ? {
               id: rec.id,
               notes: rec.notes || "",
+              outcome: rec.outcome || "",
+              followup_plan: rec.followup_plan || "",
               recorded_datetime: rec.recorded_datetime || "",
               recorded_by_name: rec.recorded_by_name || "",
               linked_lab_request_id: rec.linked_lab_request_id || "",
@@ -270,11 +363,185 @@ export function evaluateSchedule(dating, windows, itemRecords) {
       weeks_from: w.weeks_from,
       weeks_to: w.weeks_to,
       contact_no: w.contact_no || null,
+      highlight: w.highlight === true,
+      checklist: w.checklist === true,
       state: wState,
       open_count: open.length,
       items,
     };
   });
+}
+
+// Automation rules for the second and third trimesters and the post-dates
+// period. Automations highlight, remind and flag only — they never diagnose,
+// never auto-order investigations and never recommend induction or cesarean
+// delivery: those stay clinical decisions.
+export function evaluateAutomations(dating, pregnancy, schedule, itemRecords, settings, today) {
+  const out = [];
+  const findItem = (key) => {
+    for (const w of schedule || []) {
+      const it = (w.items || []).find((i) => i.key === key);
+      if (it) return { window: w, item: it };
+    }
+    return null;
+  };
+  const ga = dating && dating.complete ? dating.gestational_age_days : null;
+  const s = normalizeSettings(settings);
+
+  // Anomaly ultrasound window (18-22 weeks) — highlighted, with the imaging
+  // request and final report linked through the existing radiology workflow.
+  const anomaly = findItem("anomaly_ultrasound");
+  if (anomaly) {
+    if (["due", "approaching", "overdue"].includes(anomaly.item.state) && anomaly.item.state !== "completed") {
+      out.push({
+        key: "anomaly_window",
+        tone: "highlight",
+        title: "Recommended fetal anomaly ultrasound window (18-22 weeks)",
+        message:
+          anomaly.item.state === "overdue"
+            ? "The recommended anomaly ultrasound window (18-22 weeks) has passed without a documented scan. Order it through the imaging workflow and link it to this pregnancy record."
+            : "Order the anomaly ultrasound through the existing imaging workflow and link it to this pregnancy record so the request and the final report flow back here.",
+        item_key: "anomaly_ultrasound",
+        window_key: anomaly.window.key,
+      });
+    } else if (anomaly.item.state === "ordered") {
+      const link = anomaly.item.img_link || anomaly.item.lab_link;
+      if (link && link.state === "results_available") {
+        out.push({
+          key: "anomaly_report",
+          tone: "info",
+          title: "Anomaly ultrasound report available",
+          message: `The final report for imaging request ${link.request_id} is linked to this pregnancy record.`,
+          item_key: "anomaly_ultrasound",
+        });
+      } else {
+        out.push({
+          key: "anomaly_link",
+          tone: "info",
+          title: "Anomaly ultrasound ordered",
+          message: link ? `Imaging request ${link.request_id} is linked to this pregnancy record and is awaiting the final report.` : "The anomaly ultrasound is recorded as ordered. Link the imaging request to this pregnancy record so the final report flows back.",
+          item_key: "anomaly_ultrasound",
+        });
+      }
+    }
+  }
+
+  // Gestational diabetes screening: reminder at ~24 weeks, outstanding flag
+  // after the configured window. Screening findings are never treated as a
+  // confirmed diagnosis without clinical assessment.
+  const gdm = findItem("gdm_screen");
+  if (gdm && dating && dating.complete) {
+    if (ga >= 168 && ["approaching", "due", "awaiting_dating"].includes(gdm.item.state)) {
+      out.push({
+        key: "gdm_reminder",
+        tone: "reminder",
+        title: "Gestational diabetes screening due (24-28 weeks)",
+        message: "The gestational diabetes screening window has been reached. Screen when clinically indicated — a risk factor alone is never a diagnosis.",
+        item_key: "gdm_screen",
+        window_key: gdm.window.key,
+      });
+    }
+    if (ga > 28 * 7 + 6 && ["overdue", "due", "approaching", "awaiting_dating"].includes(gdm.item.state)) {
+      out.push({
+        key: "gdm_outstanding",
+        tone: "alert",
+        title: "Gestational diabetes screening outstanding",
+        message: "The screening window (24-28 weeks) has passed without a documented result. Flagged for clinician review — do not diagnose gestational diabetes from risk factors or an unverified result.",
+        item_key: "gdm_screen",
+        window_key: gdm.window.key,
+      });
+    }
+  }
+
+  // Outstanding third-trimester assessments: highlighted, and any abnormal
+  // finding requires a documented management or follow-up plan.
+  const thirdOverdue = [];
+  (schedule || []).forEach((w) => {
+    if (w.weeks_from >= 28 && ["overdue"].includes(w.state)) {
+      (w.items || []).forEach((it) => {
+        if (it.state === "overdue") thirdOverdue.push(it);
+      });
+    }
+  });
+  if (thirdOverdue.length > 0) {
+    out.push({
+      key: "outstanding_third_trimester",
+      tone: "alert",
+      title: "Outstanding third-trimester assessments",
+      message: `${thirdOverdue.length} third-trimester assessment${thirdOverdue.length === 1 ? "" : "s"} still open: ${thirdOverdue.slice(0, 5).map((i) => i.label).join("; ")}${thirdOverdue.length > 5 ? "; …" : ""}. Any abnormal finding requires a documented management or follow-up plan.`,
+    });
+  }
+  (itemRecords || []).forEach((r) => {
+    if (r.outcome === "abnormal" && !String(r.followup_plan || "").trim()) {
+      out.push({
+        key: "plan_missing_" + r.item_key,
+        tone: "alert",
+        title: "Management plan required",
+        message: `The item "${r.item_label || r.item_key}" was recorded with an abnormal outcome but has no documented management or follow-up plan. Document the plan for clinician review.`,
+        item_key: r.item_key,
+      });
+    }
+  });
+
+  // Group B streptococcus strategy — institution-dependent. Nothing is
+  // assumed about which strategy an institution follows.
+  const gbsWindow = (schedule || []).find((w) => w.key === "gbs_screening");
+  if (s.gbs_strategy_enabled && gbsWindow) {
+    out.push({
+      key: "gbs_window",
+      tone: "info",
+      title: `Group B streptococcus screening window (${s.gbs_weeks_from}-${s.gbs_weeks_to} weeks)`,
+      message: "This institution uses a Group B streptococcus screening strategy — the screening item appears in the schedule for the configured window.",
+    });
+  } else if (ga !== null && ga >= 33 * 7) {
+    out.push({
+      key: "gbs_not_configured",
+      tone: "info",
+      title: "No Group B streptococcus screening strategy configured",
+      message: "This institution has not configured a Group B streptococcus screening strategy. Confirm and record the locally adopted protocol — screening strategies differ between countries and institutions.",
+    });
+  }
+
+  // Delivery-planning checklist from 37 weeks, highlighting unresolved
+  // clinical concerns. Induction and cesarean are never auto-recommended.
+  if (ga !== null && ga >= 37 * 7) {
+    const unresolved = [];
+    (schedule || []).forEach((w) => {
+      if (w.key === "term_contact" || w.key === "post_dates") {
+        (w.items || []).forEach((it) => {
+          if (["due", "overdue", "ordered"].includes(it.state)) unresolved.push(it);
+        });
+      }
+    });
+    if (unresolved.length > 0) {
+      out.push({
+        key: "delivery_checklist",
+        tone: "highlight",
+        title: "Delivery-planning checklist — unresolved concerns",
+        message: `${unresolved.length} term/post-dates concern${unresolved.length === 1 ? "" : "s"} still open: ${unresolved.slice(0, 5).map((i) => i.label).join("; ")}${unresolved.length > 5 ? "; …" : ""}. Additional monitoring or referral remains a clinical decision.`,
+      });
+    } else {
+      out.push({
+        key: "delivery_checklist",
+        tone: "info",
+        title: "Delivery-planning checklist",
+        message: "Term assessments are addressed. Review birth planning, the intended delivery location and labor warning signs with the patient.",
+      });
+    }
+  }
+
+  // Past the EDD: alert with the configured post-dates pathway. The system
+  // never decides when to induce labor.
+  if (dating && dating.complete && dating.edd && today >= dating.edd) {
+    out.push({
+      key: "past_edd",
+      tone: "alert",
+      title: "Pregnancy at or beyond the estimated due date",
+      message: `The pregnancy has reached the EDD (${dating.edd}). Post-dates management pathway${s.post_dates_pathway ? ": " + s.post_dates_pathway : ": display the configured pathway for this institution."} Assessment of indications and timing for induction of labor remains a clinical decision — the system does not decide induction timing.`,
+    });
+  }
+
+  return out;
 }
 
 // Computed flags. Risk is never auto-classified: missing information produces

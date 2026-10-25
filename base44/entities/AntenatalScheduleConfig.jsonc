@@ -70,6 +70,11 @@
       },
       "description": "Gestational-age windows of the protocol, each with the assessments, screening tests, laboratory investigations, imaging, preventive interventions and education items it covers"
     },
+    "settings": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Institution-level protocol settings: gbs_strategy_enabled (whether this institution uses a Group B streptococcus screening strategy \u2014 nothing is assumed by default), gbs_weeks_from / gbs_weeks_to (the configured screening window, commonly 35-37 weeks) and post_dates_pathway (the institution's post-dates management pathway shown at and beyond the EDD)"
+    },
     "notes": {
       "type": "string"
     },

@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import GestationalAgeBanner from "@/components/doctor/antenatal/GestationalAgeBanner";
 import AntenatalWindows from "@/components/doctor/antenatal/AntenatalWindows";
+import AntenatalAutomations from "@/components/doctor/antenatal/AntenatalAutomations";
+import AntenatalItemDialog from "@/components/doctor/antenatal/AntenatalItemDialog";
 import AntenatalDatingForm from "@/components/doctor/antenatal/AntenatalDatingForm";
 import { AlertTriangle, Activity, Baby, Loader2, Pencil, RefreshCw } from "lucide-react";
 
@@ -22,6 +24,7 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
   const [riskLevel, setRiskLevel] = useState("");
   const [riskReason, setRiskReason] = useState("");
   const [savingRisk, setSavingRisk] = useState(false);
+  const [dialog, setDialog] = useState(null); // { item, windowKey, mode: "completed" | "ordered" }
 
   const load = async () => {
     setLoading(true);
@@ -43,7 +46,23 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
 
   useEffect(() => { load(); }, [patient.id]);
 
-  const recordItem = async (item, windowKey, status) => {
+  // Completing an item opens the outcome dialog (an abnormal finding requires
+  // a documented management / follow-up plan); ordering an imaging item opens
+  // the link dialog so the request and its final report flow back to the
+  // pregnancy record through the existing radiology workflow.
+  const recordItem = (item, windowKey, status) => {
+    if (status === "completed") {
+      setDialog({ item, windowKey, mode: "completed" });
+      return;
+    }
+    if (status === "ordered" && item.category === "imaging") {
+      setDialog({ item, windowKey, mode: "ordered" });
+      return;
+    }
+    doRecord(item, windowKey, status, {});
+  };
+
+  const doRecord = async (item, windowKey, status, extras) => {
     setBusyKey(item.key);
     setError("");
     try {
@@ -55,7 +74,9 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         item_label: item.label,
         window_key: windowKey,
         status,
+        ...extras,
       });
+      setDialog(null);
       await load();
     } catch (e) {
       setError(e?.response?.data?.error || e.message || "Could not record the item.");
@@ -128,7 +149,20 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         </div>
       )}
 
+      <AntenatalAutomations automations={ov.automations} />
+
       <AntenatalWindows schedule={ov.schedule} onRecordItem={recordItem} busyKey={busyKey} />
+
+      <AntenatalItemDialog
+        open={!!dialog}
+        item={dialog?.item}
+        mode={dialog?.mode}
+        patientId={patient.id}
+        doctorId={doctorProfile?.id}
+        busy={dialog ? busyKey === dialog.item.key : false}
+        onClose={() => setDialog(null)}
+        onSubmit={(extras) => doRecord(dialog.item, dialog.windowKey, dialog.mode === "completed" ? "completed" : "ordered", extras)}
+      />
 
       <div className="rounded-xl border border-border p-4">
         <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5"><Activity className="w-4 h-4" /> Risk assessment</h4>
