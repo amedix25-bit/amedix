@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, History, FileText, Pill, ClipboardList, Stethoscope, FlaskConical, Image as ImageIcon, Plus } from "lucide-react";
+import { ArrowLeft, History, FileText, Pill, ClipboardList, Stethoscope, FlaskConical, Image as ImageIcon, Plus, Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DoctorPatientVisitSection from "@/components/doctor/patients/DoctorPatientVisitSection";
 import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
@@ -7,6 +7,7 @@ import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
 import DoctorPatientHistorySection from "@/components/doctor/patients/DoctorPatientHistorySection";
+import DoctorAntenatalSection from "@/components/doctor/antenatal/DoctorAntenatalSection";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
 import DoctorPatientPrescriptions from "@/components/doctor/pharmacy/DoctorPatientPrescriptions";
 import DoctorMedicationHistory from "@/components/doctor/medhistory/DoctorMedicationHistory";
@@ -44,6 +45,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
 
       <div className="flex flex-wrap rounded-xl border border-border bg-card p-1 gap-1 max-w-3xl">
         {tabButton("history", "Patient History", History)}
+        {patient.gender === "female" && tabButton("antenatal", "Antenatal Care", Baby)}
         {tabButton("notes", "Clinical Notes", FileText)}
         {tabButton("prescriptions", "Prescriptions", Pill)}
         {tabButton("medhistory", "Medication History", ClipboardList)}
@@ -56,6 +58,13 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
         <section className="rounded-2xl border border-border bg-card p-6">
           <h3 className="font-semibold text-lg mb-4">Patient History</h3>
           <DoctorPatientHistorySection patient={patient} />
+        </section>
+      )}
+
+      {activeTab === "antenatal" && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h3 className="font-semibold text-lg mb-4">Antenatal Care</h3>
+          <DoctorAntenatalSection patient={patient} doctorProfile={doctorProfile} />
         </section>
       )}
 

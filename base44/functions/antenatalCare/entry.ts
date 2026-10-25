@@ -63,8 +63,10 @@ export default async function(req) {
 
     let doctor = null;
     if (payload.doctor_id) {
-      const docs = await sr.entities.DoctorProfile.filter({ id: String(payload.doctor_id) }, { limit: 1 });
-      if (docs.length > 0 && docs[0].user_id === user.id) doctor = docs[0];
+      try {
+        const doc = await sr.entities.DoctorProfile.get(String(payload.doctor_id));
+        if (doc && doc.user_id === user.id) doctor = doc;
+      } catch (e) { doctor = null; }
     }
     if (!doctor) {
       const mine = await sr.entities.DoctorProfile.filter({ user_id: user.id }, { limit: 1 });
@@ -72,10 +74,11 @@ export default async function(req) {
     }
     if (!doctor) return Response.json({ error: "Doctor profile not found." }, { status: 403 });
 
-    const access = await sr.entities.AccessRequest.filter(
+    const accessPage = await sr.entities.AccessRequest.filter(
       { patient_id: patientId, doctor_id: doctor.id, status: "approved" },
       { limit: 1 }
     );
+    const access = accessPage.items || [];
     if (access.length === 0) {
       return Response.json({ error: "You do not have authorized access to this patient's record." }, { status: 403 });
     }
@@ -88,7 +91,7 @@ export default async function(req) {
     ]);
     const patient = patientRes.status === "fulfilled" ? patientRes.value : null;
     if (!patient) return Response.json({ error: "Patient not found." }, { status: 404 });
-    const pregnancy = pregnancies.status === "fulfilled" && pregnancies.value.length > 0 ? pregnancies.value[0] : null;
+    const pregnancy = pregnancies.status === "fulfilled" && (pregnancies.value.items || []).length > 0 ? pregnancies.value.items[0] : null;
     const config = configs.status === "fulfilled" && configs.value.length > 0 ? configs.value[0] : null;
     const windows = config && Array.isArray(config.windows) && config.windows.length > 0 ? config.windows : DEFAULT_WINDOWS;
 
@@ -99,11 +102,11 @@ export default async function(req) {
     };
 
     if (action === "get_overview") {
-      const itemRecords = pregnancy ? await sr.entities.AntenatalItemRecord.filter({ pregnancy_id: pregnancy.id }, { limit: 500 }) : [];
+      const itemRecords = pregnancy ? (await sr.entities.AntenatalItemRecord.filter({ pregnancy_id: pregnancy.id }, { limit: 500 })).items || [] : [];
       const dating = pregnancy ? computeDating(pregnancy, todayStr()) : { complete: false, lmp: "", edd: "", dating_method: "lmp" };
       const schedule = evaluateSchedule(dating, windows, itemRecords);
-      const conditions = await sr.entities.MedicalCondition.filter({ patient_id: patientId, category: "known_case" }, { limit: 100 });
-      const conditionNames = (conditions || []).map((c) => c.name);
+      const conditionsPage = await sr.entities.MedicalCondition.filter({ patient_id: patientId, category: "known_case" }, { limit: 100 });
+      const conditionNames = (conditionsPage.items || []).map((c) => c.name);
       const { flags, computed_risk_flags } = evaluateFlags(dating, pregnancy, patient, conditionNames);
       // Linked orders: a pending lab/imaging request keeps the item "ordered";
       // results available flip it to completed server-side display.
@@ -213,6 +216,7 @@ export default async function(req) {
         saved = await sr.entities.PregnancyRecord.create({
           ...norm,
           ...patientIdent,
+          patient_id: patientId,
           status: "active",
           dating_history: [],
           risk_level: "pending_assessment",
@@ -302,12 +306,12 @@ export default async function(req) {
         recorded_by_user_id: user.id,
         recorded_by_name: doctor.full_name || "",
       };
-      const existing = await sr.entities.AntenatalItemRecord.filter({ pregnancy_id: pregnancy.id, item_key: itemKey }, { limit: 1 });
+      const existing = (await sr.entities.AntenatalItemRecord.filter({ pregnancy_id: pregnancy.id, item_key: itemKey }, { limit: 1 })).items || [];
       let saved;
       if (existing.length > 0) {
         saved = await sr.entities.AntenatalItemRecord.update(existing[0].id, data);
       } else {
-        saved = await sr.entities.AntenatalItemRecord.create({ ...data, pregnancy_id: pregnancy.id, ...patientIdent, item_key: itemKey });
+        saved = await sr.entities.AntenatalItemRecord.create({ ...data, pregnancy_id: pregnancy.id, patient_id: patientId, ...patientIdent, item_key: itemKey });
       }
       await logClinicalAudit(base44, {
         actor_user_id: user.id,
