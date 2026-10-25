@@ -12,6 +12,8 @@ import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import DocumentFields from "@/components/doctor/encounters/DocumentFields";
 import DoctorAntenatalSection from "@/components/doctor/antenatal/DoctorAntenatalSection";
+import ObgynExamSection from "@/components/doctor/notes/ObgynExamSection";
+import { flattenExamValues, examAnyValue, examAbnormalCount } from "@/lib/obgynExamSchema";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
@@ -75,6 +77,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   // specialty-specific structure. Diagnosis, prescriptions and the
   // lab/imaging links stay — they are the platform-wide clinical record.
   const isGeneralNote = !activeDef;
+  // Structured Clinical Examination — every Obstetrics & Gynaecology
+  // sub-clinical note carries a context-aware examination module (Macleod's
+  // examination framework + WHO maternal-care assessments), stored as
+  // structured findings distinct from diagnosis and management.
+  const isObgynDoc = activeDef?.specialty === "obstetrics_gynecology";
+  const [examValues, setExamValues] = useState({});
+  const examFilled = isObgynDoc && examAnyValue(examValues);
+  const examAbnormal = isObgynDoc ? examAbnormalCount(examValues) : 0;
   const [photoUris, setPhotoUris] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   // Universal AMedix record context — allergies, active medications and
@@ -128,6 +138,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     setDraftId(d.id);
     if (d.specialty_doc_type) setDocType(d.specialty_doc_type);
     if (d.specialty_data_values) setDataValues(d.specialty_data_values);
+    if (d.exam_values) setExamValues(d.exam_values);
     if (Array.isArray(d.photo_file_uris)) setPhotoUris(d.photo_file_uris);
     if (d.form_data)
       setForm((f) => {
@@ -218,6 +229,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       form_data: { ...form },
       specialty_doc_type: docType,
       specialty_data_values: dataValues,
+      exam_values: examValues,
       photo_file_uris: photoUris,
       medications,
       selected_lab_request_ids: [...selectedLabs],
@@ -245,6 +257,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     (form.provisional_diagnoses || []).some((d) => d.trim()) ||
     anyVital ||
     Object.values(dataValues).some((v) => v !== undefined && v !== null && String(v).trim() !== "") ||
+    (isObgynDoc && examAnyValue(examValues)) ||
     medications.some((m) => m.name.trim()) ||
     selectedLabs.size > 0 ||
     selectedImaging.size > 0;
@@ -267,7 +280,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       }
     }, 1500);
     return () => clearTimeout(t);
-  }, [form, dataValues, photoUris, docType, medications, selectedLabs, selectedImaging, patient]);
+  }, [form, dataValues, photoUris, docType, medications, selectedLabs, selectedImaging, patient, examValues]);
 
   const saveDraftAndContinueToLabs = async () => {
     if (!patient) {
@@ -342,6 +355,15 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         }
       });
     }
+    // Structured examination findings — saved with the note under their own
+    // label prefix, distinct from the template fields, diagnoses and
+    // management, and mapped to ICD-11 concepts separately by the
+    // terminology system.
+    if (isObgynDoc) {
+      flattenExamValues(examValues, docType).forEach(({ key, label, value }) => {
+        specialtyData[`exam.${key}`] = { label, value };
+      });
+    }
     setSaving(true);
     try {
       // The backend independently verifies the active check-in before creating
@@ -405,6 +427,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // Obstetrics & Gynecology — the full antenatal care module (WHO 8-contact
     // schedule, screening tracker, risk assessment and decision support) lives
     // inside the Antenatal Follow-Up note type.
+    ...(isObgynDoc
+      ? [{
+          id: "obexam",
+          title: "Clinical Examination",
+          complete: examFilled,
+          hint: examAbnormal > 0 ? `⚠ ${examAbnormal} abnormal finding${examAbnormal > 1 ? "s" : ""} — review` : "structured, context-aware",
+        }]
+      : []),
     ...(activeDef?.key === "obgyn_antenatal_followup" && patient
       ? [{ id: "antenatal", title: "Antenatal Care Record", hint: "full antenatal module" }]
       : []),
@@ -456,6 +486,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               onValueChange={(v) => {
                 setDocType(v);
                 setDataValues({});
+                setExamValues({});
                 if (!getDocDef(v)?.photos) setPhotoUris([]);
                 setOpenIds((s) => {
                   const n = new Set(s);
@@ -659,6 +690,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             />
           </div>
         );
+      case "obexam":
+        return <ObgynExamSection docKey={activeDef.key} values={examValues} onChange={setExamValues} />;
       default:
         return null;
     }
