@@ -18,6 +18,14 @@ const ITEM_CHIP = {
   completed: "bg-green-100 text-green-800",
   ordered: "bg-blue-100 text-blue-800",
   skipped: "bg-muted text-muted-foreground",
+  sample_collected: "bg-blue-100 text-blue-800",
+  pending_result: "bg-amber-100 text-amber-800",
+  result_available: "bg-amber-100 text-amber-800",
+  abnormal: "bg-red-100 text-red-800",
+  inconclusive: "bg-red-100 text-red-800",
+  followup_required: "bg-red-100 text-red-800",
+  declined: "bg-muted text-muted-foreground",
+  not_indicated: "bg-muted text-muted-foreground",
   due: "bg-blue-100 text-blue-800",
   approaching: "bg-amber-100 text-amber-800",
   overdue: "bg-red-100 text-red-800",
@@ -26,6 +34,10 @@ const ITEM_CHIP = {
 };
 const ITEM_LABEL = {
   completed: "Completed", ordered: "Ordered — awaiting results", skipped: "Not required",
+  sample_collected: "Sample collected", pending_result: "Pending result",
+  result_available: "Result available — awaiting review", abnormal: "Abnormal — review required",
+  inconclusive: "Inconclusive — review required", followup_required: "Follow-up required",
+  declined: "Declined by patient", not_indicated: "Not indicated",
   due: "Due now", approaching: "Approaching", overdue: "Overdue", upcoming: "Upcoming", awaiting_dating: "Awaiting dating",
 };
 const CATEGORY_ICON = { assessment: ClipboardList, screening: Activity, laboratory: FlaskConical, imaging: ImageIcon, education: GraduationCap, prevention: ShieldCheck };
@@ -69,7 +81,8 @@ function WindowCard({ window: w, onRecordItem, busyKey }) {
 
 function ItemRow({ item, windowKey, onRecordItem, busy }) {
   const Icon = CATEGORY_ICON[item.category] || ClipboardList;
-  const done = ["completed", "skipped", "ordered"].includes(item.state);
+  const done = ["completed", "skipped"].includes(item.state);
+  const recordedStatus = item.record && item.record.review_status !== "awaiting_review" && ["sample_collected", "pending_result", "result_available", "abnormal", "inconclusive", "followup_required", "declined", "not_indicated"].includes(item.state);
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
       <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -95,14 +108,18 @@ function ItemRow({ item, windowKey, onRecordItem, busy }) {
           {item.record.followup_plan ? <span className="block mt-0.5">Plan: {item.record.followup_plan}</span> : <span className="block mt-0.5 font-semibold">Management / follow-up plan missing — document it for clinician review.</span>}
         </div>
       )}
-      {!done && !busy && ACTIVE_STATES.includes(item.state) && (
+      {!done && !recordedStatus && !busy && ACTIVE_STATES.includes(item.state) && (
         <div className="flex gap-1.5">
           <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRecordItem(item, windowKey, "completed")}>Done</Button>
           <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRecordItem(item, windowKey, "ordered")}>Ordered</Button>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRecordItem(item, windowKey, "status")}>Status…</Button>
           <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => onRecordItem(item, windowKey, "skipped")}>Not required</Button>
         </div>
       )}
       {busy && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+      {item.record?.review_status === "awaiting_review" && (
+        <span className="text-xs text-amber-800 font-medium w-full">Clinical review outstanding — a missing result is never treated as negative.</span>
+      )}
       {item.state === "completed" && item.record?.recorded_by_name && (
         <span className="text-xs text-muted-foreground w-full sm:w-auto">{item.record.recorded_by_name} · {new Date(item.record.recorded_datetime).toLocaleDateString()}</span>
       )}

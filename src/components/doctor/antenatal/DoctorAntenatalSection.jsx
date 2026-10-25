@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import GestationalAgeBanner from "@/components/doctor/antenatal/GestationalAgeBanner";
 import AntenatalWindows from "@/components/doctor/antenatal/AntenatalWindows";
 import AntenatalAutomations from "@/components/doctor/antenatal/AntenatalAutomations";
 import AntenatalItemDialog from "@/components/doctor/antenatal/AntenatalItemDialog";
 import AntenatalDatingForm from "@/components/doctor/antenatal/AntenatalDatingForm";
-import { AlertTriangle, Activity, Baby, Loader2, Pencil, RefreshCw } from "lucide-react";
+import AntenatalContacts from "@/components/doctor/antenatal/AntenatalContacts";
+import AntenatalRiskCard from "@/components/doctor/antenatal/AntenatalRiskCard";
+import AntenatalTracker from "@/components/doctor/antenatal/AntenatalTracker";
+import AntenatalSummary from "@/components/doctor/antenatal/AntenatalSummary";
+import { AlertTriangle, Baby, Loader2, Pencil, RefreshCw } from "lucide-react";
 
 // Gestational-age-based antenatal care and screening — doctor side. Shows the
 // prominent gestational age, the automated WHO / Libyan-protocol screening
@@ -21,10 +24,10 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
   const [busyKey, setBusyKey] = useState(null);
-  const [riskLevel, setRiskLevel] = useState("");
-  const [riskReason, setRiskReason] = useState("");
+  const [busyContact, setBusyContact] = useState(null);
+  const [busyAck, setBusyAck] = useState(null);
   const [savingRisk, setSavingRisk] = useState(false);
-  const [dialog, setDialog] = useState(null); // { item, windowKey, mode: "completed" | "ordered" }
+  const [dialog, setDialog] = useState(null); // { item, windowKey, mode }
 
   const load = async () => {
     setLoading(true);
@@ -36,7 +39,6 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         doctor_id: doctorProfile?.id,
       });
       setOv(res.data);
-      setRiskLevel(res.data?.pregnancy?.risk_level || "");
     } catch (e) {
       setError(e?.response?.data?.error || e.message || "Could not load the antenatal record.");
     } finally {
@@ -51,8 +53,8 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
   // the link dialog so the request and its final report flow back to the
   // pregnancy record through the existing radiology workflow.
   const recordItem = (item, windowKey, status) => {
-    if (status === "completed") {
-      setDialog({ item, windowKey, mode: "completed" });
+    if (status === "completed" || status === "status") {
+      setDialog({ item, windowKey, mode: status });
       return;
     }
     if (status === "ordered" && item.category === "imaging") {
@@ -66,6 +68,8 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
     setBusyKey(item.key);
     setError("");
     try {
+      const effectiveStatus = extras.status || status;
+      delete extras.status;
       await base44.functions.invoke("antenatalCare", {
         action: "record_item",
         patient_id: patient.id,
@@ -73,7 +77,7 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         item_key: item.key,
         item_label: item.label,
         window_key: windowKey,
-        status,
+        status: effectiveStatus,
         ...extras,
       });
       setDialog(null);
@@ -85,8 +89,73 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
     }
   };
 
-  const saveRisk = async () => {
-    if (!riskLevel) return;
+  // Documented clinical review of an abnormal / inconclusive result.
+  const doReview = async (item, windowKey, extras) => {
+    setBusyKey(item.key);
+    setError("");
+    try {
+      await base44.functions.invoke("antenatalCare", {
+        action: "review_item",
+        patient_id: patient.id,
+        doctor_id: doctorProfile?.id,
+        item_key: item.key,
+        ...extras,
+      });
+      setDialog(null);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || "Could not save the review.");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  // Document a completed antenatal contact — requires the qualifying
+  // encounter evidence; reminders and ordered tests never complete a contact.
+  const doRecordContact = async (payload, dialogEntry) => {
+    setBusyContact(dialogEntry === "additional" ? "additional" : dialogEntry.contact_no);
+    setError("");
+    try {
+      const invoke = { action: "record_contact", patient_id: patient.id, doctor_id: doctorProfile?.id, ...payload };
+      if (payload.contact_no == null) {
+        // Additional contact: sequence number beyond the standard schedule.
+        delete invoke.contact_no;
+        invoke.contact_no = ov?.contacts?.next_additional_no || 9;
+      }
+      await base44.functions.invoke("antenatalCare", invoke);
+      setDialog(null);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || "Could not document the contact.");
+    } finally {
+      setBusyContact(null);
+    }
+  };
+
+  // Open the review dialog for an abnormal / inconclusive finding.
+  const recordReview = (item, windowKey) => setDialog({ item, windowKey, mode: "review" });
+
+  const doAck = async (ruleKey, actionTaken) => {
+    setBusyAck(ruleKey);
+    setError("");
+    try {
+      await base44.functions.invoke("antenatalCare", {
+        action: "acknowledge_alert",
+        patient_id: patient.id,
+        doctor_id: doctorProfile?.id,
+        rule_key: ruleKey,
+        action_taken: actionTaken,
+      });
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || "Could not acknowledge the alert.");
+    } finally {
+      setBusyAck(null);
+    }
+  };
+
+  const saveRisk = async (level, reason, factorKeys) => {
+    if (!level) return;
     setSavingRisk(true);
     setError("");
     try {
@@ -94,10 +163,10 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         action: "set_risk_level",
         patient_id: patient.id,
         doctor_id: doctorProfile?.id,
-        risk_level: riskLevel,
-        reason: riskReason,
+        risk_level: level,
+        reason,
+        factor_keys: factorKeys,
       });
-      setRiskReason("");
       await load();
     } catch (e) {
       setError(e?.response?.data?.error || e.message || "Could not save the risk level.");
@@ -149,9 +218,13 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         </div>
       )}
 
-      <AntenatalAutomations automations={ov.automations} />
+      <AntenatalAutomations automations={ov.automations} onAcknowledge={doAck} busyAck={busyAck} />
+
+      <AntenatalContacts contacts={ov.contacts} upcomingAppointments={ov.upcoming_appointments} onRecordContact={doRecordContact} busyContact={busyContact} />
 
       <AntenatalWindows schedule={ov.schedule} onRecordItem={recordItem} busyKey={busyKey} />
+
+      <AntenatalTracker schedule={ov.schedule} onRecordStatus={recordItem} onReviewItem={recordReview} busyKey={busyKey} />
 
       <AntenatalItemDialog
         open={!!dialog}
@@ -161,34 +234,15 @@ export default function DoctorAntenatalSection({ patient, doctorProfile }) {
         doctorId={doctorProfile?.id}
         busy={dialog ? busyKey === dialog.item.key : false}
         onClose={() => setDialog(null)}
-        onSubmit={(extras) => doRecord(dialog.item, dialog.windowKey, dialog.mode === "completed" ? "completed" : "ordered", extras)}
+        onSubmit={(extras) => {
+          if (dialog.mode === "review") doReview(dialog.item, dialog.windowKey, extras);
+          else doRecord(dialog.item, dialog.windowKey, dialog.mode === "completed" ? "completed" : dialog.mode === "ordered" ? "ordered" : "status", extras);
+        }}
       />
 
-      <div className="rounded-xl border border-border p-4">
-        <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5"><Activity className="w-4 h-4" /> Risk assessment</h4>
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {ov.computed_risk_flags.length === 0 && <p className="text-sm text-muted-foreground">No documented risk factors. Missing information is never treated as low risk — the risk level stays pending until assessed.</p>}
-          {ov.computed_risk_flags.map((r, i) => (
-            <span key={r.key + i} className="rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-xs">{r.message}</span>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div>
-            <Label className="text-xs">Assign risk level</Label>
-            <select className="flex h-9 rounded-md border border-border bg-background px-2 text-sm" value={riskLevel} onChange={(e) => setRiskLevel(e.target.value)}>
-              <option value="pending_assessment">Pending assessment</option>
-              <option value="low">Low</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-          <div className="flex-1 min-w-[180px]">
-            <Label className="text-xs">Reason</Label>
-            <Input value={riskReason} onChange={(e) => setRiskReason(e.target.value)} placeholder="e.g. chronic hypertension + age 38" />
-          </div>
-          <Button size="sm" onClick={saveRisk} disabled={savingRisk || !riskLevel}>{savingRisk ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save risk level"}</Button>
-        </div>
-      </div>
+      <AntenatalRiskCard risk={ov.risk} pregnancy={pregnancy} onSave={saveRisk} savingRisk={savingRisk} />
+
+      <AntenatalSummary patientId={patient.id} doctorId={doctorProfile?.id} />
 
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

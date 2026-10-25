@@ -290,6 +290,11 @@ export function normalizeSettings(settings) {
     gbs_weeks_from: Number.isFinite(s.gbs_weeks_from) ? s.gbs_weeks_from : 35,
     gbs_weeks_to: Number.isFinite(s.gbs_weeks_to) ? s.gbs_weeks_to : 37,
     post_dates_pathway: String(s.post_dates_pathway || "").trim(),
+    // The antenatal contact weeks — the WHO eight-contact model by default;
+    // a locally approved protocol can override them in the configuration.
+    contact_weeks: Array.isArray(s.contact_weeks)
+      ? s.contact_weeks.map(Number).filter(Number.isFinite).slice(0, 24)
+      : null,
   };
 }
 
@@ -313,6 +318,43 @@ export function applySettings(windows, settings) {
     });
 }
 
+// Structured screening statuses are NOT interchangeable. A recorded status
+// maps to the display state it means; the timing states (not yet due, due
+// soon, due now, overdue) are derived from the gestational age, never from a
+// recorded status.
+export const REC_ITEM_STATE = {
+  completed: "completed",
+  ordered: "ordered",
+  skipped: "skipped",
+  sample_collected: "sample_collected",
+  pending_result: "pending_result",
+  result_available: "result_available",
+  normal: "completed",
+  negative: "completed",
+  abnormal: "abnormal",
+  positive: "abnormal",
+  inconclusive: "inconclusive",
+  followup_required: "followup_required",
+  declined: "declined",
+  not_indicated: "not_indicated",
+};
+
+// States that keep an item (or window) open — anything not resolved and not
+// safely in the future.
+export const ACTIVE_ITEM_STATES = [
+  "due", "overdue", "approaching", "awaiting_dating", "ordered",
+  "sample_collected", "pending_result", "result_available",
+  "abnormal", "inconclusive", "followup_required",
+];
+
+// Clinical rule provenance for the decision-support automations and the risk
+// rules — every rule is traceable to its documented source and version.
+export const ANTENATAL_RULES = {
+  source: "WHO antenatal care recommendations (2016) + institution protocol configuration",
+  version: 1,
+  effective_date: "2026-10-25",
+};
+
 // Item state per item key, evaluated against the current gestational age and
 // the recorded item history. Dating changes re-evaluate the schedule but never
 // touch recorded items — completed investigations are not repeated.
@@ -322,9 +364,7 @@ export function evaluateSchedule(dating, windows, itemRecords) {
     const items = (w.items || []).map((it) => {
       const rec = (itemRecords || []).find((r) => r.item_key === it.key) || null;
       let state;
-      if (rec && rec.status === "completed") state = "completed";
-      else if (rec && rec.status === "skipped") state = "skipped";
-      else if (rec && rec.status === "ordered") state = "ordered";
+      if (rec && REC_ITEM_STATE[rec.status]) state = REC_ITEM_STATE[rec.status];
       else if (ga === null) state = "awaiting_dating";
       else if (ga >= w.weeks_from * 7 && ga <= w.weeks_to * 7 + 6) state = "due";
       else if (ga > w.weeks_to * 7 + 6) state = "overdue";
@@ -346,11 +386,26 @@ export function evaluateSchedule(dating, windows, itemRecords) {
               recorded_by_name: rec.recorded_by_name || "",
               linked_lab_request_id: rec.linked_lab_request_id || "",
               linked_imaging_request_id: rec.linked_imaging_request_id || "",
+              clinical_indication: rec.clinical_indication || "",
+              guideline_source: rec.guideline_source || "",
+              guideline_version: rec.guideline_version || "",
+              order_datetime: rec.order_datetime || "",
+              specimen_collection_datetime: rec.specimen_collection_datetime || "",
+              result_value: rec.result_value || "",
+              result_units: rec.result_units || "",
+              reference_range: rec.reference_range || "",
+              interpretation: rec.interpretation || "",
+              reviewing_clinician: rec.reviewing_clinician || "",
+              review_datetime: rec.review_datetime || "",
+              review_status: rec.review_status || "",
+              responsible_clinician: rec.responsible_clinician || "",
+              completion_datetime: rec.completion_datetime || "",
+              deferral_reason: rec.deferral_reason || "",
             }
           : null,
       };
     });
-    const open = items.filter((i) => ["due", "overdue", "approaching", "ordered", "awaiting_dating"].includes(i.state));
+    const open = items.filter((i) => ACTIVE_ITEM_STATES.includes(i.state));
     let wState;
     if (ga === null) wState = "awaiting_dating";
     else if (ga > w.weeks_to * 7 + 6) wState = open.length > 0 ? "overdue" : "passed";
@@ -541,7 +596,182 @@ export function evaluateAutomations(dating, pregnancy, schedule, itemRecords, se
     });
   }
 
-  return out;
+  // Every automation is traceable to the documented clinical rule set. The
+  // key stays the acknowledgement key.
+  return out.map((a) => ({
+    source: ANTENATAL_RULES.source,
+    rule_version: ANTENATAL_RULES.version,
+    rule_effective_date: ANTENATAL_RULES.effective_date,
+    ...a,
+  }));
+}
+
+// The antenatal contact schedule. WHO eight-contact model (12, 20, 26, 30,
+// 34, 36, 38, 40 weeks) by default; a locally approved protocol can override
+// the contact weeks through the configuration. A contact counts as COMPLETED
+// only when a qualifying antenatal encounter is documented in the pregnancy
+// record — a reminder or an ordered test never completes a contact.
+export function evaluateContacts(dating, pregnancy, settings) {
+  const s = normalizeSettings(settings);
+  const weeks = s.contact_weeks && s.contact_weeks.length > 0 ? s.contact_weeks.slice().sort((a, b) => a - b) : WHO_CONTACT_WEEKS.slice();
+  const ga = dating && dating.complete ? dating.gestational_age_days : null;
+  const recorded = Array.isArray(pregnancy && pregnancy.contacts) ? pregnancy.contacts.filter((c) => c && Number.isFinite(Number(c.contact_no)) && c.completed_datetime) : [];
+  const contacts = weeks.map((wk, i) => {
+    const no = i + 1;
+    const rec = recorded.find((c) => Number(c.contact_no) === no && c.additional !== true) || null;
+    const dueWeek = wk;
+    let state;
+    if (rec) state = "completed";
+    else if (ga === null) state = "awaiting_dating";
+    else if (i === 0 && ga <= wk * 7 + 7) state = "due_now"; // Contact 1: up to 12 weeks (booking)
+    else if (ga >= (weeks[i - 1] || 0) * 7 && ga <= wk * 7 + 7) state = "due_now";
+    else if (ga > wk * 7 + 14) state = "overdue"; // missed / overdue — clinician review
+    else if (ga > wk * 7 + 7) state = "due_soon";
+    else state = "upcoming";
+    return {
+      contact_no: no,
+      week: wk,
+      state,
+      label: `Contact ${no} — week ${wk}`,
+      completed: rec
+        ? {
+            completed_datetime: rec.completed_datetime || "",
+            completed_by_name: rec.completed_by_name || "",
+            encounter_evidence: rec.encounter_evidence || "",
+            notes: rec.notes || "",
+          }
+        : null,
+    };
+  });
+  const additional = recorded
+    .filter((c) => c.additional === true)
+    .sort((a, b) => String(a.completed_datetime).localeCompare(String(b.completed_datetime)))
+    .map((c) => ({
+      contact_no: Number(c.contact_no),
+      completed_datetime: c.completed_datetime || "",
+      completed_by_name: c.completed_by_name || "",
+      reason: c.additional_reason || "",
+      encounter_evidence: c.encounter_evidence || "",
+      notes: c.notes || "",
+    }));
+  return {
+    contacts,
+    additional,
+    completed_count: contacts.filter((c) => c.state === "completed").length,
+    total: weeks.length,
+    next: contacts.find((c) => c.state === "due_now") || contacts.find((c) => c.state === "due_soon") || contacts.find((c) => c.state === "upcoming") || null,
+    overdue_count: contacts.filter((c) => c.state === "overdue").length,
+    next_additional_no: Math.max(8, ...contacts.map((c) => c.contact_no)) + Math.max(1, additional.length),
+  };
+}
+
+// Structured maternal risk assessment. Every factor is traced to a documented
+// rule (rule_key, source, version, effective date) and produces
+// RECOMMENDATIONS for clinician review only — the system never assigns a risk
+// level, never diagnoses, and never labels a pregnancy low risk simply
+// because routine screening results are normal.
+export function evaluateRisk(pregnancy, conditionNames, itemRecords) {
+  const p = pregnancy || {};
+  const factors = [];
+  const add = (key, label, detail, recommendations) => {
+    factors.push({
+      key,
+      rule_key: key,
+      rule_source: ANTENATAL_RULES.source,
+      rule_version: ANTENATAL_RULES.version,
+      rule_effective_date: ANTENATAL_RULES.effective_date,
+      label,
+      detail: String(detail || "").slice(0, 400),
+      recommendations,
+    });
+  };
+  const hasCond = (re) => (conditionNames || []).some((n) => re.test(String(n || "")));
+  const detailOf = (r) => (r ? String(r.interpretation || r.followup_plan || r.notes || "").slice(0, 200) : "");
+
+  if (hasCond(/hypertens/i)) {
+    add("chronic_hypertension", "Chronic hypertension", "Documented chronic hypertension", [
+      "Blood pressure measurement at every antenatal contact",
+      "Assessment for pre-eclampsia symptoms at every contact",
+      "Consider specialist antenatal care or referral — clinician decision",
+    ]);
+  }
+  if (p.previous_preeclampsia) {
+    add("prev_preeclampsia", "Previous pre-eclampsia", "Documented previous pre-eclampsia — risk factor for hypertensive disorders in this pregnancy", [
+      "Blood pressure and pre-eclampsia symptom assessment at every contact",
+      "Consider aspirin prophylaxis and enhanced monitoring — clinician decision",
+    ]);
+  }
+  if (hasCond(/diabet/i)) {
+    add("diabetes_in_pregnancy", "Diabetes in pregnancy", "Documented diabetes (pre-existing or previously diagnosed gestational diabetes)", [
+      "Glycemic monitoring and a review of diabetes management",
+      "Consider specialist referral — clinician decision",
+    ]);
+  }
+  if (p.previous_gestational_diabetes) {
+    add("prev_gdm", "Previous gestational diabetes", "Documented previous gestational diabetes — risk factor for GDM in this pregnancy", [
+      "Gestational diabetes screening at 24-28 weeks, or earlier when clinically indicated",
+    ]);
+  }
+  const multiText = [String(p.notes || "")].concat((p.risk_factors || []).map((rf) => String(rf && rf.detail || ""))).join(" ");
+  if (/multiple|twins|triplets|multifetal/i.test(multiText)) {
+    add("multiple_pregnancy", "Multiple pregnancy", "Documented multiple pregnancy", [
+      "Enhanced fetal growth and well-being surveillance",
+      "Consider specialist obstetric referral — clinician decision",
+    ]);
+  }
+  if (p.previous_preterm_birth) {
+    add("prev_preterm", "Previous preterm birth", "Documented previous preterm birth", [
+      "Monitoring for symptoms of preterm labor",
+      "Consider cervical length surveillance and preventive measures — clinician decision",
+    ]);
+  }
+  if (p.previous_fgr) {
+    add("prev_fgr", "Previous fetal growth restriction", "Documented previous fetal growth restriction", [
+      "Serial fundal height / growth ultrasound surveillance",
+      "Consider enhanced fetal monitoring from 28 weeks — clinician decision",
+    ]);
+  }
+  if (p.previous_cesarean) {
+    add("obstetric_surgery", "Previous cesarean delivery (obstetric surgery)", "Documented previous cesarean delivery", [
+      "Birth-planning review at 33-36 weeks and at term",
+      "Consider delivery-mode discussion with the obstetric team — clinician decision",
+    ]);
+  }
+  const anemiaItem = (itemRecords || []).find((r) => ["cbc_hemoglobin", "cbc_gdm", "hematologic_repeat_21_27", "additional_labs_28_32"].includes(r.item_key) && (r.outcome === "abnormal" || /anemi/i.test(String(r.interpretation || ""))));
+  if (hasCond(/anemi/i) || anemiaItem) {
+    add("maternal_anemia", "Maternal anemia", anemiaItem ? `Documented anemia finding — ${detailOf(anemiaItem)}` : "Documented anemia", [
+      "Repeat hemoglobin assessment as clinically indicated",
+      "Iron supplementation review",
+      "Document the management plan for the anemia finding",
+    ]);
+  }
+  if (hasCond(/hiv|hepatitis|syphilis|tuberculosis|malaria|covid|infection/i)) {
+    add("relevant_infection", "Relevant infection", "Documented infection relevant to pregnancy management", [
+      "Review the infection status and required monitoring at each contact",
+      "Consider specialist referral — clinician decision",
+    ]);
+  }
+  (itemRecords || []).forEach((r) => {
+    if (r.outcome === "abnormal" || r.status === "abnormal" || r.status === "positive" || r.status === "inconclusive") {
+      add(
+        "abnormal_finding_" + r.item_key,
+        `Abnormal finding: ${r.item_label || r.item_key}`,
+        (r.review_status === "reviewed" ? "Under documented follow-up — " : "Awaiting documented clinical review — ") + detailOf(r),
+        [
+          "Document the clinical assessment and management plan",
+          "Track the follow-up to completion — the finding is not closed until reviewed",
+        ]
+      );
+    }
+  });
+  (p.risk_factors || []).forEach((rf, i) => {
+    if (rf && rf.detail) {
+      add("factor_" + i, "Documented risk factor", `${rf.category ? rf.category + ": " : ""}${rf.detail}`, [
+        "Confirm the appropriate monitoring and referral pathway — clinician decision",
+      ]);
+    }
+  });
+  return { factors, rules: ANTENATAL_RULES };
 }
 
 // Computed flags. Risk is never auto-classified: missing information produces

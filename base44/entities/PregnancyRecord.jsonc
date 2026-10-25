@@ -106,6 +106,88 @@
       },
       "description": "Previous pregnancy dating adjustments with their documented reasons and who made them. Dating changes recalculate the recommended schedule while preserving existing orders, results and completed investigations \u2014 completed items are never automatically repeated"
     },
+    "contacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "contact_no": {
+            "type": "integer",
+            "description": "1-8 for the standard contact schedule, or the sequence number of an additional contact"
+          },
+          "additional": {
+            "type": "boolean",
+            "default": false,
+            "description": "True for an additional contact beyond the standard schedule \u2014 supported for high-risk pregnancies and other clinical indications, with a documented reason"
+          },
+          "additional_reason": {
+            "type": "string",
+            "description": "Documented clinical indication for an additional contact (required for additional contacts)"
+          },
+          "week": {
+            "type": "integer",
+            "description": "Gestational week at which the contact was documented"
+          },
+          "completed_datetime": {
+            "type": "string",
+            "description": "ISO datetime the qualifying antenatal encounter was documented. A contact counts as completed ONLY when this qualifying encounter documentation exists \u2014 reminders and ordered investigations never complete a contact"
+          },
+          "completed_by_name": {
+            "type": "string",
+            "description": "Clinician who documented the contact"
+          },
+          "completed_by_user_id": {
+            "type": "string"
+          },
+          "encounter_evidence": {
+            "type": "string",
+            "description": "Documented evidence of the qualifying encounter \u2014 clinical note reference, encounter ID or the documented antenatal review"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contact_no",
+          "completed_datetime",
+          "encounter_evidence"
+        ]
+      },
+      "description": "Recorded antenatal contacts \u2014 one entry per documented contact encounter. Completed contacts, the next recommended contact and missed/overdue contacts are derived from this list together with the gestational age"
+    },
+    "risk_assessment": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Latest structured maternal risk assessment \u2014 { assessed_datetime, by_name, level, factor_keys, rules_source, rules_version } \u2014 assigned by an authorized clinician on top of the traced, rule-based factor evaluation. Risk classification is always a clinician decision; the system never assigns a level automatically"
+    },
+    "alert_acks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_key": {
+            "type": "string"
+          },
+          "acknowledged_datetime": {
+            "type": "string",
+            "description": "ISO datetime the alert was acknowledged"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "action_taken": {
+            "type": "string",
+            "description": "Documented action taken in response to the alert"
+          }
+        },
+        "required": [
+          "rule_key",
+          "acknowledged_datetime",
+          "action_taken"
+        ]
+      },
+      "description": "Clinical decision-support alert acknowledgements \u2014 rule key, who acknowledged, when, and the documented action taken. Acknowledged alerts stop repeating so reminders are not duplicated"
+    },
     "gravida": {
       "type": "integer"
     },

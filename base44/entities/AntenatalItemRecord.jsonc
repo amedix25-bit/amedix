@@ -36,12 +36,91 @@
       "enum": [
         "completed",
         "ordered",
-        "skipped"
+        "skipped",
+        "sample_collected",
+        "pending_result",
+        "result_available",
+        "normal",
+        "negative",
+        "abnormal",
+        "positive",
+        "inconclusive",
+        "followup_required",
+        "declined",
+        "not_indicated"
       ],
-      "description": "COMPLETED: done or result available. ORDERED: ordered and awaiting results \u2014 the linked request is checked for completion. SKIPPED: documented as not required / not applicable for this patient"
+      "description": "Structured screening status \u2014 statuses are NOT interchangeable. COMPLETED: done / reviewed as finished. ORDERED: ordered and awaiting. SKIPPED: documented as not required (legacy). SAMPLE_COLLECTED / PENDING_RESULT: in progress with the laboratory. RESULT_AVAILABLE: result received, awaiting clinical review. NORMAL / NEGATIVE: reviewed result with no action required. ABNORMAL / POSITIVE: abnormal finding \u2014 enters the clinical review workflow with a required follow-up plan. INCONCLUSIVE: result needs repetition or clinical review. FOLLOWUP_REQUIRED: reviewed, follow-up outstanding. DECLINED: the patient declined \u2014 documented reason required. NOT_INDICATED: clinician documented the investigation as not indicated \u2014 documented reason required"
     },
     "notes": {
       "type": "string"
+    },
+    "clinical_indication": {
+      "type": "string",
+      "description": "Clinical indication for the investigation"
+    },
+    "guideline_source": {
+      "type": "string",
+      "description": "Guideline source for the investigation, e.g. WHO antenatal care recommendations"
+    },
+    "guideline_version": {
+      "type": "string",
+      "description": "Guideline / protocol version the investigation follows"
+    },
+    "order_datetime": {
+      "type": "string",
+      "description": "Date and time the investigation was ordered (ISO datetime)"
+    },
+    "specimen_collection_datetime": {
+      "type": "string",
+      "description": "Date and time the specimen was collected, where applicable (ISO datetime)"
+    },
+    "result_value": {
+      "type": "string",
+      "description": "Documented result value, where applicable"
+    },
+    "result_units": {
+      "type": "string",
+      "description": "Units of the documented result"
+    },
+    "reference_range": {
+      "type": "string",
+      "description": "Reference range applicable to the result, when one exists"
+    },
+    "interpretation": {
+      "type": "string",
+      "description": "Result interpretation documented by the reviewing clinician"
+    },
+    "reviewing_clinician": {
+      "type": "string",
+      "description": "Clinician who reviewed the result"
+    },
+    "review_datetime": {
+      "type": "string",
+      "description": "Date and time of the clinical review (ISO datetime)"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "awaiting_review",
+        "reviewed"
+      ],
+      "description": "Clinical review workflow state \u2014 ABNORMAL, INCONCLUSIVE and FOLLOWUP_REQUIRED results enter AWAITING_REVIEW until an authorized clinician documents the review and the action taken; the system never marks an abnormal finding as simply completed"
+    },
+    "followup_plan": {
+      "type": "string",
+      "description": "Documented management or follow-up plan \u2014 REQUIRED when the result is abnormal, so every abnormal finding carries an appropriate plan for clinician review"
+    },
+    "responsible_clinician": {
+      "type": "string",
+      "description": "Clinician responsible for the follow-up"
+    },
+    "completion_datetime": {
+      "type": "string",
+      "description": "Date and time the investigation was completed / finalized (ISO datetime)"
+    },
+    "deferral_reason": {
+      "type": "string",
+      "description": "Documented reason for deferral, declining or not performing the investigation \u2014 required for declined and not_indicated statuses"
     },
     "outcome": {
       "type": "string",
@@ -49,11 +128,7 @@
         "normal",
         "abnormal"
       ],
-      "description": "Clinician-documented outcome of the completed item. A screening finding recorded as ABNORMAL is never treated as a confirmed diagnosis without appropriate clinical assessment"
-    },
-    "followup_plan": {
-      "type": "string",
-      "description": "Documented management or follow-up plan \u2014 REQUIRED when the outcome is abnormal, so every abnormal finding carries an appropriate plan for clinician review"
+      "description": "Legacy simplified outcome of the completed item, derived from the structured status \u2014 a screening finding recorded as ABNORMAL is never treated as a confirmed diagnosis without appropriate clinical assessment"
     },
     "linked_lab_request_id": {
       "type": "string",
