@@ -11,6 +11,7 @@ import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import DocumentFields from "@/components/doctor/encounters/DocumentFields";
+import DoctorAntenatalSection from "@/components/doctor/antenatal/DoctorAntenatalSection";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
@@ -401,6 +402,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     ...(hasSpecialtyFields
       ? [{ id: "template", title: activeDef.label, complete: specialtyFilled > 0, hint: `${specialtyFilled}/${activeDef.fields.length} fields` }]
       : []),
+    // Obstetrics & Gynecology — the full antenatal care module (WHO 8-contact
+    // schedule, screening tracker, risk assessment and decision support) lives
+    // inside the Antenatal Follow-Up note type.
+    ...(activeDef?.key === "obgyn_antenatal_followup" && patient
+      ? [{ id: "antenatal", title: "Antenatal Care Record", hint: "full antenatal module" }]
+      : []),
     ...(activeDef && activeDef.photos ? [{ id: "photos", title: "Clinical Photographs", complete: photoUris.length > 0 }] : []),
     ...(isGeneralNote
       ? [
@@ -450,7 +457,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 setDocType(v);
                 setDataValues({});
                 if (!getDocDef(v)?.photos) setPhotoUris([]);
-                if (v !== GENERAL_KEY) setOpenIds((s) => new Set([...s, "template"]));
+                setOpenIds((s) => {
+                  const n = new Set(s);
+                  if (v !== GENERAL_KEY) n.add("template");
+                  if (getDocDef(v)?.key === "obgyn_antenatal_followup") n.add("antenatal");
+                  return n;
+                });
               }}
             >
               <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
@@ -490,6 +502,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty sections are simply not saved.</p>
           </div>
         );
+      case "antenatal":
+        return <DoctorAntenatalSection patient={patient} doctorProfile={doctorProfile} />;
       case "photos":
         return (
           <div className="space-y-1.5">
