@@ -14,6 +14,8 @@ import DocumentFields from "@/components/doctor/encounters/DocumentFields";
 import DoctorAntenatalSection from "@/components/doctor/antenatal/DoctorAntenatalSection";
 import ObgynExamSection from "@/components/doctor/notes/ObgynExamSection";
 import { flattenExamValues, examAnyValue, examAbnormalCount } from "@/lib/obgynExamSchema";
+import ObgynSrhSection from "@/components/doctor/notes/ObgynSrhSection";
+import { flattenSrhValues, srhAnyValue, srhGroupsForDoc, srhConcernCount } from "@/lib/obgynSrhSchema";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
@@ -85,6 +87,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [examValues, setExamValues] = useState({});
   const examFilled = isObgynDoc && examAnyValue(examValues);
   const examAbnormal = isObgynDoc ? examAbnormalCount(examValues) : 0;
+  // Structured Sexual & Reproductive History — sensitive, encounter-adapted,
+  // and kept separate from the Clinical Examination section.
+  const [srhValues, setSrhValues] = useState({});
+  const srhGroups = isObgynDoc ? srhGroupsForDoc(docType) : [];
+  const srhFilled = isObgynDoc && srhGroups.length > 0 && srhAnyValue(srhValues);
+  const srhConcerns = isObgynDoc ? srhConcernCount(srhValues) : 0;
   const [photoUris, setPhotoUris] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   // Universal AMedix record context — allergies, active medications and
@@ -139,6 +147,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     if (d.specialty_doc_type) setDocType(d.specialty_doc_type);
     if (d.specialty_data_values) setDataValues(d.specialty_data_values);
     if (d.exam_values) setExamValues(d.exam_values);
+    if (d.srh_values) setSrhValues(d.srh_values);
     if (Array.isArray(d.photo_file_uris)) setPhotoUris(d.photo_file_uris);
     if (d.form_data)
       setForm((f) => {
@@ -230,6 +239,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       specialty_doc_type: docType,
       specialty_data_values: dataValues,
       exam_values: examValues,
+      srh_values: srhValues,
       photo_file_uris: photoUris,
       medications,
       selected_lab_request_ids: [...selectedLabs],
@@ -258,6 +268,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     anyVital ||
     Object.values(dataValues).some((v) => v !== undefined && v !== null && String(v).trim() !== "") ||
     (isObgynDoc && examAnyValue(examValues)) ||
+    (isObgynDoc && srhAnyValue(srhValues)) ||
     medications.some((m) => m.name.trim()) ||
     selectedLabs.size > 0 ||
     selectedImaging.size > 0;
@@ -280,7 +291,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       }
     }, 1500);
     return () => clearTimeout(t);
-  }, [form, dataValues, photoUris, docType, medications, selectedLabs, selectedImaging, patient, examValues]);
+  }, [form, dataValues, photoUris, docType, medications, selectedLabs, selectedImaging, patient, examValues, srhValues]);
 
   const saveDraftAndContinueToLabs = async () => {
     if (!patient) {
@@ -364,6 +375,15 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         specialtyData[`exam.${key}`] = { label, value };
       });
     }
+    // Structured sexual & reproductive history — saved under the sensitive
+    // "srh." prefix so it stays separated from general summaries, printed
+    // exports, notifications and shared records. Recorded as patient-reported
+    // or verified history; no ICD-11 codes are assigned to history responses.
+    if (isObgynDoc && srhGroups.length > 0) {
+      flattenSrhValues(srhValues, docType).forEach(({ key, label, value }) => {
+        specialtyData[`srh.${key}`] = { label, value };
+      });
+    }
     setSaving(true);
     try {
       // The backend independently verifies the active check-in before creating
@@ -427,6 +447,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // Obstetrics & Gynecology — the full antenatal care module (WHO 8-contact
     // schedule, screening tracker, risk assessment and decision support) lives
     // inside the Antenatal Follow-Up note type.
+    ...(srhGroups.length > 0
+      ? [{
+          id: "srh",
+          title: "Sexual & Reproductive History",
+          complete: srhFilled,
+          hint: srhConcerns > 0 ? `⚠ ${srhConcerns} concerning answer${srhConcerns > 1 ? "s" : ""} — review` : "sensitive — private & trauma-informed",
+        }]
+      : []),
     ...(isObgynDoc
       ? [{
           id: "obexam",
@@ -487,6 +515,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 setDocType(v);
                 setDataValues({});
                 setExamValues({});
+                setSrhValues({});
                 if (!getDocDef(v)?.photos) setPhotoUris([]);
                 setOpenIds((s) => {
                   const n = new Set(s);
@@ -690,6 +719,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
             />
           </div>
         );
+      case "srh":
+        return <ObgynSrhSection docKey={activeDef.key} values={srhValues} onChange={setSrhValues} />;
       case "obexam":
         return <ObgynExamSection docKey={activeDef.key} values={examValues} onChange={setExamValues} />;
       default:

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
-import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature } from "lucide-react";
+import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock } from "lucide-react";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 
 function Field({ label, value }) {
@@ -120,14 +120,35 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
       <div className="space-y-3">
         {note.data && Object.keys(note.data).length > 0 && (
           <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
-            {Object.entries(note.data)
-              .filter(([, f]) => f && f.value !== null && f.value !== undefined && f.value !== "")
-              .map(([k, f]) => (
-                <p key={k} className="text-sm">
-                  <span className="text-muted-foreground">{f.label}: </span>
-                  {f.value}
-                </p>
-              ))}
+            {(() => {
+              const entries = Object.entries(note.data)
+                .filter(([, f]) => f && f.value !== null && f.value !== undefined && f.value !== "");
+              const main = entries.filter(([k]) => !k.startsWith("srh."));
+              const sensitive = entries.filter(([k]) => k.startsWith("srh."));
+              return (
+                <>
+                  {main.map(([k, f]) => (
+                    <p key={k} className="text-sm">
+                      <span className="text-muted-foreground">{f.label}: </span>
+                      {f.value}
+                    </p>
+                  ))}
+                  {sensitive.length > 0 && (
+                    <div className="rounded-lg border border-border bg-background/60 p-3 space-y-1.5">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide inline-flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" /> Sexual &amp; Reproductive History — Sensitive
+                      </p>
+                      {sensitive.map(([k, f]) => (
+                        <p key={k} className="text-sm">
+                          <span className="text-muted-foreground">{f.label}: </span>
+                          {f.value}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
         <Field label="History" value={note.history} />
