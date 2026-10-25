@@ -1,0 +1,247 @@
+{
+  "name": "PregnancyRecord",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security so the patient can read their own pregnancy record"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "lost_to_followup"
+      ],
+      "default": "active",
+      "description": "Pregnancy record status"
+    },
+    "lmp_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last menstrual period (LMP) \u2014 the documented pregnancy dating information"
+    },
+    "edd_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Estimated due date (EDD) \u2014 calculated from LMP (Naegele) or recorded directly"
+    },
+    "dating_method": {
+      "type": "string",
+      "enum": [
+        "lmp",
+        "ultrasound",
+        "edd",
+        "clinical_assessment"
+      ],
+      "default": "lmp",
+      "description": "How the pregnancy was dated \u2014 LMP, ultrasound, EDD or clinical assessment. A recorded ultrasound dating measurement overrides the LMP estimate"
+    },
+    "ultrasound_dating_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the ultrasound examination used for dating, when applicable"
+    },
+    "ultrasound_dating_weeks": {
+      "type": "integer",
+      "description": "Completed weeks of gestation measured at the dating ultrasound"
+    },
+    "ultrasound_dating_days": {
+      "type": "integer",
+      "description": "Additional days of gestation measured at the dating ultrasound"
+    },
+    "dating_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "lmp_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "edd_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "dating_method": {
+            "type": "string"
+          },
+          "ultrasound_dating_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "ultrasound_dating_weeks": {
+            "type": "integer"
+          },
+          "ultrasound_dating_days": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Documented reason for the dating adjustment"
+          },
+          "by_user_id": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "reason"
+        ]
+      },
+      "description": "Previous pregnancy dating adjustments with their documented reasons and who made them. Dating changes recalculate the recommended schedule while preserving existing orders, results and completed investigations \u2014 completed items are never automatically repeated"
+    },
+    "gravida": {
+      "type": "integer"
+    },
+    "parity": {
+      "type": "integer"
+    },
+    "previous_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "description": "e.g. live birth, stillbirth, miscarriage, ectopic pregnancy, termination"
+          },
+          "year": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Documented previous pregnancy outcomes"
+    },
+    "previous_cesarean": {
+      "type": "boolean",
+      "default": false,
+      "description": "Previous cesarean delivery"
+    },
+    "previous_preeclampsia": {
+      "type": "boolean",
+      "default": false,
+      "description": "Previous pre-eclampsia \u2014 a documented risk factor for hypertensive disorders in this pregnancy"
+    },
+    "previous_gestational_diabetes": {
+      "type": "boolean",
+      "default": false,
+      "description": "Previous gestational diabetes"
+    },
+    "previous_preterm_birth": {
+      "type": "boolean",
+      "default": false,
+      "description": "Previous preterm birth"
+    },
+    "previous_fgr": {
+      "type": "boolean",
+      "default": false,
+      "description": "Previous fetal growth restriction"
+    },
+    "risk_factors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "medical / obstetric / lifestyle / psychosocial / family"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Documented maternal risk factors recorded by clinicians"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "high",
+        "intermediate",
+        "low",
+        "pending_assessment"
+      ],
+      "default": "pending_assessment",
+      "description": "Clinician-assigned pregnancy risk level \u2014 never assigned automatically; a pregnancy with missing information remains pending_assessment"
+    },
+    "risk_level_reason": {
+      "type": "string"
+    },
+    "risk_level_datetime": {
+      "type": "string"
+    },
+    "risk_level_by_name": {
+      "type": "string"
+    },
+    "initial_assessment_done": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the initial antenatal booking assessment is documented. If the patient reaches 12 weeks without it, the outstanding assessments are flagged for clinician review"
+    },
+    "initial_assessment_datetime": {
+      "type": "string"
+    },
+    "last_clinical_review_datetime": {
+      "type": "string",
+      "description": "Date and time of the latest clinical review (ISO datetime)"
+    },
+    "last_reviewed_by_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

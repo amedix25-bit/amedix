@@ -1,0 +1,109 @@
+{
+  "name": "AntenatalScheduleConfig",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Protocol configuration name, e.g. 'WHO / Libyan antenatal protocol'"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": false,
+      "description": "The active configuration drives the gestational-age-based schedule shown to clinicians"
+    },
+    "windows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "weeks_from": {
+            "type": "integer"
+          },
+          "weeks_to": {
+            "type": "integer"
+          },
+          "contact_no": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "description": "assessment / screening / laboratory / imaging / education / prevention"
+                },
+                "optional": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether the item is applied according to the protocol and the patient's clinical circumstances rather than for every patient"
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "category"
+              ]
+            }
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "weeks_from",
+          "weeks_to",
+          "items"
+        ]
+      },
+      "description": "Gestational-age windows of the protocol, each with the assessments, screening tests, laboratory investigations, imaging, preventive interventions and education items it covers"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "default": 1
+    },
+    "updated_datetime": {
+      "type": "string"
+    },
+    "updated_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "windows"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "name": "AntenatalItemRecord",
+  "type": "object",
+  "properties": {
+    "pregnancy_id": {
+      "type": "string",
+      "description": "PregnancyRecord this item belongs to"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "window_key": {
+      "type": "string",
+      "description": "Gestational-age window key the item was recorded under"
+    },
+    "item_key": {
+      "type": "string",
+      "description": "Schedule item key, e.g. cbc_hemoglobin \u2014 one record per pregnancy per item key"
+    },
+    "item_label": {
+      "type": "string",
+      "description": "Item label at the time of recording"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "ordered",
+        "skipped"
+      ],
+      "description": "COMPLETED: done or result available. ORDERED: ordered and awaiting results \u2014 the linked request is checked for completion. SKIPPED: documented as not required / not applicable for this patient"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "linked_lab_request_id": {
+      "type": "string",
+      "description": "LabRequest id this item was ordered through, when applicable \u2014 the request's status determines whether results are available"
+    },
+    "linked_imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest id this item was ordered through, when applicable"
+    },
+    "recorded_datetime": {
+      "type": "string",
+      "description": "Date and time the item status was recorded (ISO datetime)"
+    },
+    "recorded_by_user_id": {
+      "type": "string"
+    },
+    "recorded_by_name": {
+      "type": "string",
+      "description": "Clinician who recorded the item status"
+    }
+  },
+  "required": [
+    "pregnancy_id",
+    "item_key",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
