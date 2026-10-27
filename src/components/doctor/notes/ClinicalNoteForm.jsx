@@ -27,6 +27,8 @@ import { X, Search, Loader2, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide
 // "General Clinical Note" — the universal free-text note with no
 // specialty-specific structured template.
 const GENERAL_KEY = "__general__";
+// Pseudo note type: choose the diagnosis first, then its note template loads.
+const DIAGNOSIS_KEY = "__diagnosis__";
 
 const EMPTY = {
   patient_cin: "",
@@ -75,7 +77,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const [diagnosisNotesOpen, setDiagnosisNotesOpen] = useState(false);
   const [dataValues, setDataValues] = useState({});
   const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
-  const hasSpecialtyFields = !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
+  const hasSpecialtyFields = !diagnosisNotesOpen && !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
   // In specialty mode the note displays ONLY the specialty's own fields —
   // the universal generic sections (History, Vital Signs, Physical
   // Examination, Interventions, Biopsy, Recommendations) are replaced by the
@@ -331,6 +333,22 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     });
   };
 
+  // Note type change — "Diagnosis-Specific Note" first asks for the diagnosis;
+  // only after one is chosen does its template load for documentation.
+  const handleNoteTypeChange = (v) => {
+    if (v === DIAGNOSIS_KEY) {
+      setDiagnosisNotesOpen(true);
+      return;
+    }
+    setDiagnosisNotesOpen(false);
+    selectDocType(v);
+  };
+
+  const handleDiagnosisSelect = (key) => {
+    setDiagnosisNotesOpen(false);
+    selectDocType(key);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -539,33 +557,24 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         return (
           <div className="space-y-2">
             <Label>Note Type — {mySpecialty} (auto-detected)</Label>
-            <Select value={docType} onValueChange={selectDocType}>
+            <Select value={diagnosisNotesOpen ? DIAGNOSIS_KEY : docType} onValueChange={handleNoteTypeChange}>
               <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
               <SelectContent className="max-h-80">
                 <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
+                {mySpecialtyKey === "surgery" && (
+                  <SelectItem value={DIAGNOSIS_KEY}>Diagnosis-Specific Note</SelectItem>
+                )}
                 {myDocs.map((d) => (
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {mySpecialtyKey === "surgery" && (
-              <div className="rounded-lg border border-border bg-card">
-                <button
-                  type="button"
-                  onClick={() => setDiagnosisNotesOpen((o) => !o)}
-                  aria-expanded={diagnosisNotesOpen}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left"
-                >
-                  <span className="text-sm font-medium text-foreground">Diagnosis-Specific Notes</span>
-                  <ArrowRight
-                    className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${diagnosisNotesOpen ? "rotate-90" : ""}`}
-                  />
-                </button>
-                {diagnosisNotesOpen && (
-                  <div className="border-t border-border p-2">
-                    <DiagnosisNotePicker selectedKey={docType} onSelect={selectDocType} />
-                  </div>
-                )}
+            {diagnosisNotesOpen && (
+              <div className="rounded-lg border border-border bg-card p-2">
+                <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">
+                  Select the diagnosis — its note template opens next
+                </p>
+                <DiagnosisNotePicker selectedKey={docType} onSelect={handleDiagnosisSelect} />
               </div>
             )}
             <p className="text-xs text-muted-foreground">
