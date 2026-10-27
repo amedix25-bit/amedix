@@ -6,6 +6,7 @@ import ExaminationField from "./ExaminationField";
 
 export const SECTION_STATUS_STYLES = {
   not_documented: "bg-muted text-muted-foreground",
+  not_assessed: "bg-slate-100 text-slate-600",
   normal: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
   abnormal: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   partially_completed: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
@@ -29,7 +30,9 @@ const StatusChip = ({ active, tone, children, onClick }) => (
       active
         ? tone === "normal"
           ? "bg-emerald-600 text-white border-emerald-600"
-          : "bg-red-600 text-white border-red-600"
+          : tone === "muted"
+            ? "bg-slate-600 text-white border-slate-600"
+            : "bg-red-600 text-white border-red-600"
         : "bg-card text-muted-foreground border-border hover:bg-accent"
     }`}
   >
@@ -53,7 +56,8 @@ export default function ExaminationSectionCard({ spec, data, onChange, defaultOp
   const setValue = (fieldKey, v) => onChange({ ...d, values: { ...d.values, [fieldKey]: v } });
   const setNotes = (notes) => onChange({ ...d, notes });
 
-  const bodyHidden = spec.mode === "normal_abnormal" && status === "normal";
+  const bodyHidden =
+    spec.mode === "normal_abnormal" && (status === "normal" || status === "not_assessed");
   const showFields = open && !bodyHidden;
   const showAbnormalFields = showFields && status === "abnormal" && (spec.abnormalFields || []).length > 0;
   const showNotes =
@@ -79,11 +83,17 @@ export default function ExaminationSectionCard({ spec, data, onChange, defaultOp
             <StatusChip active={d.status === "abnormal"} tone="abnormal" onClick={() => setStatus("abnormal")}>
               Abnormal
             </StatusChip>
+            <StatusChip active={d.status === "not_assessed"} tone="muted" onClick={() => setStatus("not_assessed")}>
+              Not assessed
+            </StatusChip>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 shrink-0">
             <StatusChip active={d.status === "normal"} tone="normal" onClick={() => setStatus("normal")}>
               Mark Normal
+            </StatusChip>
+            <StatusChip active={d.status === "not_assessed"} tone="muted" onClick={() => setStatus("not_assessed")}>
+              Not assessed
             </StatusChip>
           </div>
         )}
@@ -94,7 +104,17 @@ export default function ExaminationSectionCard({ spec, data, onChange, defaultOp
 
       {bodyHidden && open && (
         <div className="px-4 pb-4 text-xs text-muted-foreground">
-          Documented as <span className="font-medium text-emerald-600">Normal</span>. Select Abnormal to add findings.
+          {status === "not_assessed" ? (
+            <>
+              Documented as <span className="font-medium">Not Assessed</span> — this section is not recorded as
+              normal. Select Abnormal to document findings.
+            </>
+          ) : (
+            <>
+              Documented as <span className="font-medium text-emerald-600">Normal</span>. Select Abnormal to add
+              findings.
+            </>
+          )}
         </div>
       )}
 

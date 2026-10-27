@@ -55,7 +55,8 @@ export const fieldHasValue = (v) => {
 // Effective status of a documented section.
 export const computeSectionStatus = (sectionSpec, data) => {
   if (!data) return "not_documented";
-  if (data.status === "normal" || data.status === "abnormal") return data.status;
+  if (data.status === "normal" || data.status === "abnormal" || data.status === "not_assessed")
+    return data.status;
   const allFields = [...(sectionSpec.fields || []), ...(sectionSpec.abnormalFields || [])];
   const hasValues =
     allFields.some((f) => fieldHasValue((data.values || {})[f.key])) ||
@@ -69,6 +70,8 @@ export const computeOverallStatus = (typeConfig, dataBySection) => {
     computeSectionStatus(s, dataBySection?.[s.key])
   );
   if (statuses.includes("abnormal")) return "abnormal";
+  // An explicitly not-assessed section is never counted as normal.
+  if (statuses.includes("not_assessed")) return "partially_completed";
   if (statuses.includes("partially_completed")) return "partially_completed";
   if (statuses.includes("normal")) return "normal";
   return "partially_completed";
@@ -76,6 +79,7 @@ export const computeOverallStatus = (typeConfig, dataBySection) => {
 
 export const SECTION_STATUS_LABELS = {
   not_documented: "Not Documented",
+  not_assessed: "Not Assessed",
   normal: "Normal",
   abnormal: "Abnormal",
   partially_completed: "Partially Completed",
