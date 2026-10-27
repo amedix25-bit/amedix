@@ -49,7 +49,10 @@ const SPECIALTY_EXAMINATIONS = {
   anesthesiology: ["general", "cardiovascular", "respiratory", "neurological", "custom"],
   cardiology: ["cardiovascular", "general", "respiratory", "peripheralVascular", "custom"],
   neurology: ["neurological", "general", "musculoskeletal", "custom"],
-  psychiatry: ["general", "custom"],
+  // Psychiatric notes document the mental state examination, which the
+  // neurological examination records structurally (mental status, cognition),
+  // so retiring the free-text "Mental Status Examination" loses nothing.
+  psychiatry: ["general", "neurological", "custom"],
   ophthalmology: ["ophthalmological", "general", "neurological", "custom"],
   dermatology: ["dermatological", "general", "custom"],
   orthopedics: ["musculoskeletal", "general", "peripheralVascular", "custom"],

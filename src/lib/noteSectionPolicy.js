@@ -58,19 +58,27 @@ const isImagingReport = (doc) => /imaging/i.test(doc.label || "");
 // Applied to every specialty template, General Surgery included:
 // 1. Haemodynamic status is a structured clinical decision — exactly four
 //    options, never a free-text value and never preselected.
-// 2. The generic examination field is replaced by "Select Examination", the
-//    searchable structured examination interface. Specialty-specific
-//    examination fields (ENT, ophthalmology, obstetric, dental …) stay exactly
-//    as they are — only the generic "Examination" label is converted.
+// 2. Every free-text examination part — whatever its wording ("Examination",
+//    "Abdominal Examination", "Cardiovascular Examination Findings",
+//    "Neurological Examination" …) — is replaced by one "Select Examination",
+//    the searchable structured examination interface for that specialty.
+//    AMedix builds the structured examination it offers from the specialty's
+//    own examination catalogue, so no examination content is lost when the
+//    wording is retired. Fields that merely mention the word but are not the
+//    examination section (exposure, an assessment summary, electrophysiology,
+//    a lymph-node count) are left untouched, and specialties with no
+//    examination catalogue of their own (radiology, dentistry, certificates)
+//    keep their existing fields.
 // 3. There is one diagnosis tab — "Differential Diagnosis". The separate
 //    provisional / working diagnosis field is retired from the templates.
 const HAEMODYNAMIC_STATUS_LABEL = /h(a)?emodynamic\s+(status|stability)/i;
-const GENERIC_EXAMINATION_LABEL = [
-  /^examination$/i,
-  /^examination findings$/i,
-  /^physical examination findings$/i,
-  /^current examination$/i,
-  /^other examination findings$/i,
+const EXAMINATION_WORD = /examination/i;
+// Labels that mention the word but document something else entirely.
+const KEPT_EXAMINATION_LABEL = [
+  /^exposure\b/i, // trauma exposure / log-roll
+  /^assessment\b/i, // combined assessment summary
+  /^other findings\b/i, // back, perineum, rectal & vaginal findings
+  /^needle\b/i, // EMG needle study
 ];
 const PROVISIONAL_DIAGNOSIS_LABEL = /^(provisional|working)\s+diagnos/i;
 
@@ -103,8 +111,11 @@ const isHaemodynamicStatusField = (field) => {
   return !/pressure/i.test(label);
 };
 
-const isGenericExaminationField = (field) =>
-  GENERIC_EXAMINATION_LABEL.some((re) => re.test(field.label || ""));
+const isExaminationField = (field) => {
+  const label = field.label || "";
+  if (!EXAMINATION_WORD.test(label)) return false;
+  return !KEPT_EXAMINATION_LABEL.some((re) => re.test(label));
+};
 
 const applyClinicalFieldRules = (doc) => {
   if (!Array.isArray(doc.fields)) return doc;
@@ -122,7 +133,7 @@ const applyClinicalFieldRules = (doc) => {
       fields.push(field.type === "vitals" ? field : { ...field, type: "vitals" });
       return;
     }
-    if (examinationTypes.length > 0 && isGenericExaminationField(field)) {
+    if (examinationTypes.length > 0 && isExaminationField(field)) {
       if (!examinationPlaced) {
         fields.push({
           key: "examinations",
