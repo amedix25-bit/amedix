@@ -104,7 +104,8 @@ export default function VitalSignsField({ value, onChange }) {
                     type={v.type || "text"}
                     step={v.step}
                     placeholder={v.placeholder || ""}
-                    value={entries[v.key] || ""}                    onChange={(e) => setVital(v.key, e.target.value)}
+                    value={entries[v.key] || ""}
+                    onChange={(e) => setVital(v.key, e.target.value)}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -127,7 +128,7 @@ export default function VitalSignsField({ value, onChange }) {
               <button
                 key={v.key}
                 type="button"
-                onClick={() => setVital(v.key, "")}
+                onClick={() => addVital(v.key)}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-border bg-card text-foreground hover:bg-accent transition-colors"
               >
                 <Plus className="w-3 h-3" />
