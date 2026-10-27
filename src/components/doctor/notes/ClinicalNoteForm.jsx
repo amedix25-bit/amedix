@@ -19,6 +19,7 @@ import { flattenSrhValues, srhAnyValue, srhGroupsForDoc, srhConcernCount } from 
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
+import DiagnosisNotePicker from "@/components/doctor/notes/DiagnosisNotePicker";
 import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
 import PatientAlertHeader from "@/components/doctor/notes/PatientAlertHeader";
 import { X, Search, Loader2, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
@@ -71,6 +72,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // specialty defaults to its consultation template.
     () => (myDocs.find((d) => d.workflow) || myDocs.find((d) => d.key.includes("consultation")) || myDocs[0] || { key: GENERAL_KEY }).key
   );
+  const [diagnosisNotesOpen, setDiagnosisNotesOpen] = useState(false);
   const [dataValues, setDataValues] = useState({});
   const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
   const hasSpecialtyFields = !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
@@ -313,6 +315,22 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     }
   };
 
+  // Single path for choosing a note type — used by the note type selector and
+  // by the Diagnosis-Specific Notes list, so both behave identically.
+  const selectDocType = (v) => {
+    setDocType(v);
+    setDataValues({});
+    setExamValues({});
+    setSrhValues({});
+    if (!getDocDef(v)?.photos) setPhotoUris([]);
+    setOpenIds((s) => {
+      const n = new Set(s);
+      if (v !== GENERAL_KEY) n.add("template");
+      if (getDocDef(v)?.key === "obgyn_antenatal_followup") n.add("antenatal");
+      return n;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -521,22 +539,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         return (
           <div className="space-y-2">
             <Label>Note Type — {mySpecialty} (auto-detected)</Label>
-            <Select
-              value={docType}
-              onValueChange={(v) => {
-                setDocType(v);
-                setDataValues({});
-                setExamValues({});
-                setSrhValues({});
-                if (!getDocDef(v)?.photos) setPhotoUris([]);
-                setOpenIds((s) => {
-                  const n = new Set(s);
-                  if (v !== GENERAL_KEY) n.add("template");
-                  if (getDocDef(v)?.key === "obgyn_antenatal_followup") n.add("antenatal");
-                  return n;
-                });
-              }}
-            >
+            <Select value={docType} onValueChange={selectDocType}>
               <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
               <SelectContent className="max-h-80">
                 <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
@@ -545,6 +548,26 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 ))}
               </SelectContent>
             </Select>
+            {mySpecialtyKey === "surgery" && (
+              <div className="rounded-lg border border-border bg-card">
+                <button
+                  type="button"
+                  onClick={() => setDiagnosisNotesOpen((o) => !o)}
+                  aria-expanded={diagnosisNotesOpen}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left"
+                >
+                  <span className="text-sm font-medium text-foreground">Diagnosis-Specific Notes</span>
+                  <ArrowRight
+                    className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${diagnosisNotesOpen ? "rotate-90" : ""}`}
+                  />
+                </button>
+                {diagnosisNotesOpen && (
+                  <div className="border-t border-border p-2">
+                    <DiagnosisNotePicker selectedKey={docType} onSelect={selectDocType} />
+                  </div>
+                )}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               AMedix detected your verified specialty and loaded its note types and template — no need to select a specialty.
             </p>
