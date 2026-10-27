@@ -135,6 +135,16 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       setError("Please select the document type.");
       return;
     }
+    // Required documentation in the selected template — every required field
+    // offers a "not assessed / not performed" option, so this asks for an
+    // explicit answer rather than blocking emergency documentation.
+    const missingRequired = ((def && def.fields) || []).filter(
+      (f) => f.required && String(dataValues[f.key] ?? "").trim() === ""
+    );
+    if (missingRequired.length > 0) {
+      setError(`Complete the required documentation: ${missingRequired.map((f) => f.label).join(", ")}.`);
+      return;
+    }
     const data = buildData();
     if (!content.trim() && Object.keys(data).length === 0) {
       setError(hasFields ? "Please fill in the document fields or the narrative." : "Please write the document content.");
@@ -231,7 +241,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       {def && def.specialty === "emergency_medicine" && <EmergencyWorkflowStrip />}
 
       {hasFields && (
-        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} />
+        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} notice={def.notice || ""} />
       )}
 
       {def && def.toothChart && (

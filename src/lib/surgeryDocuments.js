@@ -145,6 +145,8 @@ export const SURGERY_DOCS = [
         T("anatomical_details", "Anatomical Details / Variant Anatomy"),
         T("procedure_details", "Procedure Details — Key Procedural Steps in Sequence"),
         T("conversion", "Conversion / Additional Procedure and Reason"),
+        I("pneumoperitoneum", "Pneumoperitoneum Pressure (mmHg) — laparoscopic cases"),
+        T("port_configuration", "Port Configuration & Insufflation Method — laparoscopic cases"),
         I("operative_time", "Operative Time"),
         I("estimated_blood_loss", "Estimated Blood Loss"),
         T("fluids_output", "Intraoperative Fluids & Urine Output"),

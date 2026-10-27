@@ -31,7 +31,10 @@ export function EmergencyWorkflowStrip() {
 function FieldRow({ f, values, onChange, specialty }) {
   return (
     <div className="space-y-1.5">
-      <Label>{f.label}</Label>
+      <Label>
+        {f.label}
+        {f.required && <span className="text-destructive font-semibold"> · Required</span>}
+      </Label>
       {f.type === "textarea" && (
         <>
           <Textarea rows={2} value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
@@ -83,10 +86,11 @@ function groupFields(defs) {
   return groups;
 }
 
-export default function DocumentFields({ defs = [], values = {}, onChange, specialty = "" }) {
+export default function DocumentFields({ defs = [], values = {}, onChange, specialty = "", notice = "" }) {
   if (!defs.some((f) => f.section)) {
     return (
       <div className="space-y-4">
+        {notice && <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border border-border p-2.5">{notice}</p>}
         {defs.map((f) => (
           <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} />
         ))}
@@ -96,6 +100,7 @@ export default function DocumentFields({ defs = [], values = {}, onChange, speci
 
   return (
     <div className="space-y-5">
+      {notice && <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border border-border p-2.5">{notice}</p>}
       {groupFields(defs).map((g, gi) => (
         <div key={g.section || `section-${gi}`} className="space-y-3">
           {g.section && (

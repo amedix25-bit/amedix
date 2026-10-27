@@ -10,6 +10,7 @@ import {
 } from "@/lib/specialtyDocumentsPart4";
 import { RADIOLOGY_DOCS, LABORATORY_DOCS, PATHOLOGY_DOCS } from "@/lib/specialtyDocumentsPart5";
 import { SURGERY_DOCS } from "@/lib/surgeryDocuments";
+import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -940,7 +941,7 @@ const ENDOCRINOLOGY_DOCS = [
 ];
 
 export const SPECIALTY_DOCUMENTS = [
-  ...IM_DOCS, ...SURGERY_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
+  ...IM_DOCS, ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
   ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
   ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
   ...NEPHROLOGY_DOCS, ...ENDOCRINOLOGY_DOCS,

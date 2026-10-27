@@ -330,6 +330,17 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       jumpTo("diagnosis");
       return;
     }
+    // Required documentation — only fields the loaded template marks as
+    // required, each of which offers a "not assessed / not performed" answer,
+    // so emergency documentation is made explicit rather than blocked.
+    const missingRequired = (activeDef?.fields || []).filter(
+      (f) => f.required && String(dataValues[f.key] ?? "").trim() === ""
+    );
+    if (missingRequired.length > 0) {
+      setError(`Complete the required documentation: ${missingRequired.map((f) => f.label).join(", ")}.`);
+      jumpTo("template");
+      return;
+    }
     const meds = medications.filter((m) => m.name.trim());
     const prescriptionSummary = meds
       .map((m) =>
@@ -558,8 +569,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               values={dataValues}
               onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
               specialty={mySpecialty}
+              notice={activeDef.notice || ""}
             />
-            <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty sections are simply not saved.</p>
+            <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty optional sections are simply not saved. Fields marked Required must be answered.</p>
           </div>
         );
       case "antenatal":
