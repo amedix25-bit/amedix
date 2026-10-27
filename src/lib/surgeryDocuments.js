@@ -154,6 +154,15 @@ export const SURGERY_DOCS = [
         T("drains", "Drains"),
         T("implants", "Implants / Mesh"),
       ]),
+      ...sec("Trauma Additions — complete only for injured patients", [
+        S("trauma_haemodynamic_status", "Haemodynamic Status at Incision", ["Stable", "Unstable", "Transient Responder", "Non-Responder"]),
+        S("trauma_damage_control", "Damage-Control Strategy", ["Not applicable", "Yes — abbreviated laparotomy", "Yes — haemorrhage control only", "Yes — staged orthopaedic fixation", "No"]),
+        S("trauma_temporary_closure", "Temporary Abdominal Closure", ["Not applicable", "Negative-pressure dressing", "Bogota bag", "Mesh-mediated traction", "Primary closure"]),
+        S("trauma_mtp", "Massive Transfusion Protocol", ["Not activated", "Activated — balanced component therapy", "Activated — whole blood", "Considered", "Not assessed"]),
+        S("trauma_txa", "Tranexamic Acid", ["Given within 3 hours", "Given after 3 hours", "Not given — not indicated", "Not assessed"]),
+        S("trauma_relook", "Planned Re-Look Laparotomy", ["Not planned", "Planned within 24 hours", "Planned within 48 hours", "Not assessed"]),
+        T("trauma_injury_findings", "Intra-Operative Injury Findings & AAST Grades"),
+      ]),
       ...sec("Specimens, Counts & Disposition", [
         T("specimens", "Specimens — Site, Orientation & Containers"),
         S("specimens_to_pathology", "Specimens Sent to Pathology", ["Yes", "No"]),

@@ -223,6 +223,151 @@ export const SURGERY_REFERENCES = [
     supports:
       "Diagnosis coding across all note types. ICD-11 classifies diagnoses only; it is not used as procedural guidance, a treatment protocol or a substitute for clinical practice guidelines.",
   },
+  // ---- Trauma Surgery sources (retrieved 27 October 2026) -------------------
+  {
+    id: "acs_atls11",
+    organization: "American College of Surgeons — Committee on Trauma",
+    title: "Advanced Trauma Life Support (ATLS) — 11th Edition",
+    version: "ATLS 11, launched 2025",
+    url: "https://www.facs.org/quality-programs/trauma/education/advanced-trauma-life-support/atls-11/",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — primary survey sequence, catastrophic haemorrhage control, airway with cervical spine protection, breathing, circulation and resuscitation response, GCS and pupil documentation, exposure, secondary survey and tertiary survey.",
+  },
+  {
+    id: "acs_tqp_bpg",
+    organization: "American College of Surgeons — Trauma Quality Programs",
+    title: "TQP Best Practices Guidelines (living collection)",
+    version: "Living collection — accessed 27 October 2026",
+    url: "https://www.facs.org/quality-programs/trauma/quality/best-practices-guidelines/",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — structured injury documentation, brain-injury and chest-wall guidance, geriatric considerations, and the injury-type sections that a trauma centre is expected to document. Individual guidelines are revised separately; no single collection-level version exists.",
+  },
+  {
+    id: "acs_tqp_tbi",
+    organization: "American College of Surgeons — Trauma Quality Programs",
+    title: "Best Practices Guidelines for the Management of Traumatic Brain Injury",
+    version: "Current document — accessed 27 October 2026",
+    url: "https://www.facs.org/media/vgfgjpfk/best-practices-guidelines-traumatic-brain-injury.pdf",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — traumatic brain injury section: GCS band and trend, pupil assessment, repeat imaging decision, anticoagulant reversal, neurosurgical referral and ICP/CPP documentation.",
+  },
+  {
+    id: "east_dcr",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Damage control resuscitation in patients with severe traumatic hemorrhage",
+    version: "2017",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/damage-control-resuscitation-in-patients-with-severe-traumatic-hemorrhage",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — resuscitation section: balanced component therapy, massive transfusion protocol activation, tranexamic acid, correction of coagulopathy, calcium and temperature; documented response to resuscitation.",
+  },
+  {
+    id: "east_whole_blood",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Whole Blood Resuscitation for Injured Patients Requiring Transfusion",
+    version: "2024",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/whole-blood-resuscitation-for-injured-patients-requiring-transfusion-a-systematic-review-metaanalysi",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — whole blood resuscitation field (low-titre group O or type-specific) and the operative note's massive transfusion documentation.",
+  },
+  {
+    id: "east_reboa",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Resuscitative Endovascular Balloon Occlusion of the Aorta in surgical and trauma patients",
+    version: "2025",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/resuscitative-endovascular-balloon-occlusion-of-the-aorta-in-surgical-and-trauma-patients-a-systemat",
+    level: "clinical_recommendation",
+    supports: "Trauma note — REBOA field recording whether it was indicated, considered, placed or unavailable.",
+  },
+  {
+    id: "east_open_abdomen",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Management of the open abdomen",
+    version: "2022",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/management-of-the-open-abdomen-a-systematic-review-with-metaanalysis-and-practice-management-guideline-from-the-eastern-association-for-the-surgery-of-trauma",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note and Operative Note — temporary abdominal closure technique, planned re-look timing and open-abdomen follow-through.",
+  },
+  {
+    id: "east_tube_thoracostomy",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Antibiotic prophylaxis for tube thoracostomy placement in trauma",
+    version: "2022",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/antibiotic-prophylaxis-for-tube-thoracostomy-placement-in-trauma-a-practice-management-guideline-from-the-eastern-association-for-the-surgery-of-trauma",
+    level: "clinical_recommendation",
+    supports: "Trauma note — chest section: tube thoracostomy placement and antibiotic prophylaxis documentation.",
+  },
+  {
+    id: "east_trauma_pregnancy",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Trauma in pregnancy",
+    version: "2025",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/trauma-in-pregnancy-a-systematic-review-metaanalysis-and-practice-management-guideline-from-the-east",
+    level: "clinical_recommendation",
+    supports: "Trauma note — pregnancy status recorded for every injured patient of childbearing age.",
+  },
+  {
+    id: "east_ptsd",
+    organization: "Eastern Association for the Surgery of Trauma",
+    title: "Posttraumatic stress disorder mitigation in trauma patients",
+    version: "2025",
+    url: "https://www.east.org/education-resources/practice-management-guidelines/details/posttraumatic-stress-disorder-mitigation-in-trauma-patients-an-evidencebased-systematic-review-from-",
+    level: "clinical_recommendation",
+    supports: "Trauma note — psychological support / PTSD screening referral at recovery and follow-up.",
+  },
+  {
+    id: "wta_algorithms",
+    organization: "Western Trauma Association",
+    title: "Critical Decisions in Trauma algorithms",
+    version: "Published algorithm series — accessed 27 October 2026",
+    url: "https://www.westerntrauma.org/western-trauma-association-algorithms/",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — solid-organ (splenic, hepatic, renal) non-operative versus operative decision fields, pelvic fracture with haemodynamic instability, thoracic and vascular injury decisions, and resuscitative thoracotomy context.",
+  },
+  {
+    id: "wses_guidelines",
+    organization: "World Society of Emergency Surgery",
+    title: "WSES guidelines — trauma and emergency surgery",
+    version: "Guideline index — accessed 27 October 2026",
+    url: "https://www.wses.org.uk/scientific-resources/guidelines",
+    level: "clinical_recommendation",
+    supports:
+      "Trauma note — physiological-stability-based decision pathways, abdominal and bowel injury management, and elderly/frail trauma considerations.",
+  },
+  {
+    id: "wses_aast_thoracic",
+    organization: "World Society of Emergency Surgery / American Association for the Surgery of Trauma",
+    title: "Thoracic trauma WSES–AAST guidelines",
+    version: "2025",
+    url: "https://link.springer.com/article/10.1186/s13017-025-00651-1",
+    level: "clinical_recommendation",
+    supports: "Trauma note — chest section: rib fractures, flail chest, pneumothorax, haemothorax, tube thoracostomy and operative indications.",
+  },
+  {
+    id: "aast_ois",
+    organization: "American Association for the Surgery of Trauma",
+    title: "Organ Injury Scale — including the 2018 spleen, liver and kidney revision",
+    version: "2018 revision; organ injury scale index accessed 27 October 2026",
+    url: "https://www.aast.org/resources/trauma-tools/organ-injury-scale.html",
+    level: "classification_standard",
+    supports:
+      "Trauma note — spleen, liver and kidney injury grades. The grade is entered by the clinician; AMedix never derives a grade from an imaging report.",
+  },
+  {
+    id: "crash2_txa",
+    organization: "CRASH-2 trial collaborators (The Lancet)",
+    title: "Effects of tranexamic acid on death, vascular occlusive events, and blood transfusion in trauma patients with significant haemorrhage (CRASH-2)",
+    version: "2010",
+    url: "https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(10)60835-5/fulltext",
+    level: "clinical_recommendation",
+    supports: "Trauma note — tranexamic acid field distinguishing administration within or after 3 hours of injury.",
+  },
 ];
 
 const REF_BY_ID = Object.fromEntries(SURGERY_REFERENCES.map((r) => [r.id, r]));
@@ -240,9 +385,9 @@ const DOC_REFERENCES = {
       "Prophylaxis timing, decolonisation, VTE and nutrition optimisation, ERAS omissions, consent status, planned approach and site marking.",
   },
   surg_operative_note: {
-    refs: ["who_sssl", "sages_index", "sages_safe_chole", "sages_ventral_hernia", "eras"],
+    refs: ["who_sssl", "sages_index", "sages_safe_chole", "sages_ventral_hernia", "eras", "east_dcr", "east_open_abdomen", "east_whole_blood"],
     fields:
-      "Sign-in / time-out / sign-out, anaesthesia and ASA documentation, access and pneumoperitoneum, critical view of safety, implants, drains and swab counts.",
+      "Sign-in / time-out / sign-out, anaesthesia and ASA documentation, access and pneumoperitoneum, critical view of safety, implants, drains and swab counts; for injured patients the trauma additions record haemodynamic status at incision, damage-control strategy, temporary abdominal closure, massive transfusion and tranexamic acid.",
   },
   surg_procedure_note: {
     refs: ["who_sssl", "sages_index", "asge"],
@@ -326,8 +471,26 @@ const DOC_REFERENCES = {
     fields: "Severity and sepsis assessment, source control, antimicrobial documentation, wound classification and follow-up.",
   },
   surg_trauma: {
-    refs: ["acs_atls", "eras"],
-    fields: "ABCDE primary survey, circulation and resuscitation response, imaging decisions, damage-control or transfer reasoning.",
+    refs: [
+      "acs_atls11",
+      "acs_tqp_bpg",
+      "acs_tqp_tbi",
+      "east_dcr",
+      "east_whole_blood",
+      "east_reboa",
+      "east_open_abdomen",
+      "east_tube_thoracostomy",
+      "east_trauma_pregnancy",
+      "east_ptsd",
+      "wta_algorithms",
+      "wses_guidelines",
+      "wses_aast_thoracic",
+      "aast_ois",
+      "crash2_txa",
+      "icd11",
+    ],
+    fields:
+      "Prehospital and mechanism, catastrophic haemorrhage control and airway with cervical spine protection, four-option haemodynamic status, haemorrhage class, GCS band/trend/total and pupils, resuscitation with massive transfusion, whole blood, tranexamic acid and REBOA, FAST and CT strategy, head-to-toe secondary survey with TBI, chest, abdominal solid-organ AAST grades, vascular, pelvic, spinal and open-fracture documentation, damage-control and temporary closure plan, tertiary survey, VTE timing, nutrition, psychological support and rehabilitation.",
   },
   surg_endoscopy: {
     refs: ["asge", "sages_index"],
@@ -345,6 +508,15 @@ export const SURGERY_REFERENCE_FLAGS = [
   "Societies disagree on antibiotic-first management of uncomplicated appendicitis and diverticulitis. AMedix records the clinician's documented decision and never selects a strategy.",
   "Local policy determines: antibiotic choice and prophylaxis duration, VTE agent and duration, the ERAS component set, contrast policy, trauma transfer criteria, consent law and form, and implant traceability requirements. These are institution-specific and must be set locally.",
   "ICD-11 is used for diagnosis coding only. It is not procedural guidance and does not replace clinical practice guidelines.",
+  // ---- Trauma review items --------------------------------------------------
+  "The ACS TQP Best Practices Guidelines are published as a living collection, and individual documents are revised without a collection-level version. The trauma note therefore records the guideline family and the date of retrieval rather than a fixed edition; each document's own revision date must be checked before citing it in a medico-legal report.",
+  "ATLS 11 course content is distributed to registered course participants. The registration date, edition and the edition-level changes were verified from the ACS ATLS 11 page; the full course manual text was not retrieved during this review.",
+  "AAST organ injury grades are a classification only. AMedix records the grade the clinician states and never derives a grade from an imaging report, and a grade never selects a management strategy on its own.",
+  "Societies differ on the timing of VTE prophylaxis after solid-organ injury and traumatic brain injury. The trauma note records the documented timing and the reason, and never recommends a threshold.",
+  "Tranexamic acid is documented against the CRASH-2 evidence. Dose, indication, availability and the local massive transfusion protocol composition are institution-specific and are not prescribed by the template.",
+  "REBOA availability, the composition of the massive transfusion protocol, the criteria for whole-body CT, trauma team activation tiers, transfer criteria and destination, and the local radiology pathway are institution-specific and must be set locally.",
+  "Trauma in pregnancy and paediatric trauma pathways require specialist input. The trauma note records pregnancy status and refers on; it does not contain a pregnancy-specific resuscitation protocol.",
+  "Forensic and medicolegal reporting duties differ by jurisdiction. The template records that documentation was completed and, where local policy requires it, that a report was made.",
 ];
 
 export function getSurgeryReferenceSet(documentKey) {
