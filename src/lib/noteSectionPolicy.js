@@ -9,6 +9,22 @@
 // Investigation, Imaging Request and Finding, Working Diagnosis — together with
 // their close variants (e.g. "Antimicrobials — Agent & Time", "Investigations &
 // Treatment", "Imaging Findings", "Escalation & Time-Critical Criteria").
+// In the General Surgery templates only, these further sections are retired:
+// Past Medical History, Past Surgical History, Current Medications, Allergies,
+// Social History, and Risks/Benefits & Alternatives.
+
+// Sections the surgical team retired from the General Surgery templates only.
+// These duplicate what the unified AMedix Patient Record already attaches to
+// every note automatically, plus the generic counselling line. Nothing else in
+// a surgical template is touched.
+const SURGERY_RETIRED_FIELD_LABEL = [
+  /^past medical history/i,
+  /^past surgical history/i,
+  /^current medications/i, // Current Medications (…), Current Medications / Anticoagulants & Allergies
+  /^allergies$/i,
+  /^social history/i,
+  /^risks?,?\s*benefits? and alternatives/i,
+];
 
 // Field labels that belong to a retired section.
 const RETIRED_FIELD_LABEL = [
@@ -30,8 +46,9 @@ const RETIRED_DOCUMENT_KEYS = ["surg_referral"];
 // content is left untouched.
 const isImagingReport = (doc) => /imaging/i.test(doc.label || "");
 
-const isRetiredField = (field) => {
+const isRetiredField = (field, specialty) => {
   const label = field.label || "";
+  if (specialty === "surgery" && SURGERY_RETIRED_FIELD_LABEL.some((re) => re.test(label))) return true;
   if (KEPT_FIELD_LABEL.some((re) => re.test(label))) return false;
   return RETIRED_FIELD_LABEL.some((re) => re.test(label));
 };
@@ -41,5 +58,5 @@ export const applyNoteSectionPolicy = (docs) =>
     .filter((doc) => !RETIRED_DOCUMENT_KEYS.includes(doc.key))
     .map((doc) => {
       if (isImagingReport(doc) || !Array.isArray(doc.fields)) return doc;
-      return { ...doc, fields: doc.fields.filter((field) => !isRetiredField(field)) };
+      return { ...doc, fields: doc.fields.filter((field) => !isRetiredField(field, doc.specialty)) };
     });
