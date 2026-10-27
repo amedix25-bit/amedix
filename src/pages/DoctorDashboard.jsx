@@ -19,6 +19,7 @@ import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLe
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
 import { ensureRadiologistProfile, isRadiologySpecialty } from "@/lib/radiologyAccess";
+import { isSurgicalSpecialty } from "@/lib/specialties";
 import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
@@ -58,7 +59,7 @@ export default function DoctorDashboard() {
   // Specialty-driven navigation — a Surgeon's Clinical Notes section becomes
   // Surgical Records with its own record types; every other feature stays the
   // same for all doctors.
-  const isSurgeon = profile?.specialization === "Surgeon";
+  const isSurgeon = isSurgicalSpecialty(profile?.specialization);
   const menuItems = navItems.map((n) =>
     n.key === "notes" && isSurgeon ? { ...n, label: "Surgical Records" } : n
   );

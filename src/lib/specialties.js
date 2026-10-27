@@ -1,50 +1,56 @@
 // Predefined specialties doctors select from at their first Doctor Portal
-// entry — no free typing. "Surgeon" unlocks the specialty-specific Surgical
-// Records documentation section in place of Clinical Notes; every other
-// Doctor Portal feature stays exactly the same for all doctors.
+// entry — no free typing, listed alphabetically. "General Surgery" unlocks the
+// specialty-specific Surgical Records documentation section in place of
+// Clinical Notes; every other Doctor Portal feature stays exactly the same for
+// all doctors.
 export const SPECIALTIES = [
-  "Surgeon",
-  "Internal Medicine",
-  "Family Medicine",
-  "General Practice",
-  "Emergency Medicine",
-  "Cardiology",
-  "Pediatrics",
-  "Neurology",
-  "Orthopedics",
-  "Obstetrics & Gynecology",
-  "Dermatology",
-  "Psychiatry",
-  "ENT (Otolaryngology)",
-  "Ophthalmology",
-  "Urology",
-  "Oncology",
+  "Allergy & Immunology",
   "Anesthesiology & Intensive Care",
-  "Plastic Surgery",
-  "Vascular Surgery",
+  "Cardiology",
+  "Cardiothoracic Surgery",
+  "Critical Care / ICU",
+  "Dentistry",
+  "Dermatology",
+  "Emergency Medicine",
   "Endocrinology",
+  "ENT (Otolaryngology)",
+  "Family Medicine",
   "Gastroenterology",
-  "Pulmonology",
-  "Nephrology",
-  "Rheumatology",
+  "General Practice",
+  "General Surgery",
+  "Geriatrics",
   "Hematology",
   "Infectious Diseases",
-  "Physical Medicine & Rehabilitation",
-  "Dentistry",
-  "Nutrition & Dietetics",
-  "Neurosurgery",
-  "Cardiothoracic Surgery",
-  "Pediatric Surgery",
-  "Trauma Surgery",
-  "Critical Care / ICU",
-  "Pain Medicine",
-  "Allergy & Immunology",
-  "Geriatrics",
-  "Palliative Care",
-  "Sports Medicine",
-  "Radiology",
-  "Pathology",
+  "Internal Medicine",
   "Laboratory Medicine",
+  "Nephrology",
+  "Neurology",
+  "Neurosurgery",
+  "Nutrition & Dietetics",
+  "Obstetrics & Gynecology",
+  "Oncology",
+  "Ophthalmology",
+  "Orthopedics",
+  "Pain Medicine",
+  "Palliative Care",
+  "Pathology",
+  "Pediatric Surgery",
+  "Pediatrics",
+  "Physical Medicine & Rehabilitation",
+  "Plastic Surgery",
+  "Psychiatry",
+  "Pulmonology",
+  "Radiology",
+  "Rheumatology",
+  "Sports Medicine",
+  "Trauma Surgery",
+  "Urology",
+  "Vascular Surgery",
 ];
 
-export const isSurgicalSpecialty = (specialization) => specialization === "Surgeon";
+// "Surgeon" is the legacy label kept only so existing profiles continue to
+// resolve to the surgical documentation set.
+const SURGICAL_LABELS = ["General Surgery", "Surgeon"];
+
+export const isSurgicalSpecialty = (specialization) =>
+  SURGICAL_LABELS.includes(specialization);

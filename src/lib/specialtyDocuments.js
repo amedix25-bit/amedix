@@ -15,6 +15,7 @@ import { applyNoteSectionPolicy } from "@/lib/noteSectionPolicy";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
+  "General Surgery": "surgery",
   "Surgeon": "surgery",
   "Emergency Medicine": "emergency_medicine",
   "Pediatrics": "pediatrics",
