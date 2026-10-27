@@ -38,7 +38,6 @@ export const SURGERY_DOCS = [
         T("medications", "Current Medications (including anticoagulants and antiplatelets)"),
         T("allergies", "Allergies"),
         T("social_history", "Social History — Smoking, Alcohol, Functional Status"),
-        N("bmi", "BMI"),
       ]),
       ...sec("Examination", [
         T("vitals", "Vital Signs"),

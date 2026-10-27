@@ -95,20 +95,6 @@ const moveReviewOfSystems = (fields) => {
   return next;
 };
 
-// 6. In the General Surgery templates the BMI measurement is the last thing
-//    recorded before the examination — it sits directly above the Examination
-//    section, never buried among the earlier history fields.
-const placeBmiAboveExamination = (fields) => {
-  const from = fields.findIndex((f) => f.key === "bmi");
-  if (from === -1) return fields;
-  const next = [...fields];
-  const [bmi] = next.splice(from, 1);
-  const examIndex = next.findIndex((f) => /^examination$/i.test(f.section || ""));
-  if (examIndex === -1) return fields;
-  next.splice(examIndex, 0, bmi);
-  return next;
-};
-
 const isHaemodynamicStatusField = (field) => {
   const label = field.label || "";
   if (!HAEMODYNAMIC_STATUS_LABEL.test(label)) return false;
@@ -151,11 +137,7 @@ const applyClinicalFieldRules = (doc) => {
     }
     fields.push(field);
   });
-  const ordered = moveReviewOfSystems(fields);
-  return {
-    ...doc,
-    fields: doc.specialty === "surgery" ? placeBmiAboveExamination(ordered) : ordered,
-  };
+  return { ...doc, fields: moveReviewOfSystems(fields) };
 };
 
 const isRetiredField = (field, specialty) => {
