@@ -81,10 +81,17 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // specialty defaults to its consultation template.
     () => (myDocs.find((d) => d.workflow) || myDocs.find((d) => d.key.includes("consultation")) || myDocs[0] || { key: GENERAL_KEY }).key
   );
-  const [diagnosisNotesOpen, setDiagnosisNotesOpen] = useState(false);
+  // "Diagnosis-Specific Note" mode — the list of diagnosis templates that
+  // were already part of General Surgery stays on screen, and the template of
+  // the chosen diagnosis opens below it.
+  const [diagnosisMode, setDiagnosisMode] = useState(false);
   const [dataValues, setDataValues] = useState({});
+  const isDiagnosisDoc = CONDITION_DOC_KEYS.has(docType);
   const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
-  const hasSpecialtyFields = !diagnosisNotesOpen && !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
+  // While only the diagnosis list is showing (no diagnosis chosen yet) the
+  // previous note type's template is not displayed.
+  const hasSpecialtyFields =
+    !(diagnosisMode && !isDiagnosisDoc) && !!(activeDef && activeDef.fields && activeDef.fields.length > 0);
   // In specialty mode the note displays ONLY the specialty's own fields —
   // the universal generic sections (History, Vital Signs, Physical
   // Examination, Interventions, Biopsy, Recommendations) are replaced by the
@@ -344,15 +351,16 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   // only after one is chosen does its template load for documentation.
   const handleNoteTypeChange = (v) => {
     if (v === DIAGNOSIS_KEY) {
-      setDiagnosisNotesOpen(true);
+      setDiagnosisMode(true);
+      setOpenIds((s) => new Set(s).add("noteType"));
       return;
     }
-    setDiagnosisNotesOpen(false);
+    setDiagnosisMode(false);
     selectDocType(v);
   };
 
   const handleDiagnosisSelect = (key) => {
-    setDiagnosisNotesOpen(false);
+    setDiagnosisMode(true);
     selectDocType(key);
   };
 
@@ -564,22 +572,29 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         return (
           <div className="space-y-2">
             <Label>Note Type — {mySpecialty} (auto-detected)</Label>
-            <Select value={diagnosisNotesOpen ? DIAGNOSIS_KEY : docType} onValueChange={handleNoteTypeChange}>
+            <Select
+              value={diagnosisMode && !isDiagnosisDoc ? DIAGNOSIS_KEY : docType}
+              onValueChange={handleNoteTypeChange}
+            >
               <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
               <SelectContent className="max-h-80">
                 <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
                 {mySpecialtyKey === "surgery" && (
                   <SelectItem value={DIAGNOSIS_KEY}>Diagnosis-Specific Note</SelectItem>
                 )}
+                {/* the chosen diagnosis template stays selectable so its label shows */}
+                {isDiagnosisDoc && activeDef && (
+                  <SelectItem value={docType}>{activeDef.label}</SelectItem>
+                )}
                 {myDocs.map((d) => (
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {diagnosisNotesOpen && (
-              <div className="rounded-lg border border-border bg-card p-2">
-                <p className="px-1 pb-1 text-xs font-medium text-muted-foreground">
-                  Select the diagnosis — its note template opens next
+            {diagnosisMode && (
+              <div className="rounded-lg border border-border bg-card p-2 space-y-1.5">
+                <p className="px-1 text-xs font-medium text-muted-foreground">
+                  Diagnosis-specific templates — select the diagnosis and its template opens below
                 </p>
                 <DiagnosisNotePicker selectedKey={docType} onSelect={handleDiagnosisSelect} />
               </div>
