@@ -353,11 +353,11 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   // only after one is chosen does its template load for documentation.
   const handleNoteTypeChange = (v) => {
     if (v === DIAGNOSIS_KEY) {
+      // Selecting "Diagnosis-Specific Note" opens a diagnosis template straight
+      // away — the first one loads, and the doctor switches diagnosis from the
+      // list. Selecting a template is always the same path as any note type.
       setDiagnosisMode(true);
-      setOpenIds((s) => new Set([...s, "noteType", "dxTemplates"]));
-      setTimeout(() => {
-        document.getElementById("note-section-dxTemplates")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 80);
+      selectDocType(SURGERY_CONDITION_DOCS[0].key);
       return;
     }
     setDiagnosisMode(false);
@@ -603,13 +603,19 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 {mySpecialtyKey === "surgery" && (
                   <SelectItem value={DIAGNOSIS_KEY}>Diagnosis-Specific Note</SelectItem>
                 )}
-                {/* the chosen diagnosis template stays selectable so its label shows */}
-                {isDiagnosisDoc && activeDef && (
-                  <SelectItem value={docType}>{activeDef.label}</SelectItem>
-                )}
                 {myDocs.map((d) => (
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
+                {/* every diagnosis template of this specialty stays directly
+                    selectable, so it can never be unreachable */}
+                {mySpecialtyKey === "surgery" && SURGERY_CONDITION_DOCS.length > 0 && (
+                  <>
+                    <SelectItem value="__dx_group__" disabled>— Diagnosis-Specific Notes —</SelectItem>
+                    {SURGERY_CONDITION_DOCS.map((d) => (
+                      <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
