@@ -92,8 +92,6 @@ export const SURGERY_DOCS = [
         T("anticoagulation", "Anticoagulants / Antiplatelets — Perioperative Plan"),
         S("vte_risk", "VTE Risk (Caprini Category)", ["Low", "Moderate", "High", "Very High"]),
         T("vte_prophylaxis_plan", "VTE Prophylaxis Planned"),
-        T("prior_anaesthesia", "Previous Anaesthetic Problems / Airway Assessment"),
-        T("anaesthesia_plan", "Anaesthesia Coordination — Technique, Airway Plan, Premedication"),
         T("medication_management", "Medication Management — Continue / Hold / Substitute (with timing)"),
         T("medications", "Current Medications"),
         T("allergies", "Allergies"),

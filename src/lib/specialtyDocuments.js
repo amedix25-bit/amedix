@@ -766,7 +766,7 @@ const ENT_DOCS = [
   },
   {
     key: "ent_preop_assessment", label: "Pre-Operative Assessment (ENT)", specialty: "ent",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("airway_assessment", "Airway Assessment"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
   },
   {
     key: "ent_postop_note", label: "Post-Operative Note (ENT)", specialty: "ent",

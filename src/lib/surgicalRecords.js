@@ -39,7 +39,6 @@ export const SURGICAL_RECORD_TYPES = [
       { key: "comorbidities", label: "Comorbidities" },
       { key: "current_medications", label: "Current Medications" },
       { key: "allergies", label: "Allergies" },
-      { key: "airway_assessment", label: "Airway Assessment" },
       { key: "functional_status", label: "Functional Status" },
       { key: "labs_reviewed", label: "Laboratory Results Reviewed" },
       { key: "imaging_reviewed", label: "Imaging Reviewed" },
