@@ -43,7 +43,6 @@ export const SURGICAL_RECORD_TYPES = [
       { key: "functional_status", label: "Functional Status" },
       { key: "labs_reviewed", label: "Laboratory Results Reviewed" },
       { key: "imaging_reviewed", label: "Imaging Reviewed" },
-      { key: "anesthesia_risk", label: "Anesthesia Risk Assessment" },
       { key: "optimization_plan", label: "Optimization Plan" },
       { key: "antibiotic_prophylaxis", label: "Antibiotic Prophylaxis", type: "select", options: ["Planned", "Not required"] },
       { key: "vte_prophylaxis", label: "VTE Prophylaxis", type: "select", options: ["Planned", "Not required"] },
