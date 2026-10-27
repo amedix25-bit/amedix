@@ -17,6 +17,7 @@ import { flattenExamValues, examAnyValue, examAbnormalCount } from "@/lib/obgynE
 import ObgynSrhSection from "@/components/doctor/notes/ObgynSrhSection";
 import { flattenSrhValues, srhAnyValue, srhGroupsForDoc, srhConcernCount } from "@/lib/obgynSrhSchema";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
+import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
 import DiagnosisNotePicker from "@/components/doctor/notes/DiagnosisNotePicker";
@@ -67,7 +68,13 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   // asked to select it again. Only the doctor's own specialty's note types
   // are offered, and choosing one loads its structured template.
   const mySpecialty = doctorProfile?.specialization || "";
-  const myDocs = mySpecialty ? getSpecialtyDocs(mySpecialty) : [];
+  // Diagnosis-specific surgery templates are NOT listed as regular note types —
+  // they are reached only through "Diagnosis-Specific Note" → select diagnosis,
+  // so the same template never appears twice.
+  const CONDITION_DOC_KEYS = new Set(SURGERY_CONDITION_DOCS.map((d) => d.key));
+  const myDocs = mySpecialty
+    ? getSpecialtyDocs(mySpecialty).filter((d) => !CONDITION_DOC_KEYS.has(d.key))
+    : [];
   const mySpecialtyKey = mySpecialty ? SPECIALTY_KEYS[mySpecialty] : "";
   const [docType, setDocType] = useState(
     // Emergency Medicine defaults to the unified workflow note; every other
