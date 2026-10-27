@@ -31,11 +31,10 @@ export const SURGICAL_RECORD_TYPES = [
   {
     key: "preop_assessment",
     title: "Pre-Operative Assessment",
-    description: "Fitness-for-surgery evaluation: comorbidities, ASA class, optimization and prophylaxis.",
+    description: "Fitness-for-surgery evaluation: comorbidities, optimization and prophylaxis.",
     fields: [
       { key: "planned_procedure", label: "Planned Procedure", required: true },
       { key: "indication_for_surgery", label: "Indication for Surgery", required: true },
-      { key: "asa_classification", label: "ASA Classification", type: "select", options: ["ASA I — Healthy", "ASA II — Mild systemic disease", "ASA III — Severe systemic disease", "ASA IV — Life-threatening disease", "ASA V — Moribund", "ASA VI — Brain-dead"] },
       { key: "comorbidities", label: "Comorbidities" },
       { key: "current_medications", label: "Current Medications" },
       { key: "allergies", label: "Allergies" },

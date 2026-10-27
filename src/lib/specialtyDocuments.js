@@ -375,7 +375,7 @@ const OBGYN_DOCS = [
   },
   {
     key: "obgyn_gyn_preop_assessment", label: "Gynecologic Pre-Operative Assessment", specialty: "obstetrics_gynecology",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("labs_reviewed", "Laboratory Results Reviewed"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), T("comorbidities", "Comorbidities"), T("labs_reviewed", "Laboratory Results Reviewed"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
   },
   {
     key: "obgyn_gyn_postop_note", label: "Gynecologic Post-Operative Note", specialty: "obstetrics_gynecology",
@@ -602,7 +602,7 @@ const OPHTHALMOLOGY_DOCS = [
   },
   {
     key: "ophth_preop_assessment", label: "Pre-Operative Assessment (Ophthalmology)", specialty: "ophthalmology",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("ocular_history", "Ocular History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs", "Laboratory Results"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), T("comorbidities", "Comorbidities"), T("ocular_history", "Ocular History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs", "Laboratory Results"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
   },
   {
     key: "ophth_postop_note", label: "Post-Operative Note (Ophthalmology)", specialty: "ophthalmology",
@@ -680,7 +680,7 @@ const ORTHOPEDICS_DOCS = [
   },
   {
     key: "ortho_preop_assessment", label: "Pre-Operative Assessment (Orthopedics)", specialty: "orthopedics",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("risk_assessment", "Risk Assessment (incl. DVT / Infection)"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("risk_assessment", "Risk Assessment (incl. DVT / Infection)"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
   },
   {
     key: "ortho_operative_note", label: "Operative Note (Orthopedics)", specialty: "orthopedics",
@@ -727,7 +727,7 @@ const UROLOGY_DOCS = [
   },
   {
     key: "uro_preop_assessment", label: "Pre-Operative Assessment (Urology)", specialty: "urology",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("risk_assessment", "Risk Assessment"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
   },
   {
     key: "uro_postop_note", label: "Post-Operative Note (Urology)", specialty: "urology",
@@ -766,7 +766,7 @@ const ENT_DOCS = [
   },
   {
     key: "ent_preop_assessment", label: "Pre-Operative Assessment (ENT)", specialty: "ent",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
+    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
   },
   {
     key: "ent_postop_note", label: "Post-Operative Note (ENT)", specialty: "ent",

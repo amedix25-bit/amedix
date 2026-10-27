@@ -51,7 +51,6 @@ export const SURGERY_DOCS = [
         T("clinical_reasoning", "Clinical Reasoning / Assessment"),
         T("investigations_ordered", "Investigations Ordered"),
         T("imaging_reviewed", "Imaging Reviewed"),
-        S("asa_class", "Fitness for Surgery (ASA Class)", ASA),
       ]),
       ...sec("Plan & Counselling", [
         S("urgency", "Urgency", URGENCY),
@@ -80,7 +79,6 @@ export const SURGERY_DOCS = [
         S("site_marking", "Surgical Site Marking", ["Marked", "Not Required", "Pending"]),
       ]),
       ...sec("Risk Assessment", [
-        S("asa_class", "ASA Class", ASA),
         S("functional_status", "Functional Status", ["Independent", "Partially Dependent", "Totally Dependent"]),
         T("comorbidities", "Comorbidities"),
         T("cardiac_status", "Cardiac Status (stents, revascularisation, antiplatelets)"),

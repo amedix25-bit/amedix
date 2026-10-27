@@ -205,7 +205,6 @@ export const SURGERY_CONDITION_DOCS = [
         S("defect_size", "Defect Size (clinic estimate)", ["≤1 finger", "2 fingers", "≥3 fingers", "Not measured"]),
         S("hernia_content", "Hernia Content", ["Omentum", "Bowel", "Mixed", "Not assessed", "Not applicable"]),
         S("complication", "Complication Present", ["None", "Obstruction", "Strangulation", "Incarceration", "Not assessed"]),
-        S("asa_class", "Fitness for Repair (ASA Class)", ASA),
       ]),
       ...sec("Decision & Plan", [
         S("repair_approach", "Planned / Recorded Approach", ["Open", "Laparoscopic", "Robotic", "Watchful waiting", "Refer", "Not decided"]),
@@ -257,7 +256,6 @@ export const SURGERY_CONDITION_DOCS = [
         T("antimicrobials", "Antimicrobials — Agent & Time"),
         S("ercp_indication", "ERCP Indication", ["Indicated", "Not indicated", "Performed", "Refer for ERCP", "Not assessed"]),
         S("cholecystectomy_timing", "Cholecystectomy Timing", ["Index admission", "Interval", "Deferred", "Not decided", "Not applicable"]),
-        S("asa_class", "Fitness for Surgery (ASA Class)", ASA),
         S("clinician_decision", "Clinician Decision (recorded, not an order)", DECISION, true),
         T("escalation_criteria", "Escalation Criteria — Sepsis, Rising Bilirubin, Pancreatitis"),
         T("plan", "Plan"),
@@ -808,7 +806,6 @@ export const SURGERY_CONDITION_DOCS = [
       ...sec("Indication & Preparation", [
         S("indication", "Indication", ["Diagnostic", "Therapeutic", "Surveillance", "GI bleeding", "Foreign body", "Other"]),
         S("consent", "Consent", ["Documented", "Not documented", "Not applicable"], true),
-        S("asa_class", "ASA Class", ASA),
         S("anticoagulation", "Anticoagulant / Antiplatelet Plan", ["Continue", "Held — bridged", "Held — not bridged", "Not applicable", "Not assessed"]),
         S("sedation", "Sedation", ["None", "Midazolam ± opioid", "Propofol", "General anaesthesia", "Not recorded"]),
         T("bowel_prep", "Bowel Preparation (colonoscopy) / Fasting"),
