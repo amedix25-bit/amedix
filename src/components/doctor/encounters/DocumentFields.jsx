@@ -7,6 +7,7 @@ import { EMERGENCY_WORKFLOW } from "@/lib/specialtyDocuments";
 import { ArrowRight } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import SelectExamination from "@/components/doctor/notes/SelectExamination";
+import VitalSignsField from "@/components/doctor/notes/VitalSignsField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -60,6 +61,9 @@ function FieldRow({ f, values, onChange, specialty }) {
       )}
       {f.type === "number" && (
         <Input type="number" value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+      )}
+      {f.type === "vitals" && (
+        <VitalSignsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "examinations" && (
         <SelectExamination

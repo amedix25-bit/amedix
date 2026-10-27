@@ -17,6 +17,10 @@ import genitourinary from "./types/genitourinary";
 import breast from "./types/breast";
 import peripheralVascular from "./types/peripheralVascular";
 import pediatric from "./types/pediatric";
+import hernia from "./types/hernia";
+import anorectal from "./types/anorectal";
+import neckThyroid from "./types/neckThyroid";
+import wound from "./types/wound";
 import custom from "./types/custom";
 
 export const EXAMINATION_TYPES = [
@@ -33,6 +37,10 @@ export const EXAMINATION_TYPES = [
   breast,
   peripheralVascular,
   pediatric,
+  hernia,
+  anorectal,
+  neckThyroid,
+  wound,
   custom,
 ];
 

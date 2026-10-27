@@ -29,6 +29,9 @@ const SURGERY_RETIRED_FIELD_LABEL = [
   /^allergies$/i,
   /^social history/i,
   /^risks?,?\s*benefits? and alternatives/i,
+  // Retired: the free-text focused surgical examination — the structured
+  // "Select Examination" now covers every surgical examination.
+  /^focused surgical exam/i,
 ];
 
 // Field labels that belong to a retired section.
@@ -71,6 +74,27 @@ const GENERIC_EXAMINATION_LABEL = [
 ];
 const PROVISIONAL_DIAGNOSIS_LABEL = /^(provisional|working)\s+diagnos/i;
 
+// 4. Vital Signs is recorded as clickable options — every vital is added only
+//    when it was measured. The stored value stays the same readable summary.
+const VITAL_SIGNS_LABEL = /^vital signs$/i;
+
+// 5. Review of Systems belongs in the history, immediately after the History of
+//    Present Illness, never under Examination.
+const REVIEW_OF_SYSTEMS_LABEL = /^review of systems$/i;
+const HPI_LABEL = /history of present illness/i;
+
+const moveReviewOfSystems = (fields) => {
+  const from = fields.findIndex((f) => REVIEW_OF_SYSTEMS_LABEL.test(f.label || ""));
+  if (from === -1) return fields;
+  const next = [...fields];
+  const [ros] = next.splice(from, 1);
+  const hpiIndex = next.findIndex((f) => HPI_LABEL.test(f.label || ""));
+  if (hpiIndex === -1) return fields;
+  const target = next[hpiIndex];
+  next.splice(hpiIndex + 1, 0, { ...ros, section: target.section });
+  return next;
+};
+
 const isHaemodynamicStatusField = (field) => {
   const label = field.label || "";
   if (!HAEMODYNAMIC_STATUS_LABEL.test(label)) return false;
@@ -94,6 +118,10 @@ const applyClinicalFieldRules = (doc) => {
       fields.push({ ...field, type: "select", options: [...HEMODYNAMIC_STABILITY_OPTIONS] });
       return;
     }
+    if (VITAL_SIGNS_LABEL.test(field.label || "")) {
+      fields.push(field.type === "vitals" ? field : { ...field, type: "vitals" });
+      return;
+    }
     if (examinationTypes.length > 0 && isGenericExaminationField(field)) {
       if (!examinationPlaced) {
         fields.push({
@@ -109,7 +137,7 @@ const applyClinicalFieldRules = (doc) => {
     }
     fields.push(field);
   });
-  return { ...doc, fields };
+  return { ...doc, fields: moveReviewOfSystems(fields) };
 };
 
 const isRetiredField = (field, specialty) => {

@@ -27,7 +27,23 @@ export const HEMODYNAMIC_STABILITY_OPTIONS = [
 const SPECIALTY_EXAMINATIONS = {
   internal_medicine: ["general", "cardiovascular", "respiratory", "abdominal", "neurological", "musculoskeletal", "custom"],
   emergency_medicine: ["general", "cardiovascular", "respiratory", "abdominal", "neurological", "musculoskeletal", "custom"],
-  surgery: ["abdominal", "breast", "general", "peripheralVascular", "musculoskeletal", "custom"],
+  // General Surgery — the full set of examinations a surgical encounter calls
+  // for: general and systemic assessment, the abdomen, breast, abdominal wall
+  // hernia, anorectal (including DRE), neck/thyroid, wounds and ulcers,
+  // peripheral vascular, musculoskeletal, respiratory and a free-form option.
+  surgery: [
+    "general",
+    "abdominal",
+    "hernia",
+    "anorectal",
+    "breast",
+    "neck_thyroid",
+    "wound",
+    "peripheralVascular",
+    "musculoskeletal",
+    "respiratory",
+    "custom",
+  ],
   pediatrics: ["general", "pediatric", "respiratory", "abdominal", "neurological", "custom"],
   obstetrics_gynecology: ["abdominal", "general", "custom"],
   anesthesiology: ["general", "cardiovascular", "respiratory", "neurological", "custom"],
