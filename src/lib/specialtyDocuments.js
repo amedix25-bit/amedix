@@ -9,6 +9,7 @@ import {
   FAMILY_MEDICINE_DOCS, DENTAL_DOCS, PHYSIO_DOCS, NUTRITION_DOCS, CERTIFICATE_DEFS,
 } from "@/lib/specialtyDocumentsPart4";
 import { RADIOLOGY_DOCS, LABORATORY_DOCS, PATHOLOGY_DOCS } from "@/lib/specialtyDocumentsPart5";
+import { SURGERY_DOCS } from "@/lib/surgeryDocuments";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -155,57 +156,6 @@ const IM_DOCS = [
   {
     key: "im_chronic_care_plan", label: "Chronic Disease Care Plan", specialty: "internal_medicine",
     fields: [T("diagnoses", "Chronic Diagnoses"), T("goals", "Care Goals"), T("target_values", "Target Values"), T("medications_plan", "Medication Plan"), T("lifestyle_plan", "Lifestyle Management"), T("monitoring_plan", "Monitoring Plan"), I("review_interval", "Review Interval"), T("escalation_criteria", "Escalation Criteria")],
-  },
-];
-
-const SURGERY_DOCS = [
-  {
-    key: "surg_consultation", label: "Surgical Consultation", specialty: "surgery",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("pmh", "Past Medical History"), T("surgical_history", "Past Surgical History"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("exam_findings", "Physical Examination Findings"), T("working_diagnosis", "Working Diagnosis"), T("investigations_ordered", "Investigations Ordered"), T("treatment_options_discussed", "Treatment Options Discussed"), T("recommendation", "Recommendation")],
-  },
-  {
-    key: "surg_preop_assessment", label: "Pre-Operative Assessment", specialty: "surgery",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication for Surgery"), S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), T("comorbidities", "Comorbidities"), T("cardiac_status", "Cardiac Status"), T("respiratory_status", "Respiratory Status"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("labs_reviewed", "Laboratory Results Reviewed"), T("imaging_reviewed", "Imaging Reviewed"), T("risk_assessment", "Risk Assessment"), S("anesthesia_clearance", "Anesthesia Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
-  },
-  {
-    key: "surg_operative_note", label: "Operative Note", specialty: "surgery",
-    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Monitored Anesthesia Care", "Sedation", "Other"]), T("indication", "Indication"), T("findings", "Findings"), T("procedure_details", "Procedure Details"), T("specimens", "Specimens"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("drains", "Drains"), T("implants", "Implants"), T("patient_condition", "Patient Condition"), T("postop_plan", "Post-Operative Plan")],
-  },
-  {
-    key: "surg_procedure_note", label: "Procedure Note", specialty: "surgery",
-    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition"), T("post_procedure_plan", "Post-Procedure Plan")],
-  },
-  {
-    key: "surg_postop_note", label: "Post-Operative Note", specialty: "surgery",
-    fields: [I("procedure_date", "Procedure Date"), I("postop_day", "Post-Operative Day"), T("vitals", "Vital Signs"), T("wound_condition", "Wound Condition"), T("drain_output", "Drain Output"), T("pain_control", "Pain Control"), T("mobility", "Mobility"), T("labs", "Laboratory Results"), T("complications", "Complications"), T("plan", "Plan")],
-  },
-  {
-    key: "surg_daily_progress", label: "Daily Surgical Progress Note", specialty: "surgery",
-    fields: [I("postop_day", "Post-Operative Day"), T("overnight_events", "Overnight Events"), T("wound_exam", "Wound Examination"), T("drain_status", "Drain Status"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("antibiotics", "Antibiotics"), T("plan", "Plan"), I("code_status", "Code Status")],
-  },
-  {
-    key: "surg_discharge_summary", label: "Discharge Summary", specialty: "surgery",
-    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), T("procedure", "Procedure Performed"), T("hospital_course", "Hospital Course"), T("wound_instructions", "Wound Care Instructions"), T("discharge_medications", "Discharge Medications"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs"), T("pending_results", "Pending Results")],
-  },
-  {
-    key: "surg_followup", label: "Surgical Follow-Up", specialty: "surgery",
-    fields: [I("procedure_done", "Procedure Done"), I("time_since_procedure", "Time Since Procedure"), T("wound_status", "Wound Status"), T("symptoms", "Symptoms"), T("exam_findings", "Physical Examination Findings"), T("workup", "Work-Up"), T("plan", "Plan")],
-  },
-  {
-    key: "surg_pathology", label: "Pathology Request / Record", specialty: "surgery",
-    fields: [T("specimens_sent", "Specimens Sent"), T("clinical_history", "Clinical History"), T("gross_findings", "Gross Findings"), T("microscopic_findings", "Microscopic Findings"), T("diagnosis", "Pathology Diagnosis"), I("turnaround", "Turnaround / Report Date")],
-  },
-  {
-    key: "surg_referral", label: "Surgical Referral", specialty: "surgery",
-    fields: [I("referred_to", "Referred To"), T("referring_diagnosis", "Referring Diagnosis"), T("clinical_question", "Clinical Question / Reason"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
-  },
-  {
-    key: "surg_consent_documentation", label: "Consent Documentation", specialty: "surgery",
-    fields: [I("procedure", "Procedure"), T("risks_discussed", "Risks Discussed"), T("alternatives", "Alternatives Discussed"), S("patient_agreement", "Patient Agreement", ["Agreed", "Declined", "Deferred"]), I("consent_type", "Consent Type"), I("witness", "Witness"), T("notes", "Notes")],
-  },
-  {
-    key: "surg_implant_device", label: "Implant / Device Record", specialty: "surgery",
-    fields: [I("implant_name", "Implant / Device Name"), I("manufacturer", "Manufacturer"), I("model", "Model"), I("serial_number", "Serial Number"), I("lot_number", "Lot / Batch Number"), I("implant_site", "Implant Site"), I("date_implanted", "Date Implanted"), I("expiration", "Expiration Date (if applicable)"), T("notes", "Notes")],
   },
 ];
 
