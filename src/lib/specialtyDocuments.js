@@ -11,6 +11,7 @@ import {
 import { RADIOLOGY_DOCS, LABORATORY_DOCS, PATHOLOGY_DOCS } from "@/lib/specialtyDocumentsPart5";
 import { SURGERY_DOCS } from "@/lib/surgeryDocuments";
 import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
+import { applyNoteSectionPolicy } from "@/lib/noteSectionPolicy";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -940,7 +941,7 @@ const ENDOCRINOLOGY_DOCS = [
   },
 ];
 
-export const SPECIALTY_DOCUMENTS = [
+export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...IM_DOCS, ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
   ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
   ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
@@ -948,7 +949,7 @@ export const SPECIALTY_DOCUMENTS = [
   ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS, ...RHEUMATOLOGY_DOCS, ...HEMATOLOGY_DOCS,
   ...FAMILY_MEDICINE_DOCS, ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
   ...RADIOLOGY_DOCS, ...LABORATORY_DOCS, ...PATHOLOGY_DOCS,
-];
+]);
 
 export const getSpecialtyDocs = (specialization) => {
   const key = SPECIALTY_KEYS[specialization];
