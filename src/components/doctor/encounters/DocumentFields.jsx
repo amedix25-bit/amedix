@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EMERGENCY_WORKFLOW } from "@/lib/specialtyDocuments";
 import { ArrowRight } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
+import SelectExamination from "@/components/doctor/notes/SelectExamination";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -59,6 +60,14 @@ function FieldRow({ f, values, onChange, specialty }) {
       )}
       {f.type === "number" && (
         <Input type="number" value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+      )}
+      {f.type === "examinations" && (
+        <SelectExamination
+          value={values[f.key]}
+          onChange={(v) => onChange(f.key, v)}
+          types={f.examinationTypes}
+          specialtyKey={f.specialty}
+        />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>

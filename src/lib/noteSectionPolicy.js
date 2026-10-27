@@ -13,6 +13,11 @@
 // Past Medical History, Past Surgical History, Current Medications, Allergies,
 // Social History, and Risks/Benefits & Alternatives.
 
+import {
+  examinationTypeKeysFor,
+  HEMODYNAMIC_STABILITY_OPTIONS,
+} from "@/lib/examinations/clinicalExaminations";
+
 // Sections the surgical team retired from the General Surgery templates only.
 // These duplicate what the unified AMedix Patient Record already attaches to
 // every note automatically, plus the generic counselling line. Nothing else in
@@ -46,6 +51,67 @@ const RETIRED_DOCUMENT_KEYS = ["surg_referral"];
 // content is left untouched.
 const isImagingReport = (doc) => /imaging/i.test(doc.label || "");
 
+// ---- Clinical-note field rules ---------------------------------------------
+// Applied to every specialty template, General Surgery included:
+// 1. Haemodynamic status is a structured clinical decision — exactly four
+//    options, never a free-text value and never preselected.
+// 2. The generic examination field is replaced by "Select Examination", the
+//    searchable structured examination interface. Specialty-specific
+//    examination fields (ENT, ophthalmology, obstetric, dental …) stay exactly
+//    as they are — only the generic "Examination" label is converted.
+// 3. There is one diagnosis tab — "Differential Diagnosis". The separate
+//    provisional / working diagnosis field is retired from the templates.
+const HAEMODYNAMIC_STATUS_LABEL = /h(a)?emodynamic\s+(status|stability)/i;
+const GENERIC_EXAMINATION_LABEL = [
+  /^examination$/i,
+  /^examination findings$/i,
+  /^physical examination findings$/i,
+  /^current examination$/i,
+  /^other examination findings$/i,
+];
+const PROVISIONAL_DIAGNOSIS_LABEL = /^(provisional|working)\s+diagnos/i;
+
+const isHaemodynamicStatusField = (field) => {
+  const label = field.label || "";
+  if (!HAEMODYNAMIC_STATUS_LABEL.test(label)) return false;
+  // A label that mentions haemodynamic pressures (e.g. a cath-lab report) is a
+  // measurement, not the stability status.
+  return !/pressure/i.test(label);
+};
+
+const isGenericExaminationField = (field) =>
+  GENERIC_EXAMINATION_LABEL.some((re) => re.test(field.label || ""));
+
+const applyClinicalFieldRules = (doc) => {
+  if (!Array.isArray(doc.fields)) return doc;
+  const examinationTypes = examinationTypeKeysFor(doc.specialty);
+  const hasExaminationField = doc.fields.some((field) => field.type === "examinations");
+  let examinationPlaced = hasExaminationField;
+  const fields = [];
+  doc.fields.forEach((field) => {
+    if (PROVISIONAL_DIAGNOSIS_LABEL.test(field.label || "")) return;
+    if (isHaemodynamicStatusField(field)) {
+      fields.push({ ...field, type: "select", options: [...HEMODYNAMIC_STABILITY_OPTIONS] });
+      return;
+    }
+    if (examinationTypes.length > 0 && isGenericExaminationField(field)) {
+      if (!examinationPlaced) {
+        fields.push({
+          key: "examinations",
+          label: "Select Examination",
+          type: "examinations",
+          examinationTypes,
+          section: field.section,
+        });
+        examinationPlaced = true;
+      }
+      return;
+    }
+    fields.push(field);
+  });
+  return { ...doc, fields };
+};
+
 const isRetiredField = (field, specialty) => {
   const label = field.label || "";
   if (specialty === "surgery" && SURGERY_RETIRED_FIELD_LABEL.some((re) => re.test(label))) return true;
@@ -58,5 +124,6 @@ export const applyNoteSectionPolicy = (docs) =>
     .filter((doc) => !RETIRED_DOCUMENT_KEYS.includes(doc.key))
     .map((doc) => {
       if (isImagingReport(doc) || !Array.isArray(doc.fields)) return doc;
-      return { ...doc, fields: doc.fields.filter((field) => !isRetiredField(field, doc.specialty)) };
+      const kept = { ...doc, fields: doc.fields.filter((field) => !isRetiredField(field, doc.specialty)) };
+      return applyClinicalFieldRules(kept);
     });

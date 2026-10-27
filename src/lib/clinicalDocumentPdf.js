@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { base44 } from "@/api/base44Client";
+import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 
 const TEAL = [23, 50, 77]; // #17324D dark blue
 const DARK = [23, 40, 45];
@@ -108,7 +109,7 @@ export async function generateClinicalDocumentPdfUrl(doc) {
       pdf.text(label, M, y);
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(9.5);
-      let val = f.value;
+      let val = formatStoredValue(f.value);
       if (Array.isArray(val)) {
         // Tooth Chart entries and other structured arrays render as lines.
         val = val.map((e) => e && typeof e === "object"

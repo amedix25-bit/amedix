@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
 import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock } from "lucide-react";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
+import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -128,9 +129,9 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
               return (
                 <>
                   {main.map(([k, f]) => (
-                    <p key={k} className="text-sm">
+                    <p key={k} className="text-sm whitespace-pre-wrap">
                       <span className="text-muted-foreground">{f.label}: </span>
-                      {f.value}
+                      {formatStoredValue(f.value)}
                     </p>
                   ))}
                   {sensitive.length > 0 && (
@@ -139,9 +140,9 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
                         <Lock className="w-3.5 h-3.5" /> Sexual &amp; Reproductive History — Sensitive
                       </p>
                       {sensitive.map(([k, f]) => (
-                        <p key={k} className="text-sm">
+                        <p key={k} className="text-sm whitespace-pre-wrap">
                           <span className="text-muted-foreground">{f.label}: </span>
-                          {f.value}
+                          {formatStoredValue(f.value)}
                         </p>
                       ))}
                     </div>

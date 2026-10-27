@@ -134,6 +134,25 @@ const formatParsed = ({ selected = [], data = {} }) => {
   return blocks.join("\n\n");
 };
 
+// Readable text for a STORED specialty field value: a documented examination
+// is rendered from its structure, every other field passes through unchanged.
+export const formatStoredValue = (value) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return formatExaminationValue(value);
+  if (Array.isArray(value)) {
+    return value
+      .filter((e) => e !== null && e !== undefined && e !== "")
+      .map((e) => (e && typeof e === "object" ? Object.values(e).filter(Boolean).join(" — ") : String(e)))
+      .join(", ");
+  }
+  if (typeof value === "object") {
+    if (Array.isArray(value.selected) || value.data) return formatExaminationValue(value);
+    if (value.value !== undefined && value.value !== null) return formatStoredValue(value.value);
+    return "";
+  }
+  return String(value);
+};
+
 // Readable text for the saved note, the note view and the printed note.
 // Plain legacy free text (an older note's examination) is returned unchanged.
 export const formatExaminationValue = (value) => {

@@ -5,6 +5,7 @@ import { Image } from "@/components/ui/image";
 import ToothChart from "@/components/doctor/dental/ToothChart";
 import { format } from "date-fns";
 import { generateClinicalDocumentPdfUrl } from "@/lib/clinicalDocumentPdf";
+import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import { Loader2, FileSignature, History, FileText, PenLine } from "lucide-react";
 
 // One clinical document family with full version control: shows the automatic
@@ -108,9 +109,9 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
           {Object.entries(viewing.data)
             .filter(([, f]) => f && f.value !== null && f.value !== undefined && f.value !== "")
             .map(([k, f]) => (
-              <p key={k} className="text-sm">
+              <p key={k} className="text-sm whitespace-pre-wrap">
                 <span className="text-muted-foreground">{f.label}: </span>
-                {f.value}
+                {formatStoredValue(f.value)}
               </p>
             ))}
         </div>
