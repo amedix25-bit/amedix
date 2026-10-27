@@ -403,7 +403,7 @@ export const SURGERY_CONDITION_DOCS = [
         T("contralateral", "Contralateral Breast and Other Findings"),
       ]),
       ...sec("Triple Assessment", [
-        S("clinical_assessment", "Clinical Assessment", ["Benign", "Suspicious", "Malignant", "Inconclusive"], true),
+        S("clinical_assessment", "Clinical Assessment", ["Benign", "Suspicious", "Malignant", "Inconclusive", "Not assessed"], true),
         S("imaging", "Imaging", ["Ultrasound", "Mammography", "Both", "Not yet performed", "Not assessed"]),
         T("imaging_findings", "Imaging Findings (BIRADS if reported)"),
         S("pathology", "Pathology (FNA / Core Biopsy)", ["Not performed", "Benign", "Atypical / high-risk", "Malignant", "Pending"]),

@@ -18,6 +18,7 @@ import ObgynSrhSection from "@/components/doctor/notes/ObgynSrhSection";
 import { flattenSrhValues, srhAnyValue, srhGroupsForDoc, srhConcernCount } from "@/lib/obgynSrhSchema";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
+import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
 import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
 import PatientAlertHeader from "@/components/doctor/notes/PatientAlertHeader";
 import { X, Search, Loader2, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
@@ -572,6 +573,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               notice={activeDef.notice || ""}
             />
             <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty optional sections are simply not saved. Fields marked Required must be answered.</p>
+            <SurgeryGuidelineBasis documentKey={activeDef.key} />
           </div>
         );
       case "antenatal":

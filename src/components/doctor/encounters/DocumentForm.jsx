@@ -9,6 +9,7 @@ import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { DOCUMENT_TYPES } from "@/lib/clinicalDocuments";
 import { getSpecialtyDocs, getDocDef, getSpecialtyLabel, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import DocumentFields, { EmergencyWorkflowStrip } from "./DocumentFields";
+import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
 import ToothChart from "@/components/doctor/dental/ToothChart";
 import { CERTIFICATE_DEFS, CERTIFICATE_KEYS } from "@/lib/specialtyDocumentsPart4";
 import { Loader2, Lock, PenLine } from "lucide-react";
@@ -243,6 +244,8 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       {hasFields && (
         <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} notice={def.notice || ""} />
       )}
+
+      {hasFields && <SurgeryGuidelineBasis documentKey={def.key} />}
 
       {def && def.toothChart && (
         <div className="space-y-1.5">
