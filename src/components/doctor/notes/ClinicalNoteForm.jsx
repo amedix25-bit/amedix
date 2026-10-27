@@ -146,7 +146,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   // Universal accordion state — sections expand/collapse independently and
   // entered information is preserved because all values live in this form's
   // state regardless of which section is open.
-  const [openIds, setOpenIds] = useState(() => new Set(["encounter"]));
+  const [openIds, setOpenIds] = useState(
+    () => new Set(mySpecialtyKey === "surgery" ? ["encounter", "dxTemplates"] : ["encounter"])
+  );
   const toggleSection = (id) =>
     setOpenIds((s) => {
       const n = new Set(s);
@@ -352,16 +354,24 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const handleNoteTypeChange = (v) => {
     if (v === DIAGNOSIS_KEY) {
       setDiagnosisMode(true);
-      setOpenIds((s) => new Set(s).add("noteType"));
+      setOpenIds((s) => new Set([...s, "noteType", "dxTemplates"]));
+      setTimeout(() => {
+        document.getElementById("note-section-dxTemplates")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
       return;
     }
     setDiagnosisMode(false);
     selectDocType(v);
   };
 
+  // A diagnosis template is loaded through the same path as any note type
+  // chosen from the selector, then its template is opened on screen.
   const handleDiagnosisSelect = (key) => {
     setDiagnosisMode(true);
     selectDocType(key);
+    setTimeout(() => {
+      document.getElementById("note-section-template")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
   };
 
   const handleSubmit = async (e) => {
@@ -504,6 +514,17 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const sections = [
     { id: "encounter", title: "Encounter Details", required: true, complete: !!(form.location && form.encounter_datetime) },
     ...(myDocs.length > 0 ? [{ id: "noteType", title: "Note Type", complete: !!docType }] : []),
+    // Every General Surgery diagnosis-specific template stays listed on screen
+    // — searchable by diagnosis — exactly as before, with the chosen one
+    // loading through the same template path as any other note type.
+    ...(mySpecialtyKey === "surgery"
+      ? [{
+          id: "dxTemplates",
+          title: "Diagnosis-Specific Templates",
+          complete: isDiagnosisDoc,
+          hint: isDiagnosisDoc ? activeDef?.label : `${SURGERY_CONDITION_DOCS.length} templates — select by diagnosis`,
+        }]
+      : []),
     ...(hasSpecialtyFields
       ? [{ id: "template", title: activeDef.label, complete: specialtyFilled > 0, hint: `${specialtyFilled}/${activeDef.fields.length} fields` }]
       : []),
@@ -591,17 +612,21 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 ))}
               </SelectContent>
             </Select>
-            {diagnosisMode && (
-              <div className="rounded-lg border border-border bg-card p-2 space-y-1.5">
-                <p className="px-1 text-xs font-medium text-muted-foreground">
-                  Diagnosis-specific templates — select the diagnosis and its template opens below
-                </p>
-                <DiagnosisNotePicker selectedKey={docType} onSelect={handleDiagnosisSelect} />
-              </div>
-            )}
             <p className="text-xs text-muted-foreground">
               AMedix detected your verified specialty and loaded its note types and template — no need to select a specialty.
             </p>
+          </div>
+        );
+      case "dxTemplates":
+        return (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Search by diagnosis (e.g. cholecystitis, appendicitis, hernia) and select a template — it loads below.
+            </p>
+            <DiagnosisNotePicker selectedKey={docType} onSelect={handleDiagnosisSelect} />
+            {isDiagnosisDoc && activeDef && (
+              <p className="text-xs text-emerald-700">Loaded template: {activeDef.label}</p>
+            )}
           </div>
         );
       case "template":
