@@ -110,7 +110,6 @@ export const SURGERY_DOCS = [
         T("alternatives_discussed", "Alternatives to Surgery Discussed"),
         T("risks_discussed", "Key Risks Discussed — Consent & Understanding Confirmed"),
         T("risk_assessment", "Overall Risk Assessment & Medical Optimisation"),
-        S("anesthesia_clearance", "Anaesthesia Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]),
       ]),
     ],
   },
