@@ -326,6 +326,7 @@ export const preAssessment = {
       N(
         "stop_bang",
         "STOP-BANG Score (0–8) — where sleep apnoea risk is being assessed (ASA February 2014 guidance)",
+        { min: 0, max: 8, unit: "/ 8" },
         when("osa_status", "Suspected — screening indicated", "Diagnosed — treated with CPAP or other therapy", "Diagnosed — not treated")
       ),
       S("ponv_risk", "Postoperative Nausea and Vomiting Risk", [
@@ -722,7 +723,7 @@ export const consent = {
   label: "Anesthesia Consent",
   specialty: "anesthesiology",
   notice:
-    "Consent records a discussion of the intended anesthetic, its material risks and the reasonable alternatives, in a form the patient can understand. Consent is recorded only after the discussion has actually taken place: nothing here is pre-filled as obtained. Risks are documented for the technique actually planned, and an item that was not discussed stays marked as not discussed — never as discussed.",
+    "Consent records a discussion of the intended anesthetic, its material risks and the reasonable alternatives, in a form the patient can understand. Consent is recorded only after the discussion has actually taken place: nothing here is pre-filled as obtained. Risks are documented for the technique actually planned, and an item that was not discussed stays marked as not discussed — never as discussed. Basis: institutional consent protocol — no ASA standard prescribes the content of anesthesia consent.",
   fields: [
     ...sec("Procedure & Technique", [
       I("procedure", "Procedure"),

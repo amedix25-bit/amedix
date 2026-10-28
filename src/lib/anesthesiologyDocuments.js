@@ -157,7 +157,7 @@ const airway = {
     ]),
     ...sec("After Airway Management", [
       T("devices_used", "Devices and Adjuncts Used"),
-      N("attempts", "Number of Intubation Attempts"),
+      N("attempts", "Number of Intubation Attempts", { min: 0, max: 10, unit: "attempts" }),
       S("cl_grade", "Cormack-Lehane Grade", ["1", "2", "3", "4", "Not applicable"]),
       S("placement_verified", "Placement Verified by Clinical Assessment and Expired Carbon Dioxide", [
         "Yes — both",
@@ -170,6 +170,7 @@ const airway = {
       ]),
       T("plan", "Airway Management Plan for This Anesthetic", R),
       T("aftercare", "Airway Aftercare — sore throat, hoarseness, dental or soft-tissue injury to review"),
+      ICD("icd11_complications", "Airway Event or Injury Coded With ICD-11 — where a verified code applies"),
     ]),
   ],
 };
@@ -388,7 +389,7 @@ const intraop = {
         "Intermittent",
         "Not performed — documented reason",
       ], when("patient_population", "Obstetric")),
-      N("weight_kg", "Weight Used for Dosing (kg)", when("patient_population", "Pediatric")),
+      N("weight_kg", "Weight Used for Dosing (kg)", { min: 0.5, max: 300, unit: "kg", ...when("patient_population", "Pediatric") }),
       S("weight_based_dosing", "Doses and Fluid Volumes Calculated Against the Recorded Weight", [
         "Yes — verified against weight",
         "Not verified",
@@ -415,7 +416,7 @@ const medication = {
   label: "Anesthesia Medication Record",
   specialty: "anesthesiology",
   notice:
-    "This record documents what was actually administered during the anesthetic, with doses and times, so the course can be reconstructed. Controlled drugs are recorded with the witness and the balance checked. Prophylaxis items follow the ASA fasting, neuromuscular blockade and blood management guidance where relevant.",
+    "This record documents what was actually administered during the anesthetic, with doses and times, so the course can be reconstructed. Controlled drugs are recorded with the witness and the balance checked. Prophylaxis items follow the ASA fasting, neuromuscular blockade and blood management guidance where relevant. Those are ASA practice guidelines rather than formal standards; dose ranges and formulary rules follow the institutional protocol.",
   fields: [
     ...sec("Planned Versus Administered", [
       T("planned_agents", "Agents Planned Before the Case — as recorded in the anesthesia plan"),
@@ -572,7 +573,7 @@ const pacu = {
       S("sedation_scale", "Sedation Scale Used", ["Alert / Voice / Pain / Unresponsive", "Richmond Agitation-Sedation Scale", "Not scored"]),
       T("haemodynamics", "Haemodynamic Course — blood pressure, heart rate, rhythm, interventions"),
       T("respiratory_course", "Respiratory Course — rate, oxygen saturation, carbon dioxide, interventions"),
-      N("respiratory_rate_monitoring", "Respiratory Rate Monitoring Interval (minutes) Where Neuraxial Opioid Used"),
+      N("respiratory_rate_monitoring", "Respiratory Rate Monitoring Interval (minutes) Where Neuraxial Opioid Used", { min: 5, max: 120, unit: "minutes" }),
       S("oxygenation_assessed", "Oxygenation and Ventilation Assessed", [
         "Yes — oximetry and respiratory rate",
         "Yes — plus end-tidal carbon dioxide where measured",
@@ -582,7 +583,7 @@ const pacu = {
       T("temperature_course", "Temperature and Warming — measured values and the method used"),
     ]),
     ...sec("Pain, Nausea & Comfort", [
-      N("pain_score", "Pain Score (0–10)"),
+      N("pain_score", "Pain Score (0–10)", { min: 0, max: 10, unit: "/ 10" }),
       T("pain_detail", "Pain — site, character, and the intervention given with its effect"),
       T("nausea", "Nausea / Vomiting — and the treatment given with its effect"),
       T("shivering", "Shivering and Temperature Management"),
@@ -636,6 +637,7 @@ const pacu = {
         "Other — documented",
       ]),
       T("adverse_event_detail", "Event Detail and Management"),
+      ICD("icd11_complications", "Adverse Events or Complications Coded With ICD-11 — where a verified code applies"),
       S("anesthesiologist_called", "Anesthesiologist or Critical Care Called", [
         "Not required",
         "Called — attended",
@@ -721,7 +723,7 @@ const postEvaluation = {
       T("ventilation_assessment", "Ventilation — respiratory rate, depth, and carbon dioxide where measured"),
     ]),
     ...sec("Pain, Nausea & Function", [
-      N("pain_score", "Pain Score (0–10)"),
+      N("pain_score", "Pain Score (0–10)", { min: 0, max: 10, unit: "/ 10" }),
       T("pain_control", "Pain Control — adequacy, analgesic plan, opioid requirement"),
       T("ponv", "Nausea and Vomiting — and treatment response"),
       S("mobility", "Mobility and Function", [
@@ -829,7 +831,7 @@ const followup = {
   label: "Anesthesia Follow-Up",
   specialty: "anesthesiology",
   notice:
-    "Follow-up records how the anesthetic is affecting the patient after discharge, including persistent symptoms, recovery of function and any chronic postsurgical pain. A symptom that has not been assessed stays unrecorded.",
+    "Follow-up records how the anesthetic is affecting the patient after discharge, including persistent symptoms, recovery of function and any chronic postsurgical pain. A symptom that has not been assessed stays unrecorded. Basis: institutional follow-up protocol — no ASA standard governs this document.",
   fields: [
     ...sec("Interval Recovery", [
       I("days_since_anesthesia", "Days Since Anesthesia"),
@@ -850,6 +852,7 @@ const followup = {
       S("neurological", "Numbness, Weakness or Altered Sensation", ["None", "Present — documented", "Not assessed"]),
       S("fatigue", "Fatigue or Cognitive Change", ["None", "Present", "Not assessed"]),
       T("complications", "Complications Since Anesthesia — description and action taken"),
+      ICD("icd11_complications", "Persistent Symptoms or Complications Coded With ICD-11 — where a verified code applies"),
     ]),
     ...sec("Chronic Postsurgical Pain", [
       N("pain_score", "Current Pain Score (0–10)"),
@@ -879,7 +882,7 @@ const regional = {
   label: "Regional / Neuraxial Procedure Record",
   specialty: "anesthesiology",
   notice:
-    "A regional or neuraxial technique is documented as a procedure: indication, consent, asepsis, guidance, drugs with total dose, assessment of the block, and monitoring afterwards. Where neuraxial opioids are used, monitoring follows the ASA guidance on respiratory depression (March 2016); anticoagulant timing is verified before the needle is placed.",
+    "A regional or neuraxial technique is documented as a procedure: indication, consent, asepsis, guidance, drugs with total dose, assessment of the block, and monitoring afterwards. Where neuraxial opioids are used, monitoring follows the ASA guidance on respiratory depression (March 2016); anticoagulant timing is verified before the needle is placed. Basis: the institutional regional-anesthesia protocol together with the ASA practice guidance named above — practice guidance, not a formal ASA standard.",
   fields: [
     ...sec("Indication & Consent", [
       S("technique", "Technique", [
@@ -916,7 +919,7 @@ const regional = {
         "Fluoroscopy",
       ]),
       T("needle", "Needle and Catheter — gauge, length, catheter threaded"),
-      N("attempts", "Number of Attempts / Needle Passes"),
+      N("attempts", "Number of Attempts / Needle Passes", { min: 0, max: 20, unit: "attempts" }),
       S("aspiration_test", "Incremental Injection With Repeated Aspiration", [
         "Yes — negative for blood and cerebrospinal fluid",
         "Blood aspirated — needle repositioned",
@@ -945,6 +948,7 @@ const regional = {
     ]),
     ...sec("Aftercare & Safety", [
       T("complications", "Complications — vascular puncture, paraesthesia, dural puncture, fall, haematoma, infection"),
+      ICD("icd11_complications", "Complications Coded With ICD-11 — where a verified code applies"),
       S("respiratory_monitoring", "Respiratory Monitoring Where Neuraxial Opioid Used", [
         "Not applicable",
         "Intermittent respiratory rate and sedation checks",
@@ -1043,7 +1047,7 @@ const sedation = {
       ]),
     ]),
     ...sec("Recovery & Discharge", [
-      N("pain_score", "Pain Score (0–10)"),
+      N("pain_score", "Pain Score (0–10)", { min: 0, max: 10, unit: "/ 10" }),
       T("recovery_course", "Recovery Course — return to baseline responsiveness and ventilation"),
       S("discharge_criteria", "Discharge Criteria Met", [
         "Met — against institutional criteria",
@@ -1181,8 +1185,8 @@ const pediatric = {
   fields: [
     ...sec("Pediatric Context", [
       I("age", "Age", R),
-      N("weight_kg", "Weight (kg)", R),
-      N("height_cm", "Height (cm)"),
+      N("weight_kg", "Weight (kg)", { required: true, min: 0.5, max: 300, unit: "kg" }),
+      N("height_cm", "Height (cm)", { min: 20, max: 250, unit: "cm" }),
       S("asa_class", "ASA Physical Status Class", ASA_CLASSES),
       T("asa_class_basis", "Basis for the Assigned Class"),
       S("prematurity", "Prematurity / Former Preterm History", [
@@ -1220,7 +1224,7 @@ const pediatric = {
       T("induction_detail", "Induction Agents and Doses — weight-based"),
       S("airway_device", "Airway Device", AIRWAY_DEVICES),
       T("device_size", "Device Size — tube internal diameter, supraglottic size, blade"),
-      N("attempts", "Number of Attempts"),
+      N("attempts", "Number of Attempts", { min: 0, max: 10, unit: "attempts" }),
       S("airway_difficulty", "Airway Difficulty Encountered", ["None", "Yes — documented"]),
       T("ventilation", "Ventilation and Respiratory Support"),
     ]),
@@ -1263,7 +1267,7 @@ const trauma = {
   label: "Emergency & Trauma Anesthesia Record",
   specialty: "anesthesiology",
   notice:
-    "Emergency and trauma anesthesia records the resuscitation context alongside the anesthetic: injury pattern, haemodynamic state, airway and cervical-spine precautions, blood product strategy and the damage-control plan. An emergency procedure carries the E modifier next to the ASA Physical Status class; it does not change the class itself.",
+    "Emergency and trauma anesthesia records the resuscitation context alongside the anesthetic: injury pattern, haemodynamic state, airway and cervical-spine precautions, blood product strategy and the damage-control plan. An emergency procedure carries the E modifier next to the ASA Physical Status class; it does not change the class itself. Basis: the ASA practice guidelines and advisories named above, applied with the institutional trauma and massive-transfusion protocols — practice guidance, not formal standards.",
   fields: [
     ...sec("Injury & Resuscitation Context", [
       T("mechanism", "Mechanism of Injury or Reason for Emergency Surgery", R),
@@ -1485,7 +1489,7 @@ const handoverDoc = {
   label: "Anesthesia Transfer of Care (Handover)",
   specialty: "anesthesiology",
   notice:
-    "A transfer of anesthesia care is documented as a handover: identity verification, what was done, what could still go wrong, and explicit acknowledgement by the receiving clinician. The receiving team's read-back is recorded, so responsibility for the patient is never assumed silently.",
+    "A transfer of anesthesia care is documented as a handover: identity verification, what was done, what could still go wrong, and explicit acknowledgement by the receiving clinician. The receiving team's read-back is recorded, so responsibility for the patient is never assumed silently. Basis: institutional transfer-of-care protocol — no ASA standard prescribes handover content.",
   fields: [
     ...sec("Transfer Details", [
       S("direction", "Transfer", [
@@ -1530,7 +1534,7 @@ const handoverDoc = {
         "Non-invasive ventilation",
         "Mechanical ventilation",
       ]),
-      N("pain_score", "Pain Score (0–10)"),
+      N("pain_score", "Pain Score (0–10)", { min: 0, max: 10, unit: "/ 10" }),
       T("analgesia_plan", "Analgesia Plan — what has been given and what is prescribed for the next hours"),
       S("ponv_prophylaxis", "Postoperative Nausea and Vomiting Prophylaxis Given", [
         "One agent",

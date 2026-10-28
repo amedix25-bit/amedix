@@ -38,6 +38,20 @@ export function EmergencyWorkflowStrip() {
 }
 
 function FieldRow({ f, values, onChange, specialty, patientId }) {
+  // Numeric safeguards — a field that declares min/max/unit is warned about
+  // when the entry falls outside the expected range, so a dose, weight or score
+  // recorded in the wrong unit is caught before the note is signed. The value
+  // is never silently corrected.
+  const rawNumber = values[f.key];
+  const parsedNumber = parseFloat(rawNumber);
+  const numberOutOfRange =
+    f.type === "number" &&
+    rawNumber !== "" &&
+    rawNumber !== undefined &&
+    rawNumber !== null &&
+    !Number.isNaN(parsedNumber) &&
+    ((typeof f.min === "number" && parsedNumber < f.min) ||
+      (typeof f.max === "number" && parsedNumber > f.max));
   return (
     <div className="space-y-1.5">
       <Label>
@@ -67,7 +81,29 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
         </>
       )}
       {f.type === "number" && (
-        <Input type="number" value={values[f.key] ?? ""} onChange={(e) => onChange(f.key, e.target.value)} />
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={values[f.key] ?? ""}
+              min={f.min}
+              max={f.max}
+              step={f.step || "any"}
+              onChange={(e) => onChange(f.key, e.target.value)}
+              className={numberOutOfRange ? "border-destructive" : ""}
+            />
+            {f.unit && <span className="text-xs text-muted-foreground shrink-0">{f.unit}</span>}
+          </div>
+          {numberOutOfRange && (
+            <p className="text-[11px] text-destructive">
+              Outside the expected range
+              {typeof f.min === "number" && typeof f.max === "number"
+                ? ` (${f.min}–${f.max}${f.unit ? ` ${f.unit}` : ""})`
+                : ""}
+              {" "}— check the value and the unit before signing.
+            </p>
+          )}
+        </div>
       )}
       {f.type === "vitals" && (
         <VitalSignsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

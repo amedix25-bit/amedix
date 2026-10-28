@@ -30,7 +30,15 @@ export const YES_NO = ["Yes", "No"];
 export const YES_NO_UNK = ["Yes", "No", "Unknown"];
 export const NOT_DOCUMENTED = "Not documented";
 
-export const ASA_CLASSES = ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"];
+export const ASA_CLASSES = [
+  "ASA I",
+  "ASA II",
+  "ASA III",
+  "ASA IV",
+  "ASA V",
+  "ASA VI",
+  "Not yet assigned",
+];
 export const ASA_EMERGENCY = [
   "Elective — no E modifier",
   "Emergency — E modifier applies",
@@ -75,8 +83,7 @@ export const asaStatusFields = () => [
   S("asa_emergency", "Emergency Modifier", ASA_EMERGENCY),
   T(
     "asa_class_basis",
-    "Basis for the Assigned Class — the systemic disease and the functional limitation it causes",
-    R
+    "Basis for the Assigned Class — the systemic disease and the functional limitation it causes"
   ),
   S("asa_class_reviewed_with", "Class Discussed With", [
     "Operating surgeon",
