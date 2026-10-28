@@ -325,6 +325,14 @@ const FROM_VALUES = [
     if (text(v, "ckd_status") !== "CKD G4–G5") return null;
     return { key: "advanced_ckd_medication_review", evidence: "CKD stage recorded: CKD G4–G5" };
   },
+  // Adrenal crisis recorded as a structured choice in the condition-specific block.
+  (v) => {
+    const crisis = text(v, "adrenal_crisis_status");
+    if (!crisis) return null;
+    if (/^Features present/.test(crisis) || crisis === "Suspected")
+      return { key: "adrenal_crisis", evidence: `Adrenal crisis status recorded: ${crisis}` };
+    return null;
+  },
   // Care-plan and discharge completeness.
   (v) => {
     if (text(v, "steroid_stress_dose_advice") !== "Not documented") return null;

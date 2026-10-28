@@ -109,6 +109,393 @@ const COMMON_DOMAINS = [
   "postprocedural",
 ];
 
+// ---- Condition-specific assessment (Paragraph 3) ---------------------------
+// Each note asks only the questions that belong to the disorder it documents.
+// The clinician selects the endocrine domain once, and only that domain's fields
+// appear, so a thyroid review never shows a bone-density question.
+//
+// Nothing here re-collects shared data: no laboratory number, vital sign,
+// anthropometric measurement or examination finding is entered twice. The fields
+// record the clinician's INTERPRETATION ("pattern on the attached results"), the
+// classification and the decision taken. A diagnosis is therefore never produced
+// by the app from a single result — `diagnostic_basis` records explicitly what the
+// documented diagnosis rests on, and "Not yet established" is always available.
+const DM = "Diabetes mellitus";
+const THY = "Thyroid disorder";
+const PIT = "Pituitary disorder";
+const ADR = "Adrenal disorder";
+const BONE = "Calcium, parathyroid or metabolic bone disorder";
+const OBES = "Obesity or metabolic disorder";
+const REPRO = "Reproductive or gonadal disorder";
+const OTHER = "Other or overlapping endocrine disorder";
+
+const DOMAIN_OPTIONS = [DM, THY, PIT, ADR, BONE, OBES, REPRO, OTHER];
+const onDomain = (...domains) => when("endocrine_domain", ...domains);
+
+const DIAGNOSTIC_BASIS_OPTIONS = [
+  "Biochemical confirmation",
+  "Imaging",
+  "Cytology or histology",
+  "Genetic testing",
+  "Clinical features only",
+  "Not yet established",
+];
+
+const HYPOGLYCAEMIA_OPTIONS = [
+  "None documented",
+  "Level 1 — glucose < 3.9 mmol/L (70 mg/dL)",
+  "Level 2 — glucose < 3.0 mmol/L (54 mg/dL)",
+  "Level 3 — severe: altered mental or physical status requiring assistance",
+];
+
+const DECOMPENSATION_OPTIONS = [
+  "None documented",
+  "Diabetic ketoacidosis",
+  "Hyperosmolar hyperglycaemic state",
+  "Mixed ketoacidosis and hyperosmolar state",
+  "Severe hyperglycaemia without ketosis",
+  "Not assessed",
+];
+
+const THYROID_STATUS_OPTIONS = [
+  "Overt hypothyroidism",
+  "Subclinical hypothyroidism",
+  "Euthyroid on replacement",
+  "Subclinical hyperthyroidism",
+  "Overt thyrotoxicosis",
+  "Not interpretable — repeat testing",
+];
+
+const PREGNANCY_OPTIONS = ["Not applicable", "Not pregnant", "Pregnant", "Postpartum", "Unknown"];
+
+const BETHESDA_OPTIONS = [
+  "Not performed",
+  "I — nondiagnostic",
+  "II — benign",
+  "III — atypia of undetermined significance",
+  "IV — follicular neoplasm",
+  "V — suspicious for malignancy",
+  "VI — malignant",
+];
+
+const conditionSpecificFields = (section) =>
+  sec(section, [
+    S("endocrine_domain", "Endocrine Domain Addressed at This Encounter", DOMAIN_OPTIONS),
+    S(
+      "diagnostic_basis",
+      "Basis for the Documented Endocrine Diagnosis",
+      DIAGNOSTIC_BASIS_OPTIONS,
+      onDomain(...DOMAIN_OPTIONS)
+    ),
+
+    // --- Diabetes mellitus (ADA Standards of Care) ---
+    S("dm_type_classification", "Diabetes Type and Classification", [
+      "Type 1 diabetes",
+      "Type 2 diabetes",
+      "Gestational diabetes",
+      "Monogenic or neonatal diabetes",
+      "Secondary or pancreatogenic diabetes",
+      "Classification not yet established",
+    ], onDomain(DM)),
+    S("dm_diagnostic_evidence", "Diagnostic Evidence Documented for the Classification", [
+      "Fasting plasma glucose",
+      "2-hour oral glucose tolerance test",
+      "HbA1c",
+      "Random glucose with symptoms",
+      "Previously established diagnosis",
+      "Not documented",
+    ], onDomain(DM)),
+    S("hba1c_trend", "HbA1c and Glucose Trend", [
+      "Improving",
+      "Stable",
+      "Worsening",
+      "No comparable previous value",
+    ], onDomain(DM)),
+    S("hypoglycaemia_level", "Highest Hypoglycaemia Level Documented", HYPOGLYCAEMIA_OPTIONS, onDomain(DM)),
+    S("acute_decompensation", "Hyperglycaemic Emergency Documented", DECOMPENSATION_OPTIONS, onDomain(DM)),
+    S("albuminuria_category", "Urine Albumin-to-Creatinine Category", [
+      "A1 — normal to mildly increased",
+      "A2 — moderately increased",
+      "A3 — severely increased",
+      "Not measured",
+    ], onDomain(DM)),
+    S("renal_function_review", "Kidney Function Review", [
+      "Stable",
+      "Declining",
+      "Not reviewed",
+      "Not applicable",
+    ], onDomain(DM)),
+    S("foot_assessment", "Foot Assessment", [
+      "No lesion, pulses present",
+      "Reduced or absent pulses",
+      "Ulcer or lesion present",
+      "Previous amputation",
+      "Not examined",
+    ], onDomain(DM)),
+    S("retinal_assessment", "Retinal Assessment", [
+      "No retinopathy",
+      "Non-proliferative retinopathy",
+      "Proliferative retinopathy",
+      "Not screened",
+    ], onDomain(DM)),
+    S("cv_risk_category", "Cardiovascular Risk", [
+      "Established cardiovascular disease",
+      "High risk without established disease",
+      "Not assessed",
+    ], onDomain(DM)),
+
+    // --- Thyroid disorders (ATA) ---
+    S("thyroid_symptom_pattern", "Thyroid Symptom Pattern", [
+      "None documented",
+      "Thyrotoxic features",
+      "Hypothyroid features",
+      "Mixed or compressive features",
+      "Not assessed",
+    ], onDomain(THY)),
+    S("thyroid_status", "Thyroid Functional Pattern on the Attached Results", THYROID_STATUS_OPTIONS, onDomain(THY)),
+    S("pregnancy_status", "Pregnancy or Postpartum Status", PREGNANCY_OPTIONS, onDomain(THY)),
+    S("thyroid_antibodies", "Thyroid Antibodies", [
+      "Not indicated",
+      "TPO antibodies positive",
+      "Thyroglobulin antibodies positive",
+      "TSH-receptor antibodies positive",
+      "Antibodies negative",
+      "Ordered — result awaited",
+      "Not documented",
+    ], onDomain(THY)),
+    S("thyroid_imaging_review", "Thyroid Imaging Reviewed", [
+      "Ultrasound reviewed",
+      "Nodule documented with sonographic risk category",
+      "No imaging indicated",
+      "Imaging not documented",
+    ], onDomain(THY)),
+    S("fna_bethesda", "Cytology Result (Bethesda)", BETHESDA_OPTIONS, onDomain(THY)),
+    S("thyroid_treatment_response", "Response to Thyroid Treatment", [
+      "Remission",
+      "Partial response",
+      "No response",
+      "Treatment not started",
+      "Too early to assess",
+    ], onDomain(THY)),
+    S("thyroid_monitoring_arranged", "Thyroid Monitoring Arranged", [
+      "TSH in 6–8 weeks",
+      "TSH in 3 months",
+      "Ultrasound surveillance",
+      "Repeat fine-needle aspiration",
+      "Not documented",
+    ], onDomain(THY)),
+
+    // --- Pituitary disorders ---
+    S("pituitary_symptom_pattern", "Pituitary Hormone Excess or Deficiency Symptoms", [
+      "None documented",
+      "Features of hormone excess",
+      "Features of hormone deficiency",
+      "Both excess and deficiency",
+      "Not assessed",
+    ], onDomain(PIT)),
+    S("pituitary_visual_status", "Visual Symptoms or Field Assessment", [
+      "No visual symptoms",
+      "Visual field defect documented",
+      "Visual symptoms reported, not tested",
+      "Not assessed",
+    ], onDomain(PIT)),
+    S("pituitary_hormone_investigations", "Pituitary Hormone Investigations", [
+      "Requested at this encounter",
+      "Results reviewed and interpreted",
+      "Not indicated",
+      "Not documented",
+    ], onDomain(PIT)),
+    S("pituitary_imaging_status", "Pituitary Imaging", [
+      "No lesion",
+      "Microadenoma",
+      "Macroadenoma",
+      "Post-surgical or post-radiotherapy change",
+      "Imaging not performed",
+    ], onDomain(PIT)),
+    S("pituitary_treatment_monitoring", "Pituitary Treatment Monitoring", [
+      "Biochemical control documented",
+      "Dose adjusted",
+      "Awaiting repeat testing",
+      "Not applicable",
+    ], onDomain(PIT)),
+
+    // --- Adrenal disorders (Endocrine Society) ---
+    S("glucocorticoid_exposure", "Glucocorticoid Exposure", [
+      "None documented",
+      "Current systemic glucocorticoid",
+      "Recent systemic glucocorticoid",
+      "Withdrawn",
+      "Topical or inhaled only",
+      "Not documented",
+    ], onDomain(ADR)),
+    S("adrenal_symptom_pattern", "Adrenal Symptom Pattern", [
+      "None documented",
+      "Fatigue and postural symptoms",
+      "Hyperpigmentation",
+      "Salt craving or hypotension",
+      "Not assessed",
+    ], onDomain(ADR)),
+    S("adrenal_haemodynamic_status", "Blood Pressure and Volume Status", [
+      "Stable, no postural change",
+      "Postural drop documented",
+      "Hypotension documented",
+      "Hypertension documented",
+      "Not documented",
+    ], onDomain(ADR)),
+    S("adrenal_electrolyte_review", "Electrolyte Abnormality on the Attached Results", [
+      "No abnormality documented",
+      "Hyponatraemia",
+      "Hyperkalaemia",
+      "Hyponatraemia and hyperkalaemia",
+      "Not documented",
+    ], onDomain(ADR)),
+    S("adrenal_hormonal_investigations", "Adrenal Hormonal Investigations", [
+      "Morning cortisol",
+      "ACTH stimulation test",
+      "Renin and aldosterone",
+      "Overnight dexamethasone suppression",
+      "Plasma metanephrines",
+      "Not requested",
+    ], onDomain(ADR)),
+    S("adrenal_testing_conditions", "Testing Conditions Documented", [
+      "Timing, fasting and interfering medication documented",
+      "Partially documented",
+      "Not documented",
+    ], onDomain(ADR)),
+    S("adrenal_crisis_status", "Adrenal Crisis Recognition", [
+      "No features of adrenal crisis",
+      "Features present — emergency treatment given",
+      "Features present — treatment not documented",
+      "Suspected",
+      "Not applicable",
+    ], onDomain(ADR)),
+    S("steroid_stress_dose_advice", "Sick-Day and Emergency Steroid Advice", [
+      "Documented",
+      "Not applicable",
+      "Not documented",
+    ], onDomain(ADR)),
+
+    // --- Calcium, parathyroid and metabolic bone disease ---
+    S("fracture_history", "Fracture History", [
+      "No fragility fracture",
+      "One fragility fracture — site documented",
+      "Multiple fragility fractures",
+      "Previous vertebral fracture on imaging",
+      "Not documented",
+    ], onDomain(BONE)),
+    S("bone_density_status", "Bone Density Result", [
+      "T-score −1.0 or above",
+      "Osteopenia (T-score −1.0 to −2.5)",
+      "Osteoporosis (T-score −2.5 or below)",
+      "Not measured",
+    ], onDomain(BONE)),
+    S("fracture_risk_category", "Fracture Risk Assessment", [
+      "Low",
+      "Intermediate",
+      "High",
+      "Not calculated",
+    ], onDomain(BONE)),
+    S("bone_biochemistry_review", "Biochemical Review on the Attached Results", [
+      "No abnormality documented",
+      "Hypocalcaemia",
+      "Hypercalcaemia",
+      "Vitamin D deficiency",
+      "Raised parathyroid hormone",
+      "Not documented",
+    ], onDomain(BONE)),
+    S("bone_treatment_response", "Response to Bone Treatment", [
+      "Responding",
+      "Stable on treatment",
+      "No response",
+      "Not on treatment",
+      "Too early to assess",
+    ], onDomain(BONE)),
+    S("bone_monitoring_arranged", "Bone Monitoring Arranged", [
+      "Calcium and vitamin D in 3 months",
+      "Repeat bone density",
+      "Renal function and calcium",
+      "Not documented",
+    ], onDomain(BONE)),
+
+    // --- Obesity and metabolic disorders ---
+    S("weight_history", "Weight History", [
+      "Progressive gain",
+      "Stable",
+      "Recent loss",
+      "Fluctuating",
+      "Not documented",
+    ], onDomain(OBES)),
+    S("bmi_category", "BMI Category", [
+      "Underweight",
+      "Normal range",
+      "Overweight",
+      "Obesity class I",
+      "Obesity class II",
+      "Obesity class III",
+      "Not documented",
+    ], onDomain(OBES)),
+    S("waist_category", "Waist Circumference Category", [
+      "Below the risk threshold",
+      "Above the risk threshold",
+      "Not measured",
+    ], onDomain(OBES)),
+    S("obesity_associated_conditions", "Associated Metabolic Conditions", [
+      "None documented",
+      "Dyslipidaemia",
+      "Hypertension",
+      "Metabolic dysfunction-associated steatotic liver disease",
+      "Obstructive sleep apnoea",
+      "Osteoarthritis",
+      "Multiple conditions documented",
+    ], onDomain(OBES)),
+    S("metabolic_investigations", "Metabolic Investigations Reviewed", [
+      "Fasting glucose and HbA1c",
+      "Lipid profile",
+      "Liver enzymes",
+      "Not documented",
+    ], onDomain(OBES)),
+    S("obesity_treatment_response", "Response to Weight Intervention", [
+      "Weight reduction achieved",
+      "Partial response",
+      "No change",
+      "Not on treatment",
+      "Too early to assess",
+    ], onDomain(OBES)),
+
+    // --- Reproductive, gonadal and other endocrine disorders ---
+    T("reproductive_history", "Condition-Specific Reproductive History", onDomain(REPRO)),
+    S("gonadal_symptom_pattern", "Gonadal Symptom Pattern", [
+      "None documented",
+      "Delayed puberty",
+      "Features of hypogonadism",
+      "Menstrual disturbance",
+      "Fertility concern",
+      "Not assessed",
+    ], onDomain(REPRO)),
+    S("gonadal_findings", "Gonadal Findings", [
+      "Normal gonadal findings",
+      "Delayed or incomplete development",
+      "Gonadal atrophy",
+      "Atypical genital development",
+      "Not examined",
+    ], onDomain(REPRO)),
+    S("gonadal_hormonal_investigations", "Gonadal Hormonal Investigations", [
+      "FSH and LH",
+      "Testosterone or oestradiol",
+      "Prolactin",
+      "Karyotype",
+      "Semen analysis",
+      "Not documented",
+    ], onDomain(REPRO)),
+    S("gonadal_management", "Gonadal Management Decision", [
+      "Observation",
+      "Hormone replacement",
+      "Fertility referral",
+      "Surgical referral",
+      "Discussed, decision pending",
+    ], onDomain(REPRO)),
+  ]);
+
 const ENDOCRINE_ENHANCEMENTS = {
   // --- Endocrinology Consultation ------------------------------------------
   // Existing: Chief Complaint, History of Present Illness, Select Examination,
@@ -157,6 +544,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Not established",
       ]),
     ]),
+    ...conditionSpecificFields("Condition-Specific Assessment"),
     ...sec("Management and Follow-Up", [
       S("management_approach", "Management Decision at This Visit", MANAGEMENT_OPTIONS),
       S("education_documented", "Patient Education Documented", EDUCATION_OPTIONS),
@@ -201,6 +589,7 @@ const ENDOCRINE_ENHANCEMENTS = {
       ]),
     ]),
     ...sec("Examination at This Visit", [X("examination_at_this_visit", "Examination at This Visit")]),
+    ...conditionSpecificFields("Condition-Specific Review"),
     ...sec("Management and Follow-Up", [
       S("management_approach", "Management Decision at This Visit", MANAGEMENT_OPTIONS),
       S("education_documented", "Patient Education Documented", EDUCATION_OPTIONS),
@@ -313,6 +702,55 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Not assessed",
       ]),
     ]),
+    ...sec("Diabetes Classification and Purpose-Specific Assessment", [
+      S("dm_type_classification", "Diabetes Type and Classification", [
+        "Type 1 diabetes",
+        "Type 2 diabetes",
+        "Gestational diabetes",
+        "Monogenic or neonatal diabetes",
+        "Secondary or pancreatogenic diabetes",
+        "Classification not yet established",
+      ]),
+      S("dm_diagnostic_evidence", "Diagnostic Evidence Documented for the Classification", [
+        "Fasting plasma glucose",
+        "2-hour oral glucose tolerance test",
+        "HbA1c",
+        "Random glucose with symptoms",
+        "Previously established diagnosis",
+        "Not documented",
+      ]),
+      S("hba1c_trend", "HbA1c and Glucose Trend", [
+        "Improving",
+        "Stable",
+        "Worsening",
+        "No comparable previous value",
+      ]),
+      S("albuminuria_category", "Urine Albumin-to-Creatinine Category", [
+        "A1 — normal to mildly increased",
+        "A2 — moderately increased",
+        "A3 — severely increased",
+        "Not measured",
+      ]),
+      S("renal_function_review", "Kidney Function Review", [
+        "Stable",
+        "Declining",
+        "Not reviewed",
+        "Not applicable",
+      ]),
+      S("foot_pulses", "Foot Pulses", [
+        "Present in both feet",
+        "Reduced",
+        "Absent",
+        "Not examined",
+      ]),
+      S("foot_lesion", "Foot Lesion or Ulcer", [
+        "None documented",
+        "Callus or fissure",
+        "Ulcer present",
+        "Previous amputation",
+        "Not examined",
+      ]),
+    ]),
     ...sec("Therapy and Self-Management", [
       S("current_regimen_category", "Current Glucose-Lowering Regimen", [
         "Lifestyle alone",
@@ -370,6 +808,52 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Observe and repeat testing",
       ]),
       S("follow_up_interval", "Thyroid Follow-Up Arranged", FOLLOW_UP_OPTIONS),
+    ]),
+    ...sec("Thyroid Assessment and Treatment Response", [
+      S("thyroid_symptom_pattern", "Thyroid Symptom Pattern", [
+        "None documented",
+        "Thyrotoxic features",
+        "Hypothyroid features",
+        "Mixed or compressive features",
+        "Not assessed",
+      ]),
+      S("diagnostic_basis", "Basis for the Documented Thyroid Diagnosis", [
+        "Biochemical confirmation",
+        "Imaging",
+        "Cytology or histology",
+        "Genetic testing",
+        "Clinical features only",
+        "Not yet established",
+      ]),
+      S("thyroid_antibodies", "Thyroid Antibodies", [
+        "Not indicated",
+        "TPO antibodies positive",
+        "Thyroglobulin antibodies positive",
+        "TSH-receptor antibodies positive",
+        "Antibodies negative",
+        "Ordered — result awaited",
+        "Not documented",
+      ]),
+      S("thyroid_imaging_review", "Thyroid Imaging Reviewed", [
+        "Ultrasound reviewed",
+        "Nodule documented with sonographic risk category",
+        "No imaging indicated",
+        "Imaging not documented",
+      ]),
+      S("thyroid_treatment_response", "Response to Thyroid Treatment", [
+        "Remission",
+        "Partial response",
+        "No response",
+        "Treatment not started",
+        "Too early to assess",
+      ]),
+      S("thyroid_monitoring_arranged", "Thyroid Monitoring Arranged", [
+        "TSH in 6–8 weeks",
+        "TSH in 3 months",
+        "Ultrasound surveillance",
+        "Repeat fine-needle aspiration",
+        "Not documented",
+      ]),
     ]),
     ...sec("Nodule Assessment", [
       S("thyroid_nodule_status", "Nodule Status at This Visit", [
@@ -430,6 +914,7 @@ const ENDOCRINE_ENHANCEMENTS = {
       T("objective_measures", "Objective Measures Documented at This Visit"),
     ]),
     ...sec("Examination at This Visit", [X("examination_at_this_visit", "Examination at This Visit")]),
+    ...conditionSpecificFields("Condition-Specific Review"),
     ...sec("Management and Follow-Up", [
       S("management_approach", "Management Decision at This Visit", MANAGEMENT_OPTIONS),
       S("monitoring_arranged", "Monitoring Arranged", [
@@ -499,6 +984,32 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Not documented",
       ]),
     ]),
+    ...sec("Condition-Specific Monitoring", [
+      S("weight_management_plan", "Weight and Metabolic Plan", [
+        "Structured lifestyle programme",
+        "Pharmacotherapy considered",
+        "Bariatric surgery discussed",
+        "Not applicable",
+        "Not documented",
+      ]),
+      S("bone_health_reviewed", "Bone Health and Fracture Risk Reviewed", [
+        "Reviewed — no action required",
+        "Reviewed — treatment planned",
+        "Not reviewed",
+        "Not applicable",
+      ]),
+      S("fracture_risk_recorded", "Fracture Risk Assessment Recorded", [
+        "Recorded",
+        "Not recorded",
+        "Not applicable",
+      ]),
+      S("reproductive_health_reviewed", "Reproductive and Gonadal Health Reviewed", [
+        "Reviewed — no action required",
+        "Reviewed — referral planned",
+        "Not reviewed",
+        "Not applicable",
+      ]),
+    ]),
     ...icdBlock(COMMON_DOMAINS, "Search ICD-11 — every condition this care plan covers..."),
     ...safetyBlock(),
   ],
@@ -537,6 +1048,23 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Increased — education given",
         "Increased — education not documented",
       ]),
+      S("glucocorticoid_exposure", "Glucocorticoid Exposure Context", [
+        "Replacement for adrenal insufficiency",
+        "Suppression or anti-inflammatory course",
+        "Withdrawal or taper",
+        "Not applicable",
+      ], when("drug_class", "Glucocorticoid", "Mineralocorticoid")),
+      S("adrenal_crisis_advice", "Sick-Day and Adrenal Crisis Advice Given", [
+        "Documented",
+        "Not applicable",
+        "Not documented",
+      ], when("drug_class", "Glucocorticoid", "Mineralocorticoid")),
+      S("bone_protection_review", "Bone Protection Reviewed", [
+        "Reviewed — calcium and vitamin D",
+        "Reviewed — bone density arranged",
+        "Not indicated",
+        "Not documented",
+      ], when("drug_class", "Glucocorticoid")),
     ]),
     ...sec("Monitoring After the Change", [
       S("monitoring_required", "Monitoring Required", [
@@ -596,6 +1124,28 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Not assessed",
       ]),
       T("discharge_self_management", "Self-Management Instructions Given to the Patient"),
+    ]),
+    ...sec("Condition-Specific Discharge Status", [
+      S("hyperglycaemic_emergency_admission", "Hyperglycaemic Emergency During the Admission", [
+        "None documented",
+        "Diabetic ketoacidosis",
+        "Hyperosmolar hyperglycaemic state",
+        "Mixed ketoacidosis and hyperosmolar state",
+        "Not applicable",
+      ]),
+      S("adrenal_crisis_admission", "Adrenal Crisis During the Admission", [
+        "None documented",
+        "Treated adrenal crisis",
+        "Suspected",
+        "Not applicable",
+      ]),
+      S("steroid_emergency_card_issued", "Steroid Emergency Information Given", [
+        "Documented",
+        "Not applicable",
+        "Not documented",
+      ]),
+      S("thyroid_status_at_discharge", "Thyroid Status at Discharge", THYROID_STATUS_OPTIONS),
+      T("condition_specific_discharge_instructions", "Condition-Specific Instructions at Discharge"),
     ]),
     ...icdBlock(
       COMMON_DOMAINS,

@@ -71,6 +71,51 @@ the clinician selecting the concern, which keeps authorship of the judgement cle
 - **Not collected here at all** — history, medications, allergies, vital signs,
   laboratory and imaging results: supplied by the shared record and tabs.
 
+## 3b. Condition-specific requirements (Paragraph 3)
+
+Consultation, Follow-Up and Progress Note carry one **Condition-Specific** section.
+The clinician selects the endocrine domain once and only that domain's fields
+appear — 44 of the section's fields are conditional, so a thyroid review never
+shows a bone-density question:
+
+- **Diabetes** — type and classification, the diagnostic evidence behind it, HbA1c
+  and glucose trend, ADA hypoglycaemia level, hyperglycaemic emergency, urine
+  albumin category, kidney-function review, foot assessment, retinal assessment,
+  cardiovascular risk.
+- **Thyroid** — symptom pattern, functional pattern on the attached results,
+  pregnancy/postpartum context, antibodies, imaging reviewed, Bethesda cytology,
+  treatment response, monitoring arranged.
+- **Pituitary** — hormone excess/deficiency symptoms, visual symptoms or field
+  assessment, hormone investigations, imaging (micro/macroadenoma, post-treatment),
+  treatment monitoring.
+- **Adrenal** — glucocorticoid exposure, symptom pattern, blood pressure/volume
+  status, electrolyte review, hormonal investigations, whether testing conditions
+  were documented, adrenal crisis recognition, stress-dose advice.
+- **Calcium, parathyroid, bone** — fracture history, bone density result, fracture
+  risk category, biochemical review, treatment response, monitoring.
+- **Obesity and metabolic** — weight history, BMI category, waist category,
+  associated conditions, metabolic investigations, treatment response.
+- **Reproductive and gonadal** — specific history, symptom pattern, gonadal
+  findings, hormonal investigations, management decision.
+
+Applied per note purpose, additionally: Diabetes Follow-Up gained the
+classification/diagnostic-evidence block, albuminuria category, kidney-function
+review and foot pulse/lesion detail; Thyroid Follow-Up gained symptoms, the
+diagnostic basis, antibodies, imaging review, treatment response and monitoring;
+Care Plan gained weight/metabolic, bone-health, fracture-risk and reproductive
+review; Medication Adjustment gained glucocorticoid context, adrenal crisis advice
+and bone protection; Discharge Summary gained hyperglycaemic-emergency and adrenal
+crisis status, steroid emergency information and thyroid status at discharge.
+
+`diagnostic_basis` records explicitly what the documented diagnosis rests on
+(biochemical, imaging, cytology/histology, genetic, clinical only, **not yet
+established**), so no single result assigns a diagnosis. Every field is optional;
+no field re-collects a laboratory value, vital sign or examination finding — each
+records the interpretation and the decision.
+
+Safety: an adrenal crisis recorded in the new block now raises an **immediate**
+prompt (verified).
+
 ## 4. Coding basis — ICD-11 MMS 2025-01
 
 - 280 Chapter 05 categories from the WHO Simple Tabulation, release 2025-01,
