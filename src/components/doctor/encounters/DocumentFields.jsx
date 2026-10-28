@@ -87,6 +87,16 @@ function FieldRow({ f, values, onChange, specialty }) {
   );
 }
 
+// Conditional documentation — a field that declares `showIf` appears only when
+// its controlling answer matches, so clinically relevant follow-up questions
+// are asked without showing an unrelated wall of inputs.
+export function isFieldVisible(f = {}, values = {}) {
+  if (!f.showIf) return true;
+  const controlling = values[f.showIf.key];
+  if (Array.isArray(f.showIf.in)) return f.showIf.in.includes(controlling);
+  return controlling === f.showIf.equals;
+}
+
 // Consecutive fields sharing the same section heading form one group.
 function groupFields(defs) {
   const groups = [];
@@ -100,11 +110,12 @@ function groupFields(defs) {
 }
 
 export default function DocumentFields({ defs = [], values = {}, onChange, specialty = "", notice = "" }) {
-  if (!defs.some((f) => f.section)) {
+  const visible = defs.filter((f) => isFieldVisible(f, values));
+  if (!visible.some((f) => f.section)) {
     return (
       <div className="space-y-4">
         {notice && <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border border-border p-2.5">{notice}</p>}
-        {defs.map((f) => (
+        {visible.map((f) => (
           <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} />
         ))}
       </div>
@@ -114,7 +125,7 @@ export default function DocumentFields({ defs = [], values = {}, onChange, speci
   return (
     <div className="space-y-5">
       {notice && <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border border-border p-2.5">{notice}</p>}
-      {groupFields(defs).map((g, gi) => (
+      {groupFields(visible).map((g, gi) => (
         <div key={g.section || `section-${gi}`} className="space-y-3">
           {g.section && (
             <p className="text-xs font-semibold text-primary uppercase tracking-wide border-b border-border pb-1">

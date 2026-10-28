@@ -7,6 +7,10 @@
 // signature, timestamp, AMedix Document ID, version control, amendment
 // system, permissions and audit log. No separate records.
 
+// Rheumatology lives in its own module — its note types are unchanged in key,
+// name and navigation, only their clinical content is authored there.
+import { RHEUMATOLOGY_DOCS } from "@/lib/rheumatologyDocuments";
+
 const I = (key, label) => ({ key, label, type: "input" });
 const N = (key, label) => ({ key, label, type: "number" });
 const T = (key, label) => ({ key, label, type: "textarea" });
@@ -99,37 +103,6 @@ const INFECTIOUS_DISEASE_DOCS = [
   {
     key: "id_referral", label: "ID Referral", specialty: "infectious_disease",
     fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
-  },
-];
-
-const RHEUMATOLOGY_DOCS = [
-  {
-    key: "rheum_consultation", label: "Rheumatology Consultation", specialty: "rheumatology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("joint_symptoms", "Joint Symptoms (Pain / Swelling / Stiffness)"), T("morning_stiffness", "Morning Stiffness (Duration)"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("family_history", "Family History"), T("joint_exam", "Joint Examination"), T("extra_articular", "Extra-Articular Manifestations"), T("labs", "Laboratory Results (RF / Anti-CCP / ESR / CRP / ANA)"), T("imaging", "Imaging"), T("assessment", "Assessment"), T("plan", "Plan")],
-  },
-  {
-    key: "rheum_followup", label: "Rheumatology Follow-Up", specialty: "rheumatology",
-    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("disease_activity", "Disease Activity"), T("medication_response", "Medication Response"), T("side_effects", "Side Effects"), T("functional_status", "Functional Status"), T("labs", "Laboratory Results"), T("assessment", "Assessment"), T("plan", "Plan")],
-  },
-  {
-    key: "rheum_activity_followup", label: "Disease Activity Follow-Up", specialty: "rheumatology",
-    fields: [S("disease", "Disease", ["Rheumatoid Arthritis", "SLE", "Psoriatic Arthritis", "Ankylosing Spondylitis", "Gout", "Other"]), N("tender_joint_count", "Tender Joint Count (28)"), N("swollen_joint_count", "Swollen Joint Count (28)"), N("pain_score", "Pain Score (0–10)"), N("patient_global", "Patient Global Assessment (0–10)"), N("physician_global", "Physician Global Assessment (0–10)"), S("activity_assessment", "Disease Activity Assessment", ["Remission", "Low", "Moderate", "High"]), T("labs", "Laboratory Results (ESR / CRP)"), T("medication_review", "Medication Review"), T("plan", "Plan")],
-  },
-  {
-    key: "rheum_therapy_record", label: "Medication / Immunosuppressive Therapy Record", specialty: "rheumatology",
-    fields: [I("medication", "Medication (DMARD / Biologic / Steroid)"), I("dose", "Dose"), I("route", "Route"), I("frequency", "Frequency"), I("start_date", "Start Date"), T("indication", "Indication"), T("baseline_screening", "Baseline Screening (TB / Hepatitis / CBC)"), T("labs_monitoring", "Laboratory Monitoring Schedule"), T("infections_screening", "Infection Screening"), T("infusion_details", "Infusion Details (if applicable)"), T("adverse_effects", "Adverse Effects"), T("response", "Response"), I("next_dose", "Next Dose Due")],
-  },
-  {
-    key: "rheum_infusion_record", label: "Infusion Record (Rheumatology)", specialty: "rheumatology",
-    fields: [I("medication", "Medication Infused"), I("dose", "Dose"), T("premedications", "Premedications"), I("infusion_start", "Infusion Start Time"), I("infusion_end", "Infusion End Time"), I("access_site", "Access Site"), T("vitals", "Vital Signs"), T("observations", "Observations"), T("adverse_reactions", "Adverse Reactions"), T("tolerance", "Tolerance"), I("next_infusion", "Next Infusion Due")],
-  },
-  {
-    key: "rheum_progress_note", label: "Rheumatology Progress Note", specialty: "rheumatology",
-    fields: [T("interval_events", "Interval Events"), T("symptoms", "Symptoms"), T("joint_exam", "Joint Examination"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), T("medications", "Current Medications"), T("plan", "Plan")],
-  },
-  {
-    key: "rheum_discharge_summary", label: "Discharge Summary (Rheumatology)", specialty: "rheumatology",
-    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("discharge_medications", "Discharge Medications (incl. DMARDs / Steroids)"), T("monitoring_plan", "Monitoring Plan"), T("follow_up", "Follow-Up"), T("instructions", "Instructions")],
   },
 ];
 

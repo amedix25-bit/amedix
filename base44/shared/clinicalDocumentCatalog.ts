@@ -140,7 +140,8 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "id_isolation_record", "id_discharge_summary", "id_referral",
   ],
   rheumatology: [
-    "rheum_consultation", "rheum_followup", "rheum_activity_followup",
+    "rheum_consultation", "rheum_urgent_consultation", "rheum_inpatient_consultation",
+    "rheum_followup", "rheum_second_opinion", "rheum_activity_followup",
     "rheum_therapy_record", "rheum_infusion_record", "rheum_progress_note",
     "rheum_discharge_summary",
   ],
