@@ -10,7 +10,7 @@ import ExaminationsTab from "@/components/doctor/examination/ExaminationsTab";
 import VitalSignsForm from "@/components/doctor/notes/VitalSignsForm";
 import { mealLabel, medicationRecordFromForm } from "@/lib/medicationUtils";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
-import DocumentFields from "@/components/doctor/encounters/DocumentFields";
+import DocumentFields, { isFieldVisible } from "@/components/doctor/encounters/DocumentFields";
 import DoctorAntenatalSection from "@/components/doctor/antenatal/DoctorAntenatalSection";
 import ObgynExamSection from "@/components/doctor/notes/ObgynExamSection";
 import { flattenExamValues, examAnyValue, examAbnormalCount } from "@/lib/obgynExamSchema";
@@ -395,9 +395,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // Required documentation — only fields the loaded template marks as
     // required, each of which offers a "not assessed / not performed" answer,
     // so emergency documentation is made explicit rather than blocked.
-    const missingRequired = (activeDef?.fields || []).filter(
-      (f) => f.required && String(dataValues[f.key] ?? "").trim() === ""
-    );
+    const missingRequired = (activeDef?.fields || [])
+      .filter((f) => isFieldVisible(f, dataValues))
+      .filter((f) => f.required && String(dataValues[f.key] ?? "").trim() === "");
     if (missingRequired.length > 0) {
       setError(`Complete the required documentation: ${missingRequired.map((f) => f.label).join(", ")}.`);
       jumpTo("template");
@@ -432,7 +432,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // note type that produced it.
     const specialtyData = {};
     if (activeDef && activeDef.fields) {
-      activeDef.fields.forEach((f) => {
+      activeDef.fields.filter((f) => isFieldVisible(f, dataValues)).forEach((f) => {
         const val = dataValues[f.key];
         if (val !== undefined && val !== null && val !== "") {
           specialtyData[f.key] = { label: f.label, value: String(val) };

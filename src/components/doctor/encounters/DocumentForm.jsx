@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { DOCUMENT_TYPES } from "@/lib/clinicalDocuments";
 import { getSpecialtyDocs, getDocDef, getSpecialtyLabel, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
-import DocumentFields, { EmergencyWorkflowStrip } from "./DocumentFields";
+import DocumentFields, { EmergencyWorkflowStrip, isFieldVisible } from "./DocumentFields";
 import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
 import ToothChart from "@/components/doctor/dental/ToothChart";
 import { CERTIFICATE_DEFS, CERTIFICATE_KEYS } from "@/lib/specialtyDocumentsPart4";
@@ -117,7 +117,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
   const buildData = () => {
     if (!def) return {};
     const data = {};
-    def.fields.forEach((f) => {
+    def.fields.filter((f) => isFieldVisible(f, dataValues)).forEach((f) => {
       const v = dataValues[f.key];
       if (v !== undefined && v !== null && v !== "") data[f.key] = { label: f.label, value: String(v) };
     });
@@ -139,9 +139,9 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
     // Required documentation in the selected template — every required field
     // offers a "not assessed / not performed" option, so this asks for an
     // explicit answer rather than blocking emergency documentation.
-    const missingRequired = ((def && def.fields) || []).filter(
-      (f) => f.required && String(dataValues[f.key] ?? "").trim() === ""
-    );
+    const missingRequired = ((def && def.fields) || [])
+      .filter((f) => isFieldVisible(f, dataValues))
+      .filter((f) => f.required && String(dataValues[f.key] ?? "").trim() === "");
     if (missingRequired.length > 0) {
       setError(`Complete the required documentation: ${missingRequired.map((f) => f.label).join(", ")}.`);
       return;
