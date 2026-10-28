@@ -14,6 +14,7 @@ import ToothChart from "@/components/doctor/dental/ToothChart";
 import { CERTIFICATE_DEFS, CERTIFICATE_KEYS } from "@/lib/specialtyDocumentsPart4";
 import { Loader2, Lock, PenLine } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
+import { formatFieldValue } from "@/lib/clinicalFieldValue";
 
 // Creates a new clinical document in an encounter, or — in amend mode — a
 // new VERSION of a signed document (the original is never overwritten).
@@ -119,7 +120,8 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
     const data = {};
     def.fields.filter((f) => isFieldVisible(f, dataValues)).forEach((f) => {
       const v = dataValues[f.key];
-      if (v !== undefined && v !== null && v !== "") data[f.key] = { label: f.label, value: String(v) };
+      const text = v === undefined || v === null ? "" : formatFieldValue(f.type, v);
+      if (text !== "") data[f.key] = { label: f.label, value: text };
     });
     // The interactive Tooth Chart saves its entries (FDI tooth number, status,
     // note) into the document's structured data — attached to this dental

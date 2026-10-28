@@ -23,6 +23,7 @@ import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBas
 import DiagnosisNotePicker from "@/components/doctor/notes/DiagnosisNotePicker";
 import NoteSectionNav from "@/components/doctor/notes/NoteSectionNav";
 import PatientAlertHeader from "@/components/doctor/notes/PatientAlertHeader";
+import { formatFieldValue } from "@/lib/clinicalFieldValue";
 import { X, Search, Loader2, ArrowRight, Plus, Lock, CheckCircle2 } from "lucide-react";
 
 // "General Clinical Note" — the universal free-text note with no
@@ -434,9 +435,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     if (activeDef && activeDef.fields) {
       activeDef.fields.filter((f) => isFieldVisible(f, dataValues)).forEach((f) => {
         const val = dataValues[f.key];
-        if (val !== undefined && val !== null && val !== "") {
-          specialtyData[f.key] = { label: f.label, value: String(val) };
-        }
+        const text = val === undefined || val === null ? "" : formatFieldValue(f.type, val);
+        if (text !== "") specialtyData[f.key] = { label: f.label, value: text };
       });
     }
     // Structured examination findings — saved with the note under their own

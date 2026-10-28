@@ -8,6 +8,8 @@ import { ArrowRight } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import SelectExamination from "@/components/doctor/notes/SelectExamination";
 import VitalSignsField from "@/components/doctor/notes/VitalSignsField";
+import Icd11DiagnosisField from "@/components/doctor/notes/Icd11DiagnosisField";
+import RheumInvestigationPanels from "@/components/doctor/notes/RheumInvestigationPanels";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -72,6 +74,12 @@ function FieldRow({ f, values, onChange, specialty }) {
           types={f.examinationTypes}
           specialtyKey={f.specialty}
         />
+      )}
+      {f.type === "icd11_diagnoses" && (
+        <Icd11DiagnosisField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "investigation_panels" && (
+        <RheumInvestigationPanels value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>

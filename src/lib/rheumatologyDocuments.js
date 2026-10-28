@@ -153,6 +153,43 @@ const labFields = (extra = []) => [
   ...extra,
 ];
 
+// ---- Diagnostic assessment (ICD-11) ----------------------------------
+// Diagnosis selection is a documented clinical decision, never an automatic
+// one: each diagnosis carries its official ICD-11 code and display term, its
+// specificity and classification release, whether it is primary, secondary or
+// differential, and its status (suspected, provisional, confirmed, historical,
+// resolved, in remission) with the clinical basis recorded.
+const diagnosisFields = () => [
+  { key: "icd11_diagnoses", label: "Diagnoses (ICD-11) — role, status and clinical basis", type: "icd11_diagnoses" },
+  T("diagnostic_reasoning", "Diagnostic Reasoning — how the history, examination and results support or refute each diagnosis"),
+  T("differential_diagnoses", "Alternative & Excluded Diagnoses — the evidence that excluded them"),
+  S("disease_phenotype", "Disease Phenotype / Pattern", [
+    "Not determined",
+    "Monoarticular",
+    "Oligoarticular",
+    "Polyarticular",
+    "Axial",
+    "Peripheral with enthesitis",
+    "Systemic / multi-organ",
+    "Overlap",
+    "Other",
+  ]),
+  S("symptom_duration", "Symptom Duration at Assessment", ["< 6 weeks", "6 weeks – 3 months", "3–12 months", "> 12 months", "Unknown"]),
+  S("severity_assessment", "Severity Assessment", ["Mild", "Moderate", "Severe", "Life- or organ-threatening", "Not assessed"]),
+  T("organ_involvement", "Organ Involvement — skin, eyes, joints, renal, pulmonary, cardiac, neurological, haematological"),
+  T("disease_complications", "Complications — erosive damage, deformity, contracture, amyloidosis, infection, thrombosis, osteoporosis"),
+  T("comorbidities", "Comorbidities Relevant to This Disease and Its Treatment"),
+  T("outstanding_investigations", "Outstanding Investigations & Results Awaited — who will review them"),
+];
+
+// Structured investigation tracking — panels of relevant laboratory,
+// serological, imaging and procedural investigations. Nothing is ordered
+// automatically; the clinician selects what is indicated and records the
+// indication, result, units, reference range, interpretation and follow-up.
+const investigationFields = () => [
+  { key: "investigation_panels", label: "Investigations — select only those indicated", type: "investigation_panels" },
+];
+
 // A note template's structured examination is the shared Dynamic Examination
 // Engine interface: a field labelled as an examination is rendered as the
 // searchable "Select Examination" component for Rheumatology (musculoskeletal,
@@ -252,6 +289,10 @@ export const RHEUMATOLOGY_DOCS = [
       ]),
       ...sec("Laboratory & Radiographic Review", [
         ...labFields(),
+        ...investigationFields(),
+      ]),
+      ...sec("Diagnostic Assessment (ICD-11)", [
+        ...diagnosisFields(),
       ]),
       ...sec("Assessment", [
         T("assessment", "Assessment — Clinical Reasoning & Differential Diagnosis (ICD-11)"),
@@ -331,6 +372,7 @@ export const RHEUMATOLOGY_DOCS = [
         T("synovial_fluid", "Synovial Fluid — appearance, cell count, crystals, Gram stain, culture", {}, when("joint_aspiration", "Yes")),
         T("serology_urgent", "Urgent Serology — complement, ANCA, anti-GBM, cryoglobulins, blood film, ferritin"),
         T("radiographs_urgent", "Radiographs, Ultrasound or Cross-Sectional Studies"),
+        ...investigationFields(),
       ]),
       ...sec("Immediate Management", [
         T("immediate_actions", "Immediate Actions & Resuscitation Measures", R),
@@ -343,8 +385,11 @@ export const RHEUMATOLOGY_DOCS = [
         T("safety_netting", "Safety-Netting Advice Given to Patient and Carers"),
         I("review_interval", "Review Interval / Next Assessment"),
       ]),
-      ...sec("Documentation & Communication", [
-        T("differential_urgent", "Differential Diagnosis (ICD-11)"),
+      ...sec("Diagnostic Assessment & Communication", [
+        { key: "icd11_diagnoses", label: "Working Diagnoses (ICD-11) — role, status and clinical basis", type: "icd11_diagnoses" },
+        T("differential_urgent", "Differential Diagnosis — including the immediately life-threatening alternatives"),
+        T("diagnostic_reasoning", "Diagnostic Reasoning — how the findings support or refute each diagnosis"),
+        T("outstanding_investigations", "Outstanding Investigations & Results Awaited"),
         S("senior_review", "Senior / Consultant Review", ["Not available", "Discussed", "Patient reviewed in person"]),
         T("communication", "Communication with Referring Team & Notes"),
       ]),
