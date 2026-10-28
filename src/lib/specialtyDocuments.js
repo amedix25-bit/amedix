@@ -13,6 +13,7 @@ import { SURGERY_DOCS } from "@/lib/surgeryDocuments";
 import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
 import { applyNoteSectionPolicy } from "@/lib/noteSectionPolicy";
 import { RHEUMATOLOGY_DISEASE_DOCS } from "@/lib/rheumDiseaseNotes";
+import { ANESTHESIA_DOCS } from "@/lib/anesthesiologyDocuments";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -389,57 +390,6 @@ const OBGYN_DOCS = [
   {
     key: "obgyn_gyn_referral", label: "Gynecology Referral", specialty: "obstetrics_gynecology",
     fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
-  },
-];
-
-const ANESTHESIA_DOCS = [
-  {
-    key: "anes_pre_assessment", label: "Pre-Anesthesia Assessment", specialty: "anesthesiology",
-    fields: [S("asa_class", "ASA Class", ["ASA I", "ASA II", "ASA III", "ASA IV", "ASA V", "ASA VI"]), S("mallampati", "Mallampati Class", ["I", "II", "III", "IV"]), T("mouth_opening", "Mouth Opening"), T("thyromental_distance", "Thyromental Distance"), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("allergies", "Allergies"), T("previous_anesthesia", "Previous Anesthesia History"), T("family_anesthesia_history", "Family Anesthesia History"), T("labs", "Laboratory Results"), S("fasting_status", "Fasting Status", ["Adequate", "Not Adequate", "Not Fasted"]), T("risk_assessment", "Risk Assessment"), T("plan", "Anesthetic Plan")],
-  },
-  {
-    key: "anes_consultation", label: "Anesthesia Consultation", specialty: "anesthesiology",
-    fields: [T("consult_reason", "Reason for Consultation"), T("history", "Relevant History"), T("exam_findings", "Physical Examination Findings"), T("investigations", "Investigations"), T("anesthetic_risk", "Anesthetic Risk"), T("recommendations", "Recommendations")],
-  },
-  {
-    key: "anes_plan", label: "Anesthesia Plan", specialty: "anesthesiology",
-    fields: [S("planned_technique", "Planned Technique", ["General", "Regional", "Local", "Monitored Anesthesia Care", "Sedation", "Combined General + Regional"]), T("airway_plan", "Airway Plan"), T("monitoring_plan", "Monitoring Plan"), T("analgesia_plan", "Analgesia Plan"), T("anesthesia_medications", "Planned Medications"), T("positioning", "Positioning"), T("contingency_plan", "Contingency Plan")],
-  },
-  {
-    key: "anes_consent", label: "Anesthesia Consent", specialty: "anesthesiology",
-    fields: [I("procedure", "Procedure"), S("technique", "Anesthetic Technique", ["General", "Regional", "Local", "Monitored Anesthesia Care", "Sedation", "Combined General + Regional"]), T("risks_discussed", "Risks Discussed"), T("alternatives", "Alternatives Discussed"), T("patient_questions", "Patient Questions"), S("patient_agreement", "Patient Agreement", ["Agreed", "Declined", "Deferred"])],
-  },
-  {
-    key: "anes_airway_assessment", label: "Airway Assessment", specialty: "anesthesiology",
-    fields: [S("mallampati", "Mallampati Class", ["I", "II", "III", "IV"]), T("mouth_opening", "Mouth Opening (Inter-incisor Gap)"), T("thyromental_distance", "Thyromental Distance"), T("neck_movement", "Neck Movement / Extension"), T("dental_status", "Dental Status"), S("predicted_difficulty", "Predicted Difficult Airway", ["No", "Yes", "Possibly"]), T("plan", "Airway Management Plan")],
-  },
-  {
-    key: "anes_intraop_record", label: "Intraoperative Anesthesia Record", specialty: "anesthesiology",
-    fields: [I("anesthesia_start", "Anesthesia Start Time"), S("technique", "Technique Used", ["General", "Regional", "Local", "Monitored Anesthesia Care", "Sedation", "Combined General + Regional"]), T("induction_medications", "Induction Medications"), S("airway_device", "Airway Device", ["Face Mask", "Laryngeal Mask Airway", "Endotracheal Tube", "Supraglottic Device", "Spontaneous Breathing"]), I("tube_size", "Tube Size"), T("intubation_details", "Intubation Details"), T("maintenance", "Maintenance"), T("fluids_given", "IV Fluids Given"), I("blood_loss", "Estimated Blood Loss"), T("urine_output", "Urine Output"), T("vitals_intraop", "Vital Signs Log"), T("events", "Intraoperative Events"), T("emergence", "Emergence / Extubation"), T("handover", "Handover / Recovery Note")],
-  },
-  {
-    key: "anes_medication_record", label: "Anesthesia Medication Record", specialty: "anesthesiology",
-    fields: [T("induction_agents", "Induction Agents"), T("maintenance_agents", "Maintenance Agents"), T("opioids", "Opioids"), T("muscle_relaxants", "Muscle Relaxants"), T("reversal_agents", "Reversal Agents"), T("local_anesthetics", "Local Anesthetics"), T("other_medications", "Other Medications")],
-  },
-  {
-    key: "anes_monitoring_record", label: "Intraoperative Monitoring Record", specialty: "anesthesiology",
-    fields: [T("monitoring_modalities", "Monitoring Modalities"), T("vitals_log", "Vital Signs Log"), T("spo2", "SpO2 Log"), T("etco2", "EtCO2 Log"), T("temperature", "Temperature Log"), T("blood_pressure", "Blood Pressure Log"), T("heart_rate", "Heart Rate Log"), T("events", "Monitoring Events / Alerts")],
-  },
-  {
-    key: "anes_post_anesthesia_care_note", label: "Post-Anesthesia Care Note", specialty: "anesthesiology",
-    fields: [I("time_in_pacu", "Time into PACU"), S("consciousness", "Consciousness Level", ["Alert", "Drowsy", "Unresponsive"]), S("airway", "Airway", ["Self-Maintained", "Adjunct Required", "Support Required"]), T("vitals", "Vital Signs"), N("pain_score", "Pain Score (0–10)"), T("nausea", "Nausea / Vomiting"), T("bleeding", "Bleeding"), T("motor_block", "Motor Block Regression"), S("discharge_criteria", "Discharge Criteria Met", ["Yes", "No", "Pending"]), S("disposition", "Disposition from PACU", ["Ward", "ICU", "HDU", "Day-Case Discharge", "Ward-level Discharge"])],
-  },
-  {
-    key: "anes_post_anesthesia_evaluation", label: "Post-Anesthesia Evaluation", specialty: "anesthesiology",
-    fields: [T("mental_status", "Mental Status"), T("vital_signs", "Vital Signs"), T("respiratory_status", "Respiratory Status"), N("pain_score", "Pain Score (0–10)"), T("ponv", "Postoperative Nausea / Vomiting"), T("complications", "Anesthesia-Related Complications"), T("follow_up", "Anesthesia Follow-Up Plan")],
-  },
-  {
-    key: "anes_followup", label: "Anesthesia Follow-Up", specialty: "anesthesiology",
-    fields: [I("days_since_anesthesia", "Days Since Anesthesia"), T("complications", "Complications Since Anesthesia"), N("pain_score", "Pain Score (0–10)"), T("nausea", "Nausea / Vomiting"), T("patient_satisfaction", "Patient Satisfaction"), T("plan", "Plan")],
-  },
-  {
-    key: "anes_regional_record", label: "Regional / Neuraxial Procedure Record", specialty: "anesthesiology",
-    fields: [S("technique", "Technique", ["Spinal", "Epidural", "Combined Spinal-Epidural", "Peripheral Nerve Block", "Other"]), I("level", "Level / Site"), T("needle", "Needle Used"), T("drug_dose", "Drug & Dose"), I("onset", "Onset Time"), T("block_quality", "Block Quality"), T("complications", "Complications"), T("monitoring", "Monitoring")],
   },
 ];
 

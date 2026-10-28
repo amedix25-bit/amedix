@@ -34,13 +34,18 @@ const newEntry = (item, entries) => ({
 // verified catalogue or entered by the clinician from the WHO browser — the
 // app never generates a code. Selecting a code never confirms a diagnosis:
 // it is recorded as Suspected until the clinician documents otherwise.
-export default function Icd11DiagnosisField({ value = [], onChange }) {
+export default function Icd11DiagnosisField({
+  value = [],
+  onChange,
+  catalog = RHEUM_ICD11,
+  searchPlaceholder = "Search ICD-11 — rheumatoid arthritis, lupus, gout, ANCA, axial spondyloarthritis...",
+}) {
   const entries = Array.isArray(value) ? value : [];
   const [query, setQuery] = useState("");
   const [manualOpen, setManualOpen] = useState(false);
   const [manual, setManual] = useState(EMPTY_MANUAL);
 
-  const results = useMemo(() => RHEUM_ICD11.filter((i) => matchesIcd11(i, query)).slice(0, 8), [query]);
+  const results = useMemo(() => catalog.filter((i) => matchesIcd11(i, query)).slice(0, 8), [query, catalog]);
   const allCodes = new Set(entries.map((e) => e.code));
 
   const add = (item) => {
@@ -83,7 +88,7 @@ export default function Icd11DiagnosisField({ value = [], onChange }) {
         <Input
           className="pl-9"
           value={query}
-          placeholder="Search ICD-11 — rheumatoid arthritis, lupus, gout, ANCA, axial spondyloarthritis..."
+          placeholder={searchPlaceholder}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>

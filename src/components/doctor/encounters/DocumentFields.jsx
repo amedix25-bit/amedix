@@ -81,7 +81,12 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
         />
       )}
       {f.type === "icd11_diagnoses" && (
-        <Icd11DiagnosisField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+        <Icd11DiagnosisField
+          value={values[f.key]}
+          onChange={(v) => onChange(f.key, v)}
+          catalog={f.catalog}
+          searchPlaceholder={f.searchPlaceholder}
+        />
       )}
       {f.type === "investigation_panels" && (
         <RheumInvestigationPanels value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
