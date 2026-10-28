@@ -16,7 +16,7 @@ import ObgynExamSection from "@/components/doctor/notes/ObgynExamSection";
 import { flattenExamValues, examAnyValue, examAbnormalCount } from "@/lib/obgynExamSchema";
 import ObgynSrhSection from "@/components/doctor/notes/ObgynSrhSection";
 import { flattenSrhValues, srhAnyValue, srhGroupsForDoc, srhConcernCount } from "@/lib/obgynSrhSchema";
-import { getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
+import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import { getDiseaseDocs, getDiseaseDocKeys, getDiseaseGroups, getDiseaseAliases } from "@/lib/diseaseSpecificNotes";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
@@ -76,10 +76,17 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   const diseaseGroups = mySpecialtyKey ? getDiseaseGroups(mySpecialtyKey) : [];
   const diseaseAliases = mySpecialtyKey ? getDiseaseAliases(mySpecialtyKey) : {};
   const diseaseKeys = mySpecialtyKey ? getDiseaseDocKeys(mySpecialtyKey) : new Set();
-  // The note type list offers only the General Clinical Note and the
-  // Disease-Specific Notes of the doctor's specialty — every specialty
-  // template is reached through "Disease-Specific Note" → find the template.
-  const [docType, setDocType] = useState(GENERAL_KEY);
+  // Every note type of the doctor's specialty is listed directly. Disease-
+  // specific templates are ALSO reachable through "Disease-Specific Note", so
+  // they are not repeated in the main list.
+  const myDocs = mySpecialty
+    ? getSpecialtyDocs(mySpecialty).filter((d) => !diseaseKeys.has(d.key))
+    : [];
+  const [docType, setDocType] = useState(
+    // Emergency Medicine defaults to the unified workflow note; every other
+    // specialty defaults to its consultation template.
+    () => (myDocs.find((d) => d.workflow) || myDocs.find((d) => d.key.includes("consultation")) || myDocs[0] || { key: GENERAL_KEY }).key
+  );
   // "Diagnosis-Specific Note" mode — the list of diagnosis templates that
   // were already part of General Surgery stays on screen, and the template of
   // the chosen diagnosis opens below it.
@@ -597,6 +604,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
               <SelectContent className="max-h-80">
                 <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
+                {myDocs.map((d) => (
+                  <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
+                ))}
                 {diseaseDocs.length > 0 && (
                   <SelectItem value={DIAGNOSIS_KEY}>Disease-Specific Note</SelectItem>
                 )}
