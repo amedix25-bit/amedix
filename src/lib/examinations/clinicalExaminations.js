@@ -60,7 +60,11 @@ const SPECIALTY_EXAMINATIONS = {
   ent: ["ent", "general", "respiratory", "custom"],
   pulmonology: ["respiratory", "general", "cardiovascular", "custom"],
   gastroenterology: ["abdominal", "general", "custom"],
-  nephrology: ["general", "cardiovascular", "respiratory", "custom"],
+  // Nephrology — the renal examination is a systemic one: general and volume
+  // assessment, cardiovascular (volume, pericardial), respiratory (pulmonary
+  // congestion), abdominal (renal bruits, palpable kidneys, bladder), and
+  // peripheral vascular for dialysis access and peripheral oedema.
+  nephrology: ["general", "cardiovascular", "respiratory", "abdominal", "peripheralVascular", "custom"],
   endocrinology: ["general", "custom"],
   oncology: ["general", "breast", "abdominal", "respiratory", "custom"],
   infectious_disease: ["general", "respiratory", "abdominal", "dermatological", "custom"],

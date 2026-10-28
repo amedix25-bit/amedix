@@ -14,6 +14,7 @@ import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
 import { applyNoteSectionPolicy } from "@/lib/noteSectionPolicy";
 import { RHEUMATOLOGY_DISEASE_DOCS } from "@/lib/rheumDiseaseNotes";
 import { ANESTHESIA_DOCS } from "@/lib/anesthesiologyDocuments";
+import { NEPHROLOGY_DOCS } from "@/lib/nephrologyDocuments";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -816,45 +817,6 @@ const GASTROENTEROLOGY_DOCS = [
   {
     key: "gi_discharge_summary", label: "Discharge Summary (GI)", specialty: "gastroenterology",
     fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("procedures", "Procedures Performed"), T("discharge_medications", "Discharge Medications"), T("diet_instructions", "Diet Instructions"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
-  },
-];
-
-const NEPHROLOGY_DOCS = [
-  {
-    key: "neph_consultation", label: "Nephrology Consultation", specialty: "nephrology",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("renal_history", "Renal History"), T("urinary_symptoms", "Urinary Symptoms"), T("pmh", "Past Medical History"), T("medications", "Current Medications"), T("exam_findings", "Renal Examination Findings"), T("labs_creatinine_egfr", "Renal Function Investigations (Creatinine / eGFR)"), T("urinalysis", "Urinalysis"), I("bp", "Blood Pressure"), T("volume_status", "Fluid Status / Volume Status"), T("assessment", "Assessment"), T("plan", "Treatment & Plan"), I("follow_up", "Follow-Up")],
-  },
-  {
-    key: "neph_followup", label: "Nephrology Follow-Up", specialty: "nephrology",
-    fields: [T("interval_history", "Interval History"), T("symptoms", "Symptoms"), T("labs", "Laboratory Results"), I("bp", "Blood Pressure"), T("fluid_balance", "Fluid Balance"), T("medication_review", "Medication Review"), T("dialysis_status", "Dialysis Status"), T("assessment", "Assessment"), T("plan", "Plan")],
-  },
-  {
-    key: "neph_admission_note", label: "Renal Admission Note", specialty: "nephrology",
-    fields: [T("admission_reason", "Reason for Admission"), T("hpi", "History of Present Illness"), T("labs", "Laboratory Results"), T("exam", "Examination Findings"), T("admission_diagnosis", "Admission Diagnosis"), T("admission_plan", "Admission Plan")],
-  },
-  {
-    key: "neph_progress_note", label: "Renal Progress Note", specialty: "nephrology",
-    fields: [T("overnight_events", "Overnight Events"), T("vitals", "Vital Signs"), T("fluid_balance", "Fluid Balance"), T("urine_output", "Urine Output"), T("labs", "Laboratory Results"), T("dialysis_review", "Dialysis Review"), T("plan", "Plan")],
-  },
-  {
-    key: "neph_dialysis_record", label: "Dialysis Treatment Record", specialty: "nephrology",
-    fields: [S("dialysis_type", "Dialysis Type", ["Hemodialysis", "CAPD", "APD", "Other"]), I("session_datetime", "Session Date & Time"), N("duration_hours", "Duration (hours)"), T("machine_settings", "Machine Settings / Dialysate"), T("dialyzer", "Dialyzer"), N("blood_flow", "Blood Flow Rate (ml/min)"), I("uf_removed", "Ultrafiltration Removed (ml)"), I("pre_bp", "Pre-Dialysis Blood Pressure"), I("post_bp", "Post-Dialysis Blood Pressure"), I("access_site", "Access Site"), T("complications", "Complications (e.g. Hypotension / Cramps)"), T("tolerance", "Tolerance"), I("next_session", "Next Session")],
-  },
-  {
-    key: "neph_access_record", label: "Dialysis Access Record", specialty: "nephrology",
-    fields: [S("access_type", "Access Type", ["AV Fistula", "AV Graft", "Tunneled Catheter", "PD Catheter", "Other"]), I("location", "Location"), I("created_datetime", "Created / Inserted Date"), I("surgeon", "Created By"), T("maturation_status", "Maturation / Function Status"), T("flow_assessment", "Flow Assessment"), T("complications", "Complications (Stenosis / Infection / Thrombosis)"), T("access_plan", "Access Plan")],
-  },
-  {
-    key: "neph_procedure_note", label: "Renal Procedure Note", specialty: "nephrology",
-    fields: [I("procedure", "Procedure (e.g. Kidney Biopsy)"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("imaging_guidance", "Imaging Guidance"), T("specimens", "Specimens"), T("bleeding_check", "Post-Procedure Bleeding Check"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
-  },
-  {
-    key: "neph_discharge_summary", label: "Discharge Summary (Nephrology)", specialty: "nephrology",
-    fields: [T("admission_diagnosis", "Admission Diagnosis"), T("discharge_diagnosis", "Discharge Diagnosis"), T("hospital_course", "Hospital Course"), T("dialysis_plan", "Dialysis Plan"), T("discharge_medications", "Discharge Medications"), I("fluid_restriction", "Fluid Restriction"), T("follow_up", "Follow-Up"), T("instructions", "Instructions")],
-  },
-  {
-    key: "neph_ckd_care_plan", label: "CKD Care Plan", specialty: "nephrology",
-    fields: [S("ckd_stage", "CKD Stage", ["Stage 1", "Stage 2", "Stage 3a", "Stage 3b", "Stage 4", "Stage 5"]), I("egfr", "Current eGFR"), T("management_goals", "Management Goals"), I("bp_target", "Blood Pressure Target"), T("diet_plan", "Diet Plan"), T("anemia_management", "Anemia Management"), T("bone_mineral_plan", "Bone & Mineral Plan"), T("acidosis_management", "Acidosis Management"), T("dialysis_planning", "Dialysis Planning"), T("transplant_referral", "Transplant Referral"), I("review_interval", "Review Interval")],
   },
 ];
 

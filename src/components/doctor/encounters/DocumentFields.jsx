@@ -10,6 +10,7 @@ import SelectExamination from "@/components/doctor/notes/SelectExamination";
 import VitalSignsField from "@/components/doctor/notes/VitalSignsField";
 import Icd11DiagnosisField from "@/components/doctor/notes/Icd11DiagnosisField";
 import RheumInvestigationPanels from "@/components/doctor/notes/RheumInvestigationPanels";
+import RenalLabsField from "@/components/doctor/notes/RenalLabsField";
 import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
 import RheumComparisonField from "@/components/doctor/notes/RheumComparisonField";
@@ -126,6 +127,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "investigation_panels" && (
         <RheumInvestigationPanels value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "renal_labs" && (
+        <RenalLabsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} panels={f.panels} />
       )}
       {f.type === "disease_activity" && (
         <ActivityInstrumentsField

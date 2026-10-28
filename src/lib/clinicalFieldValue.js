@@ -6,6 +6,7 @@ import { formatTreatmentPlan } from "@/lib/rheumTreatmentSafety";
 import { formatReferrals } from "@/lib/rheumReferrals";
 import { formatEducation } from "@/lib/rheumEducation";
 import { formatComparison } from "@/lib/rheumFollowup";
+import { formatRenalLabRows } from "@/lib/renalLabs";
 
 export function formatFieldValue(type, value) {
   if (value === undefined || value === null) return "";
@@ -47,6 +48,8 @@ export function formatFieldValue(type, value) {
       })
       .join("\n");
   }
+
+  if (type === "renal_labs" && Array.isArray(value)) return formatRenalLabRows(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);
