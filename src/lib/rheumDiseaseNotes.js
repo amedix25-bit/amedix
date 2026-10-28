@@ -16,6 +16,8 @@
 // diagnoses use the verified ICD-11 field and the workup uses the rheumatology
 // panel selector — nothing is duplicated.
 
+import { withRheumCoreSections } from "@/lib/rheumDocumentCore";
+
 const I = (key, label, x = {}) => ({ key, label, type: "input", ...x });
 const T = (key, label, x = {}) => ({ key, label, type: "textarea", ...x });
 const S = (key, label, options, x = {}) => ({ key, label, type: "select", options, ...x });
@@ -1351,7 +1353,9 @@ const DISEASE_DOCS = [
   RHEUM_OTHER,
 ];
 
-export const RHEUMATOLOGY_DISEASE_DOCS = DISEASE_DOCS.map((doc) => ({
-  ...doc,
-  fields: [...doc.fields, ...REFERRAL_AND_EDUCATION_FIELDS],
-}));
+export const RHEUMATOLOGY_DISEASE_DOCS = DISEASE_DOCS.map((doc) =>
+  withRheumCoreSections({
+    ...doc,
+    fields: [...doc.fields, ...REFERRAL_AND_EDUCATION_FIELDS],
+  })
+);

@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EMERGENCY_WORKFLOW } from "@/lib/specialtyDocuments";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import SelectExamination from "@/components/doctor/notes/SelectExamination";
 import VitalSignsField from "@/components/doctor/notes/VitalSignsField";
@@ -130,6 +130,48 @@ export function isFieldVisible(f = {}, values = {}) {
   return controlling === f.showIf.equals;
 }
 
+// A section of the note. Expandable so a long rheumatology note stays
+// navigable, with the number of required questions still unanswered in that
+// section, and a clear marker when the section records earlier events rather
+// than today's findings.
+function SectionGroup({ section, fields, values, onChange, specialty, patientId }) {
+  const [open, setOpen] = useState(true);
+  const unanswered = fields.filter((f) => f.required && String(values[f.key] ?? "").trim() === "").length;
+  const historical = /^(past|previous|prior|interval)/i.test(section);
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left bg-muted/40 hover:bg-muted/60 transition-colors"
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`} />
+          <span className="text-xs font-semibold text-primary uppercase tracking-wide truncate">{section}</span>
+          {historical && (
+            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-background border border-border text-muted-foreground">
+              Earlier record
+            </span>
+          )}
+        </span>
+        {unanswered > 0 && (
+          <span className="shrink-0 text-[10px] font-semibold text-destructive">
+            {unanswered} required unanswered
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="space-y-4 px-3 pb-3 pt-3">
+          {fields.map((f) => (
+            <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} patientId={patientId} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Consecutive fields sharing the same section heading form one group.
 function groupFields(defs) {
   const groups = [];
@@ -155,21 +197,35 @@ export default function DocumentFields({ defs = [], values = {}, onChange, speci
     );
   }
 
+  const groups = groupFields(visible);
+  const unansweredRequired = visible.filter((f) => f.required && String(values[f.key] ?? "").trim() === "").length;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {notice && <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border border-border p-2.5">{notice}</p>}
-      {groupFields(visible).map((g, gi) => (
+      {unansweredRequired > 0 && (
+        <p className="text-xs rounded-md bg-destructive/5 border border-destructive/25 text-destructive px-2.5 py-2">
+          {unansweredRequired} required {unansweredRequired === 1 ? "question is" : "questions are"} still unanswered. The note cannot be saved until they are completed.
+        </p>
+      )}
+      {groups.map((g, gi) => (
         <div key={g.section || `section-${gi}`} className="space-y-3">
-          {g.section && (
-            <p className="text-xs font-semibold text-primary uppercase tracking-wide border-b border-border pb-1">
-              {g.section}
-            </p>
+          {g.section ? (
+            <SectionGroup
+              section={g.section}
+              fields={g.fields}
+              values={values}
+              onChange={onChange}
+              specialty={specialty}
+              patientId={patientId}
+            />
+          ) : (
+            <div className="space-y-4">
+              {g.fields.map((f) => (
+                <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} patientId={patientId} />
+              ))}
+            </div>
           )}
-          <div className="space-y-4">
-            {g.fields.map((f) => (
-              <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} patientId={patientId} />
-            ))}
-          </div>
         </div>
       ))}
     </div>

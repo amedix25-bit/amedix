@@ -22,6 +22,7 @@
 // Nothing is ever marked normal by default: unanswered stays unanswered.
 
 import { THERAPEUTIC_TARGETS, TARGET_STATUS } from "@/lib/rheumFollowup";
+import { withRheumCoreSections } from "@/lib/rheumDocumentCore";
 
 const I = (key, label, x = {}) => ({ key, label, type: "input", ...x });
 const N = (key, label, x = {}) => ({ key, label, type: "number", ...x });
@@ -204,7 +205,7 @@ const examinationPlaceholder = (section, label = "Musculoskeletal & General Exam
   section,
 });
 
-export const RHEUMATOLOGY_DOCS = [
+const RHEUMATOLOGY_DOCS_BASE = [
   // ---- 1. Initial consultation ---------------------------------------
   {
     key: "rheum_consultation",
@@ -781,6 +782,7 @@ export const RHEUMATOLOGY_DOCS = [
       ]),
       ...sec("Counselling & Follow-Up", [
         { key: "icd11_diagnoses", label: "Indication Diagnoses (ICD-11) — the diagnosis this therapy treats", type: "icd11_diagnoses" },
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
         T("counselling", "Counselling Provided — infection precautions, live vaccines, pregnancy avoidance, alcohol, self-monitoring"),
         S("shared_decision", "Shared Decision-Making Documented", ["Yes", "Discussed with family", "Patient deferred"]),
         S("infusion_required", "Infusion or Injection Required", ["No", "Yes — documented below"]),
@@ -919,3 +921,7 @@ export const RHEUMATOLOGY_DOCS = [
     ],
   },
 ];
+
+// Encounter context, the source of every finding, and the closing impression
+// and plan are appended once here so all note types carry them identically.
+export const RHEUMATOLOGY_DOCS = RHEUMATOLOGY_DOCS_BASE.map(withRheumCoreSections);
