@@ -17,6 +17,17 @@ import { ANESTHESIA_DOCS } from "@/lib/anesthesiologyDocuments";
 import { NEPHROLOGY_DOCS } from "@/lib/nephrologyDocuments";
 import { NEPHROLOGY_KIDNEY_DOCS } from "@/lib/nephrologyKidneyDocs";
 import { NEPHROLOGY_CONDITION_DOCS } from "@/lib/nephrologyConditionDocs";
+import { nephrologySafetySection } from "@/lib/nephrologyClinicalReasoning";
+
+// Every Nephrology note carries the same safety-prompt block. The core notes
+// declare it in their own assessment/monitoring section; the condition notes
+// get it added here, once, so no note is left without it.
+const withNephrologySafety = (docs) =>
+  docs.map((d) =>
+    (d.fields || []).some((f) => f.type === "neph_alerts")
+      ? d
+      : { ...d, fields: [...(d.fields || []), ...nephrologySafetySection()] }
+  );
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -861,7 +872,8 @@ export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...IM_DOCS, ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
   ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
   ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
-  ...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS, ...ENDOCRINOLOGY_DOCS,
+  ...withNephrologySafety([...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS]),
+  ...ENDOCRINOLOGY_DOCS,
   ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS, ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS, ...HEMATOLOGY_DOCS,
   ...FAMILY_MEDICINE_DOCS, ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
   ...RADIOLOGY_DOCS, ...LABORATORY_DOCS, ...PATHOLOGY_DOCS,

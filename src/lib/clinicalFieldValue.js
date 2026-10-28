@@ -7,6 +7,8 @@ import { formatReferrals } from "@/lib/rheumReferrals";
 import { formatEducation } from "@/lib/rheumEducation";
 import { formatComparison } from "@/lib/rheumFollowup";
 import { formatRenalLabRows } from "@/lib/renalLabs";
+import { formatNephAlerts } from "@/lib/nephAlerts";
+import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
   albuminuriaCategoryFor,
@@ -104,6 +106,8 @@ export function formatFieldValue(type, value) {
 
   if (type === "renal_labs" && Array.isArray(value)) return formatRenalLabRows(value);
   if (type === "kdigo_renal") return formatKdigoRenal(value);
+  if (type === "neph_alerts") return formatNephAlerts(value);
+  if (type === "neph_medications") return formatNephMedications(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

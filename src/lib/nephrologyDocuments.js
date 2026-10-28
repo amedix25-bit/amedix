@@ -30,6 +30,14 @@
 // controlling answer matches, so a dialysis question is never asked of a
 // non-dialysis patient.
 
+import {
+  clinicalReasoningSection,
+  differentialSection,
+  managementSection,
+  nephrologySafetySection,
+  monitoringFollowupSection,
+} from "@/lib/nephrologyClinicalReasoning";
+
 const I = (key, label, x = {}) => ({ key, label, type: "input", ...x });
 const N = (key, label, x = {}) => ({ key, label, type: "number", ...x });
 const T = (key, label, x = {}) => ({ key, label, type: "textarea", ...x });
@@ -241,6 +249,11 @@ const assessmentSection = ({ kdigo = true } = {}) => [
     T("monitoring_plan", "Monitoring and Review Plan"),
     T("safety_advice", "Safety Advice and When to Seek Urgent Care"),
   ]),
+  ...clinicalReasoningSection(),
+  ...differentialSection(),
+  ...managementSection(),
+  ...nephrologySafetySection(),
+  ...monitoringFollowupSection(),
 ];
 
 export const NEPHROLOGY_DOCS = [
@@ -377,6 +390,9 @@ export const NEPHROLOGY_DOCS = [
         T("monitoring_plan", "Monitoring and Review Plan"),
         T("safety_advice", "Safety Advice and Warning Signs"),
       ]),
+      ...clinicalReasoningSection(),
+      ...nephrologySafetySection(),
+      ...monitoringFollowupSection(),
     ],
   },
 
@@ -428,6 +444,8 @@ export const NEPHROLOGY_DOCS = [
         I("next_session", "Next Session"),
         T("nursing_instructions", "Nursing Instructions and Safety Advice"),
       ]),
+      ...nephrologySafetySection(),
+      ...monitoringFollowupSection(),
     ],
   },
 
@@ -471,6 +489,8 @@ export const NEPHROLOGY_DOCS = [
         T("monitoring_plan", "Surveillance and Review Plan"),
         T("safety_advice", "Safety Advice and When to Seek Urgent Care"),
       ]),
+      ...nephrologySafetySection(),
+      ...monitoringFollowupSection(),
     ],
   },
 
@@ -527,6 +547,9 @@ export const NEPHROLOGY_DOCS = [
         T("monitoring_plan", "Monitoring and Review Plan"),
         T("safety_advice", "Safety Advice and When to Seek Urgent Care"),
       ]),
+      ...clinicalReasoningSection(),
+      ...nephrologySafetySection(),
+      ...monitoringFollowupSection(),
     ],
   },
 
@@ -575,6 +598,10 @@ export const NEPHROLOGY_DOCS = [
         I("follow_up_clinic", "Review Clinic / Contact"),
         T("monitoring_plan", "Monitoring Plan (what will be checked and when)"),
       ]),
+      ...clinicalReasoningSection(),
+      ...managementSection(),
+      ...nephrologySafetySection(),
+      ...monitoringFollowupSection(),
     ],
   },
 
@@ -637,6 +664,10 @@ export const NEPHROLOGY_DOCS = [
         T("monitoring_plan", "Monitoring Plan (parameters, frequency and responsibility)"),
         T("safety_advice", "Safety Advice and When to Seek Urgent Care"),
       ]),
+      ...clinicalReasoningSection(),
+      ...differentialSection(),
+      ...nephrologySafetySection(),
+      ...monitoringFollowupSection(),
     ],
   },
 ];

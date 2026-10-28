@@ -12,6 +12,8 @@ import Icd11DiagnosisField from "@/components/doctor/notes/Icd11DiagnosisField";
 import RheumInvestigationPanels from "@/components/doctor/notes/RheumInvestigationPanels";
 import RenalLabsField from "@/components/doctor/notes/RenalLabsField";
 import KdigoRenalField from "@/components/doctor/notes/KdigoRenalField";
+import NephrologyAlertsField from "@/components/doctor/notes/NephrologyAlertsField";
+import NephMedicationsField from "@/components/doctor/notes/NephMedicationsField";
 import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
 import RheumComparisonField from "@/components/doctor/notes/RheumComparisonField";
@@ -134,6 +136,16 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "kdigo_renal" && (
         <KdigoRenalField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "neph_alerts" && (
+        <NephrologyAlertsField
+          value={values[f.key]}
+          values={values}
+          onChange={(v) => onChange(f.key, v)}
+        />
+      )}
+      {f.type === "neph_medications" && (
+        <NephMedicationsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "disease_activity" && (
         <ActivityInstrumentsField
