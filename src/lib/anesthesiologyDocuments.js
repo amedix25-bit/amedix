@@ -197,11 +197,20 @@ const intraop = {
         "Yes — partially",
         "No",
       ]),
+      S("asa_class_at_case", "ASA Physical Status Recorded for This Anesthetic", ASA_CLASSES),
+      S("asa_emergency_at_case", "Emergency Modifier Applied", ASA_EMERGENCY),
     ]),
     ...sec("Anesthetic Technique", [
       S("technique", "Technique Used", TECHNIQUES),
       T("technique_detail", "Technique Detail — regional component, catheter, sedation, conversion to another technique"),
       T("regional_or_neuraxial_detail", "Regional or Neuraxial Detail — level, block assessed, catheter management"),
+      S("laterality", "Side / Laterality of the Procedure", ["Left", "Right", "Bilateral", "Midline — not applicable"]),
+      S("conversion_or_supplement", "Conversion or Supplementation During the Case", [
+        "None",
+        "Converted to general anesthesia — documented",
+        "Supplemented — analgesics or local anesthetic given",
+        "Converted to regional — general abandoned",
+      ]),
     ]),
     ...sec("Airway & Ventilation", [
       S("airway_device", "Airway Device", AIRWAY_DEVICES),
@@ -221,6 +230,19 @@ const intraop = {
       ]),
       T("etco2_course", "End-tidal Carbon Dioxide Course — values and events"),
       T("cuff_pressure", "Cuff Pressure / Airway Leak Check"),
+      S("placement_confirmed", "Airway Placement Confirmed", [
+        "Yes — waveform capnography and bilateral breath sounds",
+        "Yes — waveform capnography only",
+        "Not documented",
+      ]),
+      S("difficult_airway_event", "Difficult-Airway Event During This Case", [
+        "None",
+        "Yes — additional device or operator required",
+        "Yes — cannot intubate, cannot oxygenate pathway activated",
+        "Yes — surgical airway established",
+      ]),
+      T("airway_event_detail", "Difficult-Airway Event Detail — devices, attempts, grade, rescue and outcome", when("difficult_airway_event", "Yes — additional device or operator required", "Yes — cannot intubate, cannot oxygenate pathway activated", "Yes — surgical airway established")),
+      T("respiratory_parameters", "Respiratory Parameters and Trends — tidal volume, rate, minute volume, peak and plateau pressure, PEEP, compliance"),
     ]),
     ...sec("Induction", [
       T("induction_medications", "Induction Agents and Doses"),
@@ -264,7 +286,8 @@ const intraop = {
       T("extubation_course", "Extubation Course and Any Airway Event"),
     ]),
     ...sec("Circulation, Fluids & Blood", [
-      T("vitals_intraop", "Vital Signs"),
+      T("vitals_intraop", "Vital Signs — timed chart entries across the case"),
+      VIT("timed_vitals", "Vital Signs (Structured Entry)"),
       T("haemodynamic_targets", "Haemodynamic Targets Set and Met — blood pressure and heart rate goals"),
       T("vasoactive_support", "Vasoactive Support — agents, doses, duration"),
       T("fluids_given", "Intravenous Fluids Given — type and total"),
@@ -279,6 +302,17 @@ const intraop = {
       ]),
       T("transfusion_detail", "Transfusion Detail — units, indication, reaction monitoring"),
       T("coagulation_management", "Coagulation Management — tests, agents, response"),
+      S("urine_output_monitored", "Urine Output Measured", [
+        "Yes — catheter with hourly volumes",
+        "Yes — intermittent measurement",
+        "Not measured — not indicated",
+        "Not measured — documented reason",
+      ]),
+      T("fluid_balance", "Fluid Balance — intake against output, and the running total"),
+      T("vital_trends", "Vital Sign Trends Across the Case — direction of blood pressure, heart rate, saturation, end-tidal carbon dioxide and temperature, with times"),
+      T("hemodynamic_instability", "Haemodynamic Instability — what was unstable, for how long, and the defined threshold that was crossed"),
+      T("interventions_response", "Interventions and the Response — what was done, when, and how the patient responded"),
+      T("help_called", "Help or Additional Support Called — who was called, when, and the outcome"),
     ]),
     ...sec("Neuromuscular Blockade", [
       S("relaxant_used", "Neuromuscular Blocking Agent", [
@@ -330,6 +364,46 @@ const intraop = {
       T("handover", "Handover to Recovery — structured transfer recorded"),
       T("debrief", "Team Debrief — and any practice change agreed"),
     ]),
+    ...sec("Complications Documented (ICD-11)", [
+      ICD("icd11_complications", "Conditions or Complications Coded With ICD-11 — where a verified code applies"),
+      T("complication_detail", "Complication Detail — description, timing, management and outcome"),
+      S("incident_reported", "Incident or Adverse Event Reported", [
+        "Not applicable",
+        "Yes — reference recorded",
+        "No",
+      ]),
+    ]),
+    ...sec("Special Population Documentation", [
+      S("patient_population", "Special Population for This Anesthetic", [
+        "Adult — no special population",
+        "Obstetric",
+        "Pediatric",
+        "Emergency or trauma",
+        "Complex adult with significant comorbidity",
+      ]),
+      I("gestational_age", "Gestational Age", when("patient_population", "Obstetric")),
+      S("fetal_monitoring", "Fetal Monitoring During Anesthesia", [
+        "Not applicable",
+        "Continuous — documented by the obstetric team",
+        "Intermittent",
+        "Not performed — documented reason",
+      ], when("patient_population", "Obstetric")),
+      N("weight_kg", "Weight Used for Dosing (kg)", when("patient_population", "Pediatric")),
+      S("weight_based_dosing", "Doses and Fluid Volumes Calculated Against the Recorded Weight", [
+        "Yes — verified against weight",
+        "Not verified",
+      ], when("patient_population", "Pediatric")),
+      S("cervical_spine_precaution", "Cervical Spine Precaution", [
+        "Manual in-line stabilisation",
+        "Rigid collar in place",
+        "Cleared clinically",
+        "Not applicable",
+      ], when("patient_population", "Emergency or trauma")),
+      T("resuscitation_context", "Resuscitation Before and During the Case — fluids, blood products, procedures", when("patient_population", "Emergency or trauma")),
+      ICD("icd11_comorbidities", "Active Comorbidities Coded With ICD-11 — those affecting this anesthetic", when("patient_population", "Complex adult with significant comorbidity")),
+      T("comorbidity_management", "How Each Comorbidity Was Managed During the Case", when("patient_population", "Complex adult with significant comorbidity")),
+      T("special_population_note", "Anything Specific to This Population — recorded here or in the dedicated note type"),
+    ]),
   ],
 };
 
@@ -343,6 +417,16 @@ const medication = {
   notice:
     "This record documents what was actually administered during the anesthetic, with doses and times, so the course can be reconstructed. Controlled drugs are recorded with the witness and the balance checked. Prophylaxis items follow the ASA fasting, neuromuscular blockade and blood management guidance where relevant.",
   fields: [
+    ...sec("Planned Versus Administered", [
+      T("planned_agents", "Agents Planned Before the Case — as recorded in the anesthesia plan"),
+      S("variance_from_plan", "Variance From the Planned Regimen", [
+        "None — administered as planned",
+        "Yes — documented below",
+        "No plan recorded",
+      ]),
+      T("variance_reason", "Variance Detail — what changed, why, and at what time", when("variance_from_plan", "Yes — documented below")),
+      T("administration_times", "Timed Administration Sequence — what was given, by which route, and at what time"),
+    ]),
     ...sec("Agents & Doses", [
       T("induction_agents", "Induction Agents — drug, dose, route, time"),
       T("maintenance_agents", "Maintenance Agents — drug, concentration, duration"),
@@ -413,6 +497,11 @@ const monitoring = {
         "Interrupted — reason documented",
       ]),
       S("alarms_audible", "Alarms Audible to the Anesthesia Team", ["Yes — all audible", "Adjusted — documented"]),
+      T("monitoring_devices", "Monitoring Devices and Their Placement Times — oximeter, capnography, ECG leads, blood pressure cuff or arterial line, temperature probe"),
+      S("monitoring_interruptions", "Interruptions in Continuous Monitoring", [
+        "None",
+        "Yes — reason and duration documented",
+      ]),
     ]),
     ...sec("Standards Compliance", monitoringComplianceFields()),
     ...sec("Recorded Values", [
@@ -425,6 +514,7 @@ const monitoring = {
       T("agent_concentration", "Agent Concentration Log"),
       T("tof_log", "Train-of-Four Log"),
       T("depth_log", "Depth-of-Anesthesia Log — where monitored"),
+      T("trend_summary", "Trend Summary — the direction of each measured variable across the case, with the times it changed"),
     ]),
     ...sec("Documented Waivers", [
       T("waived_requirements", "Requirement Waived and the Reason — recorded in the patient's record"),
@@ -483,6 +573,13 @@ const pacu = {
       T("haemodynamics", "Haemodynamic Course — blood pressure, heart rate, rhythm, interventions"),
       T("respiratory_course", "Respiratory Course — rate, oxygen saturation, carbon dioxide, interventions"),
       N("respiratory_rate_monitoring", "Respiratory Rate Monitoring Interval (minutes) Where Neuraxial Opioid Used"),
+      S("oxygenation_assessed", "Oxygenation and Ventilation Assessed", [
+        "Yes — oximetry and respiratory rate",
+        "Yes — plus end-tidal carbon dioxide where measured",
+        "Not assessed",
+      ]),
+      T("ventilation_course", "Ventilation in Detail — rate, depth, pattern, carbon dioxide where measured"),
+      T("temperature_course", "Temperature and Warming — measured values and the method used"),
     ]),
     ...sec("Pain, Nausea & Comfort", [
       N("pain_score", "Pain Score (0–10)"),
@@ -490,6 +587,12 @@ const pacu = {
       T("nausea", "Nausea / Vomiting — and the treatment given with its effect"),
       T("shivering", "Shivering and Temperature Management"),
       T("comfort", "Comfort, Positioning and Anxiety"),
+      S("treatment_response", "Response to Treatment Given", [
+        "Full response — symptom resolved",
+        "Partial response — further treatment given",
+        "No response — reported to the responsible clinician",
+        "No treatment required",
+      ]),
     ]),
     ...sec("Surgical Site & Fluid Balance", [
       T("bleeding", "Surgical Site, Drainage and Bleeding"),
@@ -507,6 +610,18 @@ const pacu = {
         "Continuous oximetry plus sedation checks",
       ], when("regional_technique_present", "Yes")),
       T("block_aftercare", "Block Aftercare — catheter management, infusion, numbness precautions", when("regional_technique_present", "Yes")),
+      S("residual_blockade", "Residual Neuromuscular Blockade at Discharge From Recovery", [
+        "Excluded — quantitative train-of-four ratio documented",
+        "Excluded — clinical assessment only",
+        "Present — treated and re-assessed",
+        "Not applicable — no neuromuscular blocking agent",
+      ]),
+      S("block_status", "Regional or Neuraxial Block Status", [
+        "Not applicable",
+        "Adequate analgesia — no motor block",
+        "Residual motor block — documented",
+        "Resolving",
+      ], when("regional_technique_present", "Yes")),
     ]),
     ...sec("Adverse Events & Escalation", [
       S("adverse_event", "Adverse Event in Recovery", [
@@ -552,6 +667,19 @@ const pacu = {
       ]),
       I("time_discharged", "Time Discharged From Recovery"),
       T("instructions_given", "Instructions Given to the Receiving Team or Patient"),
+      S("transfer_readiness", "Transfer or Discharge Readiness Against the Institutional Protocol", [
+        "Met — protocol criteria documented",
+        "Met with conditions — documented",
+        "Not met — remains in recovery",
+      ]),
+      T("ongoing_monitoring", "Ongoing Monitoring Requirements — what is monitored, how often, and by whom"),
+      I("responsible_clinician", "Responsible Clinician After Transfer"),
+      T("hydration", "Hydration and Fluid Status at Transfer"),
+      S("handover_to_ward", "Structured Handover to the Receiving Team", [
+        "Given verbally and documented",
+        "Documented only",
+        "Not given",
+      ]),
     ]),
   ],
 };
@@ -583,6 +711,14 @@ const postEvaluation = {
       S("sore_throat", "Sore Throat or Hoarseness", ["None", "Mild", "Moderate to severe"]),
       S("dental_injury", "Dental, Lip or Tongue Injury", ["None identified", "Identified — documented and referred"]),
       S("airway_after_effect", "Other Airway After-Effect", ["None", "Identified — documented"]),
+      S("airway_patency", "Airway Patency", [
+        "Patent — self-maintaining",
+        "Maintained with an airway adjunct",
+        "Device still in place",
+        "Compromised — managed",
+      ]),
+      T("oxygenation", "Oxygenation — saturation, oxygen requirement and the trend since recovery"),
+      T("ventilation_assessment", "Ventilation — respiratory rate, depth, and carbon dioxide where measured"),
     ]),
     ...sec("Pain, Nausea & Function", [
       N("pain_score", "Pain Score (0–10)"),
@@ -595,6 +731,23 @@ const postEvaluation = {
         "Not assessed",
       ]),
       T("oral_intake", "Oral Intake and Bowel Function"),
+    ]),
+    ...sec("Cardiovascular, Temperature & Fluids", [
+      S("cardiovascular_status", "Cardiovascular Status", [
+        "Stable — no intervention required",
+        "Treated hypotension or arrhythmia — responding",
+        "Unstable — reported to the responsible clinician",
+        "Not assessed",
+      ]),
+      T("cardiovascular_detail", "Cardiovascular Findings — blood pressure, heart rate, rhythm, and the intervention with its effect", when("cardiovascular_status", "Treated hypotension or arrhythmia — responding", "Unstable — reported to the responsible clinician")),
+      T("temperature", "Temperature — measured value and warming applied"),
+      S("hydration_status", "Hydration Status", [
+        "Adequate",
+        "Deficient — replacement given",
+        "Overloaded — managed",
+        "Not assessed",
+      ]),
+      T("fluid_balance", "Fluid Balance — intake, output and any ongoing requirement"),
     ]),
     ...sec("Neurological & Cognitive", [
       S("nerve_injury", "New Peripheral Nerve Symptom", [
@@ -622,6 +775,37 @@ const postEvaluation = {
         "Yes — documented",
         "No",
       ]),
+    ]),
+    ...sec("Residual Blockade, Block Status & Disposition", [
+      S("residual_blockade", "Residual Neuromuscular Blockade", [
+        "Excluded — quantitative train-of-four ratio documented",
+        "Excluded — clinical assessment only",
+        "Present — treated and re-assessed",
+        "Not indicated",
+      ]),
+      S("regional_block_status", "Regional or Neuraxial Block Status", [
+        "Not applicable",
+        "Adequate analgesia — no motor block",
+        "Residual motor block — documented",
+        "Resolving",
+        "Complication — documented",
+      ]),
+      S("treatment_response", "Response to Treatment Given in Recovery", [
+        "Full response — symptoms resolved",
+        "Partial response — further treatment given",
+        "No response — reported to the responsible clinician",
+        "No treatment required",
+      ]),
+      S("disposition", "Disposition", [
+        "Ward",
+        "Day-surgery discharge",
+        "High-dependency unit",
+        "Intensive care unit",
+        "Remains in recovery",
+        "Transferred to another facility",
+      ]),
+      I("disposition_datetime", "Date and Time of Disposition"),
+      I("responsible_clinician", "Responsible Clinician for Ongoing Care"),
     ]),
     ...sec("Patient Experience & Follow-Up", [
       S("satisfaction", "Patient Experience of the Anesthetic", [
@@ -708,6 +892,8 @@ const regional = {
         "Other",
       ]),
       I("level", "Level / Site"),
+      S("laterality", "Side / Laterality", ["Left", "Right", "Bilateral", "Midline — not applicable"]),
+      T("site_detail", "Anatomical Site and Landmarks — space, approach and surface markings used"),
       T("indication", "Indication — surgical anesthesia, postoperative analgesia, both"),
       S("consent", "Consent for the Procedure", ["Documented", "Verbal — documented here", "Not documented"]),
       S("anticoagulant_verified", "Anticoagulant Timing Verified Before Needle Placement", [
