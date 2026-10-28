@@ -135,7 +135,7 @@ export function isFieldVisible(f = {}, values = {}) {
 // section, and a clear marker when the section records earlier events rather
 // than today's findings.
 function SectionGroup({ section, fields, values, onChange, specialty, patientId }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const unanswered = fields.filter((f) => f.required && String(values[f.key] ?? "").trim() === "").length;
   const historical = /^(past|previous|prior|interval)/i.test(section);
   return (

@@ -144,12 +144,11 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     setGateLoading(false);
   };
 
-  // Universal accordion state — sections expand/collapse independently and
-  // entered information is preserved because all values live in this form's
-  // state regardless of which section is open.
-  const [openIds, setOpenIds] = useState(
-    () => new Set(mySpecialtyKey === "surgery" ? ["encounter", "dxTemplates"] : ["encounter"])
-  );
+  // Universal accordion state — every section starts collapsed in every
+  // specialty, so only the section being worked on is expanded. Entered
+  // information is preserved because all values live in this form's state
+  // regardless of which section is open.
+  const [openIds, setOpenIds] = useState(() => new Set());
   const toggleSection = (id) =>
     setOpenIds((s) => {
       const n = new Set(s);

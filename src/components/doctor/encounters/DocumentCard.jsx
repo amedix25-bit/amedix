@@ -6,7 +6,7 @@ import ToothChart from "@/components/doctor/dental/ToothChart";
 import { format } from "date-fns";
 import { generateClinicalDocumentPdfUrl } from "@/lib/clinicalDocumentPdf";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
-import { Loader2, FileSignature, History, FileText, PenLine } from "lucide-react";
+import { Loader2, FileSignature, History, FileText, PenLine, ChevronDown } from "lucide-react";
 
 // One clinical document family with full version control: shows the automatic
 // patient/encounter header, the clinical content, the digital signature block
@@ -19,6 +19,9 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
   const [error, setError] = useState("");
   const [photoUrls, setPhotoUrls] = useState(null);
   const [photosLoading, setPhotosLoading] = useState(false);
+  // Saved notes open collapsed so a list of documents stays short; only the
+  // summary line shows until the doctor expands the one being read.
+  const [expanded, setExpanded] = useState(false);
 
   // Clinical photographs live in private storage — signed URLs are issued by
   // the backend only after permission checks, and every view is audit-logged.
@@ -62,7 +65,11 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+    <div
+      className={`rounded-xl border border-border bg-card p-5 space-y-4 ${
+        expanded ? "" : "[&>*+*]:hidden"
+      }`}
+    >
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border pb-3">
         <div className="min-w-0">
@@ -87,6 +94,15 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
               Confidential
             </span>
           )}
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="text-xs flex items-center gap-1 px-2 py-1 rounded-full border border-border hover:bg-accent/50 transition-colors"
+            aria-expanded={expanded}
+          >
+            {expanded ? "Hide" : "Show"}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
         </div>
       </div>
 

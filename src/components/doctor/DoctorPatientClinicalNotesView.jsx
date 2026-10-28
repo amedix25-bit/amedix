@@ -68,7 +68,12 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId, em
 
   const renderEntry = (e) =>
     e.__type === "diagnosis" ? (
-      <DiagnosisCard key={e.id} diagnosis={e} />
+      <DiagnosisCard
+        key={e.id}
+        diagnosis={e}
+        open={openedId === e.id}
+        onToggle={() => setOpenedId((cur) => (cur === e.id ? null : e.id))}
+      />
     ) : (
       <ClinicalNoteCard
         key={e.id}
