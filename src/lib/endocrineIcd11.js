@@ -380,6 +380,7 @@ export const ENDOCRINE_ICD11 = RAW.map((line) => {
     domain_label: domainLabel,
     primary: isPrimary,
     system: ENDOCRINE_ICD11_MMS.system,
+    system_uri: ENDOCRINE_ICD11_MMS.system_uri,
     release: ENDOCRINE_ICD11_MMS.release,
     version: `${ENDOCRINE_ICD11_MMS.label} ${ENDOCRINE_ICD11_MMS.release}`,
     source: ENDOCRINE_ICD11_MMS.source_url,
