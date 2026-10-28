@@ -39,6 +39,25 @@ export default function CurrentDiagnosisSection({ number, patient }) {
       ) : (
         <div>
           <p className="font-medium text-sm">{latest.diagnosis}</p>
+          {(latest.icd11 || []).length > 0 && (
+            <div className="mt-2 space-y-1">
+              {latest.icd11.map((d, i) => (
+                <div key={`${d.code}-${i}`} className="flex items-start gap-1.5 text-xs">
+                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground shrink-0">
+                    {d.code || t("No code")}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {d.display}
+                    {d.mapping_state !== "verified" && (
+                      <span className="block text-[11px] text-amber-700 dark:text-amber-400">
+                        {t("Coding review in progress")}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground mt-1">
             {t("Diagnosed on")} {latest.date} · {latest.doctor_name || t("Attending doctor")}
           </p>

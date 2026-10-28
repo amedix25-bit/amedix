@@ -42,6 +42,80 @@
       "description": "Structured specialty-specific field values keyed by field key \u2014 each value is { label, value } so the note carries its own field labels. The note structure changes dynamically with the doctor's verified specialty; empty for general free-text notes.",
       "additionalProperties": true
     },
+    "icd11_coded_diagnoses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_key": {
+            "type": "string",
+            "description": "Note field the diagnosis was recorded in, e.g. icd11_diagnoses"
+          },
+          "code": {
+            "type": "string",
+            "description": "ICD-11 MMS code exactly as verified \u2014 empty when the diagnosis could not be mapped. A code is never generated, completed or substituted by the app"
+          },
+          "display": {
+            "type": "string",
+            "description": "Official ICD-11 display term, or the diagnosis as documented when unresolved"
+          },
+          "system": {
+            "type": "string",
+            "description": "Coding system of this entry \u2014 always ICD-11-MMS. Laboratory (LOINC), medication and procedure codes are never stored here"
+          },
+          "system_uri": {
+            "type": "string",
+            "description": "Canonical FHIR system URI for ICD-11 MMS, so the entry is usable as a CodeableConcept"
+          },
+          "release": {
+            "type": "string",
+            "description": "ICD-11 release the code was verified against, e.g. 2025-01"
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the code was verified \u2014 the catalogue source or the WHO browser reference the clinician entered"
+          },
+          "verified_date": {
+            "type": "string",
+            "description": "Date the catalogue entry was verified against the WHO release (ISO date)"
+          },
+          "coding_note": {
+            "type": "string",
+            "description": "Applicable WHO coding instruction for the entry (e.g. a non-primary tabulation entry documented together with the diabetes type)"
+          },
+          "specificity": {
+            "type": "string",
+            "description": "Specificity of the selected code \u2014 block (stem), subcategory, or pending review when unresolved"
+          },
+          "role": {
+            "type": "string",
+            "description": "Diagnosis role \u2014 Primary or Secondary"
+          },
+          "status": {
+            "type": "string",
+            "description": "Diagnostic status documented by the clinician \u2014 a code alone never confirms a diagnosis"
+          },
+          "mapping_state": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "review_required",
+              "unresolved"
+            ],
+            "description": "Mapping integrity state \u2014 VERIFIED: code taken from the verified ICD-11 catalogue with its release recorded. REVIEW_REQUIRED: code entered by the clinician from the WHO browser and not yet checked against the catalogue. UNRESOLVED: the diagnosis could not be mapped, so no code is stored and coding review is required"
+          },
+          "basis": {
+            "type": "string",
+            "description": "Clinical basis documented by the clinician for the coded diagnosis"
+          },
+          "follow_up": {
+            "type": "string",
+            "description": "Outstanding workup or follow-up for this coded diagnosis"
+          }
+        }
+      },
+      "description": "Structured ICD-11 coded diagnoses recorded on this note \u2014 the machine-readable copy of the diagnosis field, carrying code, official display term, system URI, release, source, mapping state, role, status and clinical basis. Written server-side with the note; readable only under the note's own access rules"
+    },
     "photo_file_uris": {
       "type": "array",
       "items": {

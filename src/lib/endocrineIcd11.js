@@ -384,6 +384,7 @@ export const ENDOCRINE_ICD11 = RAW.map((line) => {
     version: `${ENDOCRINE_ICD11_MMS.label} ${ENDOCRINE_ICD11_MMS.release}`,
     source: ENDOCRINE_ICD11_MMS.source_url,
     browser: ENDOCRINE_ICD11_MMS.browser_url,
+    verified_date: ENDOCRINE_ICD11_MMS.retrieved,
     precise: true,
     specificity: code.includes(".")
       ? "Subcategory — most specific"

@@ -36,6 +36,19 @@ export default async function(req) {
         doctor_name: n.doctor_name,
         document_type_label: n.document_type_label || "",
         diagnosis: n.diagnosis || "",
+        // The coded diagnoses travel with the same read path as the diagnosis
+        // text, so the patient sees exactly the code the doctor's note records —
+        // including the cases still awaiting coding review, which are shown as
+        // such and never presented as a final code.
+        icd11: (Array.isArray(n.icd11_coded_diagnoses) ? n.icd11_coded_diagnoses : [])
+          .filter((d) => d && String(d.display || "").trim())
+          .map((d) => ({
+            code: d.code || "",
+            display: d.display || "",
+            system: d.system || "ICD-11-MMS",
+            release: d.release || "",
+            mapping_state: d.mapping_state || (d.code ? "review_required" : "unresolved"),
+          })),
       })),
     });
   } catch (error) {

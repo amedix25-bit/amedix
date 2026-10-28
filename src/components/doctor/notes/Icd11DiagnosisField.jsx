@@ -16,18 +16,64 @@ import { AlertTriangle, ExternalLink, Plus, Search, ShieldCheck, X } from "lucid
 
 const EMPTY_MANUAL = { code: "", display: "", specificity: SPECIFICITY.SUB, source: "" };
 
-const newEntry = (item, entries) => ({
-  code: item.code,
+// Provenance travels with every coded entry, so the saved note records what the
+// code was verified against — not only how it reads.
+//
+// `mapping_state` is the integrity switch and has exactly three values:
+//   verified        the code comes from the verified ICD-11 catalogue, and the
+//                   release it was checked against is stored beside it;
+//   review_required the code was typed in by the clinician from the WHO browser
+//                   and has not been checked against the catalogue;
+//   unresolved      the diagnosis could not be mapped: NO code is stored, the
+//                   clinical term is kept and the entry is flagged for review.
+// The component never generates, completes or guesses a code.
+const MAPPING_STATE = {
+  VERIFIED: "verified",
+  REVIEW: "review_required",
+  UNRESOLVED: "unresolved",
+};
+
+const MAPPING_LABEL = {
+  verified: "ICD-11 verified",
+  review_required: "Review required",
+  unresolved: "Unresolved — no code",
+};
+
+// A stem code ("5A00", "5A02") is legitimate, but when the catalogue already
+// holds a subcategory under it the clinician is told, so specificity is a
+// decision and never a guess.
+const moreSpecificExists = (item, catalog) =>
+  Boolean(item.code) &&
+  !item.code.includes(".") &&
+  (catalog || []).some((c) => c.code.startsWith(`${item.code}.`));
+
+const newEntry = (item, entries, catalog) => ({
+  code: item.code || "",
   display: item.display,
   definition: item.definition || "",
   specificity: item.specificity || SPECIFICITY.SUB,
   version: `${ICD11_MMS.label} (${item.release || ICD11_MMS.release})`,
+  system: ICD11_MMS.system,
+  system_uri: ICD11_MMS.system_uri,
+  release: item.release || ICD11_MMS.release,
+  source: item.source || "",
+  verified_date: item.verified_date || "",
+  coding_note:
+    item.coding_note ||
+    (item.primary === false
+      ? "WHO carries this as a NON-primary tabulation entry — document it together with the diabetes type, never instead of it."
+      : ""),
+  manual: item.manual || false,
+  mapping_state:
+    item.mapping_state || (item.manual ? MAPPING_STATE.REVIEW : MAPPING_STATE.VERIFIED),
+  specificity_hint: moreSpecificExists(item, catalog)
+    ? "A more specific subcategory exists in the catalogue"
+    : "",
   criteria_reference: item.criteria || "",
   role: entries.some((e) => e.role === "Primary") ? "Secondary" : "Primary",
   status: "Suspected",
   basis: "",
   follow_up: "",
-  manual: item.manual || false,
 });
 
 // Searchable ICD-11 diagnosis selection. A code is only ever taken from the
@@ -44,18 +90,42 @@ export default function Icd11DiagnosisField({
   const [query, setQuery] = useState("");
   const [manualOpen, setManualOpen] = useState(false);
   const [manual, setManual] = useState(EMPTY_MANUAL);
+  const [unmappedOpen, setUnmappedOpen] = useState(false);
+  const [unmapped, setUnmapped] = useState({ display: "", reason: "" });
 
   const results = useMemo(() => catalog.filter((i) => matchesIcd11(i, query)).slice(0, 8), [query, catalog]);
   const allCodes = new Set(entries.map((e) => e.code));
 
   const add = (item) => {
-    onChange([...entries, newEntry(item, entries)]);
+    onChange([...entries, newEntry(item, entries, catalog)]);
     setQuery("");
+  };
+
+  // A diagnosis that cannot be mapped is still a diagnosis. It is recorded
+  // without a code, with the reason, and flagged for coding review — the app
+  // never substitutes an approximate or invented code.
+  const addUnmapped = () => {
+    if (!unmapped.display.trim() || !unmapped.reason.trim()) return;
+    add({
+      code: "",
+      display: unmapped.display.trim(),
+      definition: "No ICD-11 code assigned — the documented term is recorded exactly as entered.",
+      coding_note: `Unmapped — ${unmapped.reason.trim()}`,
+      mapping_state: MAPPING_STATE.UNRESOLVED,
+      specificity: "Pending review — no code assigned",
+    });
+    setUnmapped({ display: "", reason: "" });
+    setUnmappedOpen(false);
   };
 
   const addManual = () => {
     if (!manual.code.trim() || !manual.display.trim() || !manual.source.trim()) return;
-    add({ ...manual, manual: true, definition: "Code and official term entered by the clinician from the WHO ICD-11 browser." });
+    add({
+      ...manual,
+      manual: true,
+      mapping_state: MAPPING_STATE.REVIEW,
+      definition: "Code and official term entered by the clinician from the WHO ICD-11 browser.",
+    });
     setManual(EMPTY_MANUAL);
     setManualOpen(false);
   };
@@ -78,8 +148,14 @@ export default function Icd11DiagnosisField({
           <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Diagnoses are documented, never auto-confirmed
         </p>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Codes come from the {ICD11_MMS.label} catalogue — the release verified against is recorded on each diagnosis —
-          or are entered from the WHO browser. A keyword, laboratory result or imaging finding alone never confirms a diagnosis.
+          Codes come from the verified {ICD11_MMS.label} catalogue — the release and source are stored on each
+          diagnosis — or are entered from the WHO browser and marked for review. This field records ICD-11 diagnoses
+          only: laboratory, medication and procedure codes belong to their own systems and are never entered here.
+          A keyword, laboratory result or imaging finding alone never confirms a diagnosis.
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          Catalogue release {ICD11_MMS.release} · WHO ICD-11 MMS. No live WHO API is called — the bundled verified
+          subset is used, and any code outside it is entered by the clinician.
         </p>
       </div>
 
@@ -121,13 +197,51 @@ export default function Icd11DiagnosisField({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setManualOpen((s) => !s)}
-        className="text-xs text-primary font-medium flex items-center gap-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Enter a code from the WHO browser
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setManualOpen((s) => !s)}
+          className="text-xs text-primary font-medium flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" /> Enter a code from the WHO browser
+        </button>
+        <button
+          type="button"
+          onClick={() => setUnmappedOpen((s) => !s)}
+          className="text-xs font-medium flex items-center gap-1 text-amber-700 dark:text-amber-400"
+        >
+          <Plus className="w-3.5 h-3.5" /> Diagnosis that cannot be mapped
+        </button>
+      </div>
+
+      {unmappedOpen && (
+        <div className="rounded-lg border border-amber-300/70 dark:border-amber-700/60 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-2">
+          <p className="text-[11px] text-amber-800 dark:text-amber-300">
+            The diagnosis is recorded as documented, with no code and a review-required flag. No code is invented or
+            approximated.
+          </p>
+          <Input
+            placeholder="Diagnosis as documented in the note"
+            value={unmapped.display}
+            onChange={(e) => setUnmapped({ ...unmapped, display: e.target.value })}
+          />
+          <Input
+            placeholder="Why it could not be mapped (required)"
+            value={unmapped.reason}
+            onChange={(e) => setUnmapped({ ...unmapped, reason: e.target.value })}
+          />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              size="sm"
+              onClick={addUnmapped}
+              disabled={!unmapped.display.trim() || !unmapped.reason.trim()}
+            >
+              Record as unresolved
+            </Button>
+          </div>
+        </div>
+      )}
 
       {manualOpen && (
         <div className="rounded-lg border border-border p-3 space-y-2">
@@ -169,8 +283,13 @@ export default function Icd11DiagnosisField({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-xs font-semibold text-primary">{e.code}</span>
+                <span className="font-mono text-xs font-semibold text-primary">
+                  {e.code || "No code"}
+                </span>
                 <span className="text-sm font-medium">{e.display}</span>
+                <span className="text-[10px] uppercase tracking-wide border border-border rounded px-1.5 py-0.5 text-muted-foreground">
+                  {ICD11_MMS.system} {e.release || ICD11_MMS.release}
+                </span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {e.specificity?.split(" — ")[0]} · {e.version}
@@ -181,9 +300,41 @@ export default function Icd11DiagnosisField({
             </button>
           </div>
 
-          {e.manual && (
+          {e.mapping_state === MAPPING_STATE.VERIFIED ? (
+            <p className="text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> {MAPPING_LABEL.verified} against the catalogue release
+              {e.release ? ` ${e.release}` : ""}
+              {e.verified_date ? ` · verified ${e.verified_date}` : ""}
+            </p>
+          ) : (
             <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" /> Manually entered — verify against the WHO browser.
+              <AlertTriangle className="w-3 h-3" /> {MAPPING_LABEL[e.mapping_state] || MAPPING_LABEL.review_required}
+              {e.mapping_state === MAPPING_STATE.REVIEW
+                ? " — code typed in, not checked against the catalogue. Verify it in the WHO browser."
+                : " — keep it on the coding review list and do not add a code until it is confirmed."}
+            </p>
+          )}
+
+          {e.mapping_state === MAPPING_STATE.REVIEW && (
+            <div className="space-y-1">
+              <Label className="text-xs">Where the code was verified</Label>
+              <Input
+                value={e.source ?? ""}
+                placeholder="WHO ICD-11 browser release and page, or the coding reference used"
+                onChange={(ev) => update(i, { source: ev.target.value })}
+              />
+            </div>
+          )}
+
+          {e.specificity_hint && (
+            <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" /> {e.specificity_hint} — choose it when the record supports it.
+            </p>
+          )}
+
+          {e.coding_note && (
+            <p className="text-[11px] rounded-md bg-muted/60 px-2 py-1.5">
+              <span className="font-medium">Coding instruction:</span> {e.coding_note}
             </p>
           )}
 

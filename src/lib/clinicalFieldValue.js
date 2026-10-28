@@ -77,13 +77,23 @@ export function formatFieldValue(type, value) {
   if (type === "icd11_diagnoses" && Array.isArray(value)) {
     return value
       .map((d) => {
-        const head = `${d.code || ""} ${d.display || ""}`.trim();
+        // The printed note never presents an unverified or absent code as a
+        // verified ICD-11 code: the mapping state is stated in the text.
+        const head = `${d.code || "No ICD-11 code"}${d.display ? ` ${d.display}` : ""}`.trim();
         const meta = [d.role, d.status, d.version].filter(Boolean).join(" · ");
+        const mapping =
+          d.mapping_state === "unresolved"
+            ? "Unresolved mapping — no code assigned, coding review required"
+            : d.mapping_state === "review_required"
+              ? "Mapping review required — code not verified against the catalogue"
+              : "Code verified against the ICD-11 catalogue";
         return (
-          `${head}${meta ? ` — ${meta}` : ""}` +
+          `${head}${meta ? ` — ${meta}` : ""} — ${mapping}` +
+          (d.source ? ` — Verified against: ${String(d.source).trim()}` : "") +
+          (d.coding_note ? ` — Coding instruction: ${String(d.coding_note).trim()}` : "") +
+          (d.specificity_hint ? ` — ${d.specificity_hint}` : "") +
           (d.basis ? ` — Basis: ${String(d.basis).trim()}` : "") +
-          (d.follow_up ? ` — Follow-up: ${String(d.follow_up).trim()}` : "") +
-          (d.manual ? " — code entered from the WHO browser" : "")
+          (d.follow_up ? ` — Follow-up: ${String(d.follow_up).trim()}` : "")
         );
       })
       .join("\n");

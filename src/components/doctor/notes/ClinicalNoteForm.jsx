@@ -464,6 +464,37 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         specialtyData[`srh.${key}`] = { label, value };
       });
     }
+    // Structured ICD-11 diagnoses — stored machine-readably beside the formatted
+    // note text, so the patient record, the audit trail and any later coding
+    // review read the same codes with the same provenance instead of re-parsing
+    // a sentence. An unresolved or unverified mapping keeps its state here.
+    const codedDiagnoses = [];
+    if (activeDef && activeDef.fields) {
+      activeDef.fields
+        .filter((f) => f.type === "icd11_diagnoses" && isFieldVisible(f, dataValues))
+        .forEach((f) => {
+          (Array.isArray(dataValues[f.key]) ? dataValues[f.key] : []).forEach((d) => {
+            if (!d || !d.display) return;
+            codedDiagnoses.push({
+              field_key: f.key,
+              code: d.code || "",
+              display: d.display,
+              system: d.system || "ICD-11-MMS",
+              system_uri: d.system_uri || "http://id.who.int/icd/release/11/mms",
+              release: d.release || "",
+              source: d.source || "",
+              verified_date: d.verified_date || "",
+              coding_note: d.coding_note || "",
+              specificity: d.specificity || "",
+              role: d.role || "",
+              status: d.status || "",
+              mapping_state: d.mapping_state || (d.manual ? "review_required" : "verified"),
+              basis: d.basis || "",
+              follow_up: d.follow_up || "",
+            });
+          });
+        });
+    }
     setSaving(true);
     try {
       // The backend independently verifies the active check-in before creating
@@ -492,6 +523,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         document_type: docType !== GENERAL_KEY ? docType : "",
         document_type_label: docType !== GENERAL_KEY ? activeDef?.label || docType : "",
         data: specialtyData,
+        icd11_coded_diagnoses: codedDiagnoses,
         photo_file_uris: photoUris,
       });
       if (meds.length > 0) {

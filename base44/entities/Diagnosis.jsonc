@@ -56,6 +56,51 @@
     "treatment_plan": {
       "type": "string",
       "description": "Treatment / management plan"
+    },
+    "icd11_code": {
+      "type": "string",
+      "description": "Verified ICD-11 MMS code for this diagnosis, or empty when the diagnosis has not been mapped. Never an ICD-10 code, a laboratory code, a medication identifier or a procedure code"
+    },
+    "icd11_display": {
+      "type": "string",
+      "description": "Official ICD-11 display term recorded with the code"
+    },
+    "icd11_system": {
+      "type": "string",
+      "description": "Coding system of the code \u2014 ICD-11-MMS"
+    },
+    "icd11_system_uri": {
+      "type": "string",
+      "description": "Canonical FHIR system URI for ICD-11 MMS"
+    },
+    "icd11_release": {
+      "type": "string",
+      "description": "ICD-11 release the code was verified against, e.g. 2025-01"
+    },
+    "icd11_source": {
+      "type": "string",
+      "description": "Where the code was verified \u2014 the catalogue source or the WHO browser reference entered by the clinician"
+    },
+    "icd11_mapping_state": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "review_required",
+        "unresolved"
+      ],
+      "description": "Mapping integrity state of this diagnosis \u2014 verified against the catalogue, entered and awaiting coding review, or unresolved with no code assigned"
+    },
+    "icd11_verified_date": {
+      "type": "string",
+      "description": "Date the code was verified against the WHO release (ISO date)"
+    },
+    "icd11_note_reference": {
+      "type": "string",
+      "description": "AMedix clinical note reference the coded diagnosis was recorded from"
+    },
+    "icd11_encounter_id": {
+      "type": "string",
+      "description": "AMedix encounter the coded diagnosis belongs to"
     }
   },
   "required": [

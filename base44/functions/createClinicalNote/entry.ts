@@ -86,6 +86,40 @@ export default async function(req) {
     // medications are written server-side (service role) — direct client-side
     // writes are blocked by Row Level Security.
     const { medications, ...notePayload } = payload;
+
+    // ---- ICD-11 coding, re-validated server-side --------------------------
+    // The coded diagnoses come from the note form but are never trusted as sent:
+    // only ICD-11 MMS entries carrying a documented term are kept, the system is
+    // fixed to ICD-11 MMS, and the mapping state is constrained. A code is never
+    // created, completed or substituted from a description — an entry the
+    // clinician could not map stays unresolved with no code.
+    const MAP_STATES = ["verified", "review_required", "unresolved"];
+    const coded = (Array.isArray(payload.icd11_coded_diagnoses) ? payload.icd11_coded_diagnoses : [])
+      .filter((d: any) => d && String(d.display || "").trim())
+      .slice(0, 40)
+      .map((d: any) => ({
+        field_key: String(d.field_key || ""),
+        code: String(d.code || "").trim(),
+        display: String(d.display || "").trim(),
+        system: "ICD-11-MMS",
+        system_uri: "http://id.who.int/icd/release/11/mms",
+        release: String(d.release || ""),
+        source: String(d.source || ""),
+        verified_date: String(d.verified_date || ""),
+        coding_note: String(d.coding_note || ""),
+        specificity: String(d.specificity || ""),
+        role: String(d.role || ""),
+        status: String(d.status || ""),
+        mapping_state: MAP_STATES.includes(d.mapping_state)
+          ? d.mapping_state
+          : String(d.code || "").trim()
+            ? "review_required"
+            : "unresolved",
+        basis: String(d.basis || ""),
+        follow_up: String(d.follow_up || ""),
+      }));
+    notePayload.icd11_coded_diagnoses = coded;
+
     const now = new Date();
     notePayload.patient_id = patient.id;
     notePayload.patient_cin = patient.cin || "";
@@ -124,6 +158,78 @@ export default async function(req) {
       hospital: doctor.hospital || "",
       department: doctor.specialization || "",
     });
+
+    // Coding provenance is audited separately, so the trail answers "which code,
+    // from which release, verified against what, and was it reviewed".
+    if (coded.length > 0) {
+      const awaitingReview = coded.filter((d) => d.mapping_state !== "verified").length;
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: doctor.full_name,
+        actor_role: "doctor",
+        action: "coded_clinical_diagnosis",
+        action_label:
+          `recorded ${coded.length} ICD-11 MMS diagnosis code(s), release ${coded[0].release || "not stated"}` +
+          (awaitingReview ? `, ${awaitingReview} awaiting coding review` : ""),
+        patient_id: patient.id,
+        patient_user_id: patient.user_id || "",
+        patient_cin: patient.cin,
+        patient_name: patient.full_name,
+        encounter_id: encounter.encounter_id || "",
+        document_id: note.id,
+        hospital: doctor.hospital || "",
+        department: doctor.specialization || "",
+      });
+
+      // The coded diagnosis is written into the patient's own record with its
+      // provenance, so the note and the record carry the same ICD-11 code. Only
+      // a diagnosis the clinician CONFIRMED as primary or secondary is mirrored:
+      // suspected, differential and unresolved entries stay on the note and are
+      // never promoted into the patient's confirmed problem list.
+      const existingDiags = await base44.asServiceRole.entities.Diagnosis
+        .filter({ patient_id: patient.id })
+        .catch(() => []);
+      const seenCodes = new Set(
+        existingDiags.map((x: any) => String(x.icd11_code || "").trim().toUpperCase()).filter(Boolean)
+      );
+      const seenNames = new Set(
+        existingDiags.map((x: any) => String(x.diagnosis_name || "").trim().toLowerCase()).filter(Boolean)
+      );
+      for (const d of coded) {
+        if (d.status !== "Confirmed" || !["Primary", "Secondary"].includes(d.role)) continue;
+        const codeKey = d.code ? d.code.toUpperCase() : "";
+        const nameKey = d.display.toLowerCase();
+        if ((codeKey && seenCodes.has(codeKey)) || seenNames.has(nameKey)) continue;
+        await base44.asServiceRole.entities.Diagnosis
+          .create({
+            patient_id: patient.id,
+            patient_user_id: patient.user_id || "",
+            patient_cin: patient.cin || "",
+            patient_name: patient.full_name || "",
+            doctor_id: doctor.id,
+            doctor_name: doctor.full_name || "",
+            diagnosis_name: d.display,
+            diagnosis_type: d.role === "Primary" ? "Primary" : "Secondary",
+            created_datetime: now.toISOString(),
+            description: d.basis,
+            assessment: d.basis,
+            treatment_plan: d.follow_up,
+            icd11_code: d.code,
+            icd11_display: d.display,
+            icd11_system: d.system,
+            icd11_system_uri: d.system_uri,
+            icd11_release: d.release,
+            icd11_source: d.source,
+            icd11_mapping_state: d.mapping_state,
+            icd11_verified_date: d.verified_date,
+            icd11_note_reference: note.note_reference || "",
+            icd11_encounter_id: note.encounter_id || "",
+          })
+          .catch(() => null);
+        if (codeKey) seenCodes.add(codeKey);
+        seenNames.add(nameKey);
+      }
+    }
 
     return Response.json({ note, checkin_id: checkin.id });
   } catch (error) {
