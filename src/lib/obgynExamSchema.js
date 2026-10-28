@@ -14,7 +14,18 @@ const NUM = (key, label, unit, min, max, placeholder) => ({ key, label, type: "n
 const TXT = (key, label, placeholder) => ({ key, label, type: "input", placeholder });
 const AREA = (key, label, placeholder) => ({ key, label, type: "textarea", placeholder });
 
-export const EXAM_STATUS_OPTIONS = ["Performed", "Partially Performed", "Deferred", "Declined by Patient", "Not Indicated"];
+// Every status is a real documented answer — "Not Examined" and "Unable to
+// Assess" exist so an examination that did not happen is never recorded as
+// performed, and a documented reason is asked for in each of those cases.
+export const EXAM_STATUS_OPTIONS = [
+  "Performed",
+  "Partially Performed",
+  "Not Examined",
+  "Deferred",
+  "Declined by Patient",
+  "Not Indicated",
+  "Unable to Assess",
+];
 export const CONSENT_OPTIONS = ["Obtained", "Not Obtained", "Not Applicable"];
 export const CHAPERONE_OPTIONS = ["Offered & Accepted", "Offered & Declined", "Not Offered", "Not Applicable"];
 

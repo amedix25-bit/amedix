@@ -41,7 +41,12 @@ export default function ObgynExamSection({ docKey, values, onChange }) {
   const setVal = (key, val) => onChange({ ...v, [key]: val });
 
   const status = v[STATUS_KEY] || "";
-  const reasonNeeded = status === "Deferred" || status === "Declined by Patient" || status === "Not Indicated";
+  const reasonNeeded =
+    status === "Not Examined" ||
+    status === "Deferred" ||
+    status === "Declined by Patient" ||
+    status === "Not Indicated" ||
+    status === "Unable to Assess";
   const chaperone = v[CHAPERONE_KEY] || "";
 
   const toggle = (key) =>

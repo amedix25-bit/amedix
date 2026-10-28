@@ -152,8 +152,12 @@ export default function ObgynSafetyPromptsField({ value, values, onChange }) {
                   <p className="text-sm font-medium leading-snug">{p.title}</p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{p.message}</p>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Clinical alert — decision support, not a diagnosis. It does not prescribe, order or replace the
+                  clinician's documented assessment.
+                </p>
                 <p className="text-[10px] leading-snug">
-                  <span className="text-muted-foreground">Reference: {p.reference_label || "not stated"} — </span>
+                  <span className="text-muted-foreground">Source &amp; version: {p.reference_label || "not stated"} — </span>
                   <span className={p.reference_verified ? "text-emerald-700" : "text-amber-700"}>
                     {p.reference_verified
                       ? "verified at source"

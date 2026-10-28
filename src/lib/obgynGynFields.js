@@ -86,31 +86,9 @@ export const gynHistoryFields = () =>
       "Faecal incontinence",
       "Other — documented in the note",
     ]),
-    S("gyn_sexual_history", "Sexual History", [
-      "Not clinically indicated at this encounter",
-      "Discussed privately — documented in the note",
-      "Deferred at the patient's request",
-      "Declined",
-    ]),
-    S("gyn_contraception_current", "Current Contraception", [
-      "Not documented",
-      "None",
-      "Combined hormonal",
-      "Progestogen only",
-      "Intrauterine device or system",
-      "Barrier",
-      "Permanent method",
-      "Other — documented in the note",
-    ]),
-    S("gyn_fertility_goals", "Fertility Goals Documented", [
-      "Not documented",
-      "Not currently trying to conceive",
-      "Trying to conceive",
-      "Seeking fertility assessment",
-      "Fertility treatment in progress",
-      "Family complete",
-      "Not discussed — patient preference",
-    ]),
+    // Sexual activity, contraception, pregnancy intention and safeguarding are
+    // recorded once, in the shared Sexual & Reproductive History section of the
+    // same form — they are deliberately not repeated here.
     T("gyn_previous_gyn_procedures", "Previous Gynecologic Procedures or Surgery"),
     S("gyn_cervical_screening_status", "Cervical Screening Status", [
       "Not documented",
@@ -130,59 +108,14 @@ export const gynHistoryFields = () =>
   ]);
 
 // ---- Examination -----------------------------------------------------------
-// Intimate examination is recorded only when it was performed, with the consent
-// and chaperone decision that accompanied it.
-export const gynExaminationFields = () =>
-  sec("Gynecologic Examination — Consent, Findings & Deferral", [
-    S("gyn_exam_indication", "Indication for Examination at This Encounter", [
-      "Not documented",
-      "Symptoms reported",
-      "Screening",
-      "Follow-up of a known condition",
-      "Pre-operative assessment",
-      "Not indicated at this encounter",
-    ]),
-    S("gyn_exam_consent", "Consent for Intimate Examination", [
-      "Documented",
-      "Declined by the patient",
-      "Not required — examination not performed",
-      "Not documented",
-    ]),
-    S("gyn_chaperone_offer", "Chaperone", [
-      "Offered — accepted",
-      "Offered — declined by the patient",
-      "Not offered — documented reason",
-      "Not recorded",
-    ]),
-    S("gyn_abdominal_exam", "Abdominal Examination", [
-      "Not indicated",
-      "Not performed — deferred",
-      "Performed — findings documented",
-      "Performed — no abnormality documented",
-    ]),
-    S("gyn_speculum_exam", "Speculum Examination", [
-      "Not indicated",
-      "Not performed — deferred",
-      "Declined by the patient",
-      "Performed — findings documented",
-      "Performed — no abnormality documented",
-    ]),
-    S("gyn_bimanual_exam", "Bimanual / Pelvic Examination", [
-      "Not indicated",
-      "Not performed — deferred",
-      "Declined by the patient",
-      "Performed — findings documented",
-      "Performed — no abnormality documented",
-    ]),
-    S("gyn_breast_exam", "Breast Examination", [
-      "Not indicated",
-      "Not performed — deferred",
-      "Performed — findings documented",
-      "Performed — no abnormality documented",
-    ]),
-    T("gyn_exam_findings", "Examination Findings Recorded (for the examinations actually performed)"),
-    T("gyn_exam_deferral_reason", "Reason Any Examination Was Deferred or Not Performed"),
-  ]);
+// The clinical examination is documented ONCE, in the shared structured
+// examination module of every OB/GYN note (src/lib/obgynExamSchema.js +
+// ObgynExamSection.jsx): general, abdominal, external genital, speculum,
+// bimanual, breast and other indicated examinations, with examination status,
+// intimate-examination consent, chaperone offer and decision, and the documented
+// reason when an examination was deferred, declined or not indicated.
+// No examination fields are duplicated here — a second copy would let the two
+// disagree and would ask the doctor to document the same examination twice.
 
 // ---- Assessment ------------------------------------------------------------
 export const gynAssessmentFields = () =>
@@ -229,51 +162,71 @@ export const gynAssessmentFields = () =>
     ]),
   ]);
 
-// ---- Investigations and screening ------------------------------------------
-export const gynInvestigationFields = () =>
-  sec("Investigations, Screening & Follow-Up", [
-    S("gyn_investigation_intent", "Purpose of the Investigations in This Note", [
+// ---- Screening and surveillance --------------------------------------------
+// Screening and surveillance DECISIONS belong in the note; ordering tests,
+// entering results and viewing report files stay in the Laboratory, Imaging and
+// Histopathology tabs, which already hold them. Nothing here re-creates a test
+// order form or a result entry screen.
+export const gynScreeningFields = () =>
+  sec("Screening, Surveillance & Follow-Up", [
+    S("gyn_screening_intent", "Purpose Recorded at This Encounter", [
       "Not applicable",
       "Screening",
       "Diagnostic evaluation of symptoms",
       "Surveillance of a known condition",
       "Pre-operative assessment",
     ]),
-    S("gyn_pregnancy_test", "Pregnancy Testing", [
-      "Not indicated",
-      "Indicated — not yet performed",
-      "Performed — negative",
-      "Performed — positive, assessment recorded",
-      "Declined",
-    ]),
-    S("gyn_microbiology", "Microbiology", [
-      "Not indicated",
-      "Ordered — result awaited",
-      "Result — no infection identified",
-      "Result — organism identified, treatment recorded",
-      "Declined",
-    ]),
-    S("gyn_hormonal_tests", "Hormonal Investigations", [
-      "Not indicated",
-      "Ordered — result awaited",
-      "Result reviewed and documented",
+    S("gyn_screening_eligibility", "Screening Eligibility", [
+      "Not applicable",
+      "Eligible — programme applies",
+      "Not eligible — outside the age range",
+      "Not offered — documented reason",
+      "Patient declined screening",
       "Not documented",
     ]),
-    S("gyn_ultrasound", "Pelvic Ultrasound", [
-      "Not indicated",
-      "Ordered — result awaited",
-      "Performed — findings documented",
-      "Performed — no abnormality documented",
-    ]),
-    S("gyn_histology", "Histology or Pathology", [
+    S("gyn_cervical_test_type", "Cervical Screening Test Documented", [
       "Not applicable",
-      "Specimen sent — result awaited",
-      "Result — benign, documented",
-      "Result — abnormal, plan documented",
+      "Cytology alone",
+      "HPV testing alone",
+      "Co-testing — cytology and HPV",
+      "Not performed this encounter",
+      "Not documented",
     ]),
-    T("gyn_specimen_details", "Specimen Details — site, date taken and where sent"),
-    F("gyn_screening_due_date", "Next Screening or Surveillance Due — date and the basis for the interval"),
-    T("gyn_result_followup", "Follow-Up Action for the Results Above — who is responsible and when"),
+    S("gyn_cervical_result_summary", "Cervical Screening Result as Reviewed", [
+      "No result to review",
+      "Normal — result reviewed",
+      "Abnormal — result reviewed, management documented",
+      "Unsatisfactory sample — repeat required",
+      "Result pending in the laboratory record",
+      "Not documented",
+    ]),
+    F("gyn_screening_interval_basis", "Screening Interval Applied and Its Basis (source of the interval)"),
+    F("gyn_screening_due_date", "Next Screening or Surveillance Due — date"),
+    T("gyn_specimen_details", "Specimen Details for Any Sample Taken in This Encounter — site, date, where sent"),
+    T("gyn_result_followup", "Follow-Up for Pending or Reviewed Results — who is responsible, when, and where the result is held"),
+  ]);
+
+// ---- Medication safety -----------------------------------------------------
+// The medication list itself belongs to the Medication tab and is attached to
+// the note automatically. This block records only the clinician's safety review
+// at this encounter — never a prescription and never an automatic change.
+export const gynMedicationSafetyFields = () =>
+  sec("Medication Safety Review at This Encounter", [
+    S("gyn_med_review_status", "Medication Safety Review", [
+      "Not reviewed at this encounter",
+      "Reviewed — no change to treatment",
+      "Reviewed — change made and documented in the medication record",
+      "Reviewed — prescribing deferred, reason documented",
+      "Not applicable — no medication prescribed or continued",
+    ]),
+    S("gyn_med_pregnancy_lactation", "Pregnancy and Breastfeeding Considered", [
+      "Not applicable",
+      "Considered — no contraindication documented",
+      "Considered — contraindication documented and avoided",
+      "Not assessed — documented reason",
+      "Unknown pregnancy status — documented",
+    ]),
+    T("gyn_med_safety_notes", "Interactions, Allergy and Maternal or Fetal Risk Considered — the clinician's documented decision"),
   ]);
 
 // ---- Procedures and surgery ------------------------------------------------

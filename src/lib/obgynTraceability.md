@@ -226,6 +226,43 @@ Deliberate design points:
   cervical screening status includes overdue and not-applicable, with HPV
   vaccination recorded separately — one universal schedule is never assigned.
 
+## 9. Fourth pass — de-duplication, screening, medication safety and alert wording
+
+Changes are inside the existing forms and the existing shared components. No
+template was added or removed, and no examination, vital-sign, laboratory,
+imaging or medication record was duplicated.
+
+- **One examination record.** The gynecology-only examination block added in the
+  previous pass was removed. Every OB/GYN note documents its examination once, in
+  the shared structured examination module (general, abdominal, external genital,
+  speculum, bimanual, breast and other indicated examinations), which already
+  records examination status, intimate-examination consent, chaperone offer and
+  decision, and the reason for a deferred or declined examination.
+- **Examination status extended** with "Not Examined" and "Unable to Assess",
+  both of which now ask for the documented reason — so an examination that did
+  not happen can no longer be recorded as performed, and nothing is preselected
+  as normal or copied from a previous encounter.
+- **Sensitive history asked once.** Sexual activity, contraception, pregnancy
+  intention and safeguarding were removed from the gynecology history block: the
+  shared Sexual & Reproductive History section of the same form already records
+  them, privately, and is permission-gated.
+- **Screening separated from investigation.** The previous section name was being
+  retired centrally (it read as a laboratory section), so those fields never
+  reached the screen. It is now "Screening, Surveillance & Follow-Up": screening
+  eligibility, the cervical test type, the reviewed result, the interval and its
+  basis, next due date, specimen details taken at this encounter, and who owns
+  the follow-up. Test ordering and result entry stay in the Laboratory, Imaging
+  and Histopathology tabs.
+- **Medication safety review** added as its own short block: review status,
+  pregnancy and breastfeeding considered, and the clinician's documented
+  decision. The medication list itself stays in the Medication tab and is
+  attached to the note automatically; nothing is prescribed, changed or stopped
+  from the template.
+- **Alert wording.** Each safety prompt now states, in the note, that it is a
+  clinical alert and decision support rather than a diagnosis, that it does not
+  prescribe or order, and shows its source with the version and verification
+  state. Alerts remain optional and never block signing.
+
 **Still outstanding for this specialty:** ACOG and RCOG document numbers and dates
 could not be confirmed at source in this build, so no gynecology guidance is cited
 by number; the ICD-11 catalogue covers endometriosis, benign genital tract
