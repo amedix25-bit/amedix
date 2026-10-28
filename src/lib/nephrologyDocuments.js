@@ -125,37 +125,15 @@ const urinaryHistory = () =>
   ]);
 
 // ---- History: comorbidities and medication exposure ----------------------
-const comorbidityHistory = () =>
-  sec("Comorbidities", [
-    S("diabetes", "Diabetes Mellitus", ["No", "Type 1", "Type 2", "Other / secondary", "Unknown"]),
-    S("hypertension", "Hypertension", ["No", "Yes — controlled", "Yes — uncontrolled", "Unknown"]),
-    S("cardiovascular_disease", "Cardiovascular Disease", ["None known", "Ischaemic heart disease", "Heart failure", "Valvular disease", "Peripheral arterial disease", "Cerebrovascular disease", "Multiple — see detail"]),
-    S("autoimmune_disease", "Autoimmune / Systemic Disease", ["None known", "Systemic lupus erythematosus", "ANCA-associated vasculitis", "Rheumatoid arthritis", "Other — see detail", "Unknown"]),
-    T("autoimmune_detail", "Autoimmune / Systemic Disease — Detail & Treatment", when("autoimmune_disease", "Systemic lupus erythematosus", "ANCA-associated vasculitis", "Rheumatoid arthritis", "Other — see detail")),
-    S("own_hereditary_disease", "Hereditary or Cystic Kidney Disease in the Patient", ["None known", "Autosomal dominant polycystic disease", "Alport syndrome", "Other hereditary disease — see detail", "Unknown"]),
-    T("own_hereditary_detail", "Hereditary Kidney Disease — Detail", when("own_hereditary_disease", "Autosomal dominant polycystic disease", "Alport syndrome", "Other hereditary disease — see detail")),
-    T("other_comorbidities", "Other Comorbidities (liver disease, malignancy, thyroid disease, obesity, sleep apnoea, gout)"),
-    S("smoking_status", "Smoking Status", ["Never", "Former", "Current", NOT_KNOWN]),
-    S("alcohol_intake", "Alcohol Intake", ["None", "Occasional", "Regular", NOT_KNOWN]),
-  ]);
+// Comorbidity and medication lists are carried by the unified AMedix Patient
+// Record and are no longer re-entered in the Nephrology notes. Only the
+// nephrology-specific exposure question is documented here.
+const comorbidityHistory = () => [];
 
 const medicationExposure = () =>
-  sec("Medication Exposure & Nephrotoxic Risk", [
-    S("recent_medication_changes", "Medication Changes in the Last Three Months", ["None reported", "Yes — see detail", "Unknown"]),
-    T("recent_medication_changes_detail", "Medication Changes — Agent, Timing & Reason", when("recent_medication_changes", "Yes — see detail")),
-    S("nsaid_use", "NSAID Use", ["None", "Occasional", "Regular", "Recent short course", "Unknown"]),
-    T("nsaid_use_detail", "NSAID Use — Agent, Dose & Duration", when("nsaid_use", "Occasional", "Regular", "Recent short course")),
+  sec("Nephrotoxic Risk", [
     S("nephrotoxic_exposure", "Nephrotoxic Exposure", ["None identified", "Contrast media", "Aminoglycoside", "Amphotericin B", "Cisplatin", "Calcineurin inhibitor", "Lithium", "Tenofovir", "Other — see detail", "Not assessed"]),
     T("nephrotoxic_exposure_detail", "Nephrotoxic Exposure — Agent, Timing & Relationship to the Presentation", when("nephrotoxic_exposure", "Contrast media", "Aminoglycoside", "Amphotericin B", "Cisplatin", "Calcineurin inhibitor", "Lithium", "Tenofovir", "Other — see detail")),
-    S("supplements", "Supplements, Herbal and Over-the-Counter Products", ["None reported", "Reported — see detail", "Not asked"]),
-    T("supplements_detail", "Supplements and Herbal Products — Detail", when("supplements", "Reported — see detail")),
-    S("adherence", "Adherence to Prescribed Therapy", ["Taking as prescribed", "Occasionally missed", "Frequently missed", "Stopped — see reason", "Not applicable", "Not assessed"]),
-    T("adherence_detail", "Adherence — Detail and Reason", when("adherence", "Occasionally missed", "Frequently missed", "Stopped — see reason")),
-    S("allergy_status", "Allergy Status", ["No known allergies", "Known allergy — see detail", "Not established"]),
-    T("allergy_detail", "Allergy — Agent, Reaction & Severity", when("allergy_status", "Known allergy — see detail")),
-    S("renal_dose_review", "Renal Dose Considerations", ["Reviewed — no adjustment required", "Reviewed — dose adjusted", "Pending review", "Not reviewed"]),
-    T("renal_dose_detail", "Renal Dose Considerations — Agents Adjusted and New Doses", when("renal_dose_review", "Reviewed — dose adjusted", "Pending review")),
-    T("medication_risk_summary", "Medication Risk Summary (agents, timing and link to the current presentation)"),
   ]);
 
 // ---- History: dialysis and transplantation -------------------------------
@@ -199,39 +177,15 @@ const examinationSection = ({ access = false, label = "Renal & Systemic Examinat
 ];
 
 // ---- Investigations ------------------------------------------------------
-const chemistryResults = (label = "Serum Chemistry, Haematology and Immunology Results") => [
-  ...sec("Serum Chemistry & Renal Function", [
-    S("results_availability", "Availability of Results", AVAILABILITY),
-    I("latest_specimen_date", "Most Recent Specimen Date"),
-    S("results_source", "Source of Results", ["AMedix laboratory", "Outside laboratory", "Referring hospital", "Patient-reported", NOT_KNOWN]),
-    { key: "renal_labs_serum", label, type: "renal_labs", panels: ["chemistry", "haematology", "immunology"] },
-    T("result_commentary", "Interpretation Notes (which values are historical, pending or unavailable)"),
-  ]),
-];
+// Serum chemistry, renal function, urine studies, radiology and histopathology
+// results live in the unified AMedix Patient Record (laboratory and imaging
+// requests) and are no longer re-entered in the Nephrology notes. These
+// builders stay so every template that composes them keeps working.
+const chemistryResults = (_label) => [];
 
-const urineResults = () => [
-  ...sec("Urine Studies", [
-    { key: "renal_labs_urine", label: "Urine Studies — Dipstick, Microscopy, UACR and UPCR", type: "renal_labs", panels: ["urine"] },
-    T("urine_microscopy_findings", "Urine Microscopy — Additional Findings (casts, dysmorphic red cells, crystals)"),
-    S("urine_culture", "Urine Culture", ["Not sent", "Sent — pending", "No growth", "Growth — see organism", "Contaminated", "Not indicated"]),
-    I("urine_culture_result", "Organism and Sensitivities", when("urine_culture", "Growth — see organism")),
-  ]),
-];
+const urineResults = () => [];
 
-const radiologyHistology = () => [
-  ...sec("Radiology & Histopathology", [
-    S("ultrasound_status", "Renal Ultrasound", ["Not performed", "Performed — see findings", "Pending", "Unavailable"]),
-    I("ultrasound_date", "Ultrasound Date", when("ultrasound_status", "Performed — see findings")),
-    T("ultrasound_findings", "Renal Ultrasound Findings (size, cortical thickness, echogenicity, hydronephrosis, cysts, calculi, Doppler)", when("ultrasound_status", "Performed — see findings")),
-    S("other_radiology_status", "Other Radiology", ["Not performed", "Performed — see findings", "Pending", "Unavailable"]),
-    I("other_radiology_date", "Date of Other Radiology", when("other_radiology_status", "Performed — see findings")),
-    T("other_radiology_findings", "Other Radiology Findings (CT, MRI, MR angiography, DTPA / DMSA, vascular Doppler)", when("other_radiology_status", "Performed — see findings")),
-    S("biopsy_status", "Kidney Biopsy", ["Not performed", "Performed — see findings", "Pending", "Declined", "Contraindicated"]),
-    I("biopsy_date", "Biopsy Date", when("biopsy_status", "Performed — see findings")),
-    T("biopsy_findings", "Biopsy Findings — Light Microscopy, Immunofluorescence and Electron Microscopy", when("biopsy_status", "Performed — see findings")),
-    I("pathology_reference", "Pathology Report Reference and Reporting Pathologist", when("biopsy_status", "Performed — see findings")),
-  ]),
-];
+const radiologyHistology = () => [];
 
 const assessmentSection = ({ kdigo = true } = {}) => [
   ...sec("Assessment", [
@@ -631,13 +585,10 @@ export const NEPHROLOGY_DOCS = [
         I("weight_current", "Current Weight (kg)"),
         I("weight_previous", "Previously Recorded Weight (kg)"),
       ]),
-      ...sec("Comorbidities & Targets", [
-        S("diabetes", "Diabetes Mellitus", ["No", "Type 1", "Type 2", "Other / secondary", "Unknown"]),
+      ...sec("Treatment Targets", [
         I("hba1c_target", "HbA1c Target (%)"),
-        S("hypertension", "Hypertension", ["No", "Yes — controlled", "Yes — uncontrolled", "Unknown"]),
         I("bp_target", "Blood Pressure Target"),
         I("bp_achieved", "Blood Pressure Achieved"),
-        S("cardiovascular_disease", "Cardiovascular Disease", ["None known", "Ischaemic heart disease", "Heart failure", "Valvular disease", "Peripheral arterial disease", "Cerebrovascular disease", "Multiple — see detail"]),
         T("management_goals", "Management Goals"),
       ]),
       ...sec("Complication Management", [

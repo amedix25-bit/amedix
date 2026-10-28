@@ -192,7 +192,7 @@ export function buildNephAlerts(values = {}) {
     );
 
   const egfrLab = lab(values, "egfr");
-  const egfr = egfrLab ? egfrLab.value : num(values.egfr_current);
+  const egfr = egfrLab ? egfrLab.value : num(values.egfr_current) ?? num(values.kdigo?.egfr);
   if (egfr !== null && egfr > 0 && egfr < 30)
     add(
       "egfr_below_30",
@@ -209,7 +209,7 @@ export function buildNephAlerts(values = {}) {
     );
 
   const uacrLab = lab(values, "uacr");
-  const uacr = uacrLab ? uacrLab.value : null;
+  const uacr = uacrLab ? uacrLab.value : num(values.kdigo?.uacr);
   if (values.albuminuria_category === "A3" || (uacr !== null && uacr >= 30))
     add(
       "albuminuria_a3",
