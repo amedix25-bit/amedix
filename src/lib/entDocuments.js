@@ -623,6 +623,12 @@ const paediatric = {
   ],
 };
 
+// ---- Safety prompts (added once to every ENT note type) --------------------
+export const entSafetySection = () =>
+  sec("Safety Concerns & Documented Action", [
+    { key: "ent_safety", label: "Safety prompts from the documented findings", type: "ent_safety" },
+  ]);
+
 export const ENT_DOCS = [
   consultation,
   followup,
