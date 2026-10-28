@@ -246,7 +246,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
       {hasFields && <SurgeryGuidelineBasis documentKey={def.key} />}
 
       {hasFields && (
-        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} notice={def.notice || ""} />
+        <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} notice={def.notice || ""} patientId={patient?.id || ""} />
       )}
 
       {def && def.toothChart && (

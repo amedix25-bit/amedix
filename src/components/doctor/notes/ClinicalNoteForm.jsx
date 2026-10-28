@@ -659,6 +659,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               onChange={(k, val) => setDataValues((s) => ({ ...s, [k]: val }))}
               specialty={mySpecialty}
               notice={activeDef.notice || ""}
+              patientId={patient?.id || ""}
             />
             <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty optional sections are simply not saved. Fields marked Required must be answered.</p>
           </div>

@@ -1,8 +1,16 @@
 // Serializes the structured Rheumatology fields into the readable text stored
 // with a clinical note or document, so the diagnosis and investigation detail
 // is preserved in the longitudinal record and in exports.
+import { formatInstrumentEntry } from "@/lib/rheumInstruments";
+
 export function formatFieldValue(type, value) {
   if (value === undefined || value === null) return "";
+
+  if (type === "disease_activity" && Array.isArray(value)) {
+    return value
+      .map((e) => formatInstrumentEntry(e) + (e.inputs ? "" : ""))
+      .join("\n");
+  }
 
   if (type === "icd11_diagnoses" && Array.isArray(value)) {
     return value

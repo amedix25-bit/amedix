@@ -10,6 +10,7 @@ import SelectExamination from "@/components/doctor/notes/SelectExamination";
 import VitalSignsField from "@/components/doctor/notes/VitalSignsField";
 import Icd11DiagnosisField from "@/components/doctor/notes/Icd11DiagnosisField";
 import RheumInvestigationPanels from "@/components/doctor/notes/RheumInvestigationPanels";
+import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -32,7 +33,7 @@ export function EmergencyWorkflowStrip() {
   );
 }
 
-function FieldRow({ f, values, onChange, specialty }) {
+function FieldRow({ f, values, onChange, specialty, patientId }) {
   return (
     <div className="space-y-1.5">
       <Label>
@@ -81,6 +82,14 @@ function FieldRow({ f, values, onChange, specialty }) {
       {f.type === "investigation_panels" && (
         <RheumInvestigationPanels value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
+      {f.type === "disease_activity" && (
+        <ActivityInstrumentsField
+          value={values[f.key]}
+          onChange={(v) => onChange(f.key, v)}
+          instruments={f.instruments}
+          patientId={patientId}
+        />
+      )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>
           <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
@@ -117,14 +126,14 @@ function groupFields(defs) {
   return groups;
 }
 
-export default function DocumentFields({ defs = [], values = {}, onChange, specialty = "", notice = "" }) {
+export default function DocumentFields({ defs = [], values = {}, onChange, specialty = "", notice = "", patientId = "" }) {
   const visible = defs.filter((f) => isFieldVisible(f, values));
   if (!visible.some((f) => f.section)) {
     return (
       <div className="space-y-4">
         {notice && <p className="text-xs text-muted-foreground rounded-md bg-muted/50 border border-border p-2.5">{notice}</p>}
         {visible.map((f) => (
-          <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} />
+          <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} patientId={patientId} />
         ))}
       </div>
     );
@@ -142,7 +151,7 @@ export default function DocumentFields({ defs = [], values = {}, onChange, speci
           )}
           <div className="space-y-4">
             {g.fields.map((f) => (
-              <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} />
+              <FieldRow key={f.key} f={f} values={values} onChange={onChange} specialty={specialty} patientId={patientId} />
             ))}
           </div>
         </div>

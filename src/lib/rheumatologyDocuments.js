@@ -187,7 +187,7 @@ const diagnosisFields = () => [
 // automatically; the clinician selects what is indicated and records the
 // indication, result, units, reference range, interpretation and follow-up.
 const investigationFields = () => [
-  { key: "investigation_panels", label: "Investigations — select only those indicated", type: "investigation_panels" },
+  { key: "investigation_panels", label: "Laboratory, Serology & Radiology — select only those indicated", type: "investigation_panels" },
 ];
 
 // A note template's structured examination is the shared Dynamic Examination
