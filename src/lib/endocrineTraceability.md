@@ -1,47 +1,91 @@
-# Endocrinology — templates, coding and safety traceability
+# Endocrinology — audit, templates, coding and safety traceability
 
-Audit record for the Endocrinology note suite: what was strengthened, on what
-basis, and what remains subject to clinical approval. Cited sources are listed in
-`src/lib/endocrineReferences.js`; codes in `src/lib/endocrineIcd11.js`.
+Record of the Paragraph 2 audit of the existing Endocrinology Specialty System:
+what was inspected, what was preserved, what was strengthened, and on what basis.
+Sources: `src/lib/endocrineReferences.js`. Codes: `src/lib/endocrineIcd11.js`.
+Implementation: `src/lib/endocrineDocuments.js` + `endocrineSafetyRules.js`.
 
-## 1. Scope — existing notes strengthened in place
+## 1. Audit of what already existed
 
-The eight templates were **not** recreated, renamed or replaced. Keys, labels and
-field order are unchanged, and every field is appended, never removed, so notes
-already saved and any workflow reading a note by key keep working.
+Eight note types were found and inspected end to end (fields, conditional logic,
+validation, workflow):
 
-| Note key | Appended (effective after the shared note policy) |
+`endo_consultation` · `endo_followup` · `endo_diabetes_followup` ·
+`endo_thyroid_followup` · `endo_progress_note` · `endo_care_plan` ·
+`endo_medication_adjustment` · `endo_discharge_summary`
+
+All eight were **strengthened in place**. Keys, labels and order are unchanged;
+every addition is appended, so saved notes keep their meaning and every workflow
+reading a note by key keeps working. No patient record, saved note, permission or
+audit entry was touched.
+
+Two fields were already absent before this work, retired by the shared note policy
+and not by this change: `medication` (labelled "Medication") and the free-text
+`thyroid_exam`, which the policy replaces with the structured Select Examination.
+Both were confirmed pre-existing, not regressions.
+
+## 2. Duplication removed (shared AMedix surfaces)
+
+The audit found that an earlier draft had re-collected values AMedix already
+provides. Removed, so the notes do not duplicate shared tabs:
+
+- the generic biochemistry panels (sodium, potassium, corrected calcium, glucose,
+  eGFR) — laboratory results live in the shared record and attach to the note;
+- the anthropometry/vitals block (weight, height, waist, blood pressure) — shared
+  vital signs;
+- free-text examination fields — every note now uses the one structured
+  Select Examination interface built from the Endocrinology examination catalogue;
+- therapy/smoking duplication — medications, allergies, social and past history
+  stay with the unified Patient Record.
+
+Consequently the numeric electrolyte rules were removed from the safety engine: no
+rule reads a lab number out of a note any more. Electrolyte severity is raised by
+the clinician selecting the concern, which keeps authorship of the judgement clear.
+
+## 3. Clinical content added (per note)
+
+| Note | Added |
 |---|---|
-| `endo_consultation` | Endocrine presentation, anthropometry/vitals, biochemistry, ICD-11, safety |
-| `endo_followup` | Interval course, biochemistry, ICD-11, safety |
-| `endo_diabetes_followup` | Glycaemic metrics/targets, cardiovascular & kidney risk, complication screening, therapy & self-management, biochemistry, ICD-11, safety |
-| `endo_thyroid_followup` | Thyroid biochemistry/status, replacement therapy, nodule assessment, biochemistry, ICD-11, safety |
-| `endo_progress_note` | Interval course, biochemistry, ICD-11, safety |
-| `endo_care_plan` | Individualised targets, monitoring intervals, preventive care & education, ICD-11, safety |
-| `endo_medication_adjustment` | Drug class, basis for adjustment, post-change monitoring, biochemistry, ICD-11, safety |
-| `endo_discharge_summary` | Status at discharge, insulin regimen, stress-dose advice, follow-up interval, readmission risk, biochemistry, ICD-11, safety |
+| Consultation | Structured presentation (duration, cardinal diabetes symptoms, weight trend, family history of endocrine disease), **Differential Diagnosis + diagnostic confidence (required)**, management decision, education, follow-up |
+| Follow-Up | Interval course, unscheduled care, adherence, therapy change, structured examination, management, education, follow-up |
+| Diabetes Follow-Up | Individualised HbA1c target, monitoring method, CGM-only metrics (Time in Range / Below Range / GMI, conditional), ADA hypoglycaemia grade, acute decompensation state, cardiovascular & kidney risk profile, complication screening results, regimen category, education, follow-up |
+| Thyroid Follow-Up | Functional status interpretation, pregnancy/postpartum context, treatment decision, follow-up, and a nodule block (size, sonographic risk category, growth, cytology) that appears only when a nodule is documented |
+| Progress Note | Trajectory, adherence, therapy change, objective measures, structured examination, management, monitoring arranged, education, follow-up |
+| Care Plan | Individualised targets, HbA1c / kidney / retinal / foot intervals, vaccination, sick-day rules, hypoglycaemia education, self-monitoring, plan shared with patient |
+| Medication Adjustment | Drug class, basis for the adjustment, weight reference only when weight-based (conditional), hypoglycaemia risk, monitoring required, education, follow-up |
+| Discharge Summary | Glycaemic state at discharge, insulin regimen only when applicable (conditional), stress-dose/sick-day advice, follow-up interval, readmission risk, self-management instructions |
 
-Pre-existing fields the shared note policy already retires (Laboratory Results,
-Plan, Imaging, Family History, Current Medications, Medication Review) are left
-untouched in the source and are not relied on. Nothing added uses that vocabulary,
-so nothing added is silently dropped.
+### Documentation model actually implemented
 
-## 2. Coding basis — ICD-11 MMS 2025-01
+- **Required** — one field only: the consultation's differential diagnosis, because
+  a consultation without a differential is not a defensible record. Nothing else
+  blocks saving, so urgent care is never delayed for documentation.
+- **Optional** — every other field, including all safety fields.
+- **Conditional** — declared with `showIf` and verified: CGM metrics (only for CGM
+  methods), nodule assessment (only when a nodule is documented), insulin regimen
+  at discharge (only when a glucose-lowering regimen applies), weight reference
+  (only for a weight-based calculation).
+- **Not examined / not assessed / not applicable / not documented** — explicit
+  options wherever the state can legitimately be unknown. An unanswered field is
+  never read as normal, and no option is preselected.
+- **Not collected here at all** — history, medications, allergies, vital signs,
+  laboratory and imaging results: supplied by the shared record and tabs.
 
-- 280 Chapter 05 categories extracted from the WHO Simple Tabulation, release
-  2025-01, with official titles copied verbatim (including WHO's spelling of
-  "Postirridation hypothyroidism").
-- Each note offers only the domains it can code (e.g. thyroid note: 82 codes).
-- 18 acute-diabetes-complication entries (5A20–5A24, 5A2Y) keep WHO's
-  non-primary flag and say so in the picker, so ketoacidosis is never recorded
-  instead of the diabetes type.
-- Not included, and stated in the file rather than omitted: inborn errors of
-  metabolism, undernutrition/deficiency codes, and Chapter 2 neoplasms (require
-  histology from the WHO browser).
-- Role, status and clinical basis are recorded per code. A code is never a
+## 4. Coding basis — ICD-11 MMS 2025-01
+
+- 280 Chapter 05 categories from the WHO Simple Tabulation, release 2025-01,
+  official titles verbatim (including WHO's "Postirridation hypothyroidism").
+- Each note offers only the domains it can code (thyroid note: 82; diabetes note:
+  129; medication adjustment: 172; the rest: all 280).
+- 18 acute-diabetes-complication entries keep WHO's non-primary flag and say so, so
+  ketoacidosis is never recorded instead of the diabetes type.
+- Role, status and clinical basis are recorded per code; a code is never a
   confirmed diagnosis until a clinician documents it.
+- Excluded and stated in the file: inborn errors of metabolism,
+  undernutrition/deficiency codes, and Chapter 2 neoplasms (need histology from the
+  WHO browser).
 
-## 3. Guideline register
+## 5. Guideline register
 
 ADA Standards of Care in Diabetes—2026 · ATA hypothyroidism 2014 · ATA
 thyrotoxicosis 2016 (corrigendum noted) · ATA nodules/DTC 2015 · ATA pregnancy
@@ -49,36 +93,31 @@ thyrotoxicosis 2016 (corrigendum noted) · ATA nodules/DTC 2015 · ATA pregnancy
 ES acromegaly 2014 · AACE type 2 diabetes algorithm 2023 · ESE/ENSAT adrenal
 incidentaloma 2023 · KDIGO 2022 diabetes in CKD · WHO ICD-11 MMS 2025-01.
 
-Verified on official sources on 2026-10-28. Unverified, paywalled or
-local-policy items are listed in `ENDOCRINE_REFERENCE_FLAGS` instead of being
-implied.
+Verified on official sources 2026-10-28. Unverified or local-policy items are
+listed in `ENDOCRINE_REFERENCE_FLAGS` rather than implied.
 
-## 4. Safety prompts
+## 6. Safety layer
 
-Two provenances, always shown in the note and in the PDF:
+Ten clinician-selectable concerns plus eight rules raised by documented fields:
+ADA hypoglycaemia levels, ketoacidosis/hyperosmolar state, adrenal crisis, overt
+thyrotoxicosis, thyroid disease in pregnancy, malignant cytology, advanced CKD
+therapy review, missing stress-dose or sick-day advice.
 
-- **Guideline-based** — ADA hypoglycaemia levels, DKA/HHS, adrenal crisis,
-  overt thyrotoxicosis, thyroid disease in pregnancy, malignant cytology, CKD
-  therapy review, missing stress-dose/sick-day advice, ES adrenal insufficiency.
-- **AMedix local triage decision (approval required)** — numeric thresholds for
-  sodium, potassium, corrected calcium, thyroid storm, myxoedema coma, pituitary
-  apoplexy and catecholamine excess, because no registered guideline defines a
-  threshold the app may apply. `ENDOCRINE_SAFETY_APPROVAL_REQUIRED` lists them.
+Rules that need Endocrinology sign-off (`ENDOCRINE_SAFETY_APPROVAL_REQUIRED`) are
+labelled in the note and PDF as AMedix local triage decisions.
 
-Behaviour verified end-to-end: DKA selection → immediate; Level 3 → immediate;
-potassium 6.4 → immediate; sodium 118 → immediate; calcium 3.1 → same-day;
-glucose 2.4 → immediate; overt thyrotoxicosis + pregnant → same-day + documented;
-CKD G4–G5 → documented. An empty panel states it is not reassurance, no field is
-required, and no prompt diagnoses, prescribes, orders or calculates a dose.
+Verified behaviour: DKA selection → immediate; Level 3 hypoglycaemia → immediate;
+overt thyrotoxicosis + pregnant → same-day + documented; Bethesda VI → documented;
+CKD G4–G5 → documented; concern-only selection builds the correct prompts; the PDF
+formatter renders the stored prompts, not a recalculation.
 
-## 5. Deliberately out of scope
+## 7. Out of scope by design
 
 No insulin, levothyroxine, steroid stress or titration dose is calculated,
-suggested or defaulted; weight-based dose fields exist only so the clinician can
-record the calculation they made and its basis. Sliding-scale content is excluded.
+suggested or defaulted; no sliding-scale content; no prompt diagnoses, prescribes,
+orders or certifies stability.
 
-## 6. Outstanding
+## 8. Outstanding
 
 - Endocrinology sign-off on the seven local triage thresholds and their wording.
-- UAT by an endocrinologist on one note of each type, including the PDF rendering
-  of the safety block.
+- UAT by an endocrinologist on one note of each type, including PDF rendering.

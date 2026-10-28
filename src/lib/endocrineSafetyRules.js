@@ -18,6 +18,13 @@
 //   ADA Standards of Care in Diabetes—2026 — hypoglycaemia Level 1 < 3.9 mmol/L
 //   (70 mg/dL) and > 3.0 mmol/L (54 mg/dL); Level 2 < 3.0 mmol/L (54 mg/dL);
 //   Level 3 severe (altered mental and/or physical status requiring assistance).
+//
+// Laboratory values are NOT re-collected in these notes: results live in the
+// shared AMedix record, so no rule reads a sodium, potassium, calcium or glucose
+// number from the note. Electrolyte severity is raised by the clinician selecting
+// the concern, which is honest about who made the judgement. The only graded
+// value a note carries itself is the ADA hypoglycaemia level, because that grade
+// is a clinical classification, not a lab result.
 
 import { getEndocrineReference } from "@/lib/endocrineReferences";
 
@@ -174,13 +181,6 @@ const CONCERN_PROMPTS = ENDOCRINE_SAFETY_CONCERNS.map((c) => ({
   approvalRequired: Boolean(c.approvalRequired),
 }));
 
-// Numeric parsing that never guesses: a value that is not a number is ignored.
-const num = (v) => {
-  if (v === null || v === undefined || v === "") return null;
-  const n = Number(String(v).replace(",", ".").replace(/[^\d.\-]/g, ""));
-  return Number.isFinite(n) ? n : null;
-};
-
 const pick = (values, key) =>
   values && values[key] !== undefined && values[key] !== null ? values[key] : null;
 const text = (values, key) => String(pick(values, key) || "").trim();
@@ -216,46 +216,6 @@ const DERIVED_ONLY = {
       "Confirm the treating team and the pathway in use, and record who was contacted and when. Insulin, fluid and electrolyte orders are made by that team.",
     sourceId: "ada_standards_2026",
     provenance: "clinical_recommendation",
-  },
-  biochemical_hypoglycaemia: {
-    level: "immediate",
-    title: "Glucose at this visit is in the Level 2 hypoglycaemia range",
-    basis:
-      "The ADA Standards of Care define Level 2 hypoglycaemia as a glucose concentration < 3.0 mmol/L (54 mg/dL), however symptomatic the patient is.",
-    action:
-      "Confirm the value and the patient's clinical state, treat according to the agreed local protocol, and record the response.",
-    sourceId: "ada_standards_2026",
-    provenance: "clinical_recommendation",
-  },
-  severe_dyskalaemia: {
-    level: "immediate",
-    title: "Severe potassium abnormality documented in this encounter",
-    basis:
-      "No guideline in this register sets a potassium threshold that AMedix may apply. Both severe hyperkalaemia and severe hypokalaemia are recognised causes of arrhythmia; the thresholds used here are AMedix local triage decisions requiring Endocrinology approval.",
-    action:
-      "Arrange same-day senior assessment, record the potassium value, whether the sample was haemolysed or repeated, and who was contacted. Treatment is set by the treating team.",
-    provenance: "local_triage_decision",
-    approvalRequired: true,
-  },
-  severe_hyponatraemia_documented: {
-    level: "immediate",
-    title: "Severe hyponatraemia documented in this encounter",
-    basis:
-      "Hyponatraemia may be classified as 5C72, but no guideline in this register gives a numeric threshold that the app may apply. The threshold used here is an AMedix local triage decision requiring Endocrinology approval.",
-    action:
-      "Arrange same-day senior assessment, record the sodium value and the samples sent, and who was contacted. The correction rate is never prescribed by the app.",
-    provenance: "local_triage_decision",
-    approvalRequired: true,
-  },
-  hypercalcaemia_review: {
-    level: "same_day",
-    title: "Corrected calcium in the hypercalcaemia range — same-day review",
-    basis:
-      "No guideline in this register sets a calcium threshold that AMedix may apply. The thresholds used here are AMedix local triage decisions requiring Endocrinology approval.",
-    action:
-      "Record the corrected calcium, whether the sample was repeated, the symptoms documented and who was contacted. Do not treat a single value as a diagnosis.",
-    provenance: "local_triage_decision",
-    approvalRequired: true,
   },
   thyrotoxicosis_documented: {
     level: "same_day",
@@ -340,39 +300,6 @@ const FROM_VALUES = [
       )
     )
       return { key: "dka_hhs_documented", evidence: `Acute state recorded: ${state}` };
-    return null;
-  },
-  // ADA Level 2 threshold — a measured glucose below 3.0 mmol/L.
-  (v) => {
-    const g = num(pick(v, "fasting_glucose"));
-    if (g === null || g >= 3.0) return null;
-    return { key: "biochemical_hypoglycaemia", evidence: `Glucose documented: ${g} mmol/L` };
-  },
-  // Potassium — AMedix local thresholds, flagged for approval.
-  (v) => {
-    const k = num(pick(v, "potassium"));
-    if (k === null) return null;
-    if (k > 6.0 || k < 2.5)
-      return { key: "severe_dyskalaemia", evidence: `Potassium documented: ${k} mmol/L` };
-    return null;
-  },
-  // Sodium.
-  (v) => {
-    const na = num(pick(v, "sodium"));
-    if (na === null || na >= 120) return null;
-    return { key: "severe_hyponatraemia_documented", evidence: `Sodium documented: ${na} mmol/L` };
-  },
-  // Corrected calcium.
-  (v) => {
-    const ca = num(pick(v, "corrected_calcium"));
-    if (ca === null) return null;
-    if (ca > 3.5)
-      return {
-        key: "severe_hypercalcaemia",
-        evidence: `Corrected calcium documented: ${ca} mmol/L`,
-      };
-    if (ca >= 3.0)
-      return { key: "hypercalcaemia_review", evidence: `Corrected calcium documented: ${ca} mmol/L` };
     return null;
   },
   // Thyroid status.

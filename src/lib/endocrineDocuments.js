@@ -1,44 +1,78 @@
 // Strengthening the EXISTING Endocrinology note types.
 //
-// The eight templates in src/lib/specialtyDocuments.js (ENDO_CONSULTATION,
-// FOLLOW-UP, DIABETES FOLLOW-UP, THYROID FOLLOW-UP, PROGRESS NOTE, CARE PLAN,
-// MEDICATION ADJUSTMENT, DISCHARGE SUMMARY) are NOT recreated, renamed or
-// replaced. Their keys, labels and order stay exactly as they are, and nothing
-// already in them is removed — this module only APPENDS fields, so every note
-// already saved keeps its meaning and every existing workflow that reads a note
-// by key keeps working.
+// The eight templates in src/lib/specialtyDocuments.js (CONSULTATION, FOLLOW-UP,
+// DIABETES FOLLOW-UP, THYROID FOLLOW-UP, PROGRESS NOTE, CARE PLAN, MEDICATION
+// ADJUSTMENT, DISCHARGE SUMMARY) are NOT recreated, renamed or replaced. Their
+// keys, labels and order stay exactly as they are and nothing already in them is
+// removed, so every saved note keeps its meaning and every workflow that reads a
+// note by key keeps working. This module only APPENDS fields.
 //
-// Two things are appended to each note:
-//   1. Structured fields for the elements the guideline register in
-//      src/lib/endocrineReferences.js expects a complete record to carry, placed
-//      under explicit sections so they are visible rather than scattered.
-//   2. An ICD-11 MMS 2025-01 classification block (role, status and clinical
-//      basis per code) and the conditional safety panel.
-//
-// Labels deliberately avoid the retired vocabulary the shared note policy hides
-// (a section titled Laboratory/Plan/Referral, a field titled "Family History",
-// "Current Medications" or "Medication Review"), so nothing added here is
-// silently dropped by that policy.
+// AUDIT RULES APPLIED HERE
+// 1. Nothing duplicates a shared AMedix surface. Vital signs, the structured
+//    examination (Select Examination), laboratory results, imaging, medications,
+//    allergies and the patient's recorded history are provided by the shared
+//    ClinicalNote tabs and the unified Patient Record, which attach to every note
+//    automatically. No note here re-collects them.
+// 2. Examination is recorded through the shared `examinations` component, never
+//    as another free-text examination field.
+// 3. Every field is optional unless its absence would make the record
+//    indefensible: only the consultation's differential diagnosis is required.
+//    "Not examined", "Not assessed", "Not applicable" and "Not documented" are
+//    real options — an unanswered field is never read as normal.
+// 4. Conditional (`showIf`) questions appear only when the clinical context makes
+//    them relevant, so no note forces a clinician to answer a question that does
+//    not apply.
+// 5. Where a template already asks a question (Assessment, Adherence, Diet,
+//    Exercise, Follow-Up), the audit keeps that field and adds around it rather
+//    than asking the same thing twice.
 
 import { endocrineCatalogFor } from "@/lib/endocrineIcd11";
 
-const T = (key, label) => ({ key, label, type: "textarea" });
-const I = (key, label) => ({ key, label, type: "input" });
-const N = (key, label) => ({ key, label, type: "number" });
-const S = (key, label, options) => ({ key, label, type: "select", options });
+const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
+const I = (key, label, extra) => ({ key, label, type: "input", ...extra });
+const N = (key, label, extra) => ({ key, label, type: "number", ...extra });
+const S = (key, label, options, extra) => ({ key, label, type: "select", options, ...extra });
+// The shared note policy replaces any field whose label contains "Examination"
+// with the one structured "Select Examination" interface built from the
+// specialty's own examination catalogue. Planting that label is how a note joins
+// the shared component instead of adding a second free-text examination —
+// declaring type "examinations" here would be dropped, because the policy sees
+// the document as already carrying its examination field.
+const X = (key, label) => ({ key, label, type: "textarea" });
+
+const R = { required: true };
+const when = (key, ...values) => ({ showIf: { key, in: values } });
 
 const sec = (section, fields) => fields.map((f) => ({ ...f, section }));
 
-// Values a clinician may record at this visit. Numbers stay numbers so the
-// safety rules can read them; an empty field is never read as normal.
-const biochemistry = (withEgfr = true) =>
-  sec("Endocrine Biochemistry", [
-    N("sodium", "Sodium (mmol/L)"),
-    N("potassium", "Potassium (mmol/L)"),
-    N("corrected_calcium", "Corrected Calcium (mmol/L)"),
-    N("fasting_glucose", "Glucose at This Visit (mmol/L)"),
-    ...(withEgfr ? [N("egfr", "eGFR (mL/min/1.73 m²)")] : []),
-  ]);
+const FOLLOW_UP_OPTIONS = [
+  "Not arranged",
+  "Within 1 week",
+  "2–4 weeks",
+  "1–3 months",
+  "3–6 months",
+  "More than 6 months",
+  "Discharged — no endocrine follow-up",
+];
+
+const EDUCATION_OPTIONS = [
+  "Documented this visit",
+  "Previously documented",
+  "Declined by the patient",
+  "Not applicable to this visit",
+  "Not documented",
+];
+
+const MANAGEMENT_OPTIONS = [
+  "No change to the current approach",
+  "Start therapy",
+  "Adjust therapy",
+  "Stop therapy",
+  "Further assessment before deciding",
+  "Procedure or surgery discussed",
+  "Admitted for treatment",
+  "Observation only",
+];
 
 const icdBlock = (domains, placeholder) =>
   sec("Diagnosis Classification (ICD-11)", [
@@ -77,6 +111,9 @@ const COMMON_DOMAINS = [
 
 const ENDOCRINE_ENHANCEMENTS = {
   // --- Endocrinology Consultation ------------------------------------------
+  // Existing: Chief Complaint, History of Present Illness, Select Examination,
+  // Assessment. Added around them: the presentation in structured terms, the
+  // differential the consultation is for, and what was decided and arranged.
   endo_consultation: () => [
     ...sec("Endocrine Presentation", [
       S("symptom_duration", "Duration of Endocrine Symptoms", [
@@ -85,7 +122,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "1–6 months",
         "6–12 months",
         "> 12 months",
-        "Unknown",
+        "Not assessed",
       ]),
       S("diabetes_symptoms", "Polyuria, Polydipsia or Unexplained Weight Loss", [
         "Present",
@@ -106,24 +143,25 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Other endocrine disease",
         "Unknown",
       ]),
-      S("endocrine_therapy", "Endocrine Therapy at Presentation", [
-        "None",
-        "Insulin",
-        "Non-insulin glucose-lowering therapy",
-        "Thyroid hormone",
-        "Antithyroid drug",
-        "Glucocorticoid",
-        "Other hormonal therapy",
-        "Combination",
+    ]),
+    ...sec("Differential Diagnosis", [
+      T(
+        "differential",
+        "Differential Diagnosis — and the evidence that supports or excludes each",
+        R
+      ),
+      S("diagnostic_confidence", "Diagnostic Confidence at the End of This Encounter", [
+        "Diagnosis confirmed",
+        "Probable — treatment started, confirmation pending",
+        "Possible — further assessment required",
+        "Not established",
       ]),
     ]),
-    ...sec("Anthropometry and Vitals", [
-      N("weight_kg", "Weight (kg)"),
-      N("height_cm", "Height (cm)"),
-      N("waist_cm", "Waist Circumference (cm)"),
-      I("blood_pressure", "Blood Pressure (mmHg)"),
+    ...sec("Management and Follow-Up", [
+      S("management_approach", "Management Decision at This Visit", MANAGEMENT_OPTIONS),
+      S("education_documented", "Patient Education Documented", EDUCATION_OPTIONS),
+      S("follow_up_interval", "Endocrine Follow-Up Arranged", FOLLOW_UP_OPTIONS),
     ]),
-    ...biochemistry(),
     ...icdBlock(
       COMMON_DOMAINS,
       "Search ICD-11 — diabetes, thyroid, adrenal, pituitary, calcium, obesity, electrolytes..."
@@ -134,7 +172,7 @@ const ENDOCRINE_ENHANCEMENTS = {
   // --- Endocrinology Follow-Up ---------------------------------------------
   endo_followup: () => [
     ...sec("Interval Course", [
-      S("interval_symptom_control", "Symptom Control Since Last Visit", [
+      S("interval_symptom_control", "Symptom Control Since the Last Visit", [
         "Better",
         "Unchanged",
         "Worse",
@@ -162,15 +200,25 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Preparation switched",
       ]),
     ]),
-    ...biochemistry(),
+    ...sec("Examination at This Visit", [X("examination_at_this_visit", "Examination at This Visit")]),
+    ...sec("Management and Follow-Up", [
+      S("management_approach", "Management Decision at This Visit", MANAGEMENT_OPTIONS),
+      S("education_documented", "Patient Education Documented", EDUCATION_OPTIONS),
+      S("follow_up_interval", "Endocrine Follow-Up Arranged", FOLLOW_UP_OPTIONS),
+    ]),
     ...icdBlock(
       COMMON_DOMAINS,
-      "Search ICD-11 — the condition followed up, its complications and the endocrine comorbidity..."
+      "Search ICD-11 — the condition followed up, its complications and endocrine comorbidity..."
     ),
     ...safetyBlock(),
   ],
 
   // --- Diabetes Follow-Up (ADA Standards of Care) --------------------------
+  // Existing: type, duration, glucose log, HbA1c, hypoglycaemic episodes, insulin
+  // regimen, oral agents, adherence, diet, exercise, complication screening, BP,
+  // lipid profile, assessment. Added: the individualised target the values are
+  // judged against, the ADA hypoglycaemia grade, the cardiovascular/kidney risk
+  // profile and whether each modifiable risk was addressed.
   endo_diabetes_followup: () => [
     ...sec("Glycaemic Metrics and Targets", [
       S("hba1c_target", "Individualised HbA1c Target", [
@@ -181,9 +229,6 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Avoiding hypoglycaemia is the priority",
         "Not individualised",
       ]),
-      N("time_in_range", "Time in Range (%)"),
-      N("time_below_range", "Time Below Range (%)"),
-      N("glucose_management_indicator", "Glucose Management Indicator (%)"),
       S("glucose_monitoring_method", "Glucose Monitoring Method", [
         "Self-monitoring of blood glucose",
         "Intermittently scanned CGM",
@@ -191,6 +236,9 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Professional CGM",
         "None documented",
       ]),
+      N("time_in_range", "Time in Range (%)", when("glucose_monitoring_method", "Intermittently scanned CGM", "Real-time CGM", "Professional CGM")),
+      N("time_below_range", "Time Below Range (%)", when("glucose_monitoring_method", "Intermittently scanned CGM", "Real-time CGM", "Professional CGM")),
+      N("glucose_management_indicator", "Glucose Management Indicator (%)", when("glucose_monitoring_method", "Intermittently scanned CGM", "Real-time CGM", "Professional CGM")),
       S("hypoglycaemia_level", "Highest Hypoglycaemia Level Documented", [
         "None documented",
         "Level 1 — glucose < 3.9 mmol/L (70 mg/dL)",
@@ -224,7 +272,6 @@ const ENDOCRINE_ENHANCEMENTS = {
         "CKD G4–G5",
         "Not assessed",
       ]),
-      N("uacr", "Urine Albumin-to-Creatinine Ratio (mg/g)"),
       S("statin_therapy", "Statin Therapy", [
         "Prescribed",
         "Not indicated",
@@ -259,12 +306,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Proliferative retinopathy",
         "Not screened",
       ]),
-      S("foot_risk_category", "Foot Risk Category", [
-        "Low",
-        "Moderate",
-        "High",
-        "Not assessed",
-      ]),
+      S("foot_risk_category", "Foot Risk Category", ["Low", "Moderate", "High", "Not assessed"]),
       S("neuropathy_screening", "Peripheral Neuropathy Screening", [
         "Absent",
         "Present",
@@ -283,16 +325,10 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Premixed insulin",
         "Combination therapy",
       ]),
-      S("structured_education", "Structured Diabetes Education", [
-        "Documented this visit",
-        "Previously documented",
-        "Not documented",
-      ]),
-      N("physical_activity_minutes", "Physical Activity (minutes per week)"),
-      S("smoking_status_current", "Smoking Status", ["Never", "Former", "Current", "Not documented"]),
+      S("structured_education", "Structured Diabetes Education", EDUCATION_OPTIONS),
       T("therapy_change_documented", "Therapy Change Made at This Visit"),
+      S("follow_up_interval", "Diabetes Follow-Up Arranged", FOLLOW_UP_OPTIONS),
     ]),
-    ...biochemistry(),
     ...icdBlock(
       ["diabetes", "glucose_other", "lipid", "electrolyte", "nutrition", "postprocedural"],
       "Search ICD-11 — diabetes type, ketoacidosis, hyperosmolar state, hypoglycaemia, obesity, lipidaemia..."
@@ -301,11 +337,13 @@ const ENDOCRINE_ENHANCEMENTS = {
   ],
 
   // --- Thyroid Follow-Up (ATA) ---------------------------------------------
+  // Existing: symptoms, TSH, free T4, thyroid examination, goitre/nodules,
+  // antibodies, ultrasound findings, thyroid medications, dose adjustment,
+  // assessment. Added: the functional interpretation the values support, the
+  // pregnancy context that changes it, the replacement decision, and a nodule
+  // block that appears only when a nodule is actually documented.
   endo_thyroid_followup: () => [
-    ...sec("Thyroid Biochemistry and Status", [
-      N("ft3", "Free T3 (pmol/L)"),
-      N("anti_tpo", "Anti-TPO Antibody (IU/mL)"),
-      N("trab", "TSH Receptor Antibody (IU/L)"),
+    ...sec("Thyroid Functional Status", [
       S("thyroid_status", "Thyroid Functional Status", [
         "Overt hypothyroidism",
         "Subclinical hypothyroidism",
@@ -321,15 +359,6 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Postpartum",
         "Unknown",
       ]),
-    ]),
-    ...sec("Replacement Therapy", [
-      I("levothyroxine_dose_mcg", "Levothyroxine Dose (micrograms per day)"),
-      N("levothyroxine_dose_per_kg", "Recorded Dose per kg Body Weight (micrograms/kg)"),
-      S("dose_timing_advice", "Dosing Advice Documented", [
-        "Documented — separated from calcium and iron",
-        "Documented — not separated",
-        "Not documented",
-      ]),
       S("treatment_decision", "Treatment Decision at This Visit", [
         "Continue current therapy",
         "Dose increase",
@@ -340,9 +369,16 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Surgery discussed",
         "Observe and repeat testing",
       ]),
+      S("follow_up_interval", "Thyroid Follow-Up Arranged", FOLLOW_UP_OPTIONS),
     ]),
     ...sec("Nodule Assessment", [
-      N("nodule_size_mm", "Largest Nodule Size (mm)"),
+      S("thyroid_nodule_status", "Nodule Status at This Visit", [
+        "No nodule documented",
+        "Single nodule documented",
+        "Multinodular goitre documented",
+        "Not examined",
+      ]),
+      N("nodule_size_mm", "Largest Nodule Size (mm)", when("thyroid_nodule_status", "Single nodule documented", "Multinodular goitre documented")),
       S("tirads_category", "Sonographic Risk Category", [
         "TR1 — benign",
         "TR2 — not suspicious",
@@ -350,13 +386,12 @@ const ENDOCRINE_ENHANCEMENTS = {
         "TR4 — moderately suspicious",
         "TR5 — highly suspicious",
         "Not applicable",
-      ]),
+      ], when("thyroid_nodule_status", "Single nodule documented", "Multinodular goitre documented")),
       S("nodule_growth", "Growth Since the Previous Examination", [
         "No growth documented",
         "Growth documented",
         "Not comparable",
-        "Not applicable",
-      ]),
+      ], when("thyroid_nodule_status", "Single nodule documented", "Multinodular goitre documented")),
       S("fna_bethesda", "Cytology Category (Bethesda)", [
         "Not performed",
         "I — nondiagnostic",
@@ -365,9 +400,8 @@ const ENDOCRINE_ENHANCEMENTS = {
         "IV — follicular neoplasm",
         "V — suspicious for malignancy",
         "VI — malignant",
-      ]),
+      ], when("thyroid_nodule_status", "Single nodule documented", "Multinodular goitre documented")),
     ]),
-    ...biochemistry(false),
     ...icdBlock(
       ["thyroid", "parathyroid", "postprocedural"],
       "Search ICD-11 — hypothyroidism, thyrotoxicosis, thyroiditis, goitre, nodule, post-surgical thyroid disease..."
@@ -395,7 +429,20 @@ const ENDOCRINE_ENHANCEMENTS = {
       ]),
       T("objective_measures", "Objective Measures Documented at This Visit"),
     ]),
-    ...biochemistry(),
+    ...sec("Examination at This Visit", [X("examination_at_this_visit", "Examination at This Visit")]),
+    ...sec("Management and Follow-Up", [
+      S("management_approach", "Management Decision at This Visit", MANAGEMENT_OPTIONS),
+      S("monitoring_arranged", "Monitoring Arranged", [
+        "Glucose self-monitoring",
+        "HbA1c",
+        "Thyroid function tests",
+        "Kidney function and albumin-to-creatinine ratio",
+        "Imaging",
+        "None documented",
+      ]),
+      S("education_documented", "Patient Education Documented", EDUCATION_OPTIONS),
+      S("follow_up_interval", "Follow-Up Arranged", FOLLOW_UP_OPTIONS),
+    ]),
     ...icdBlock(
       COMMON_DOMAINS,
       "Search ICD-11 — the endocrine problem being followed and its complications..."
@@ -430,11 +477,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Not applicable",
         "Not documented",
       ]),
-      S("foot_review_interval", "Foot Review Interval", [
-        "Every visit",
-        "Annually",
-        "Not documented",
-      ]),
+      S("foot_review_interval", "Foot Review Interval", ["Every visit", "Annually", "Not documented"]),
     ]),
     ...sec("Preventive Care and Education", [
       S("vaccination_status", "Vaccination Status", [
@@ -449,15 +492,14 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Not documented",
         "Not applicable",
       ]),
-      S("self_monitoring_plan", "Self-Monitoring Plan Given", [
+      S("self_monitoring_plan", "Self-Monitoring Plan Given", ["Documented", "Not documented"]),
+      S("care_plan_shared_with_patient", "Care Plan Discussed With the Patient", [
         "Documented",
+        "Declined",
         "Not documented",
       ]),
     ]),
-    ...icdBlock(
-      COMMON_DOMAINS,
-      "Search ICD-11 — every condition this care plan covers..."
-    ),
+    ...icdBlock(COMMON_DOMAINS, "Search ICD-11 — every condition this care plan covers..."),
     ...safetyBlock(),
   ],
 
@@ -489,6 +531,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Protocol or guideline",
         "Clinical judgement",
       ]),
+      N("weight_based_reference", "Weight Used for the Calculation (kg)", when("titration_basis", "Weight-based calculation")),
       S("hypoglycaemia_risk_after_change", "Hypoglycaemia Risk After the Change", [
         "No increased risk recorded",
         "Increased — education given",
@@ -514,8 +557,8 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Injection technique",
         "Not documented",
       ]),
+      S("follow_up_interval", "Follow-Up Arranged", FOLLOW_UP_OPTIONS),
     ]),
-    ...biochemistry(),
     ...icdBlock(
       ["diabetes", "glucose_other", "thyroid", "adrenal", "pituitary", "parathyroid"],
       "Search ICD-11 — the indication this adjustment is made for..."
@@ -533,7 +576,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "Resolving hyperosmolar state",
         "Not applicable",
       ]),
-      T("insulin_regimen_at_discharge", "Insulin Regimen at Discharge"),
+      T("insulin_regimen_at_discharge", "Insulin Regimen at Discharge", when("discharge_glycaemic_state", "Stable on the discharge regimen", "Newly started insulin", "Resolving ketoacidosis", "Resolving hyperosmolar state")),
       S("steroid_stress_dose_advice", "Stress-Dose and Sick-Day Advice Documented", [
         "Documented",
         "Not applicable",
@@ -544,6 +587,7 @@ const ENDOCRINE_ENHANCEMENTS = {
         "2–4 weeks",
         "1–3 months",
         "More than 3 months",
+        "Not arranged",
       ]),
       S("readmission_risk", "Readmission Risk Documented", [
         "Low",
@@ -553,7 +597,6 @@ const ENDOCRINE_ENHANCEMENTS = {
       ]),
       T("discharge_self_management", "Self-Management Instructions Given to the Patient"),
     ]),
-    ...biochemistry(),
     ...icdBlock(
       COMMON_DOMAINS,
       "Search ICD-11 — admission and discharge diagnoses including the endocrine complication..."
