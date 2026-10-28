@@ -3,6 +3,9 @@
 // is preserved in the longitudinal record and in exports.
 import { formatInstrumentEntry } from "@/lib/rheumInstruments";
 import { formatTreatmentPlan } from "@/lib/rheumTreatmentSafety";
+import { formatReferrals } from "@/lib/rheumReferrals";
+import { formatEducation } from "@/lib/rheumEducation";
+import { formatComparison } from "@/lib/rheumFollowup";
 
 export function formatFieldValue(type, value) {
   if (value === undefined || value === null) return "";
@@ -46,6 +49,9 @@ export function formatFieldValue(type, value) {
   }
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
+  if (type === "rheum_comparison") return formatComparison(value);
+  if (type === "rheum_referrals") return formatReferrals(value);
+  if (type === "rheum_education") return formatEducation(value);
 
   return String(value);
 }

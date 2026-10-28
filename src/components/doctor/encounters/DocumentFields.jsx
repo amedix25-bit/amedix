@@ -12,6 +12,9 @@ import Icd11DiagnosisField from "@/components/doctor/notes/Icd11DiagnosisField";
 import RheumInvestigationPanels from "@/components/doctor/notes/RheumInvestigationPanels";
 import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
+import RheumComparisonField from "@/components/doctor/notes/RheumComparisonField";
+import RheumReferralsField from "@/components/doctor/notes/RheumReferralsField";
+import RheumEducationField from "@/components/doctor/notes/RheumEducationField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -93,6 +96,15 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "rheum_treatment" && (
         <RheumTreatmentField value={values[f.key]} onChange={(v) => onChange(f.key, v)} patientId={patientId} />
+      )}
+      {f.type === "rheum_comparison" && (
+        <RheumComparisonField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "rheum_referrals" && (
+        <RheumReferralsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "rheum_education" && (
+        <RheumEducationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>

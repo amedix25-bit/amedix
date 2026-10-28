@@ -21,6 +21,8 @@
 // questions appear without presenting an unrelated wall of inputs.
 // Nothing is ever marked normal by default: unanswered stays unanswered.
 
+import { THERAPEUTIC_TARGETS, TARGET_STATUS } from "@/lib/rheumFollowup";
+
 const I = (key, label, x = {}) => ({ key, label, type: "input", ...x });
 const N = (key, label, x = {}) => ({ key, label, type: "number", ...x });
 const T = (key, label, x = {}) => ({ key, label, type: "textarea", ...x });
@@ -476,12 +478,18 @@ export const RHEUMATOLOGY_DOCS = [
     specialty: "rheumatology",
     fields: [
       ...sec("Interval History", [
+        I("previous_review_date", "Date of Previous Rheumatology Review"),
+        I("previous_document_reference", "Previous Note / Document Reference"),
         T("interval_history", "Interval History Since Last Review", R),
         S("flare_since_visit", "Flare Since Last Visit", ["No", "Yes — documented below", "Ongoing flare"]),
+        S("flare_frequency", "Flare Frequency Since Last Visit", ["None", "One flare", "Two or more flares", "Continuous active disease", "Not applicable"]),
         T("flare_detail", "Flare — Timing, Triggers, Joints Involved, Treatment Used", {}, when("flare_since_visit", "Yes — documented below", "Ongoing flare")),
         T("symptoms", "Current Symptoms"),
         S("morning_stiffness", "Morning Stiffness", ["None", "< 30 minutes", "30–60 minutes", "> 60 minutes"]),
         T("patient_priorities", "Patient's Concerns & Priorities Today"),
+      ]),
+      ...sec("Interval Comparison — Previous Review vs Today", [
+        { key: "interval_comparison", label: "Domain-by-domain comparison with the previous review", type: "rheum_comparison" },
       ]),
       ...sec("Review of Systems", [
         ...rosFields(["constitutional", "skin", "ocular", "respiratory", "neurological"]),
@@ -509,8 +517,21 @@ export const RHEUMATOLOGY_DOCS = [
       ]),
       ...sec("Disease Activity & Safety Monitoring", [
         S("disease_activity", "Disease Activity", ["Remission", "Low", "Moderate", "High", "Not assessed"]),
+        {
+          key: "activity_instruments",
+          label: "Validated Disease Activity & Functional Instruments — scored only when all inputs are entered",
+          type: "disease_activity",
+          instruments: ["das28_crp", "das28_esr", "cdai", "sdai", "basdai", "asdas_crp", "sledai_2k", "dapsa", "haq_di"],
+        },
+        S("therapeutic_target", "Therapeutic Target (treat-to-target)", THERAPEUTIC_TARGETS),
+        S("target_status", "Target Achieved at This Review", TARGET_STATUS),
+        T("target_barriers", "Barriers When the Target Was Not Achieved — adherence, toxicity, cost, access, comorbidity", {}, when("target_status", "Partially met", "Not met")),
         T("labs_monitoring", "Laboratory Monitoring — CBC, ESR, CRP, renal, hepatic, urinalysis"),
+        S("labs_trend", "Laboratory Trend Since Previous Review", ["Improved", "Stable", "Worsening", "Not comparable", "Not assessed"]),
+        T("labs_trend_detail", "Laboratory Trend — the values compared and their significance"),
         T("radiographs", "Radiographs or MRI Reviewed"),
+        S("imaging_trend", "Imaging Trend Since Previous Review", ["Improved", "Stable", "Worsening", "No interval imaging", "Not assessed"]),
+        T("imaging_trend_detail", "Imaging Trend — findings compared with the previous study"),
         T("bone_health", "Bone Health & Fracture Risk Review"),
         T("cardiovascular_risk", "Cardiovascular Risk Review"),
         ...investigationFields(),
