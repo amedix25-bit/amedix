@@ -90,6 +90,22 @@ export const RENAL_ANALYTES = [
   { key: "anti_hcv", name: "Hepatitis C antibody", panel: "immunology", units: "", rangeText: "Negative", textOnly: true },
   { key: "hiv", name: "HIV antigen / antibody", panel: "immunology", units: "", rangeText: "Negative", textOnly: true },
   { key: "blood_culture", name: "Blood culture", panel: "immunology", units: "", rangeText: "No growth", textOnly: true },
+
+  // ---- Added for CKD–MBD, acid–base, stone and transplant documentation ----
+  { key: "alkaline_phosphatase", name: "Alkaline phosphatase", panel: "chemistry", units: "U/L", low: 30, high: 130 },
+  { key: "anion_gap", name: "Anion gap", panel: "chemistry", units: "mmol/L", low: 8, high: 16 },
+  { key: "blood_ph", name: "Arterial blood pH", panel: "chemistry", units: "", low: 7.35, high: 7.45 },
+  { key: "pco2", name: "Arterial pCO₂", panel: "chemistry", units: "mmHg", low: 35, high: 45 },
+  { key: "haptoglobin", name: "Haptoglobin", panel: "haematology", units: "g/L", low: 0.3, high: 2.0 },
+  { key: "ldh", name: "Lactate dehydrogenase (LDH)", panel: "haematology", units: "U/L", low: 140, high: 280 },
+  { key: "urine_calcium_24h", name: "24-hour urine calcium", panel: "urine", units: "mmol/24h", low: 2.5, high: 7.5 },
+  { key: "urine_oxalate_24h", name: "24-hour urine oxalate", panel: "urine", units: "µmol/24h", low: 100, high: 450 },
+  { key: "urine_citrate_24h", name: "24-hour urine citrate", panel: "urine", units: "mmol/24h", low: 1.7, high: null, rangeText: "≥ 1.7 (adult)" },
+  { key: "tacrolimus_trough", name: "Tacrolimus trough level", panel: "immunology", units: "ng/mL", rangeText: "target set by the transplant centre" },
+  { key: "cyclosporine_trough", name: "Ciclosporin trough level", panel: "immunology", units: "ng/mL", rangeText: "target set by the transplant centre" },
+  { key: "bk_virus_pcr", name: "BK virus DNA (plasma / urine PCR)", panel: "immunology", units: "", rangeText: "Not detected", textOnly: true },
+  { key: "cmv_pcr", name: "CMV DNA (PCR)", panel: "immunology", units: "", rangeText: "Not detected", textOnly: true },
+  { key: "donor_specific_antibody", name: "Donor-specific antibody (DSA)", panel: "immunology", units: "", rangeText: "Not detected", textOnly: true },
 ];
 
 const analyteByKey = new Map(RENAL_ANALYTES.map((a) => [a.key, a]));

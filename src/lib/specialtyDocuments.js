@@ -15,6 +15,8 @@ import { applyNoteSectionPolicy } from "@/lib/noteSectionPolicy";
 import { RHEUMATOLOGY_DISEASE_DOCS } from "@/lib/rheumDiseaseNotes";
 import { ANESTHESIA_DOCS } from "@/lib/anesthesiologyDocuments";
 import { NEPHROLOGY_DOCS } from "@/lib/nephrologyDocuments";
+import { NEPHROLOGY_KIDNEY_DOCS } from "@/lib/nephrologyKidneyDocs";
+import { NEPHROLOGY_CONDITION_DOCS } from "@/lib/nephrologyConditionDocs";
 
 export const SPECIALTY_KEYS = {
   "Internal Medicine": "internal_medicine",
@@ -859,7 +861,7 @@ export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...IM_DOCS, ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
   ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
   ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
-  ...NEPHROLOGY_DOCS, ...ENDOCRINOLOGY_DOCS,
+  ...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS, ...ENDOCRINOLOGY_DOCS,
   ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS, ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS, ...HEMATOLOGY_DOCS,
   ...FAMILY_MEDICINE_DOCS, ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
   ...RADIOLOGY_DOCS, ...LABORATORY_DOCS, ...PATHOLOGY_DOCS,

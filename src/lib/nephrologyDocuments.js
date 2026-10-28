@@ -640,3 +640,16 @@ export const NEPHROLOGY_DOCS = [
     ],
   },
 ];
+
+// Shared builders, exported so the condition-specific Nephrology catalogues
+// (CKD, AKI, glomerular disease, diabetic and hypertensive kidney disease,
+// anaemia of CKD, CKD–MBD, electrolyte and acid–base disorders, stones and
+// obstruction, hereditary disease, transplantation and conservative kidney
+// management) reuse the SAME field definitions instead of copying them.
+export {
+  I, N, T, S, when, sec,
+  YES_NO_UNK, NOT_KNOWN, SOURCES, ROS, ROS_POSITIVE, AVAILABILITY,
+  presentingProblem, kidneyHistory, urinaryHistory, comorbidityHistory,
+  medicationExposure, dialysisTransplant, examinationSection,
+  chemistryResults, urineResults, radiologyHistology, assessmentSection,
+};

@@ -7,6 +7,59 @@ import { formatReferrals } from "@/lib/rheumReferrals";
 import { formatEducation } from "@/lib/rheumEducation";
 import { formatComparison } from "@/lib/rheumFollowup";
 import { formatRenalLabRows } from "@/lib/renalLabs";
+import {
+  akiStaging,
+  albuminuriaCategoryFor,
+  ckdCga,
+  ckdRiskCategory,
+  classifyKidneySyndrome,
+  egfrCkdEpi2021,
+  kfre4,
+} from "@/lib/renalKdigo";
+
+// The KDIGO panel stores the documented inputs; its calculated lines are
+// rebuilt at read time from the same engine the form used, so the saved note,
+// the screen and the PDF can never disagree.
+function formatKdigoRenal(v) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return String(v ?? "");
+  const documented = v.egfr === "" || v.egfr === undefined ? null : Number(v.egfr);
+  const calc = egfrCkdEpi2021({ creatinineUmol: v.current_creatinine, age: v.age, sex: v.sex });
+  const egfr = Number.isFinite(documented) && documented > 0 ? documented : calc.value;
+  const markers = Array.isArray(v.chronicity) ? v.chronicity : [];
+  const cga = ckdCga({ egfr, uacrMgMmol: v.uacr, markers, durationDocumented: v.duration, cause: v.cause });
+  const a = albuminuriaCategoryFor(v.uacr);
+  const risk = cga.g && a ? ckdRiskCategory(cga.g.key, a.key) : null;
+  const aki = akiStaging({
+    baselineCreatinineUmol: v.baseline_creatinine,
+    currentCreatinineUmol: v.current_creatinine,
+    baselineHours: v.baseline_hours,
+    urineOutputMl: v.urine_output_ml,
+    urineHours: v.urine_hours,
+    weightKg: v.weight_kg,
+    rrtInitiated: v.rrt_initiated === "Yes",
+  });
+  const syndrome = classifyKidneySyndrome({
+    akiStage: aki.stage,
+    ckdEstablished: cga.established,
+    chronicityDocumented: markers.length > 0,
+  });
+  const kfre = kfre4({ age: v.age, sex: v.sex, egfr, uacrMgMmol: v.uacr });
+
+  const lines = [
+    `Age ${v.age || "—"} · ${v.sex || "sex not documented"}`,
+    `Current creatinine ${v.current_creatinine || "—"} µmol/L (${v.current_date || "date not documented"})`,
+    `Baseline creatinine ${v.baseline_creatinine || "—"} µmol/L (${v.baseline_date || "date not documented"})`,
+    `eGFR ${egfr ? `${egfr} mL/min/1.73 m² (${Number.isFinite(documented) && documented > 0 ? "laboratory-reported" : "calculated, CKD-EPI 2021"})` : "not available"}`,
+    `UACR ${v.uacr || "—"} mg/mmol → albuminuria ${a ? a.key : "not classified"}`,
+    `CKD: ${cga.established ? `CGA ${cga.cga || `${cga.cause || "cause not documented"} · ${cga.g?.key || "G?"} · ${a?.key || "A?"}`}` : "not established — chronicity not documented"}${risk ? ` · ${risk.label}` : ""}`,
+    `Chronicity basis: ${cga.chronicityBasis.length ? cga.chronicityBasis.join("; ") : "none documented"}`,
+    `AKI: ${aki.stage === null ? "not classifiable (baseline and current creatinine required)" : aki.label}${aki.criteria.length ? ` — ${aki.criteria.join("; ")}` : ""}`,
+    `Syndrome: ${syndrome.label}`,
+    `Kidney failure risk (KFRE 4-variable): ${kfre.missing.length ? `not calculated — missing ${kfre.missing.join(", ")}` : `2-year ${kfre.risk2y}% · 5-year ${kfre.risk5y}% — estimate only, see method and limitations`}`,
+  ];
+  if (v.interpretation) lines.push(`Clinician interpretation: ${v.interpretation}`);
+  return lines.join("\n");
+}
 
 export function formatFieldValue(type, value) {
   if (value === undefined || value === null) return "";
@@ -50,6 +103,7 @@ export function formatFieldValue(type, value) {
   }
 
   if (type === "renal_labs" && Array.isArray(value)) return formatRenalLabRows(value);
+  if (type === "kdigo_renal") return formatKdigoRenal(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);
