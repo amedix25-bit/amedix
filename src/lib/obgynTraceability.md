@@ -155,3 +155,37 @@ diagnose, prescribe, calculate a dose or place an order.
 - `src/lib/obgynSafetyRules.js` — trigger engine, PDF formatting, sign-off list.
 - `src/lib/obgynDocuments.js` — the appended fields, per note, additive only.
 - `src/components/doctor/notes/ObgynSafetyPromptsField.jsx` — concern toggles, prompts, action capture.
+
+## 7. Second pass — clinical domains added to the same 19 templates
+
+No template was created, renamed or removed. The blocks below were appended to
+the templates whose clinical purpose already covers the domain.
+
+| Block | Appended to | Covers |
+|---|---|---|
+| Antenatal assessment (17 fields) | Initial Antenatal Visit, Antenatal Follow-Up, Pregnancy Record, Pregnancy Follow-Up, Prenatal Care Plan | trimester, dating method, dating-scan date and gestational age, basis of the EDD, ultrasound findings, previous preterm/stillbirth/ectopic/caesarean, antibody screening, anaemia, infection screening, gestational diabetes, urinalysis, pending results and the follow-up action |
+| High-risk pregnancy (12 fields) | the same five antenatal templates | classification, documented reason, primary category, severity, monitoring level, specialist/MFM involvement, fetal surveillance plan, medication considerations, delivery planning, escalation thresholds, review interval |
+| Labour admission and progress (12 fields) | Labor & Delivery Record | admission indication, membrane status, rupture time, liquor, cervical examination **with documented consent** and findings, contractions, partograph or equivalent, stage of labour, induction/augmentation with documented indication, decision and consent |
+| Birth, placenta, newborn and handover (7 fields) | Labor & Delivery Record, Delivery Note, Vaginal Delivery Note, Cesarean Operative Note | instrumental birth, placenta and membranes completeness, newborn outcome, newborn resuscitation (only when resuscitation is recorded), newborn transfer, responsible clinician, handover |
+| Obstetric emergency (11 fields) | Labor & Delivery Record, Delivery Note, Vaginal Delivery Note, Cesarean Operative Note, Postpartum Note, Obstetric Discharge Summary | emergency type, red flags, immediate actions, response to treatment, escalation, transfer, disposition, time-critical events |
+| Postnatal assessment (13 fields) | Postpartum Note, Obstetric Discharge Summary | lochia, uterine involution, perineum or abdominal wound, pain control, urinary and bowel function, mental-health screening, contraception, breastfeeding support, newborn concerns, discharge readiness, safety-netting, follow-up |
+
+Emergency prompts were extended to the emergencies the note can now record:
+postpartum and antepartum haemorrhage, ectopic pregnancy, pregnancy loss, severe
+hypertension/eclampsia, maternal sepsis, uterine rupture, cord prolapse, shoulder
+dystocia, fetal compromise, preterm labour/PPROM and thromboembolism — each at the
+time-sensitivity the documented situation carries, plus a documentation-gap prompt
+when the response to treatment is not recorded. Every prompt states in the note
+that treatment must never wait for documentation.
+
+**Still not covered, stated plainly:**
+- There is no separate Maternal-Fetal Medicine, high-risk-pregnancy or emergency
+  obstetric **template** in the system, so nothing was duplicated to create one;
+  those domains live inside the templates above.
+- ICD-11 codes for gestational diabetes, fetal growth restriction, multiple
+  pregnancy, preterm labour, sepsis, thromboembolism, cord prolapse, shoulder
+  dystocia and uterine rupture are **not** in the verified catalogue; those
+  diagnoses must be mapped by the clinician from the WHO browser and will be stored
+  as coding review required.
+- ACOG, RCOG and FIGO document numbers remain unconfirmed, so the emergency
+  prompts that rest on them stay labelled as not verified in this build.

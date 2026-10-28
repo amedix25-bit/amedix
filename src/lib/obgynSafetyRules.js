@@ -49,6 +49,29 @@ export const OBGYN_SAFETY_CONCERNS = [
   { key: "concern_other", label: "Other obstetric concern (documented in the note)", level: "same_day", reference_id: "amedix_local_triage" },
 ];
 
+// Emergencies documented in the emergency block of the obstetric notes. The
+// wording is what the clinician must have recorded, never advice on treatment.
+const EMERGENCY_MESSAGE =
+  "Recorded as an obstetric emergency at this encounter. Record the red flags found, the treatment given and the time " +
+  "it was given, the response and reassessment, who was called, and where the patient went next. Treatment must never " +
+  "wait for this note to be completed.";
+
+export const OBGYN_EMERGENCY_PROMPTS = {
+  "Postpartum haemorrhage": { rule_key: "emergency_pph", level: "immediate", reference_id: "who_pph", message: EMERGENCY_MESSAGE },
+  "Antepartum haemorrhage": { rule_key: "emergency_antepartum_haemorrhage", level: "immediate", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+  "Ectopic pregnancy": { rule_key: "emergency_ectopic", level: "immediate", reference_id: "acog_ectopic", message: EMERGENCY_MESSAGE },
+  "Pregnancy loss": { rule_key: "emergency_pregnancy_loss", level: "same_day", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+  "Severe hypertension or eclampsia": { rule_key: "emergency_hypertensive", level: "immediate", reference_id: "who_pre_eclampsia_factsheet", message: EMERGENCY_MESSAGE },
+  "Maternal sepsis": { rule_key: "emergency_sepsis", level: "immediate", reference_id: "rcog_sepsis", message: EMERGENCY_MESSAGE },
+  "Uterine rupture": { rule_key: "emergency_uterine_rupture", level: "immediate", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+  "Cord prolapse": { rule_key: "emergency_cord_prolapse", level: "immediate", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+  "Shoulder dystocia": { rule_key: "emergency_shoulder_dystocia", level: "immediate", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+  "Fetal compromise": { rule_key: "emergency_fetal_compromise", level: "immediate", reference_id: "figo_wellbeing", message: EMERGENCY_MESSAGE },
+  "Preterm labour or prelabour rupture of membranes": { rule_key: "emergency_preterm", level: "same_day", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+  "Thromboembolism": { rule_key: "emergency_thromboembolism", level: "immediate", reference_id: "rcog_vte", message: EMERGENCY_MESSAGE },
+  "Other — documented in the note": { rule_key: "emergency_other", level: "same_day", reference_id: "amedix_local_triage", message: EMERGENCY_MESSAGE },
+};
+
 const concernByKey = OBGYN_SAFETY_CONCERNS.reduce((acc, c) => {
   acc[c.key] = c;
   return acc;
@@ -285,6 +308,28 @@ export function buildObgynSafetyPrompts(values, raisedConcerns) {
     );
   }
 
+  // ---- Obstetric emergencies recorded in the note -------------------------
+  // The note records what was done at the point of care. These prompts restate
+  // time-sensitivity and the escalation path — they never delay treatment and
+  // they never substitute for the clinical actions themselves.
+  const emergency = v.ob_emergency === "Emergency — see type below" ? v.ob_emergency_type : "";
+  const emergencyRule = OBGYN_EMERGENCY_PROMPTS[emergency];
+  if (emergencyRule) {
+    out.push(prompt(emergencyRule.rule_key, emergencyRule.level, emergency, emergencyRule.message, emergencyRule.reference_id));
+  }
+  if (emergency && same(v.ob_response_to_treatment, "Not documented", "")) {
+    out.push(
+      prompt(
+        "emergency_response_not_documented",
+        "documented",
+        "Response to treatment not documented",
+        "An obstetric emergency is recorded without the response to treatment. Record what was done, the response and " +
+          "the reassessment — the record follows the care, it does not precede it.",
+        "amedix_local_triage"
+      )
+    );
+  }
+
   // ---- Concerns raised directly by the clinician --------------------------
   // Keys come from the safety field; the stored note may also hold the human
   // labels, so both are accepted and normalised here.
@@ -331,5 +376,8 @@ export const OBGYN_SAFETY_APPROVAL_REQUIRED = [
   { rule: "vte_prophylaxis_gap", needs: "RCOG venous thromboembolism guidance number and version confirmed at source" },
   { rule: "fetal_status_non_reassuring", needs: "FIGO intrapartum fetal monitoring guidance confirmed at source" },
   { rule: "ectopic_ruptured / ectopic_suspected", needs: "ACOG tubal ectopic pregnancy guidance number and version confirmed at source" },
+  { rule: "emergency_cord_prolapse / emergency_shoulder_dystocia / emergency_uterine_rupture", needs: "Local obstetric emergency protocol sign-off (RCOG/FIGO documents not confirmed at source)" },
+  { rule: "emergency_antepartum_haemorrhage / emergency_pregnancy_loss / emergency_preterm", needs: "Local obstetric triage thresholds signed off by the obstetric lead" },
+  { rule: "emergency_response_not_documented", needs: "Confirmation that the prompt wording reflects local escalation policy" },
   { rule: "all levels", needs: "Obstetric sign-off of the AMedix trigger levels and wording" },
 ];

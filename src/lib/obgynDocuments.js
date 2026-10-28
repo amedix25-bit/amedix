@@ -25,6 +25,7 @@
 import { obgynCatalogFor, OBGYN_CODING_LIMITATION, OBGYN_ICD11_MMS } from "@/lib/obgynIcd11";
 
 const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
+const F = (key, label, extra) => ({ key, label, type: "input", ...extra });
 const N = (key, label, extra) => ({ key, label, type: "number", ...extra });
 const S = (key, label, options, extra) => ({ key, label, type: "select", options, ...extra });
 
@@ -232,6 +233,364 @@ const earlyPregnancyFields = () =>
     ]),
   ]);
 
+// ---- Antenatal assessment: dating, history and investigations --------------
+// Every investigation field offers "Not indicated at this gestation" as a real
+// answer, so no screening test is applied indiscriminately to every patient and
+// an unanswered field is never read as a completed normal result.
+const antenatalAssessmentFields = () =>
+  sec("Antenatal Assessment — Dating, History & Investigations", [
+    S("ob_trimester", "Trimester at This Assessment", [
+      "Not documented",
+      "First trimester",
+      "Second trimester",
+      "Third trimester",
+    ]),
+    S("ob_dating_method", "Pregnancy Dating Method", [
+      "Not documented",
+      "Last menstrual period",
+      "Ultrasound",
+      "Ultrasound concordant with last menstrual period",
+      "Clinical assessment only",
+      "Assisted reproduction — transfer date",
+      "Dating uncertain",
+    ]),
+    F("ob_dating_scan_date", "Dating Ultrasound — Date"),
+    F("ob_dating_scan_ga", "Dating Ultrasound — Gestational Age Recorded (e.g. 8w+3d)"),
+    S("ob_dating_concordance", "Basis of the Estimated Due Date", [
+      "Not documented",
+      "Estimated due date kept from last menstrual period",
+      "Estimated due date revised by ultrasound — documented",
+      "Dating uncertain — repeat assessment planned",
+    ]),
+    T("ob_ultrasound_findings", "Ultrasound Findings Relevant to This Assessment (viability, number of fetuses, placental site, growth, liquor volume)"),
+    S("ob_prior_preterm_birth", "Previous Preterm Birth", ["Not documented", "None documented", "One or more — documented"]),
+    S("ob_prior_stillbirth", "Previous Stillbirth", ["Not documented", "None documented", "One or more — documented"]),
+    S("ob_prior_ectopic_pregnancy", "Previous Ectopic Pregnancy", ["Not documented", "None documented", "One or more — documented"]),
+    S("ob_prior_caesarean", "Previous Caesarean Deliveries", [
+      "Not documented",
+      "None documented",
+      "One previous caesarean",
+      "Two or more previous caesareans",
+    ]),
+    S("ob_antibody_screening", "Red Cell Antibody Screening", [
+      "Not indicated at this gestation",
+      "Indicated — not yet performed",
+      "Performed — no antibodies documented",
+      "Performed — antibodies documented, plan recorded",
+      "Declined by the patient — documented",
+      "Not documented",
+    ]),
+    S("ob_anaemia_assessment", "Anaemia Assessment", [
+      "Not indicated at this gestation",
+      "Haemoglobin documented — no anaemia recorded",
+      "Anaemia documented — plan recorded",
+      "Result awaited",
+      "Not documented",
+    ]),
+    S("ob_infection_screening", "Infection Screening", [
+      "Not indicated at this gestation",
+      "Indicated — not yet performed",
+      "Performed — no infection identified",
+      "Performed — positive result, plan recorded",
+      "Declined by the patient — documented",
+      "Not documented",
+    ]),
+    S("ob_gdm_assessment", "Gestational Diabetes Assessment", [
+      "Not indicated at this gestation",
+      "Risk factors documented — testing planned",
+      "Testing performed — no gestational diabetes",
+      "Gestational diabetes documented — management recorded",
+      "Testing declined — documented",
+      "Not documented",
+    ]),
+    S("ob_urinalysis_status", "Urinalysis at This Assessment", [
+      "Not performed",
+      "Performed — no proteinuria or infection recorded",
+      "Proteinuria documented — assessment recorded",
+      "Urinary infection documented — treatment recorded",
+      "Not documented",
+    ]),
+    T("ob_screening_pending", "Investigations Pending (test, date taken, when the result is expected)"),
+    T("ob_screening_followup", "Follow-Up Action for the Results Above (who is responsible and when)"),
+  ]);
+
+// ---- High-risk pregnancy ---------------------------------------------------
+// The classification is always the clinician's decision. Nothing here is derived
+// from a value, and an unclassified pregnancy stays unclassified.
+const highRiskFields = () =>
+  sec("High-Risk Pregnancy — Classification, Monitoring & Planning", [
+    S("ob_risk_classification", "High-Risk Classification Documented", [
+      "Not yet classified",
+      "No high-risk factor documented at this encounter",
+      "High risk — reason documented below",
+    ]),
+    T("ob_risk_reason", "Reason for High-Risk Classification (indication required when high risk is recorded)"),
+    S("ob_risk_category", "Primary High-Risk Category", [
+      "None documented",
+      "Hypertensive disorder",
+      "Pre-gestational or gestational diabetes",
+      "Fetal growth restriction",
+      "Multiple pregnancy",
+      "Placental disorder (praevia, accreta spectrum, abruption)",
+      "Preterm labour or prelabour rupture of membranes",
+      "Maternal infection",
+      "Thromboembolic risk",
+      "Previous adverse pregnancy outcome",
+      "Maternal medical or surgical condition",
+      "Other — documented in the note",
+    ]),
+    S("ob_risk_severity", "Severity as Documented", ["Not documented", "Mild", "Moderate", "Severe"]),
+    S("ob_monitoring_level", "Monitoring Level Documented", [
+      "Routine antenatal schedule",
+      "Increased visit frequency",
+      "Day-unit assessment",
+      "Inpatient admission",
+      "Not documented",
+    ]),
+    S("ob_specialist_involvement", "Specialist Involvement Documented", [
+      "None documented",
+      "Obstetric specialist",
+      "Maternal-fetal medicine",
+      "Multidisciplinary — disciplines documented in the note",
+      "Not documented",
+    ]),
+    S("ob_fetal_surveillance_plan", "Fetal Surveillance Plan", [
+      "Not indicated",
+      "Serial growth assessment",
+      "Umbilical artery Doppler",
+      "Cardiotocography as indicated",
+      "Reduced fetal movement pathway",
+      "Not documented",
+    ]),
+    T("ob_medication_considerations", "Medication Considerations in This Pregnancy (agent, indication, review)"),
+    T("ob_delivery_plan", "Delivery Planning (intended gestation, mode, place and the documented reason)"),
+    T("ob_escalation_thresholds", "Escalation Thresholds Agreed With the Patient (what to do, who to contact)"),
+    F("ob_review_interval", "Review Interval and Responsible Clinician"),
+  ]);
+
+// ---- Labour and birth ------------------------------------------------------
+const labourAdmissionFields = () =>
+  sec("Labour — Admission, Monitoring & Progress", [
+    S("ob_admission_indication", "Indication for This Admission", [
+      "Spontaneous labour",
+      "Induction of labour",
+      "Prelabour rupture of membranes",
+      "Antepartum bleeding",
+      "Reduced fetal movement",
+      "Hypertensive disorder",
+      "Other — documented in the note",
+    ]),
+    S("ob_membrane_status", "Membrane Status", [
+      "Not documented",
+      "Intact",
+      "Ruptured — spontaneous",
+      "Ruptured — artificial",
+      "Uncertain",
+    ]),
+    F("ob_rupture_datetime", "Time of Rupture of Membranes", when("ob_membrane_status", "Ruptured — spontaneous", "Ruptured — artificial", "Uncertain")),
+    S("ob_liquor_status", "Liquor Documented", [
+      "Not documented",
+      "Clear",
+      "Meconium-stained",
+      "Blood-stained",
+      "Purulent — documented",
+    ], when("ob_membrane_status", "Ruptured — spontaneous", "Ruptured — artificial", "Uncertain")),
+    S("ob_cervical_examination", "Cervical Examination", [
+      "Not performed",
+      "Performed — consent documented",
+      "Declined by the patient",
+      "Not documented",
+    ]),
+    T("ob_cervical_findings", "Cervical Findings Recorded (dilatation, effacement, station, position)", when("ob_cervical_examination", "Performed — consent documented")),
+    S("ob_contractions", "Contractions Documented", [
+      "Not documented",
+      "Not in labour",
+      "Irregular",
+      "Regular",
+      "Inadequate — augmentation considered",
+    ]),
+    S("ob_partograph", "Partograph or Equivalent Labour Record", [
+      "Used — documented",
+      "Not used — not applicable",
+      "Not used — not documented",
+    ]),
+    S("ob_labour_stage", "Stage of Labour Documented", [
+      "Not documented",
+      "Latent first stage",
+      "Active first stage",
+      "Second stage",
+      "Third stage",
+      "Completed",
+      "Prolonged — documented",
+      "Obstructed — documented",
+    ]),
+    S("ob_induction_augmentation", "Induction or Augmentation", [
+      "Not applicable — spontaneous labour",
+      "Induction — indication and method documented",
+      "Augmentation — indication documented",
+      "Performed without a documented indication",
+      "Not documented",
+    ]),
+    T("ob_decision_and_consent", "Decision Taken, Who Made It and the Consent Documented (induction, augmentation, instrumental birth or caesarean)"),
+  ]);
+
+const birthOutcomeFields = () =>
+  sec("Birth — Procedure, Placenta, Newborn & Handover", [
+    S("ob_instrumental_birth", "Instrumental Birth", [
+      "Not applicable — no instrumental birth",
+      "Ventouse — indication documented",
+      "Forceps — indication documented",
+      "Attempted — abandoned, documented",
+      "Not documented",
+    ]),
+    S("ob_placenta_completeness", "Placenta and Membranes", [
+      "Complete — documented",
+      "Incomplete — manual removal documented",
+      "Retained — theatre documented",
+      "Not documented",
+    ]),
+    S("ob_newborn_outcome", "Newborn Outcome as Documented", [
+      "Alive — no resuscitation recorded",
+      "Alive — resuscitation documented",
+      "Stillborn",
+      "Early neonatal death documented",
+      "Not documented",
+    ]),
+    S("ob_newborn_resuscitation", "Newborn Resuscitation Documented", [
+      "Not required — documented",
+      "Stimulation",
+      "Bag-mask ventilation",
+      "Advanced resuscitation — documented",
+      "Not documented",
+    ], when("ob_newborn_outcome", "Alive — resuscitation documented")),
+    F("ob_newborn_transfer", "Newborn Transferred To (unit and level of care) — or 'not transferred'"),
+    F("ob_responsible_clinician", "Responsible Clinician(s) for This Birth"),
+    T("ob_handover", "Handover — to whom, when, and what was handed over"),
+  ]);
+
+// ---- Obstetric emergency ---------------------------------------------------
+// Documentation never gates treatment: the fields below record what was done.
+const EMERGENCY_TYPES = [
+  "Postpartum haemorrhage",
+  "Antepartum haemorrhage",
+  "Ectopic pregnancy",
+  "Pregnancy loss",
+  "Severe hypertension or eclampsia",
+  "Maternal sepsis",
+  "Uterine rupture",
+  "Cord prolapse",
+  "Shoulder dystocia",
+  "Fetal compromise",
+  "Preterm labour or prelabour rupture of membranes",
+  "Thromboembolism",
+  "Other — documented in the note",
+];
+
+const emergencyFields = () =>
+  sec("Obstetric Emergency — Recognition & Response", [
+    S("ob_emergency", "Obstetric Emergency at This Encounter", [
+      "No obstetric emergency documented",
+      "Emergency — see type below",
+      "Not assessed",
+    ]),
+    S("ob_emergency_type", "Emergency Documented", EMERGENCY_TYPES, when("ob_emergency", "Emergency — see type below")),
+    T("ob_red_flags", "Red Flags Present on Assessment", when("ob_emergency", "Emergency — see type below")),
+    T("ob_immediate_actions", "Immediate Actions Taken (treatment must never wait for this note to be completed)", when("ob_emergency", "Emergency — see type below")),
+    S("ob_response_to_treatment", "Response to Treatment", [
+      "Not documented",
+      "Improving",
+      "Stable",
+      "Deteriorating",
+    ], when("ob_emergency", "Emergency — see type below")),
+    S("ob_escalation", "Escalation Documented", [
+      "Not documented",
+      "None required",
+      "Senior obstetrician informed",
+      "Consultant-led care",
+      "Anaesthesia and theatre informed",
+      "Critical care informed",
+      "Blood bank activated",
+      "Multidisciplinary team convened",
+    ], when("ob_emergency", "Emergency — see type below")),
+    S("ob_transfer", "Transfer Documented", [
+      "Not documented",
+      "Not transferred",
+      "Transferred within the facility",
+      "Transferred to a higher-level facility — documented",
+    ], when("ob_emergency", "Emergency — see type below")),
+    S("ob_disposition", "Disposition After the Event", [
+      "Not documented",
+      "Labour ward",
+      "Theatre",
+      "Critical care",
+      "Postnatal ward",
+      "Discharged",
+    ], when("ob_emergency", "Emergency — see type below")),
+    F("ob_critical_times", "Time-Critical Events and Their Times", when("ob_emergency", "Emergency — see type below")),
+  ]);
+
+// ---- Postnatal care --------------------------------------------------------
+const postnatalFields = () =>
+  sec("Postnatal Assessment — Recovery & Discharge", [
+    S("ob_lochia", "Bleeding / Lochia Documented", [
+      "Not assessed",
+      "Normal for the postnatal day",
+      "Heavy bleeding — documented",
+      "Offensive discharge — documented",
+      "Absent — documented",
+    ]),
+    S("ob_uterine_involution", "Uterine Involution", ["Not assessed", "Normal involution documented", "Subinvolution — documented"]),
+    S("ob_perineum_wound", "Perineum or Abdominal Wound", [
+      "Not applicable",
+      "Not assessed",
+      "Perineum intact — documented",
+      "Repair intact — documented",
+      "Wound breakdown — documented",
+      "Wound infection — documented",
+      "Caesarean wound healthy — documented",
+      "Caesarean wound concern — documented",
+    ]),
+    S("ob_postnatal_pain", "Pain Control", ["Not assessed", "Adequate — documented", "Inadequate — plan documented"]),
+    S("ob_urinary_function", "Urinary Function", [
+      "Not assessed",
+      "Normal — documented",
+      "Retention — catheter documented",
+      "Incontinence — documented",
+    ]),
+    S("ob_bowel_function", "Bowel Function", ["Not assessed", "Normal — documented", "Constipation — documented"]),
+    S("ob_mental_health_screen", "Postpartum Mental Health Screening", [
+      "Not screened",
+      "Screened — no concern documented",
+      "Screened — concern documented, referral recorded",
+      "Declined by the patient — documented",
+      "Not documented",
+    ]),
+    S("ob_contraception_method", "Contraception Documented", [
+      "Not discussed",
+      "Discussed — method provided",
+      "Discussed — decision deferred",
+      "Declined by the patient",
+    ]),
+    S("ob_breastfeeding_support", "Breastfeeding Support Documented", [
+      "Support given in this encounter",
+      "Referred to lactation support",
+      "Not required",
+      "Not documented",
+    ]),
+    T("ob_newborn_concerns", "Newborn Concerns (feeding, jaundice, weight, follow-up)"),
+    S("ob_discharge_readiness", "Discharge Readiness", [
+      "Not applicable",
+      "Not ready — reason documented",
+      "Ready for discharge",
+      "Discharged",
+    ]),
+    S("ob_safety_netting", "Safety-Netting Given", [
+      "Warning signs discussed and documented",
+      "Warning signs not documented",
+    ]),
+    F("ob_postnatal_followup", "Postnatal Follow-Up — date, place and who reviews"),
+  ]);
+
 // ---- Gynecology ------------------------------------------------------------
 const gynFields = () =>
   sec("Gynecologic Problem — Documented Status", [
@@ -316,11 +675,31 @@ const antenatal = (domains = ANTENATAL_DOMAINS, placeholder = "Search ICD-11 —
 
 export const OBGYN_ENHANCEMENTS = {
   // ---- Antenatal ----------------------------------------------------------
-  obgyn_initial_antenatal: () => [...antenatal(), ...earlyPregnancyFields()],
-  obgyn_antenatal_followup: () => [...antenatal(), ...maternalStatusFields()],
-  obgyn_pregnancy_record: () => [...antenatal(), ...earlyPregnancyFields()],
-  obgyn_prenatal_care_plan: () => antenatal(),
-  obgyn_pregnancy_followup: () => [...antenatal(), ...maternalStatusFields()],
+  obgyn_initial_antenatal: () => [
+    ...antenatal(),
+    ...earlyPregnancyFields(),
+    ...antenatalAssessmentFields(),
+    ...highRiskFields(),
+  ],
+  obgyn_antenatal_followup: () => [
+    ...antenatal(),
+    ...maternalStatusFields(),
+    ...antenatalAssessmentFields(),
+    ...highRiskFields(),
+  ],
+  obgyn_pregnancy_record: () => [
+    ...antenatal(),
+    ...earlyPregnancyFields(),
+    ...antenatalAssessmentFields(),
+    ...highRiskFields(),
+  ],
+  obgyn_prenatal_care_plan: () => [...antenatal(), ...antenatalAssessmentFields(), ...highRiskFields()],
+  obgyn_pregnancy_followup: () => [
+    ...antenatal(),
+    ...maternalStatusFields(),
+    ...antenatalAssessmentFields(),
+    ...highRiskFields(),
+  ],
 
   // ---- Intrapartum and postpartum ----------------------------------------
   obgyn_labor_delivery_record: () => [
@@ -329,6 +708,9 @@ export const OBGYN_ENHANCEMENTS = {
     ...haemorrhageFields(),
     ...fetalFields(),
     ...maternalStatusFields(),
+    ...labourAdmissionFields(),
+    ...birthOutcomeFields(),
+    ...emergencyFields(),
     ...icdBlock(INTRAPARTUM_DOMAINS, "Search ICD-11 — hypertensive disorders and obstetric haemorrhage..."),
     ...safetyBlock(),
   ],
@@ -339,6 +721,8 @@ export const OBGYN_ENHANCEMENTS = {
     ...fetalFields(),
     ...maternalStatusFields(),
     ...earlyPregnancyFields(),
+    ...birthOutcomeFields(),
+    ...emergencyFields(),
     ...icdBlock(INTRAPARTUM_DOMAINS, "Search ICD-11 — hypertensive disorders and obstetric haemorrhage..."),
     ...safetyBlock(),
   ],
@@ -347,6 +731,8 @@ export const OBGYN_ENHANCEMENTS = {
     ...hypertensionFields(),
     ...haemorrhageFields(),
     ...maternalStatusFields(),
+    ...birthOutcomeFields(),
+    ...emergencyFields(),
     ...icdBlock(INTRAPARTUM_DOMAINS, "Search ICD-11 — hypertensive disorders and obstetric haemorrhage..."),
     ...safetyBlock(),
   ],
@@ -354,6 +740,8 @@ export const OBGYN_ENHANCEMENTS = {
     ...contextFields(),
     ...haemorrhageFields(),
     ...maternalStatusFields(),
+    ...birthOutcomeFields(),
+    ...emergencyFields(),
     ...icdBlock(INTRAPARTUM_DOMAINS, "Search ICD-11 — obstetric haemorrhage and hypertensive categories..."),
     ...safetyBlock(),
   ],
@@ -361,6 +749,8 @@ export const OBGYN_ENHANCEMENTS = {
     ...contextFields(),
     ...haemorrhageFields(),
     ...maternalStatusFields(),
+    ...postnatalFields(),
+    ...emergencyFields(),
     ...icdBlock(INTRAPARTUM_DOMAINS, "Search ICD-11 — postpartum haemorrhage and hypertensive categories..."),
     ...safetyBlock(),
   ],
@@ -369,6 +759,8 @@ export const OBGYN_ENHANCEMENTS = {
     ...hypertensionFields(),
     ...haemorrhageFields(),
     ...maternalStatusFields(),
+    ...postnatalFields(),
+    ...emergencyFields(),
     ...icdBlock(INTRAPARTUM_DOMAINS, "Search ICD-11 — the diagnoses this admission was coded for..."),
     ...safetyBlock(),
   ],
