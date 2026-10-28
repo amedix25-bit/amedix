@@ -328,6 +328,12 @@ export const RHEUMATOLOGY_DOCS = [
         T("shared_decision", "Shared Decision-Making & Education Documented"),
         I("followup_interval", "Follow-Up Interval"),
       ]),
+      ...sec("Referrals", [
+        { key: "referrals", label: "Structured referrals to nephrology, dermatology, ophthalmology and other services", type: "rheum_referrals" },
+      ]),
+      ...sec("Patient Education", [
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
+      ]),
     ],
   },
 
@@ -400,6 +406,10 @@ export const RHEUMATOLOGY_DOCS = [
         S("senior_review", "Senior / Consultant Review", ["Not available", "Discussed", "Patient reviewed in person"]),
         T("communication", "Communication with Referring Team & Notes"),
       ]),
+      ...sec("Referrals & Patient Education", [
+        { key: "referrals", label: "Structured urgent referrals — the question asked of each service", type: "rheum_referrals" },
+        { key: "patient_education", label: "Education and safety-netting delivered, with warning signs given", type: "rheum_education" },
+      ]),
     ],
   },
 
@@ -411,7 +421,10 @@ export const RHEUMATOLOGY_DOCS = [
     fields: [
       ...sec("Admission & Consult Request", [
         I("requesting_team", "Requesting Team / Specialty"),
+        I("requesting_clinician", "Requesting Clinician"),
         T("consult_reason", "Reason for Rheumatology Consultation", R),
+        T("consult_question", "Specific Consultation Question to Answer", R),
+        T("admission_reason", "Reason for Admission — presenting problem and pathway to admission"),
         I("admitting_diagnosis", "Admitting Diagnosis"),
         I("admission_date", "Date of Admission"),
         I("ward_bed", "Ward & Bed"),
@@ -419,7 +432,19 @@ export const RHEUMATOLOGY_DOCS = [
       ...sec("History", [
         T("chief_complaint", "Chief Complaint"),
         T("hpi", "History of Present Illness — course since admission, interventions so far"),
+        T("acute_conditions", "Acute Conditions Active During This Admission"),
+        T("chronic_conditions", "Chronic Conditions & Rheumatological Diagnosis — with duration and baseline status"),
         T("pmh", "Past Medical History & Comorbidities"),
+        S("immunosuppression_status", "Current Immunosuppressive Therapy Class", [
+          "None",
+          "Glucocorticoid only",
+          "Conventional synthetic DMARD",
+          "Biologic DMARD",
+          "Targeted synthetic (JAK inhibitor)",
+          "Combination therapy",
+          "Not known — verify with patient or records",
+        ]),
+        T("immunosuppression_detail", "Immunosuppressive Therapy — agent, dose, last dose date", when("immunosuppression_status", "Glucocorticoid only", "Conventional synthetic DMARD", "Biologic DMARD", "Targeted synthetic (JAK inhibitor)", "Combination therapy")),
         T("pmh_dmard", "Current Immunosuppressive / DMARD Therapy"),
         T("procedures", "Recent Procedures and Devices"),
         T("recent_infection", "Recent or Current Infection, Antibiotics, Isolation Status"),
@@ -449,10 +474,27 @@ export const RHEUMATOLOGY_DOCS = [
         S("renal_hepatic", "Renal / Hepatic Impairment Affecting Drug Dosing", ["None", "Renal impairment", "Hepatic impairment", "Both"]),
         S("falls_risk", "Falls Risk", ["Low", "Moderate", "High"]),
       ]),
+      ...sec("Organ-Threatening Features", [
+        S("organ_threatening", "Organ- or Life-Threatening Disease Feature", ["None identified", "Present — documented below", "Not assessed"]),
+        T("organ_threatening_detail", "Organ-Threatening Features — nature, acuity and immediate escalation taken", {}, when("organ_threatening", "Present — documented below")),
+        S("organ_domain_renal", "Renal Involvement — rising creatinine, proteinuria, haematuria, hypertension", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_pulmonary", "Pulmonary Involvement — infiltrates, haemorrhage, interstitial disease, effusion", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_cardiac", "Cardiac Involvement — pericarditis, myocarditis, valvular disease, heart failure", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_neuro", "Neurological Involvement — CNS lupus, neuropathy, cord or cerebral features", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_haem", "Haematological Involvement — cytopenias, thrombosis, macrophage activation", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_gi", "Gastrointestinal / Hepatic Involvement — vasculitis, perforation, hepatitis", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_ocular", "Ocular Involvement — uveitis, scleritis, retinal disease", ["Not assessed", "Absent", PRESENT]),
+        S("organ_domain_skin", "Severe Cutaneous Involvement — ulceration, necrotic or bullous disease", ["Not assessed", "Absent", PRESENT]),
+        S("sepsis_screen", "Sepsis Screening", ["Not triggered", "Suspected — treated", "Confirmed sepsis", "Not assessed"]),
+        T("criteria_consultation", "Classification / Diagnostic Criteria Applied on This Admission"),
+      ]),
       ...sec("Investigations", [
         T("labs_inpatient", "Laboratory Results — CBC, CRP, ESR, renal & hepatic, urinalysis"),
+        T("labs_trend_inpatient", "Laboratory Trend During Admission — values compared and their significance"),
         T("microbiology", "Microbiology & Serology"),
         T("radiographs_inpatient", "Radiographs, Ultrasound, CT or MRI Reviewed"),
+        T("imaging_trend_inpatient", "Imaging Trend — compared with previous studies"),
+        T("investigations_pending", "Investigations Pending — test, expected date and who will review"),
         ...investigationFields(),
       ]),
       ...sec("Diagnostic Assessment (ICD-11)", [
@@ -465,8 +507,18 @@ export const RHEUMATOLOGY_DOCS = [
         T("infection_management", "Infection Treatment & Prophylaxis"),
         T("medication_reconciliation", "Medication Reconciliation & Interactions"),
         T("supportive_care", "Supportive Care — analgesia, physiotherapy, nutrition, VTE prophylaxis, pressure care"),
+        T("recommendations_to_team", "Recommendations to the Requesting Team — immediate actions and who is responsible"),
+        T("escalation_criteria", "Escalation Criteria Given to the Ward — what must trigger a call, and to whom"),
+        T("escalation_contact", "Escalation Contact / On-Call Arrangement"),
         T("discharge_planning", "Discharge Planning — criteria, rehabilitation, community support"),
+        T("discharge_followup", "Discharge Follow-Up — rheumatology clinic timing, tests to repeat, therapy to restart and when"),
         T("followup_plan", "Rheumatology Follow-Up Plan"),
+      ]),
+      ...sec("Referrals", [
+        { key: "referrals", label: "Structured referrals to nephrology, dermatology, ophthalmology and other services", type: "rheum_referrals" },
+      ]),
+      ...sec("Patient Education", [
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
       ]),
     ],
   },
@@ -546,9 +598,17 @@ export const RHEUMATOLOGY_DOCS = [
           type: "rheum_treatment",
         },
         T("plan", "Plan — treat-to-target decisions, dose changes, tapering"),
+        S("treatment_response", "Treatment Response Since Last Review", ["Remission achieved", "Improved", "Partially improved", "No response", "Loss of response", "Intolerant", "Not applicable"]),
+        T("plan_adjustments", "Planned Treatment Adjustments — agent, dose, timing and rationale"),
         T("monitoring_plan", "Monitoring & Safety Plan"),
         T("education", "Education & Self-Management Advice Given"),
         I("followup_interval", "Next Review Interval"),
+      ]),
+      ...sec("Referrals", [
+        { key: "referrals", label: "Structured referrals to nephrology, dermatology, ophthalmology and other services", type: "rheum_referrals" },
+      ]),
+      ...sec("Patient Education", [
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
       ]),
     ],
   },
@@ -604,6 +664,10 @@ export const RHEUMATOLOGY_DOCS = [
         T("risk_discussion", "Risks, Benefits & Alternatives Discussed with the Patient"),
         S("communication_with_referrer", "Communication with Referring Clinician", ["Letter sent", "Telephone discussion", "Pending", "Patient declined"]),
         I("followup_plan", "Follow-Up Plan"),
+      ]),
+      ...sec("Referrals & Patient Education", [
+        { key: "referrals", label: "Structured referrals — the question asked of each service", type: "rheum_referrals" },
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
       ]),
     ],
   },
@@ -673,6 +737,10 @@ export const RHEUMATOLOGY_DOCS = [
         T("safety_advice", "Safety Advice & When to Seek Urgent Care"),
         I("next_review", "Next Review"),
       ]),
+      ...sec("Referrals & Patient Education", [
+        { key: "referrals", label: "Structured referrals — the question asked of each service", type: "rheum_referrals" },
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
+      ]),
     ],
   },
 
@@ -712,6 +780,7 @@ export const RHEUMATOLOGY_DOCS = [
         T("therapy_change_reason", "Reason for Change / Interruption", {}, when("therapy_status", "Dose reduced", "Dose increased", "Interrupted", "Stopped")),
       ]),
       ...sec("Counselling & Follow-Up", [
+        { key: "icd11_diagnoses", label: "Indication Diagnoses (ICD-11) — the diagnosis this therapy treats", type: "icd11_diagnoses" },
         T("counselling", "Counselling Provided — infection precautions, live vaccines, pregnancy avoidance, alcohol, self-monitoring"),
         S("shared_decision", "Shared Decision-Making Documented", ["Yes", "Discussed with family", "Patient deferred"]),
         S("infusion_required", "Infusion or Injection Required", ["No", "Yes — documented below"]),
@@ -753,6 +822,7 @@ export const RHEUMATOLOGY_DOCS = [
         T("adverse_reaction_detail", "Reaction — timing, features, treatment, outcome", {}, when("adverse_reactions", "Mild — documented below", "Moderate — documented below", "Severe — infusion stopped")),
         S("tolerance", "Tolerance", ["Good", "Fair", "Poor"]),
         S("infusion_completed", "Infusion Completed as Planned", ["Yes", "Partially", "No — discontinued"]),
+        { key: "icd11_diagnoses", label: "Indication Diagnoses (ICD-11) — the diagnosis this infusion treats", type: "icd11_diagnoses" },
         T("followup_advice", "Advice Given to Patient"),
         I("next_infusion", "Next Infusion Due"),
       ]),
@@ -796,6 +866,10 @@ export const RHEUMATOLOGY_DOCS = [
         T("plan", "Plan"),
         T("safety_advice", "Safety Advice & Follow-Up"),
       ]),
+      ...sec("Referrals & Patient Education", [
+        { key: "referrals", label: "Structured referrals — the question asked of each service", type: "rheum_referrals" },
+        { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education" },
+      ]),
     ],
   },
 
@@ -837,6 +911,10 @@ export const RHEUMATOLOGY_DOCS = [
         T("instructions", "Written Instructions Given to the Patient"),
         T("when_to_seek_help", "When to Seek Urgent Help — fever, new weakness, visual loss, hot joint"),
         T("information_given_to", "Summary Sent To — primary care, referring team, patient"),
+      ]),
+      ...sec("Referrals & Patient Education", [
+        { key: "referrals", label: "Structured referrals arranged at discharge", type: "rheum_referrals" },
+        { key: "patient_education", label: "Education delivered before discharge, with warning signs given", type: "rheum_education" },
       ]),
     ],
   },

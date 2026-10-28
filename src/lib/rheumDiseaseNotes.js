@@ -1322,7 +1322,15 @@ const RHEUM_OTHER = {
   ],
 };
 
-export const RHEUMATOLOGY_DISEASE_DOCS = [
+// Every disease-specific template closes with the same two structured
+// endings: referrals with the question asked of each service, and the patient
+// education actually delivered and understood.
+const REFERRAL_AND_EDUCATION_FIELDS = [
+  { key: "referrals", label: "Structured referrals — the question asked of each service", type: "rheum_referrals", section: "Referrals" },
+  { key: "patient_education", label: "Education delivered, understanding confirmed and warning signs given", type: "rheum_education", section: "Patient Education" },
+];
+
+const DISEASE_DOCS = [
   RHEUM_RA,
   RHEUM_SLE,
   RHEUM_AXSPA,
@@ -1342,3 +1350,8 @@ export const RHEUMATOLOGY_DISEASE_DOCS = [
   RHEUM_SEPTIC,
   RHEUM_OTHER,
 ];
+
+export const RHEUMATOLOGY_DISEASE_DOCS = DISEASE_DOCS.map((doc) => ({
+  ...doc,
+  fields: [...doc.fields, ...REFERRAL_AND_EDUCATION_FIELDS],
+}));
