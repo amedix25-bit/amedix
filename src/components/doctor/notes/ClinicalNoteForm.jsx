@@ -18,6 +18,7 @@ import ObgynSrhSection from "@/components/doctor/notes/ObgynSrhSection";
 import { flattenSrhValues, srhAnyValue, srhGroupsForDoc, srhConcernCount } from "@/lib/obgynSrhSchema";
 import { getSpecialtyDocs, getDocDef, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
+import { getDiseaseDocs, getDiseaseDocKeys, getDiseaseGroups, getDiseaseAliases } from "@/lib/diseaseSpecificNotes";
 import NoteAccordionSection from "@/components/doctor/notes/NoteAccordionSection";
 import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
 import DiagnosisNotePicker from "@/components/doctor/notes/DiagnosisNotePicker";
@@ -77,6 +78,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     ? getSpecialtyDocs(mySpecialty).filter((d) => !CONDITION_DOC_KEYS.has(d.key))
     : [];
   const mySpecialtyKey = mySpecialty ? SPECIALTY_KEYS[mySpecialty] : "";
+  // Disease-specific note templates of this specialty — listed in full under
+  // "Disease-Specific Note" so every condition template is reachable at once.
+  const diseaseDocs = mySpecialtyKey ? getDiseaseDocs(mySpecialtyKey) : [];
+  const diseaseGroups = mySpecialtyKey ? getDiseaseGroups(mySpecialtyKey) : [];
+  const diseaseAliases = mySpecialtyKey ? getDiseaseAliases(mySpecialtyKey) : {};
+  const diseaseKeys = mySpecialtyKey ? getDiseaseDocKeys(mySpecialtyKey) : new Set();
   const [docType, setDocType] = useState(
     // Emergency Medicine defaults to the unified workflow note; every other
     // specialty defaults to its consultation template.
@@ -87,7 +94,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
   // the chosen diagnosis opens below it.
   const [diagnosisMode, setDiagnosisMode] = useState(false);
   const [dataValues, setDataValues] = useState({});
-  const isDiagnosisDoc = CONDITION_DOC_KEYS.has(docType);
+  const isDiagnosisDoc = CONDITION_DOC_KEYS.has(docType) || diseaseKeys.has(docType);
   const activeDef = docType && docType !== GENERAL_KEY ? getDocDef(docType) : null;
   // While only the diagnosis list is showing (no diagnosis chosen yet) the
   // previous note type's template is not displayed.
@@ -357,7 +364,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       // away — the first one loads, and the doctor switches diagnosis from the
       // list. Selecting a template is always the same path as any note type.
       setDiagnosisMode(true);
-      selectDocType(SURGERY_CONDITION_DOCS[0].key);
+      if (diseaseDocs[0]) selectDocType(diseaseDocs[0].key);
       return;
     }
     setDiagnosisMode(false);
@@ -516,12 +523,12 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     // Every General Surgery diagnosis-specific template stays listed on screen
     // — searchable by diagnosis — exactly as before, with the chosen one
     // loading through the same template path as any other note type.
-    ...(mySpecialtyKey === "surgery"
+    ...(diseaseDocs.length > 0
       ? [{
           id: "dxTemplates",
-          title: "Diagnosis-Specific Templates",
+          title: "Disease-Specific Notes",
           complete: isDiagnosisDoc,
-          hint: isDiagnosisDoc ? activeDef?.label : `${SURGERY_CONDITION_DOCS.length} templates — select by diagnosis`,
+          hint: isDiagnosisDoc ? activeDef?.label : `${diseaseDocs.length} templates — view all and select`,
         }]
       : []),
     ...(hasSpecialtyFields
@@ -599,14 +606,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               <SelectTrigger><SelectValue placeholder="Select the note type..." /></SelectTrigger>
               <SelectContent className="max-h-80">
                 <SelectItem value={GENERAL_KEY}>General Clinical Note</SelectItem>
-                {mySpecialtyKey === "surgery" && (
-                  <SelectItem value={DIAGNOSIS_KEY}>Diagnosis-Specific Note</SelectItem>
+                {diseaseDocs.length > 0 && (
+                  <SelectItem value={DIAGNOSIS_KEY}>Disease-Specific Note</SelectItem>
                 )}
                 {myDocs.map((d) => (
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
-                {/* every diagnosis template of this specialty stays directly
-                    selectable, so it can never be unreachable */}
+                {/* every surgery diagnosis template of this specialty stays
+                    directly selectable, so it can never be unreachable */}
                 {mySpecialtyKey === "surgery" && SURGERY_CONDITION_DOCS.length > 0 && (
                   <>
                     <SelectItem value="__dx_group__" disabled>— Diagnosis-Specific Notes —</SelectItem>
@@ -626,9 +633,14 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         return (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Search by diagnosis (e.g. cholecystitis, appendicitis, hernia) and select a template — it loads below.
+              All {diseaseDocs.length} disease-specific templates of {mySpecialtyKey ? mySpecialty : "this specialty"} are listed below — search by disease, or view the full list, and select one to load it.
             </p>
-            <DiagnosisNotePicker selectedKey={docType} onSelect={handleDiagnosisSelect} />
+            <DiagnosisNotePicker
+              groups={diseaseGroups}
+              aliases={diseaseAliases}
+              selectedKey={docType}
+              onSelect={handleDiagnosisSelect}
+            />
             {isDiagnosisDoc && activeDef && (
               <p className="text-xs text-emerald-700">Loaded template: {activeDef.label}</p>
             )}
