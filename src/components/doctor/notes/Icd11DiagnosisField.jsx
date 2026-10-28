@@ -85,6 +85,10 @@ export default function Icd11DiagnosisField({
   onChange,
   catalog = RHEUM_ICD11,
   searchPlaceholder = "Search ICD-11 — rheumatoid arthritis, lupus, gout, ANCA, axial spondyloarthritis...",
+  // A specialty catalogue may be on a different release than the shared default.
+  // The release shown to the clinician is the one the offered codes come from.
+  catalogRelease = ICD11_MMS.release,
+  catalogNote = null,
 }) {
   const entries = Array.isArray(value) ? value : [];
   const [query, setQuery] = useState("");
@@ -154,8 +158,8 @@ export default function Icd11DiagnosisField({
           A keyword, laboratory result or imaging finding alone never confirms a diagnosis.
         </p>
         <p className="text-[11px] text-muted-foreground">
-          Catalogue release {ICD11_MMS.release} · WHO ICD-11 MMS. No live WHO API is called — the bundled verified
-          subset is used, and any code outside it is entered by the clinician.
+          {catalogNote ||
+            `Catalogue release ${catalogRelease} · WHO ICD-11 MMS. No live WHO API is called — the bundled verified subset is used, and any code outside it is entered by the clinician.`}
         </p>
       </div>
 
