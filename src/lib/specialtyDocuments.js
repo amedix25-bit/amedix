@@ -18,7 +18,7 @@ import { NEPHROLOGY_DOCS } from "@/lib/nephrologyDocuments";
 import { NEPHROLOGY_KIDNEY_DOCS } from "@/lib/nephrologyKidneyDocs";
 import { NEPHROLOGY_CONDITION_DOCS } from "@/lib/nephrologyConditionDocs";
 import { nephrologySafetySection } from "@/lib/nephrologyClinicalReasoning";
-import { ENT_DOCS } from "@/lib/entDocuments";
+import { ENT_DOCS, entSafetySection } from "@/lib/entDocuments";
 
 // Every Nephrology note carries the same safety-prompt block. The core notes
 // declare it in their own assessment/monitoring section; the condition notes
@@ -28,6 +28,16 @@ const withNephrologySafety = (docs) =>
     (d.fields || []).some((f) => f.type === "neph_alerts")
       ? d
       : { ...d, fields: [...(d.fields || []), ...nephrologySafetySection()] }
+  );
+
+// Every ENT note carries the same conditional safety-prompt block (airway,
+// bleeding, hearing, facial nerve, neurological, swallowing, malignancy). It is
+// added here once so no ENT note is left without it.
+const withEntSafety = (docs) =>
+  docs.map((d) =>
+    (d.fields || []).some((f) => f.type === "ent_safety")
+      ? d
+      : { ...d, fields: [...(d.fields || []), ...entSafetySection()] }
   );
 
 export const SPECIALTY_KEYS = {
@@ -833,7 +843,7 @@ const ENDOCRINOLOGY_DOCS = [
 export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...IM_DOCS, ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...EM_DOCS, ...PEDIATRICS_DOCS, ...OBGYN_DOCS, ...ANESTHESIA_DOCS,
   ...CARDIOLOGY_DOCS, ...NEUROLOGY_DOCS, ...PSYCHIATRY_DOCS, ...OPHTHALMOLOGY_DOCS, ...DERMATOLOGY_DOCS,
-  ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...ENT_DOCS, ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
+  ...ORTHOPEDICS_DOCS, ...UROLOGY_DOCS, ...withEntSafety(ENT_DOCS), ...PULMONOLOGY_DOCS, ...GASTROENTEROLOGY_DOCS,
   ...withNephrologySafety([...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS]),
   ...ENDOCRINOLOGY_DOCS,
   ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS, ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS, ...HEMATOLOGY_DOCS,

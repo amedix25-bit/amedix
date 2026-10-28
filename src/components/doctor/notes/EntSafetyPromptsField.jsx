@@ -188,7 +188,7 @@ export default function EntSafetyPromptsField({ value, values, onChange }) {
       <div className="space-y-2">
         <Label className="text-xs">Safety concerns documented or suspected in this encounter</Label>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Select only what applies to this encounter. Leading this empty means no concern was recorded — not that none
+          Select only what applies to this encounter. Leaving this empty means no concern was recorded — not that none
           was present.
         </p>
         <div className="grid gap-1.5 sm:grid-cols-2">

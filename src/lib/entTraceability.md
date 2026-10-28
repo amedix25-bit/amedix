@@ -287,4 +287,85 @@ Part 4) and the Part 3/4 review of any guideline element not yet expressed as a 
   (`textarea, input, number, select, examinations, icd11_diagnoses`), so note view, print and
   PDF keep rendering without a new renderer.
 - ENT records in the database: still **0**, so no stored note can be altered by this change.
+
+---
+
+# Part 3 — Clinical safety prompts, escalation and documented action
+
+Implemented: **2026-10-28** · Specialty key: `ent` · Rule set: `src/lib/entSafetyRules.js`
+
+## 14. How a prompt fires
+
+A prompt fires from exactly two sources, both of them clinician-entered:
+
+1. **A concern selected for this encounter** — the panel offers the ten concerns in §15. Selecting
+   one records a clinical concern; it is not a diagnosis and it is not preselected.
+2. **A structured finding already documented in the same note** — a select value or a structured
+   ENT examination value. An empty field, `Not assessed`, `Not performed` and `Not documented`
+   never fire anything, and a section recorded as *Not Assessed* is not read at all.
+
+Prompts never diagnose, prescribe, order a test, stop a medicine, or state that a patient is stable
+or unstable. Each one states what was documented (quoted verbatim in the record), the
+time-sensitivity, the decision the treating clinician must make, the basis with its source, and who
+requires approval. Nothing on the panel is a required field, so **documentation never delays urgent
+care**; the panel says so in its own words, and the stored text repeats that clinical judgement stays
+with the treating clinician.
+
+## 15. Rule → requirement → source → coding → approval
+
+`Basis type` separates what a guideline requires from an AMedix local choice, so the two are never
+conflated. `Approval` records whether a qualified ENT clinician must sign the wording or timing off
+before it is relied on in practice.
+
+| Rule | Requirement documented | Basis type | Source (all in `entReferences.js`) | ICD-11 instruction | Approval |
+|---|---|---|---|---|---|
+| Airway obstruction (stridor at rest, compromised airway, apnoea with cyanosis) | Who assessed the airway, when, and the decision | Local triage decision | No ENT guideline in the register defines an airway threshold — stated as a gap | No code attached: record the concern, code only a confirmed diagnosis | ENT consultant / clinical lead |
+| Airway narrowing on exertion, progressive swelling, immobile cord | Same-day senior airway assessment and who was contacted | Local triage decision | As above | As above | ENT consultant |
+| Uncontrolled epistaxis / red flag "uncontrolled bleeding" | First aid and packing already used, estimated loss, comorbidity | Society recommendation | `aao_epistaxis_2020` — AAO-HNSF, 2020 | Code the confirmed cause if established; the prompt codes nothing | ENT consultant |
+| Epistaxis with anticoagulant / coagulopathy | Bleeding-control measures; anticoagulation decision left to the treating team | Society recommendation + local urgency | `aao_epistaxis_2020` | As above | ENT consultant |
+| Sudden hearing loss (sudden onset reported/affirmed) | Onset date and time, side, vestibular and neurological symptoms, audiometry arranged | Society recommendation + local timing | `aao_sudden_hearing_loss_2019` — AAO-HNSF, 2019 | Code the type of hearing loss only once established | ENT consultant |
+| New facial weakness, House–Brackmann V–VI | Grade, onset and progression, eye closure and protection advice, review arranged | Society recommendation + local timing | `aao_bells_palsy_2013` — AAO-HNSF, 2013 | Code facial nerve disorder only when the clinician establishes it | ENT consultant |
+| Pulsatile tinnitus | Character, side, timing, targeted assessment agreed | Society recommendation | `aao_tinnitus_2026` — AAO-HNSF, 2026 | Code tinnitus only when diagnosed; a prompt never codes | ENT consultant |
+| Concerning neurological symptoms | Findings, time identified, who was contacted, outcome | Local triage decision | No register guideline covers this group — stated as a gap | As above | ENT consultant |
+| Suspected orbital / intracranial complication | Signs that raised concern, receiving team | Local triage decision | `aao_sinusitis_2025` covers uncomplicated disease only — stated | Code the complication only when confirmed | ENT consultant |
+| Adult neck mass, malignancy not excluded | Site and character, upper aerodigestive examination, sampling plan, pathway, result owner | Society recommendation | `aao_neck_mass_2017` — AAO-HNSF, 2017 | Code the mass/neoplasm only once histology or assessment establishes it | Not required |
+| Malignant histology recorded | Who told the patient, MDT referral, next-step owner | Society recommendation | `aao_neck_mass_2017` | Code with the confirmed histology from the WHO browser | Not required |
+| Severe dysphagia, aspiration, secretion failure | What is unsafe, airway protection, same-day review arranged | Local triage decision | No threshold in the register — stated as a gap | Code only the established cause | ENT consultant |
+| Significant post-operative bleeding / haematoma | Estimated loss, wound and pack status, who attended | Society recommendation + local threshold | `aao_crs_surgery_2025`, `aao_tympanostomy_2022` | Code the complication only when established | ENT consultant |
+| Paediatric witnessed apnoea / severe sleep-disordered breathing | Frequency, cyanosis or daytime symptoms, same-day review | Local triage decision | `aao_tympanostomy_2022` (distinguishes sleep-disordered breathing) | Code only an established diagnosis | ENT consultant |
+| Other serious complication | Concern, assessment arranged, who was contacted | Documentation practice | — | — | Not required |
+
+Every prompt displays its basis type, its source with the official URL and verified date, and the
+approval flag in the note itself. `ENT_SAFETY_APPROVAL_REQUIRED` in `entSafetyRules.js` lists the
+keys still awaiting ENT sign-off.
+
+## 16. Honest limitations
+
+- **Guideline gaps are stated, not filled.** Stridor, aspiration, neurological deterioration and
+  orbital/intracranial complications have no threshold in the AAO-HNS guidelines registered here.
+  The prompts say so and label the timing an AMedix local decision requiring ENT approval, rather
+  than attributing it to a society.
+- **No full guideline text is reproduced.** Only the documentation element and its citation are
+  encoded.
+- **No ICD-11 code is attached to a safety prompt.** A prompt records a concern, not a diagnosis, so
+  coding stays in the diagnosis field and the differential/confirmed distinction is preserved.
+- **No vital-sign threshold is used.** The shared General-Surgery vital-signs component stores a
+  readable summary, not discrete numeric observations, so no respiratory-rate or saturation
+  threshold was invented from free text.
+
+## 17. Verification performed for Part 3
+
+- All **14** ENT note types carry exactly one safety block (`ent_safety`), added once through
+  `withEntSafety` in `specialtyDocuments.js`; the ENT examination field and the shared vital-signs
+  field are untouched (post-operative note `vitals=1`).
+- Nephrology notes still carry their own alert block (**21** notes) — the shared assembly was not
+  disturbed.
+- Prompt engine exercised against documented values: airway, uncontrolled epistaxis, bleeding risk,
+  sudden hearing loss, facial weakness, dysphagia/aspiration all fired at the intended level; a neck
+  mass with a documented pathway and sampling plan correctly did **not** fire; a note with nothing
+  documented fired **0** prompts.
+- Production build passes.
+- No schema, permission, consent, RLS, signature or audit change: the new block is stored inside the
+  existing `ClinicalNote.data` field of the same note, so it stays tied to the same patient and
+  encounter, and inherits the existing access rules.
 - Other specialties untouched (`git status` shows only the new file).

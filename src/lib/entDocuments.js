@@ -624,6 +624,8 @@ const paediatric = {
 };
 
 // ---- Safety prompts (added once to every ENT note type) --------------------
+// Conditional on the encounter and the documented findings — see
+// src/lib/entSafetyRules.js. Not a required field: urgent care comes first.
 export const entSafetySection = () =>
   sec("Safety Concerns & Documented Action", [
     { key: "ent_safety", label: "Safety prompts from the documented findings", type: "ent_safety" },
