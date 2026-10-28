@@ -189,3 +189,47 @@ that treatment must never wait for documentation.
   as coding review required.
 - ACOG, RCOG and FIGO document numbers remain unconfirmed, so the emergency
   prompts that rest on them stay labelled as not verified in this build.
+
+## 8. Third pass — the eight gynecology templates, in place
+
+No gynecology template was created, renamed, reordered or removed. Their existing
+fields stay exactly as they were; the blocks below were appended, each only to the
+templates whose clinical purpose covers it.
+
+| Block | Fields | Appended to |
+|---|---|---|
+| History and presenting symptoms | 17 | Gynecology Consultation, Gynecology Follow-Up |
+| Examination — consent, chaperone, findings, deferral | 9 | Gynecology Consultation, Gynecology Follow-Up |
+| Assessment, differential and management plan | 6 | Consultation, Follow-Up, Procedure Note, Operative Note, Post-Operative Note, Discharge Summary, Referral |
+| Investigations, screening and follow-up | 9 | Consultation, Follow-Up, Discharge Summary |
+| Procedure and surgical documentation | 5 | Procedure Note, Operative Note, Pre-Operative Assessment |
+| Post-operative condition, instructions and follow-up | 5 | Procedure Note, Operative Note, Post-Operative Note, Discharge Summary |
+
+Deliberate design points:
+
+- **Sensitive questions are optional and non-directive.** Sexual history offers
+  "Not clinically indicated" and "Deferred at the patient's request"; fertility
+  goals offer "Not discussed — patient preference"; no intimate examination field
+  is required, and every examination field can record "Not performed — deferred"
+  or "Declined by the patient" with a reason.
+- **Consent and chaperone are recorded**, not assumed.
+- **No normal finding is generated.** A field left blank stays blank in the note
+  and in the PDF.
+- **Symptom is not diagnosis.** The assessment block records the documented status
+  — symptom only, screening encounter, abnormal finding pending, suspected,
+  confirmed, history of disease, or unresolved/unconfirmed — and the ICD-11 entries
+  carry their own mapping state, so a symptom is never coded as cancer, infection
+  or infertility.
+- **Validated tools carry their source.** The criteria field asks for name, source
+  and version, so no tool is cited without identification.
+- **Screening is separated from diagnosis** by an explicit purpose field, and
+  cervical screening status includes overdue and not-applicable, with HPV
+  vaccination recorded separately — one universal schedule is never assigned.
+
+**Still outstanding for this specialty:** ACOG and RCOG document numbers and dates
+could not be confirmed at source in this build, so no gynecology guidance is cited
+by number; the ICD-11 catalogue covers endometriosis, benign genital tract
+disorders, abnormal uterine bleeding, menopause, infertility and pelvic pain only,
+so fibroids, ovarian masses, PCOS, prolapse, incontinence, genital infection,
+cervical abnormality and malignancy must be mapped by the clinician from the WHO
+browser and are stored as coding review required.

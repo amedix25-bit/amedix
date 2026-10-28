@@ -23,6 +23,14 @@
 //    relevant.
 
 import { obgynCatalogFor, OBGYN_CODING_LIMITATION, OBGYN_ICD11_MMS } from "@/lib/obgynIcd11";
+import {
+  gynHistoryFields,
+  gynExaminationFields,
+  gynAssessmentFields,
+  gynInvestigationFields,
+  gynProcedureFields,
+  gynPostopFields,
+} from "@/lib/obgynGynFields";
 
 const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
 const F = (key, label, extra) => ({ key, label, type: "input", ...extra });
@@ -766,20 +774,24 @@ export const OBGYN_ENHANCEMENTS = {
   ],
 
   // ---- Gynecology ---------------------------------------------------------
-  obgyn_gyn_consultation: () => gynNote(),
-  obgyn_gyn_followup: () => gynNote(),
-  obgyn_gyn_procedure_note: () => gynNote("Search ICD-11 — the gynecologic diagnosis this procedure was performed for..."),
-  obgyn_gyn_operative_note: () => gynNote("Search ICD-11 — pre-operative and post-operative gynecologic diagnosis..."),
-  obgyn_gyn_preop_assessment: () => gynNote(),
-  obgyn_gyn_postop_note: () => gynNote(),
-  obgyn_gyn_discharge_summary: () => gynNote("Search ICD-11 — the diagnoses this admission was coded for..."),
-  obgyn_gyn_referral: () => gynNote(),
+  // Each gynecology template receives the blocks its clinical purpose covers.
+  obgyn_gyn_consultation: () => gynNote(GYN_PLACEHOLDER, gynHistoryFields(), gynExaminationFields(), gynAssessmentFields(), gynInvestigationFields()),
+  obgyn_gyn_followup: () => gynNote(GYN_PLACEHOLDER, gynHistoryFields(), gynExaminationFields(), gynAssessmentFields(), gynInvestigationFields()),
+  obgyn_gyn_procedure_note: () => gynNote("Search ICD-11 — the gynecologic diagnosis this procedure was performed for...", gynProcedureFields(), gynPostopFields(), gynAssessmentFields()),
+  obgyn_gyn_operative_note: () => gynNote("Search ICD-11 — pre-operative and post-operative gynecologic diagnosis...", gynProcedureFields(), gynPostopFields(), gynAssessmentFields()),
+  obgyn_gyn_preop_assessment: () => gynNote(GYN_PLACEHOLDER, gynProcedureFields()),
+  obgyn_gyn_postop_note: () => gynNote(GYN_PLACEHOLDER, gynPostopFields(), gynAssessmentFields()),
+  obgyn_gyn_discharge_summary: () => gynNote("Search ICD-11 — the diagnoses this admission was coded for...", gynPostopFields(), gynAssessmentFields(), gynInvestigationFields()),
+  obgyn_gyn_referral: () => gynNote(GYN_PLACEHOLDER, gynAssessmentFields()),
 };
 
-function gynNote(placeholder = "Search ICD-11 — gynecologic diagnoses (endometriosis, bleeding, pelvic pain, fertility, menopause)...") {
+const GYN_PLACEHOLDER = "Search ICD-11 — gynecologic diagnoses (endometriosis, bleeding, pelvic pain, fertility, menopause)...";
+
+function gynNote(placeholder = GYN_PLACEHOLDER, ...blocks) {
   return [
     S("ob_context", "Coding Context at This Encounter", CONTEXT_OPTIONS),
     ...gynFields(),
+    ...blocks.flat(),
     ...icdBlock(GYN_DOMAINS, placeholder),
     ...safetyBlock(),
   ];
