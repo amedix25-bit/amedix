@@ -362,7 +362,10 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       // away — the first one loads, and the doctor switches diagnosis from the
       // list. Selecting a template is always the same path as any note type.
       setDiagnosisMode(true);
-      if (diseaseDocs[0]) selectDocType(diseaseDocs[0].key);
+      setOpenIds((s) => new Set(s).add("dxTemplates"));
+      setTimeout(() => {
+        document.getElementById("note-section-dxTemplates")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 120);
       return;
     }
     setDiagnosisMode(false);
@@ -376,7 +379,7 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     selectDocType(key);
     setTimeout(() => {
       document.getElementById("note-section-template")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
+    }, 160);
   };
 
   const handleSubmit = async (e) => {
