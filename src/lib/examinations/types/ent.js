@@ -12,6 +12,8 @@ export default {
       sel("tympanic_membrane", "Tympanic membrane", ["Normal, pearly grey", "Red / inflamed", "Retracted", "Perforated", "Fluid level"], { bilateral: true, detailOn: ["Red / inflamed", "Retracted", "Perforated", "Fluid level"] }),
       sel("hearing", "Hearing (whisper / voice test)", ["Normal", "Reduced"], { bilateral: true }),
       sel("tuning_fork", "Tuning fork tests (Rinne / Weber)", ["Normal", "Rinne negative", "Weber lateralized", "Not performed"], { detailLaterality: true }),
+      sel("positional_testing", "Positional testing (Dix–Hallpike / roll test)", ["Not performed", "Negative", "Positive — posterior canal", "Positive — horizontal canal", "Not tolerated"], { detailOn: ["Positive — posterior canal", "Positive — horizontal canal", "Not tolerated"] }),
+      sel("facial_nerve", "Facial nerve function (House–Brackmann)", ["I — normal", "II — slight", "III — moderate", "IV — moderately severe", "V — severe", "VI — total paralysis", "Not assessed"]),
     ]),
     section("nose", "Nose and Sinuses", [
       sel("external_nose", "External nose", ["Normal", "Deformed", "Inflamed"], { detailOn: ["Deformed", "Inflamed"] }),
@@ -19,6 +21,8 @@ export default {
       sel("nasal_mucosa", "Nasal mucosa", ["Normal", "Hypertrophied turbinates", "Atrophic", "Inflamed"]),
       sel("septum", "Nasal septum", ["Central", "Deviated", "Perforated"], { detailOn: ["Deviated", "Perforated"], detailLaterality: true }),
       multi("sinus_tenderness", "Sinus tenderness", ["None", "Maxillary", "Frontal", "Ethmoidal"]),
+      sel("nasal_endoscopy", "Nasal endoscopy", ["Not performed", "Normal", "Polyps", "Purulence", "Mass / lesion", "Adhesions", "Not tolerated"], { detailOn: ["Polyps", "Purulence", "Mass / lesion", "Adhesions"] }),
+      sel("olfaction", "Sense of smell", ["Normal", "Reduced", "Absent", "Distorted", "Not tested"]),
     ]),
     section("throat", "Oral Cavity and Throat", [
       sel("lips", "Lips", ["Normal", "Fissured", "Cyanosed", "Ulcerated / lesion"], { detailOn: ["Fissured", "Ulcerated / lesion"] }),
@@ -31,8 +35,10 @@ export default {
     section("neck", "Neck", [
       multi("lymph_nodes", "Lymph nodes", ["None palpable", "Cervical", "Submandibular", "Submental", "Posterior triangle", "Supraclavicular"]),
       sel("node_details", "Node character", ["Not applicable", "Soft / tender", "Firm", "Rubbery", "Hard / fixed"], { detailOn: ["Firm", "Rubbery", "Hard / fixed"] }),
+      sel("neck_mass", "Neck mass", ["None", "Present — midline", "Present — lateral", "Present — supraclavicular"], { detailOn: ["Present — midline", "Present — lateral", "Present — supraclavicular"] }),
       sel("thyroid", "Thyroid", ["Normal", "Enlarged"], { detailOn: ["Enlarged"], detailLaterality: true }),
       sel("larynx", "Larynx / voice", ["Normal, voice clear", "Hoarse", "Stridor"], { detailOn: ["Hoarse", "Stridor"] }),
+      sel("laryngeal_view", "Laryngeal view (flexible endoscopy)", ["Not performed", "Normal", "Oedema", "Vocal cord lesion", "Vocal cord immobility", "Mass", "Not tolerated"], { detailOn: ["Oedema", "Vocal cord lesion", "Vocal cord immobility", "Mass"] }),
       sel("neck_movements", "Neck movements", ["Full", "Limited"], { detailOn: ["Limited"] }),
     ]),
     section("special_findings", "Special Findings", [], {

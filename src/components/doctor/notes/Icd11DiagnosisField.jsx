@@ -21,7 +21,7 @@ const newEntry = (item, entries) => ({
   display: item.display,
   definition: item.definition || "",
   specificity: item.specificity || SPECIFICITY.SUB,
-  version: `${ICD11_MMS.label} (${ICD11_MMS.release})`,
+  version: `${ICD11_MMS.label} (${item.release || ICD11_MMS.release})`,
   criteria_reference: item.criteria || "",
   role: entries.some((e) => e.role === "Primary") ? "Secondary" : "Primary",
   status: "Suspected",
@@ -78,8 +78,8 @@ export default function Icd11DiagnosisField({
           <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Diagnoses are documented, never auto-confirmed
         </p>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Codes come from {ICD11_MMS.label} ({ICD11_MMS.release}) or are entered from the WHO browser. A keyword, antibody,
-          laboratory result or imaging finding alone never confirms a diagnosis.
+          Codes come from the {ICD11_MMS.label} catalogue — the release verified against is recorded on each diagnosis —
+          or are entered from the WHO browser. A keyword, laboratory result or imaging finding alone never confirms a diagnosis.
         </p>
       </div>
 

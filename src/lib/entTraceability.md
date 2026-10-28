@@ -212,4 +212,79 @@ code + official display term + the version reviewed.
   affected; no migration required.
 - No shared file was edited: `noteSectionPolicy.js`, `specialtyDocuments.js`,
   `examinations/*`, `clinicalFieldValue.js`, `diseaseSpecificNotes.js` all untouched.
+
+---
+
+# Part 2 — ENT clinical documentation strengthened, ICD-11 catalogue live
+
+Implemented: **2026-10-28** · Specialty key: `ent` · Note types: **14** (9 preserved + 5 added)
+
+## 8. What changed
+
+| Change | File | Effect at runtime |
+|---|---|---|
+| ENT note catalogue moved out of `specialtyDocuments.js` into its own module, content deepened | `src/lib/entDocuments.js` (new) | ENT notes render the new fields; the 9 legacy keys and labels are unchanged |
+| `ENT_DOCS` imported instead of declared inline | `src/lib/specialtyDocuments.js` | same assembly into `SPECIALTY_DOCUMENTS`; no other specialty touched |
+| Verified ICD-11 MMS catalogue for ENT | `src/lib/entIcd11.js` (new) | each ENT note carries a diagnosis field restricted to ENT-relevant codes |
+| ICD-11 field stamps the release the code was verified against | `src/components/doctor/notes/Icd11DiagnosisField.jsx` | `version` now reads the entry's own release (ENT 2025-01, others unchanged) |
+| ENT structured examination extended | `src/lib/examinations/types/ent.js` | +6 fields: positional testing (Dix–Hallpike / roll), facial nerve (House–Brackmann), nasal endoscopy, olfaction, laryngeal view, neck mass |
+
+## 9. ICD-11 provenance (verifiable)
+
+- Source: WHO ICD-11 MMS **Simple Tabulation, release 2025-01** —
+  `https://icdcdn.who.int/static/releasefiles/2025-01/SimpleTabulation-ICD-11-MMS-en.xlsx`
+- Retrieved `2026-10-28`; **133** codes extracted by code from the tabulation (code + official
+  title + chapter), display terms copied character-for-character. No code was written from memory.
+- Chapters covered: 10 (ear / mastoid), 12 (respiratory — nose, pharynx, larynx), 21 (symptoms),
+  7 (sleep), 1 (infections), 13 (oral / salivary).
+- Deliberately **not** encoded: inclusion and exclusion notes (not carried by the tabulation), and
+  chapter 2 neoplasm codes (a neck mass must be coded with its histology from the WHO browser).
+  The diagnosis field therefore never states an exclusion it could not be verified against, and a
+  clinician can always add a code with its source from the WHO browser.
+- Residual codes (`…Y` / `…Z`) are flagged in the catalogue and say so in the picker, so an
+  unspecified code is a visible choice rather than a silent default.
+
+## 10. Shared-policy conformance sweep (§2.3) — applied before writing
+
+Every field label in the 14 note types was checked against the shared retirement patterns. The
+labels below were reworded so the policy cannot strip them, and exactly one structured field per
+note carries the "Examination" label (converted by the policy into *Select Examination*):
+
+| Was | Now | Reason |
+|---|---|---|
+| Neck Examination | Neck Palpation Findings | contained "Examination" |
+| Laryngeal Examination | Laryngeal View (endoscopy) | contained "Examination" |
+| Cranial Nerve Examination | Cranial Nerves | contained "Examination" |
+| Examination Cooperation | Cooperation During Assessment | contained "Examination" |
+| …Mobility on Examination | …Mobility on Assessment | contained "Examination" |
+| Examination Findings at Referral | Clinical Findings at Referral | contained "Examination" (a referral has no exam block) |
+| Safety-Net Advice & Escalation Route Given | Safety-Net Advice & Who to Contact Given | matched `^Escalat…` |
+
+## 11. New note types (new keys only — nothing moved into the picker)
+
+| Key | Label | What it documents |
+|---|---|---|
+| `ent_otology` | Ear & Otology Note | otology history, tuning fork pattern, audiometry status, positional testing, facial nerve grade, vestibular assessment |
+| `ent_rhinosinusitis` | Nose & Sinus Note | pattern and duration, epistaxis with bleeding risk, endoscopy, cross-sectional review, medical vs surgical decision |
+| `ent_laryngology` | Throat, Larynx & Voice Note | voice, swallow and airway symptoms, laryngeal view, voice and swallow assessment, co-management |
+| `ent_neck_mass` | Head & Neck Mass Note | mass character, red flags, cranial nerves, nasendoscopy, provisional nature, pathway, tissue sampling, MDT |
+| `ent_paediatric` | Paediatric ENT Note | caregiver history, development and feeding, sleep-disordered breathing, infections, age-appropriate examination, surgical discussion |
+
+## 12. Checklist status after Part 2
+
+Items **1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13** of §5 are implemented.
+Still open: **11** (ENT disease-specific templates for the "Disease-Specific Note" picker —
+Part 4) and the Part 3/4 review of any guideline element not yet expressed as a field.
+
+## 13. Verification performed for Part 2
+
+- Production build passes with the new modules and the reworded labels.
+- `SPECIALTY_DOCUMENTS` still assembles `...ENT_DOCS` in the same position; ENT keys
+  `ent_consultation … ent_referral` unchanged, labels unchanged, specialty still `ent`.
+- `noteSectionPolicy.js`, `clinicalFieldValue.js`, `diseaseSpecificNotes.js` and every other
+  specialty's templates were **not** edited.
+- No new data shapes are stored: all new fields use existing field types
+  (`textarea, input, number, select, examinations, icd11_diagnoses`), so note view, print and
+  PDF keep rendering without a new renderer.
+- ENT records in the database: still **0**, so no stored note can be altered by this change.
 - Other specialties untouched (`git status` shows only the new file).

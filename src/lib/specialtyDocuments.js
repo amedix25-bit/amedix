@@ -18,6 +18,7 @@ import { NEPHROLOGY_DOCS } from "@/lib/nephrologyDocuments";
 import { NEPHROLOGY_KIDNEY_DOCS } from "@/lib/nephrologyKidneyDocs";
 import { NEPHROLOGY_CONDITION_DOCS } from "@/lib/nephrologyConditionDocs";
 import { nephrologySafetySection } from "@/lib/nephrologyClinicalReasoning";
+import { ENT_DOCS } from "@/lib/entDocuments";
 
 // Every Nephrology note carries the same safety-prompt block. The core notes
 // declare it in their own assessment/monitoring section; the condition notes
@@ -708,45 +709,6 @@ const UROLOGY_DOCS = [
   },
   {
     key: "uro_referral", label: "Urology Referral", specialty: "urology",
-    fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
-  },
-];
-
-const ENT_DOCS = [
-  {
-    key: "ent_consultation", label: "ENT Consultation", specialty: "ent",
-    fields: [T("chief_complaint", "Chief Complaint"), T("hpi", "History of Present Illness"), T("ent_history", "ENT History"), T("pmh", "Past Medical History"), T("exam_findings", "Examination — Ears / Nose / Throat / Neck"), T("assessment", "Assessment"), T("plan", "Plan")],
-  },
-  {
-    key: "ent_followup", label: "ENT Follow-Up", specialty: "ent",
-    fields: [T("interval_history", "Interval History"), T("symptoms", "Current Symptoms"), T("exam_findings", "Examination Findings"), T("investigations", "Investigations"), T("assessment", "Assessment"), T("plan", "Plan")],
-  },
-  {
-    key: "ent_procedure_note", label: "ENT Procedure Note", specialty: "ent",
-    fields: [I("procedure", "Procedure"), T("indication", "Indication"), T("consent", "Consent"), T("technique", "Technique"), T("findings", "Findings"), T("specimens", "Specimens"), T("complications", "Complications"), T("patient_condition", "Patient Condition")],
-  },
-  {
-    key: "ent_operative_note", label: "Operative Note (ENT)", specialty: "ent",
-    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), I("procedure", "Procedure"), I("surgeon", "Surgeon"), T("assistants", "Assistants"), S("anesthesia", "Anesthesia", ["General", "Regional", "Local", "Sedation", "Other"]), T("indication", "Indication"), T("findings", "Findings"), T("procedure_details", "Procedure Details"), T("specimens", "Specimens"), I("estimated_blood_loss", "Estimated Blood Loss"), T("complications", "Complications"), T("postop_plan", "Post-Operative Plan")],
-  },
-  {
-    key: "ent_preop_assessment", label: "Pre-Operative Assessment (ENT)", specialty: "ent",
-    fields: [I("planned_procedure", "Planned Procedure"), T("indication", "Indication"), T("comorbidities", "Comorbidities"), T("medications", "Current Medications"), T("labs", "Laboratory Results"), T("imaging", "Imaging"), S("clearance", "Clearance", ["Cleared", "Cleared with Conditions", "Not Cleared", "Pending"]), T("preop_instructions", "Pre-Operative Instructions")],
-  },
-  {
-    key: "ent_postop_note", label: "Post-Operative Note (ENT)", specialty: "ent",
-    fields: [I("procedure_date", "Procedure Date"), I("postop_day", "Post-Operative Day"), T("vitals", "Vital Signs"), T("wound", "Wound"), T("airway_status", "Airway Status"), T("packing_status", "Nasal Packing / Packs Status"), T("pain", "Pain Control"), T("complications", "Complications"), T("plan", "Plan")],
-  },
-  {
-    key: "ent_audiology_report", label: "Audiology / Diagnostic Report", specialty: "ent",
-    fields: [S("test_type", "Test Type", ["Pure Tone Audiometry", "Tympanometry", "OAE", "ABR", "Speech Audiometry", "Nasal Endoscopy", "Other"]), T("indication", "Indication"), T("results_right", "Results — Right"), T("results_left", "Results — Left"), T("interpretation", "Interpretation"), T("recommendations", "Recommendations")],
-  },
-  {
-    key: "ent_discharge_summary", label: "Discharge Summary (ENT)", specialty: "ent",
-    fields: [T("preop_diagnosis", "Pre-Operative Diagnosis"), T("postop_diagnosis", "Post-Operative Diagnosis"), T("procedure", "Procedure Performed"), T("hospital_course", "Hospital Course"), T("discharge_medications", "Discharge Medications"), T("wound_care", "Wound / Pack Care"), T("follow_up", "Follow-Up"), T("warning_signs", "Warning Signs")],
-  },
-  {
-    key: "ent_referral", label: "ENT Referral", specialty: "ent",
     fields: [I("referral_to", "Referred To"), T("reason", "Reason for Referral"), S("urgency", "Urgency", ["Routine", "Urgent", "Emergency"]), T("relevant_history", "Relevant History")],
   },
 ];
