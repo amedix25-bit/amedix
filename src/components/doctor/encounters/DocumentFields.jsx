@@ -14,6 +14,7 @@ import RenalLabsField from "@/components/doctor/notes/RenalLabsField";
 import KdigoRenalField from "@/components/doctor/notes/KdigoRenalField";
 import NephrologyAlertsField from "@/components/doctor/notes/NephrologyAlertsField";
 import EntSafetyPromptsField from "@/components/doctor/notes/EntSafetyPromptsField";
+import EndocrineSafetyPromptsField from "@/components/doctor/notes/EndocrineSafetyPromptsField";
 import NephMedicationsField from "@/components/doctor/notes/NephMedicationsField";
 import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
@@ -147,6 +148,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "ent_safety" && (
         <EntSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "endocrine_safety" && (
+        <EndocrineSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "neph_medications" && (
         <NephMedicationsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

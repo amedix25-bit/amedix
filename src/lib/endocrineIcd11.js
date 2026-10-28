@@ -371,18 +371,27 @@ const RAW = [
 
 export const ENDOCRINE_ICD11 = RAW.map((line) => {
   const [code, display, domain, primary] = line.split("|");
+  const domainLabel = ENDOCRINE_ICD11_DOMAINS[domain] || domain;
+  const isPrimary = primary === "1";
   return {
     code,
     display,
     domain,
-    domain_label: ENDOCRINE_ICD11_DOMAINS[domain] || domain,
-    primary: primary === "1",
+    domain_label: domainLabel,
+    primary: isPrimary,
     system: ENDOCRINE_ICD11_MMS.system,
     release: ENDOCRINE_ICD11_MMS.release,
     version: `${ENDOCRINE_ICD11_MMS.label} ${ENDOCRINE_ICD11_MMS.release}`,
     source: ENDOCRINE_ICD11_MMS.source_url,
-    browser: `${ENDOCRINE_ICD11_MMS.browser_url}`,
+    browser: ENDOCRINE_ICD11_MMS.browser_url,
     precise: true,
+    specificity: code.includes(".")
+      ? "Subcategory — most specific"
+      : "Block (stem) — select a subcategory when known",
+    aliases: `${display} ${domainLabel}`,
+    definition: isPrimary
+      ? `WHO ICD-11 MMS category in ${domainLabel}. No inclusion or exclusion notes are reproduced — confirm the exact category against the WHO browser before relying on a residual (…Y / …Z) code.`
+      : `WHO carries this as a NON-primary tabulation entry. Document it together with the diabetes type, never instead of it. Category in ${domainLabel}.`,
   };
 });
 

@@ -9,6 +9,7 @@ import { formatComparison } from "@/lib/rheumFollowup";
 import { formatRenalLabRows } from "@/lib/renalLabs";
 import { formatNephAlerts } from "@/lib/nephAlerts";
 import { formatEntSafety } from "@/lib/entSafetyRules";
+import { formatEndocrineSafety } from "@/lib/endocrineSafetyRules";
 import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
@@ -109,6 +110,7 @@ export function formatFieldValue(type, value) {
   if (type === "kdigo_renal") return formatKdigoRenal(value);
   if (type === "neph_alerts") return formatNephAlerts(value);
   if (type === "ent_safety") return formatEntSafety(value);
+  if (type === "endocrine_safety") return formatEndocrineSafety(value);
   if (type === "neph_medications") return formatNephMedications(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
