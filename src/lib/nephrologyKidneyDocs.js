@@ -132,6 +132,14 @@ export const NEPHROLOGY_KIDNEY_DOCS = [
         T("other_protective_therapy", "Other Kidney-Protective or Cardiovascular Therapy"),
         T("therapy_contraindications", "Contraindications, Intolerances and Interactions Considered"),
       ]),
+      ...sec("Response to Treatment", [
+        S("bp_response", "Blood Pressure Response", ["At target", "Improved but above target", "No change", "Worsened", "Not assessable"]),
+        S("albuminuria_response", "Albuminuria Response", ["Reduced by ≥ 30%", "Reduced but < 30%", "Unchanged", "Increased", "Not assessable — no paired values"]),
+        S("egfr_slope_response", "Kidney Function Response", ["Stabilised", "Decline slowing", "Continuing to decline", "Expected initial dip, then stable", "Not assessable"]),
+        S("treatment_intolerance", "Intolerance or Adverse Effect Limiting Therapy", ["None", "Hyperkalaemia", "Hypotension", "Acute kidney function change after initiation", "Other — see detail", "Not assessed"]),
+        T("treatment_intolerance_detail", "Intolerance — Detail and Action Taken", when("treatment_intolerance", "Hyperkalaemia", "Hypotension", "Acute kidney function change after initiation", "Other — see detail")),
+        T("treatment_response_detail", "Response — the Values, Dates and What Was Changed"),
+      ]),
       ...sec("Risk Communication & Pathway", [
         S("risk_discussed", "Kidney Failure Risk Discussed With the Patient", ["Yes — using a validated estimate", "Yes — qualitatively", "Not yet discussed"]),
         T("risk_communication_note", "How the Risk Was Explained, and What the Patient Understood"),

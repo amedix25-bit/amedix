@@ -242,6 +242,8 @@ export const NEPHROLOGY_CONDITION_DOCS = [
         S("stone_density", "Stone Density on CT", ["Not measured", "< 500 HU", "500–1000 HU", "> 1000 HU"]),
         S("obstruction_severity", "Obstruction Severity", ["No obstruction", "Partial", "Complete", "Complete with infection", "Not assessable"]),
         S("infection_risk", "Infected Obstructed System", ["No features", "Suspected — see detail", "Present — emergency drainage required"]),
+        S("urine_culture_result", "Urine Culture", ["Not sent", "No growth", "Growth — see organism", "Mixed growth"]),
+        T("organism_detail", "Organism and Sensitivities", when("urine_culture_result", "Growth — see organism", "Mixed growth")),
         T("obstruction_detail", "Obstruction — Detail and Urgency"),
       ]),
       ...sec("Metabolic Evaluation", [
