@@ -2,6 +2,7 @@
 // with a clinical note or document, so the diagnosis and investigation detail
 // is preserved in the longitudinal record and in exports.
 import { formatInstrumentEntry } from "@/lib/rheumInstruments";
+import { formatTreatmentPlan } from "@/lib/rheumTreatmentSafety";
 
 export function formatFieldValue(type, value) {
   if (value === undefined || value === null) return "";
@@ -43,6 +44,8 @@ export function formatFieldValue(type, value) {
       })
       .join("\n");
   }
+
+  if (type === "rheum_treatment") return formatTreatmentPlan(value);
 
   return String(value);
 }

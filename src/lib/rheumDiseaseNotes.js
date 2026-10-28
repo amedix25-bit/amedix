@@ -61,6 +61,11 @@ const activityFields = (instruments, extra = []) => [
 ];
 
 const treatmentFields = (specific = []) => [
+  {
+    key: "structured_treatment_plan",
+    label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+    type: "rheum_treatment",
+  },
   ...specific,
   T("current_csdmards", "Current Conventional Synthetic DMARDs — agent, dose, start date, folic acid cover"),
   T("biologic_tsdmard_history", "Biologic / Targeted Synthetic Therapy History — agent, dates, response and reason for switching or stopping"),
@@ -554,6 +559,11 @@ const RHEUM_OA = {
       T("comorbidity_detail", "Comorbidity Detail — obesity, diabetes, cardiovascular disease, depression"),
     ]),
     ...sec("Treatment History", [
+      {
+        key: "structured_treatment_plan",
+        label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+        type: "rheum_treatment",
+      },
       T("non_pharmacological", "Non-Pharmacological Care — education, exercise, physiotherapy, weight management, walking aids, bracing"),
       T("pharmacological", "Pharmacological Care — agent, dose, duration, response and adverse effects"),
       T("injections_procedures", "Intra-Articular Injections & Procedures — site, agent, date and response"),
@@ -888,6 +898,11 @@ const RHEUM_PMR = {
       T("comorbidity_detail", "Comorbidity Detail — diabetes, osteoporosis, hypertension, infection risk"),
     ]),
     ...sec("Treatment History", [
+      {
+        key: "structured_treatment_plan",
+        label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+        type: "rheum_treatment",
+      },
       T("glucocorticoid_regimen", "Glucocorticoid Regimen — starting dose, current dose, taper plan and duration"),
       T("steroid_sparing", "Steroid-Sparing Therapy — methotrexate or biologic with dose and response"),
       T("relapse_history", "Relapse History and Treatment Response"),
@@ -952,6 +967,11 @@ const RHEUM_GCA = {
       T("comorbidity_detail", "Comorbidity Detail"),
     ]),
     ...sec("Treatment History", [
+      {
+        key: "structured_treatment_plan",
+        label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+        type: "rheum_treatment",
+      },
       T("glucocorticoid_regimen", "Glucocorticoid Regimen — initial dose, route, current dose and taper plan"),
       T("steroid_sparing", "Tocilizumab or Other Steroid-Sparing Therapy — dose, duration and response"),
       T("aspirin_antithrombotic", "Antiplatelet Therapy Decision"),
@@ -1085,6 +1105,11 @@ const RHEUM_OSTEOPOROSIS = {
       T("comorbidity_detail", "Comorbidity Detail — including glucocorticoid-treated inflammatory disease and malabsorption"),
     ]),
     ...sec("Treatment History", [
+      {
+        key: "structured_treatment_plan",
+        label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+        type: "rheum_treatment",
+      },
       T("calcium_vitamin_d", "Calcium and Vitamin D Supplementation"),
       T("bone_therapy", "Bone Therapy — bisphosphonate, denosumab, teriparatide, romosozumab with dose, duration and response"),
       T("glucocorticoid_protection", "Glucocorticoid-Induced Osteoporosis Protection"),
@@ -1152,6 +1177,11 @@ const RHEUM_JIA = {
       T("comorbidity_detail", "Comorbidity and Psychosocial Detail — school, mental health, family impact"),
     ]),
     ...sec("Treatment History", [
+      {
+        key: "structured_treatment_plan",
+        label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+        type: "rheum_treatment",
+      },
       T("nsaid_methotrexate", "NSAID and Methotrexate Therapy — dose, route, response and monitoring"),
       T("biologic_therapy", "Biologic Therapy — agent, dose, interval, response and adverse effects"),
       T("glucocorticoid", "Glucocorticoid Use — route, dose, taper and bone protection"),

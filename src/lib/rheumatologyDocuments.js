@@ -313,6 +313,11 @@ export const RHEUMATOLOGY_DOCS = [
         T("damage_risk_detail", "Poor-Prognosis Features — erosions, extra-articular disease, high serology, functional loss", {}, when("damage_risk", "Present — documented below")),
       ]),
       ...sec("Plan", [
+        {
+          key: "structured_treatment_plan",
+          label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+          type: "rheum_treatment",
+        },
         T("treatment_plan", "Treatment Plan"),
         T("dmard_plan", "DMARD / Biologic Decision (agent, dose, baseline monitoring)"),
         T("glucocorticoid_plan", "Glucocorticoid Plan (dose, tapering schedule, bone protection)"),
@@ -514,6 +519,11 @@ export const RHEUMATOLOGY_DOCS = [
         { key: "icd11_diagnoses", label: "Diagnoses (ICD-11) — status at this review", type: "icd11_diagnoses" },
         T("diagnostic_reasoning", "Diagnostic Reasoning — including any change in diagnosis"),
         T("assessment", "Assessment"),
+        {
+          key: "structured_treatment_plan",
+          label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+          type: "rheum_treatment",
+        },
         T("plan", "Plan — treat-to-target decisions, dose changes, tapering"),
         T("monitoring_plan", "Monitoring & Safety Plan"),
         T("education", "Education & Self-Management Advice Given"),
@@ -633,6 +643,11 @@ export const RHEUMATOLOGY_DOCS = [
         T("medication_review", "Medication Review — dose, adherence, adverse effects"),
         S("infection_screen", "Infection Since Last Review", ["None", "Present — documented below"]),
         T("infection_screen_detail", "Infection — Details and Outcome", {}, when("infection_screen", "Present — documented below")),
+        {
+          key: "structured_treatment_plan",
+          label: "Structured Treatment Plan & Monitoring — ACR/EULAR-aligned decision support",
+          type: "rheum_treatment",
+        },
         T("plan", "Plan — escalation, tapering, switching or continuation with rationale"),
         T("safety_advice", "Safety Advice & When to Seek Urgent Care"),
         I("next_review", "Next Review"),
