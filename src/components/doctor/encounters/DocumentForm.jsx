@@ -241,11 +241,11 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
 
       {def && def.specialty === "emergency_medicine" && <EmergencyWorkflowStrip />}
 
+      {hasFields && <SurgeryGuidelineBasis documentKey={def.key} />}
+
       {hasFields && (
         <DocumentFields defs={def.fields} values={dataValues} onChange={setData} specialty={practicingSpecialty} notice={def.notice || ""} />
       )}
-
-      {hasFields && <SurgeryGuidelineBasis documentKey={def.key} />}
 
       {def && def.toothChart && (
         <div className="space-y-1.5">

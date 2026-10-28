@@ -650,6 +650,9 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
                 ))}
               </div>
             )}
+            {/* Guideline basis stays at the top of the template section so it is
+                visible immediately, including in the very long trauma template. */}
+            <SurgeryGuidelineBasis documentKey={activeDef.key} />
             <DocumentFields
               defs={activeDef.fields}
               values={dataValues}
@@ -658,7 +661,6 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               notice={activeDef.notice || ""}
             />
             <p className="text-xs text-muted-foreground">Complete the sections relevant to this encounter — empty optional sections are simply not saved. Fields marked Required must be answered.</p>
-            <SurgeryGuidelineBasis documentKey={activeDef.key} />
           </div>
         );
       case "antenatal":
