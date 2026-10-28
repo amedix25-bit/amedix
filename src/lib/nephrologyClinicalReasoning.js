@@ -14,20 +14,6 @@ const S = (key, label, options, x = {}) => ({ key, label, type: "select", option
 const when = (key, ...values) => ({ showIf: { key, in: values } });
 const sec = (section, fields) => fields.map((f) => ({ ...f, section }));
 
-const REFERRAL_TARGETS = [
-  "No referral needed — managed here",
-  "Nephrology",
-  "Urology",
-  "Transplant unit",
-  "Dialysis access service",
-  "Interventional radiology",
-  "Cardiology",
-  "Endocrinology",
-  "Dietitian",
-  "Palliative care",
-  "Other — see detail",
-];
-
 // ---- Assessment and clinical reasoning -------------------------------------
 export const clinicalReasoningSection = () =>
   sec("Assessment & Clinical Reasoning", [
@@ -89,47 +75,7 @@ export const differentialSection = () =>
 // ---- Management ------------------------------------------------------------
 export const managementSection = () =>
   sec("Management", [
-    T("treatment_goals", "Individualised Treatment Goals (what success looks like for this patient)"),
-    S("goal_basis", "Goals Set On", [
-      "Symptoms and function",
-      "Slowing progression",
-      "Avoiding hospital admission",
-      "Preparing for kidney replacement therapy",
-      "Reducing cardiovascular risk",
-      "Protecting the transplant",
-      "Comfort and quality of life",
-      "Combination — see detail",
-    ]),
-    T("goal_detail", "Goal Detail", when("goal_basis", "Combination — see detail")),
-    {
-      key: "neph_medications",
-      label: "Medication Review — renal dosing, contraindications, interactions and monitoring",
-      type: "neph_medications",
-    },
     T("non_pharmacological", "Non-Pharmacological Management (volume, blood pressure and glycaemic targets, nephrotoxin avoidance)"),
-    T("lifestyle_diet_advice", "Lifestyle, Diet and Fluid Advice Given, with the Individualised Target"),
-    S("adherence_support", "Adherence Discussed and Support Agreed", [
-      "Adherent — no support needed",
-      "Support agreed — see detail",
-      "Non-adherence identified — see detail",
-      "Not discussed",
-    ]),
-    T("adherence_support_detail", "Adherence — Barriers and the Support Agreed", when("adherence_support", "Support agreed — see detail", "Non-adherence identified — see detail")),
-    S("shared_decision", "Shared Decision-Making", [
-      "Discussed — patient agrees with the plan",
-      "Discussed — patient undecided",
-      "Discussed — patient declines part of the plan",
-      "Not discussed — see reason",
-    ]),
-    T("shared_decision_detail", "Shared Decision-Making — Options, Trade-offs and the Patient's Preference", when("shared_decision", "Discussed — patient undecided", "Discussed — patient declines part of the plan", "Not discussed — see reason")),
-    S("treatment_response", "Response to Management So Far", [
-      "Not yet assessable — therapy just started",
-      "Goals met",
-      "Partial response",
-      "No response",
-      "Intolerance or adverse effect",
-    ]),
-    T("treatment_response_detail", "Response — the Values, Dates and What Was Changed", when("treatment_response", "Goals met", "Partial response", "No response", "Intolerance or adverse effect")),
   ]);
 
 // ---- Safety prompts --------------------------------------------------------
@@ -150,21 +96,4 @@ export const nephrologySafetySection = () =>
 
 // ---- Monitoring, referral and follow-up ------------------------------------
 export const monitoringFollowupSection = () =>
-  sec("Monitoring, Referral & Follow-Up", [
-    I("responsible_clinician", "Responsible Clinician for This Plan"),
-    S("referral_required", "Referral", REFERRAL_TARGETS),
-    T("referral_urgency_detail", "Referral — To Whom, For What and the Urgency", when("referral_required", ...REFERRAL_TARGETS.filter((t) => t !== "No referral needed — managed here"))),
-    I("reassessment_interval", "Planned Reassessment Interval (e.g. 2 weeks, 3 months)"),
-    T("planned_reassessment", "Planned Reassessment — What Is Checked, and When"),
-    T("monitoring_requirements", "Monitoring Requirements (which tests, how often, and the target)"),
-    S("escalation_plan", "Escalation Plan", [
-      "Same-day nephrology review if red flags",
-      "Emergency department if red flags",
-      "Contact the transplant unit",
-      "Contact the dialysis access service",
-      "No escalation criteria documented",
-    ]),
-    T("escalation_triggers", "Escalation Triggers, Who to Contact and How"),
-    T("patient_education_given", "Patient Education Given and Understanding Confirmed"),
-    T("followup_plan", "Follow-Up Plan"),
-  ]);
+  sec("Monitoring, Referral & Follow-Up", [T("followup_plan", "Follow-Up Plan")]);
