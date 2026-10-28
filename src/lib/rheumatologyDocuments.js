@@ -446,9 +446,13 @@ export const RHEUMATOLOGY_DOCS = [
         T("labs_inpatient", "Laboratory Results — CBC, CRP, ESR, renal & hepatic, urinalysis"),
         T("microbiology", "Microbiology & Serology"),
         T("radiographs_inpatient", "Radiographs, Ultrasound, CT or MRI Reviewed"),
+        ...investigationFields(),
+      ]),
+      ...sec("Diagnostic Assessment (ICD-11)", [
+        ...diagnosisFields(),
       ]),
       ...sec("Assessment & Management", [
-        T("assessment", "Assessment & Differential Diagnosis (ICD-11)"),
+        T("assessment", "Clinical Assessment & Impression"),
         T("immunosuppression_plan", "Immunosuppressive Therapy Plan — continue, hold, adjust"),
         T("glucocorticoid_plan", "Glucocorticoid Plan — dose, route, taper, bone protection"),
         T("infection_management", "Infection Treatment & Prophylaxis"),
@@ -504,8 +508,11 @@ export const RHEUMATOLOGY_DOCS = [
         T("radiographs", "Radiographs or MRI Reviewed"),
         T("bone_health", "Bone Health & Fracture Risk Review"),
         T("cardiovascular_risk", "Cardiovascular Risk Review"),
+        ...investigationFields(),
       ]),
       ...sec("Assessment & Plan", [
+        { key: "icd11_diagnoses", label: "Diagnoses (ICD-11) — status at this review", type: "icd11_diagnoses" },
+        T("diagnostic_reasoning", "Diagnostic Reasoning — including any change in diagnosis"),
         T("assessment", "Assessment"),
         T("plan", "Plan — treat-to-target decisions, dose changes, tapering"),
         T("monitoring_plan", "Monitoring & Safety Plan"),
@@ -551,8 +558,10 @@ export const RHEUMATOLOGY_DOCS = [
       ...sec("Review of the Evidence", [
         T("investigations_reviewed", "Laboratory & Serology Results Reviewed"),
         T("radiographs_reviewed", "Radiographs & Cross-Sectional Studies Reviewed"),
+        ...investigationFields(),
         S("diagnosis_concordance", "Agreement with the Referring Diagnosis", ["Agree", "Partially agree", "Disagree", "Insufficient information"]),
-        T("diagnostic_reasoning", "Diagnostic Reasoning & Alternative Diagnoses (ICD-11)"),
+        { key: "icd11_diagnoses", label: "Diagnoses (ICD-11) — role, status and clinical basis", type: "icd11_diagnoses" },
+        T("diagnostic_reasoning", "Diagnostic Reasoning & Alternative Diagnoses"),
         T("criteria_applied", "Classification Criteria Applied and Result"),
         T("treatment_appraisal", "Appraisal of Current Treatment — appropriateness, dose, monitoring"),
         S("additional_workup", "Additional Workup Recommended", ["None", "Yes — documented below"]),
@@ -591,6 +600,7 @@ export const RHEUMATOLOGY_DOCS = [
         ]),
         S("treatment_target", "Treat-to-Target Aim", ["Remission", "Low disease activity", "Symptom control", "Not applicable"]),
         S("target_met", "Target Met at This Review", ["Yes", "No — escalate", "No — continue and reassess", "Not assessed"]),
+        { key: "icd11_diagnoses", label: "Diagnoses (ICD-11) — status at this review, including remission", type: "icd11_diagnoses" },
       ]),
       ...sec("Patient-Reported Measures", [
         N("pain_score", "Pain Score (0–10)"),
@@ -619,6 +629,7 @@ export const RHEUMATOLOGY_DOCS = [
       ]),
       ...sec("Medication, Safety & Plan", [
         T("labs", "Laboratory Results and Monitoring Due"),
+        ...investigationFields(),
         T("medication_review", "Medication Review — dose, adherence, adverse effects"),
         S("infection_screen", "Infection Since Last Review", ["None", "Present — documented below"]),
         T("infection_screen_detail", "Infection — Details and Outcome", {}, when("infection_screen", "Present — documented below")),
@@ -736,12 +747,15 @@ export const RHEUMATOLOGY_DOCS = [
       ]),
       ...sec("Investigations & Medications", [
         T("labs", "Laboratory Results"),
+        ...investigationFields(),
         T("radiographs", "Radiographs or Cross-Sectional Studies Reviewed"),
         T("medications", "Current Medications"),
         S("adherence", "Reported Adherence", ["Full", "Partial", "Not taking", "Not applicable"]),
         T("adverse_effects", "Adverse Effects"),
       ]),
       ...sec("Assessment & Plan", [
+        { key: "icd11_diagnoses", label: "Diagnoses (ICD-11) — role, status and clinical basis", type: "icd11_diagnoses" },
+        T("diagnostic_reasoning", "Diagnostic Reasoning"),
         T("assessment", "Assessment"),
         T("plan", "Plan"),
         T("safety_advice", "Safety Advice & Follow-Up"),
@@ -758,6 +772,7 @@ export const RHEUMATOLOGY_DOCS = [
       ...sec("Admission & Discharge", [
         T("admission_diagnosis", "Admission Diagnosis"),
         T("discharge_diagnosis", "Discharge Diagnosis (ICD-11)"),
+        { key: "icd11_diagnoses", label: "Final Diagnoses (ICD-11) — role, status and clinical basis", type: "icd11_diagnoses" },
         I("admission_date", "Date of Admission"),
         I("discharge_date", "Date of Discharge"),
         T("discharge_condition", "Condition at Discharge"),
@@ -768,6 +783,10 @@ export const RHEUMATOLOGY_DOCS = [
         T("complications", "Complications During Admission"),
         S("infection_course", "Infection During Admission", ["None", "Treated during admission", "Ongoing at discharge"]),
         T("infection_course_detail", "Infection — Organism, Treatment, Duration", {}, when("infection_course", "Treated during admission", "Ongoing at discharge")),
+      ]),
+      ...sec("Investigations & Outstanding Results", [
+        ...investigationFields(),
+        T("outstanding_investigations", "Results Awaited at Discharge — who will review them and action if abnormal"),
       ]),
       ...sec("Discharge Therapy", [
         T("discharge_medications", "Discharge Medications — DMARDs, biologics, glucocorticoids with taper"),
