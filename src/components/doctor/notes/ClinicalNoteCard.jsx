@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
-import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock } from "lucide-react";
+import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock, ChevronDown } from "lucide-react";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 
@@ -22,8 +22,14 @@ function formatSeen(dt) {
   return `${d.toLocaleDateString()} — ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-export default function ClinicalNoteCard({ note, imagingMap }) {
+// The card is collapsed by default and shows only its header line, so a list of
+// notes stays short. Pass `open` + `onToggle` to let the list keep a single note
+// open at a time; without them the card manages itself.
+export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, defaultOpen = false }) {
   const navigate = useNavigate();
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const expanded = open === undefined ? internalOpen : open;
+  const toggle = () => (open === undefined ? setInternalOpen((v) => !v) : onToggle && onToggle());
   const labIds = note.lab_request_ids || [];
   const imagingIds = note.imaging_request_ids || [];
   const hasManagement = labIds.length > 0 || imagingIds.length > 0 || note.prescription || note.interventions || note.biopsy;
@@ -49,8 +55,15 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2 mb-3">
+      <button
+        type="button"
+        onClick={toggle}
+        className={`w-full flex items-center justify-between gap-2 text-left ${expanded ? "mb-3" : ""}`}
+      >
         <div className="flex items-center gap-2 min-w-0">
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
           <p className="font-medium truncate">{note.patient_name}</p>
           {note.document_type_label && (
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
@@ -58,9 +71,13 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
             </span>
           )}
         </div>
-        <span className="text-xs text-muted-foreground">{note.date}</span>
-      </div>
-      <div className="rounded-lg bg-muted/60 border border-border p-3 mb-3 text-sm grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <span className="text-xs text-muted-foreground shrink-0">{note.date}</span>
+      </button>
+      <div
+        className={`rounded-lg bg-muted/60 border border-border p-3 mb-3 text-sm grid sm:grid-cols-2 lg:grid-cols-3 gap-2 ${
+          expanded ? "" : "hidden"
+        }`}
+      >
         <div>
           <p className="text-xs text-muted-foreground">Patient</p>
           <p className="font-medium">{note.patient_name}</p>
@@ -118,7 +135,7 @@ export default function ClinicalNoteCard({ note, imagingMap }) {
           <p className="font-medium">{note.previous_history || "No recorded history"}</p>
         </div>
       </div>
-      <div className="space-y-3">
+      <div className={`space-y-3 ${expanded ? "" : "hidden"}`}>
         {note.data && Object.keys(note.data).length > 0 && (
           <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
             {(() => {

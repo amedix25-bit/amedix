@@ -260,7 +260,7 @@ export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab, retu
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Back to Notes
               </Button>
-              <ClinicalNoteCard note={openedNote} imagingMap={prevImagingMap} />
+              <ClinicalNoteCard key={openedNote.id} note={openedNote} imagingMap={prevImagingMap} defaultOpen />
             </div>
           ) : prevLoading ? (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">

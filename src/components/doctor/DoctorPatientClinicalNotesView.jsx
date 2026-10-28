@@ -32,6 +32,7 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId, em
   const [imagingMap, setImagingMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("mine");
+  const [openedId, setOpenedId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -69,7 +70,13 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId, em
     e.__type === "diagnosis" ? (
       <DiagnosisCard key={e.id} diagnosis={e} />
     ) : (
-      <ClinicalNoteCard key={e.id} note={e} imagingMap={imagingMap} />
+      <ClinicalNoteCard
+        key={e.id}
+        note={e}
+        imagingMap={imagingMap}
+        open={openedId === e.id}
+        onToggle={() => setOpenedId((cur) => (cur === e.id ? null : e.id))}
+      />
     );
 
   return (
@@ -83,10 +90,24 @@ export default function DoctorPatientClinicalNotesView({ patientId, doctorId, em
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <TabButton active={activeTab === "mine"} count={mine.length} onClick={() => setActiveTab("mine")}>
+            <TabButton
+              active={activeTab === "mine"}
+              count={mine.length}
+              onClick={() => {
+                setActiveTab("mine");
+                setOpenedId(null);
+              }}
+            >
               My Notes
             </TabButton>
-            <TabButton active={activeTab === "others"} count={others.length} onClick={() => setActiveTab("others")}>
+            <TabButton
+              active={activeTab === "others"}
+              count={others.length}
+              onClick={() => {
+                setActiveTab("others");
+                setOpenedId(null);
+              }}
+            >
               Other Physicians
             </TabButton>
           </div>
