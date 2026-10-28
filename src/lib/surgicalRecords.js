@@ -6,7 +6,9 @@
 // Field types: "textarea" (free text, default), "input" (single line),
 // "date" (date input), "select" (choose from options).
 
-export const SURGICAL_RECORD_TYPES = [
+import { retireNoteFields } from "@/lib/noteSectionPolicy";
+
+const SURGICAL_RECORD_TYPES_BASE = [
   {
     key: "surgical_consultation",
     title: "Surgical Consultation",
@@ -178,5 +180,11 @@ export const SURGICAL_RECORD_TYPES = [
     ],
   },
 ];
+
+// The sections retired from every clinical note are retired here too.
+export const SURGICAL_RECORD_TYPES = SURGICAL_RECORD_TYPES_BASE.map((type) => ({
+  ...type,
+  fields: retireNoteFields(type.fields),
+}));
 
 export const getSurgicalRecordType = (key) => SURGICAL_RECORD_TYPES.find((t) => t.key === key) || null;

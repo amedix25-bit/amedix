@@ -34,6 +34,75 @@ const SURGERY_RETIRED_FIELD_LABEL = [
   /^focused surgical exam/i,
 ];
 
+// ---- Sections retired from EVERY specialty template -------------------------
+// AMedix attaches the patient's recorded history, medications, laboratory and
+// imaging results to the note automatically, so the note no longer repeats
+// them. Retired everywhere, in every specialty and every diagnosis template:
+// the referral & encounter block, past medical / surgical / family history,
+// medication and treatment history, laboratory and imaging review, the plan,
+// the referrals block and the encounter-context closing block.
+const RETIRED_SECTION = [
+  /^referrals?\s*(&|and)\s*encounter/i,
+  /^referrals?\s*(&|and)\s*history/i,
+  /^referrals?\s*(&|and)\s*clinical question/i,
+  /^past medical,?\s*surgical/i,
+  /^medication\s*(&|and)\s*treatment/i,
+  /^medication,\s*safety\s*(&|and)\s*plan/i,
+  /^treatment history$/i,
+  /^medication review$/i,
+  /^laborator/i,
+  /^labs?\b/i,
+  /^imaging$/i,
+  /^investigations?\b/i,
+  /^encounter context/i,
+  /^plan$/i,
+  /^decision\s*(&|and)\s*plan$/i,
+  /^plan\s*(&|and)\s*counselling$/i,
+  /^referrals?$/i,
+];
+
+const isRetiredSection = (section) =>
+  !!section && RETIRED_SECTION.some((re) => re.test(section));
+
+// A kept section that also carries another clinical domain: only the retired
+// entries inside it go. "Referrals & Patient Education" keeps the education
+// record and loses the referral entries; "Assessment & Plan" keeps the
+// assessment, diagnosis and safety advice.
+const RETIRED_INSIDE_KEPT_SECTION = (field) => {
+  const section = field.section || "";
+  if (!section) return false;
+  if (/^referrals?\b/i.test(section) && (field.type === "rheum_referrals" || /^referral/i.test(field.label || ""))) return true;
+  if (/plan$/i.test(section) && /^plan$/i.test((field.label || "").trim())) return true;
+  return false;
+};
+
+// Field labels retired in every specialty — the flat templates (one long
+// field list, no section headings) lose the same content as the sectioned
+// ones, so nothing of the retired sections survives in any specialty.
+const GLOBAL_RETIRED_FIELD_LABEL = [
+  /^past medical history/i,
+  /^past surgical history/i,
+  /^past medical,?\s*surgical/i,
+  /^medical history$/i,
+  /^surgical history$/i,
+  /^family history/i,
+  /^current medications?\b/i,
+  /^medication$/i,
+  /^medications$/i,
+  /^medication review/i,
+  /^medications?\s+(review|changes|plan|reconciliation)$/i,
+  /^treatment history/i,
+  /^previous treatments?$/i,
+  /^treatment$/i,
+  /laborator/i,
+  /^labs?\b/i,
+  /^plan\b/i,
+  /^referral/i,
+];
+
+const isGloballyRetiredField = (field) =>
+  GLOBAL_RETIRED_FIELD_LABEL.some((re) => re.test(field.label || ""));
+
 // Field labels that belong to a retired section.
 const RETIRED_FIELD_LABEL = [
   /antimicrobial/i,
@@ -43,9 +112,6 @@ const RETIRED_FIELD_LABEL = [
   /\bimaging$/i, // Pelvic / Chest Imaging, Respiratory Imaging, Staging Imaging …
   /working diagnosis/i,
 ];
-
-// A label that mentions a retired word but is not that section — it stays.
-const KEPT_FIELD_LABEL = [/^current medications/i];
 
 // Note types retired from the catalogue (the Surgical Referral note).
 const RETIRED_DOCUMENT_KEYS = ["surg_referral"];
@@ -153,16 +219,36 @@ const applyClinicalFieldRules = (doc) => {
 
 const isRetiredField = (field, specialty) => {
   const label = field.label || "";
+  if (isGloballyRetiredField(field)) return true;
   if (specialty === "surgery" && SURGERY_RETIRED_FIELD_LABEL.some((re) => re.test(label))) return true;
-  if (KEPT_FIELD_LABEL.some((re) => re.test(label))) return false;
   return RETIRED_FIELD_LABEL.some((re) => re.test(label));
 };
+
+// A retired section can leave behind a compound heading whose other domain
+// survived: "Referrals & Patient Education" is shown as "Patient Education"
+// once the referral entries are gone.
+const renameKeptSection = (section) =>
+  /^referrals?\s*(&|and)\s*patient education$/i.test(section) ? "Patient Education" : section;
+
+// The retirement rules on their own, for the surgeon's record catalog — it is
+// not part of the specialty document catalogue but is still clinical
+// documentation, so the same sections are retired there.
+export const retireNoteFields = (fields) =>
+  (fields || [])
+    .filter((field) => !isRetiredSection(field.section))
+    .filter((field) => !RETIRED_INSIDE_KEPT_SECTION(field))
+    .filter((field) => !isGloballyRetiredField(field))
+    .map((field) => (field.section ? { ...field, section: renameKeptSection(field.section) } : field));
 
 export const applyNoteSectionPolicy = (docs) =>
   docs
     .filter((doc) => !RETIRED_DOCUMENT_KEYS.includes(doc.key))
     .map((doc) => {
       if (isImagingReport(doc) || !Array.isArray(doc.fields)) return doc;
-      const kept = { ...doc, fields: doc.fields.filter((field) => !isRetiredField(field, doc.specialty)) };
-      return applyClinicalFieldRules(kept);
+      const fields = doc.fields
+        .filter((field) => !isRetiredSection(field.section))
+        .filter((field) => !RETIRED_INSIDE_KEPT_SECTION(field))
+        .filter((field) => !isRetiredField(field, doc.specialty))
+        .map((field) => (field.section ? { ...field, section: renameKeptSection(field.section) } : field));
+      return applyClinicalFieldRules({ ...doc, fields });
     });
