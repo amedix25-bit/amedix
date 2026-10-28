@@ -4,17 +4,15 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { ensureRadiologistProfile, RADIOLOGY_SPECIALTY } from "@/lib/radiologyAccess";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { SPECIALTIES } from "@/lib/specialties";
+import { canSwitchSpecialty } from "@/lib/specialtyLock";
 
-// Specialty selector shown next to the doctor's name. Existing accounts can
-// change their specialty right here — the dropdown offers the complete
-// predefined specialty catalog (plus any verified specialties already on the
-// profile). Selecting a specialty immediately makes it the doctor's CURRENTLY
-// ACTIVE specialty, which is the source of truth for the Clinical Note system:
-// Create New Note automatically opens the template for this specialty. The
-// doctor is never asked to pick the specialty again inside Clinical Note, and
-// old notes keep the specialty they were created under.
+// Specialty shown next to the doctor's name. The specialty is chosen at
+// registration and is permanent: it determines which specialty portal and
+// clinical documentation the doctor works in. Accounts listed in
+// specialtyLock keep the dropdown and can switch; everyone else sees a locked
+// badge. A legacy account with no specialty yet still gets the one-time pick.
 export default function DoctorSpecialtySelect({ profile, onSelected }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -24,6 +22,7 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
   const verified = (Array.isArray(profile.specialties) ? profile.specialties : []).filter(Boolean);
   const active = profile.specialization || "";
   const options = [...new Set([...SPECIALTIES, ...verified, active].filter(Boolean))];
+  const locked = !!active && !canSwitchSpecialty(user);
 
   const makeActive = async (s) => {
     if (!s || s === active || saving) return;
@@ -48,6 +47,18 @@ export default function DoctorSpecialtySelect({ profile, onSelected }) {
       setSaving(false);
     }
   };
+
+  if (locked) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-medium text-foreground"
+        title="Your specialty is set at registration and cannot be changed."
+      >
+        <Lock className="w-3 h-3 text-muted-foreground" />
+        {active}
+      </span>
+    );
+  }
 
   return (
     <span className="inline-flex items-center gap-1.5">

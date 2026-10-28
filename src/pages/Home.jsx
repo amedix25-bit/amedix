@@ -8,6 +8,8 @@ import AboutAmedix from "@/components/home/AboutAmedix";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SPECIALTIES } from "@/lib/specialties";
 import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
@@ -111,6 +113,12 @@ export default function Home() {
 
   const handleDoctorSubmit = async (e) => {
     e.preventDefault();
+    // The specialty is chosen here, once, and becomes the doctor's permanent
+    // portal — it can never be switched afterwards (see specialtyLock).
+    if (!doctorForm.specialization) {
+      setDoctorVerError(t("Please select your specialty."));
+      return;
+    }
     // One verified identity method AND the medical license are required.
     if (doctorVerification.identity?.status !== "verified" || doctorVerification.medical_license?.status !== "verified") {
       setDoctorVerError(t("Verification is required before you can continue."));
@@ -126,6 +134,7 @@ export default function Home() {
         last_name: doctorForm.last_name,
         name_edited: true,
         specialization: doctorForm.specialization,
+        specialties: [doctorForm.specialization],
         license_number: doctorForm.license_number,
         hospital: doctorForm.hospital,
         phone: doctorForm.phone,
@@ -277,9 +286,25 @@ export default function Home() {
                 <Label htmlFor="doc-last-name">{t("Last Name *")}</Label>
                 <Input id="doc-last-name" placeholder={t("Last name")} value={doctorForm.last_name} onChange={(e) => setDoctorForm({ ...doctorForm, last_name: e.target.value })} required />
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t("You will select your specialty from a predefined list when you first enter the Doctor Portal.")}
-              </p>
+              <div className="space-y-2">
+                <Label>{t("Specialty *")}</Label>
+                <Select
+                  value={doctorForm.specialization || undefined}
+                  onValueChange={(v) => setDoctorForm((f) => ({ ...f, specialization: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("Select your specialty")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPECIALTIES.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {t("Your specialty is permanent — it determines the portal and clinical documents you work in.")}
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="hospital">{t("Hospital / Clinic")}</Label>
                 <Input id="hospital" placeholder={t("Hospital or clinic name")} value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />
