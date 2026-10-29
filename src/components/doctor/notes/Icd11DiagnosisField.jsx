@@ -74,6 +74,11 @@ const newEntry = (item, entries, catalog) => ({
   status: "Suspected",
   basis: "",
   follow_up: "",
+  // The kind of concept the code describes travels with the entry, so a
+  // symptom-level code is never read later as a confirmed disease.
+  category: item.category || "",
+  cluster: "",
+  clinician_confirmed: false,
 });
 
 // Searchable ICD-11 diagnosis selection. A code is only ever taken from the
@@ -89,6 +94,17 @@ export default function Icd11DiagnosisField({
   // The release shown to the clinician is the one the offered codes come from.
   catalogRelease = ICD11_MMS.release,
   catalogNote = null,
+  // Specialties that must separate a symptom from a confirmed disease — and
+  // record a postcoordinated cluster exactly as the WHO browser shows it —
+  // pass their own statuses, roles and categories. Everything defaults to the
+  // previous behaviour, so existing notes are unaffected.
+  statuses = DIAGNOSIS_STATUSES,
+  roles = DIAGNOSIS_ROLES,
+  showCategory = false,
+  categories = [],
+  clusterEnabled = false,
+  clusterNote = "",
+  requireConfirmation = false,
 }) {
   const entries = Array.isArray(value) ? value : [];
   const [query, setQuery] = useState("");
@@ -194,6 +210,11 @@ export default function Icd11DiagnosisField({
                 <span className="text-[10px] uppercase tracking-wide text-muted-foreground border border-border rounded px-1.5 py-0.5">
                   {item.specificity.split(" — ")[0]}
                 </span>
+                {showCategory && item.category && (
+                  <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5">
+                    {item.category}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.definition}</p>
             </button>
@@ -347,17 +368,47 @@ export default function Icd11DiagnosisField({
               <Label className="text-xs">Diagnosis role</Label>
               <Select value={e.role} onValueChange={(v) => update(i, { role: v })}>
                 <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>{DIAGNOSIS_ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                <SelectContent>{roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Diagnostic status</Label>
               <Select value={e.status} onValueChange={(v) => update(i, { status: v })}>
                 <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>{DIAGNOSIS_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                <SelectContent>{statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>
+
+          {showCategory && (
+            <div className="space-y-1">
+              <Label className="text-xs">What this code describes</Label>
+              <Select value={e.category || undefined} onValueChange={(v) => update(i, { category: v })}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Select the kind of concept..." /></SelectTrigger>
+                <SelectContent>
+                  {(categories.length ? categories : [e.category].filter(Boolean)).map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                A symptom-level code records what the patient presented with — it never establishes the disease, which is
+                coded separately once the diagnosis is made.
+              </p>
+            </div>
+          )}
+
+          {clusterEnabled && (
+            <div className="space-y-1">
+              <Label className="text-xs">Postcoordinated cluster, if the WHO Coding Tool produced one</Label>
+              <Input
+                value={e.cluster ?? ""}
+                placeholder="Cluster exactly as the WHO browser shows it — codes joined with & and /"
+                onChange={(ev) => update(i, { cluster: ev.target.value })}
+              />
+              <p className="text-[11px] text-muted-foreground">{clusterNote}</p>
+            </div>
+          )}
 
           {e.criteria_reference && (
             <p className="text-[11px] text-muted-foreground">Reference criteria: {e.criteria_reference}</p>
@@ -382,6 +433,21 @@ export default function Icd11DiagnosisField({
             <Label className="text-xs">Outstanding workup / follow-up for this diagnosis</Label>
             <Input value={e.follow_up ?? ""} onChange={(ev) => update(i, { follow_up: ev.target.value })} />
           </div>
+
+          {requireConfirmation && (
+            <label className="flex items-start gap-2 rounded-md border border-border px-2.5 py-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-primary"
+                checked={Boolean(e.clinician_confirmed)}
+                onChange={(ev) => update(i, { clinician_confirmed: ev.target.checked })}
+              />
+              <span className="text-[11px] text-muted-foreground">
+                I have checked the code, the official term and the release against the WHO ICD-11 browser or the verified
+                catalogue. The app has not generated, completed or crosswalked this code.
+              </span>
+            </label>
+          )}
 
           {["Confirmed", "Resolved", "In remission"].includes(e.status) && !String(e.basis || "").trim() && (
             <p className="text-[11px] text-destructive flex items-center gap-1">

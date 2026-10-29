@@ -25,8 +25,21 @@
 // 5. Conditional fields appear only when the clinical context makes them
 //    relevant.
 
-import { emergencyCatalogFor, EMERGENCY_CODING_LIMITATION, EMERGENCY_ICD11_MMS } from "@/lib/emergencyIcd11";
+import {
+  emergencyCatalogFor,
+  EMERGENCY_CODING_LIMITATION,
+  EMERGENCY_ICD11_MMS,
+  EMERGENCY_ICD11_CATEGORIES,
+  EMERGENCY_ICD11_ROLES,
+  EMERGENCY_ICD11_STATUSES,
+  EMERGENCY_POSTCOORDINATION_NOTE,
+} from "@/lib/emergencyIcd11";
 import { EMERGENCY_TIME_CRITICAL_OPTIONS } from "@/lib/emergencySafetyRules";
+import {
+  emergencyPresentationEnhancements,
+  emergencyTriagePresentationEnhancements,
+  emergencyArrestEnhancements,
+} from "@/lib/emergencyPresentations";
 
 const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
 const F = (key, label, extra) => ({ key, label, type: "input", ...extra });
@@ -454,6 +467,15 @@ const icdBlock = (domains, placeholder) =>
       searchPlaceholder: placeholder,
       catalogRelease: EMERGENCY_ICD11_MMS.release,
       catalogNote: EMERGENCY_CODING_LIMITATION,
+      // A presenting symptom, a differential, a suspected diagnosis and a
+      // confirmed disease must stay visibly distinct in an emergency record.
+      statuses: EMERGENCY_ICD11_STATUSES,
+      roles: EMERGENCY_ICD11_ROLES,
+      showCategory: true,
+      categories: Object.values(EMERGENCY_ICD11_CATEGORIES),
+      clusterEnabled: true,
+      clusterNote: EMERGENCY_POSTCOORDINATION_NOTE,
+      requireConfirmation: true,
     },
   ]);
 
@@ -496,6 +518,7 @@ export const EMERGENCY_ENHANCEMENTS = {
     ...timeCriticalBlock(),
     ...redFlagBlock(),
     ...abcdeBlock(),
+    ...emergencyPresentationEnhancements(),
     ...reassessmentBlock(),
     ...dispositionBlock(),
     ...icdBlock(ALL_DOMAINS, PLACEHOLDER_ALL),
@@ -519,6 +542,7 @@ export const EMERGENCY_ENHANCEMENTS = {
       ]),
       F("ec_obs_reassessment_interval", "Reassessment Interval Documented"),
     ]),
+    ...emergencyTriagePresentationEnhancements(),
     ...safetyBlock({ icd: false, discharge: false }),
   ],
 
@@ -527,6 +551,7 @@ export const EMERGENCY_ENHANCEMENTS = {
     ...redFlagBlock(),
     ...abcdeBlock(),
     ...sepsisBlock(),
+    ...emergencyPresentationEnhancements(),
     ...reassessmentBlock(),
     ...icdBlock(ALL_DOMAINS, PLACEHOLDER_ALL),
     ...safetyBlock({ icd: true, discharge: false }),
@@ -537,6 +562,7 @@ export const EMERGENCY_ENHANCEMENTS = {
     ...redFlagBlock(),
     ...abcdeBlock(),
     ...sepsisBlock(),
+    ...emergencyPresentationEnhancements(),
     ...reassessmentBlock(),
     ...dispositionBlock(),
     ...icdBlock(ALL_DOMAINS, PLACEHOLDER_ALL),
@@ -554,6 +580,7 @@ export const EMERGENCY_ENHANCEMENTS = {
     ...timeCriticalBlock(),
     ...redFlagBlock(),
     ...traumaBlock(),
+    ...emergencyPresentationEnhancements(),
     ...reassessmentBlock(),
     ...transferBlock(),
     ...icdBlock(TRAUMA_DOMAINS, "Search ICD-11 — head and thoracic injury, haemorrhagic shock, respiratory injury..."),
@@ -571,6 +598,7 @@ export const EMERGENCY_ENHANCEMENTS = {
   em_resuscitation_code: () => [
     ...timeCriticalBlock(),
     ...arrestBlock(),
+    ...emergencyArrestEnhancements(),
     ...reassessmentBlock(),
     ...icdBlock(ARREST_DOMAINS, "Search ICD-11 — cardiac arrest, the cause if known, and shock..."),
     ...safetyBlock({ icd: true, discharge: false }),

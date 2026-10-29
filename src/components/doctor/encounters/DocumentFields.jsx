@@ -17,6 +17,9 @@ import EntSafetyPromptsField from "@/components/doctor/notes/EntSafetyPromptsFie
 import EndocrineSafetyPromptsField from "@/components/doctor/notes/EndocrineSafetyPromptsField";
 import ObgynSafetyPromptsField from "@/components/doctor/notes/ObgynSafetyPromptsField";
 import EmergencySafetyPromptsField from "@/components/doctor/notes/EmergencySafetyPromptsField";
+import GcsScoreField from "@/components/doctor/notes/GcsScoreField";
+import EmergencyResuscitationField from "@/components/doctor/notes/EmergencyResuscitationField";
+import DecisionRuleField from "@/components/doctor/notes/DecisionRuleField";
 import NephMedicationsField from "@/components/doctor/notes/NephMedicationsField";
 import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
