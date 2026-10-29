@@ -16,6 +16,7 @@ import NephrologyAlertsField from "@/components/doctor/notes/NephrologyAlertsFie
 import EntSafetyPromptsField from "@/components/doctor/notes/EntSafetyPromptsField";
 import EndocrineSafetyPromptsField from "@/components/doctor/notes/EndocrineSafetyPromptsField";
 import ObgynSafetyPromptsField from "@/components/doctor/notes/ObgynSafetyPromptsField";
+import EmergencySafetyPromptsField from "@/components/doctor/notes/EmergencySafetyPromptsField";
 import NephMedicationsField from "@/components/doctor/notes/NephMedicationsField";
 import ActivityInstrumentsField from "@/components/doctor/notes/ActivityInstrumentsField";
 import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
@@ -157,6 +158,14 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "obgyn_safety" && (
         <ObgynSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "emergency_safety" && (
+        <EmergencySafetyPromptsField
+          value={values[f.key]}
+          values={values}
+          capabilities={f.capabilities}
+          onChange={(v) => onChange(f.key, v)}
+        />
       )}
       {f.type === "neph_medications" && (
         <NephMedicationsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
