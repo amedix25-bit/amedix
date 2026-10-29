@@ -57,6 +57,8 @@ export const EMERGENCY_ICD11_DOMAINS = {
   toxicology: "Harmful effects of substances",
   allergy: "Anaphylaxis and hypersensitivity",
   general: "General emergency symptoms",
+  symptoms_signs: "Presenting symptoms and signs (chapter 21)",
+  external_causes: "External causes of morbidity or mortality (chapter 23)",
 };
 
 const SPECIFICITY = {
@@ -64,11 +66,40 @@ const SPECIFICITY = {
   SUB: "Subcategory — most specific",
 };
 
+// The kind of clinical concept a code describes. A symptom and a confirmed
+// disease carry very different weight in a record, so the category travels with
+// every coded entry and is chosen from the code's own chapter — never guessed
+// from the words the clinician typed.
+export const EMERGENCY_ICD11_CATEGORIES = {
+  SYMPTOM: "Symptom or sign",
+  DISEASE: "Disease or disorder",
+  INJURY: "Injury",
+  POISONING: "Poisoning or adverse effect",
+  EXTERNAL: "External cause",
+};
+
+const categoryFor = (code) => {
+  if (/^PL2/i.test(code)) return EMERGENCY_ICD11_CATEGORIES.EXTERNAL;
+  if (/^NE6/i.test(code)) return EMERGENCY_ICD11_CATEGORIES.POISONING;
+  if (/^N[AB]/i.test(code)) return EMERGENCY_ICD11_CATEGORIES.INJURY;
+  if (/^M[A-Z]/i.test(code)) return EMERGENCY_ICD11_CATEGORIES.SYMPTOM;
+  return EMERGENCY_ICD11_CATEGORIES.DISEASE;
+};
+
 // `aliases` are search aids only. They are never displayed as a code.
-const entry = (code, display, domain, { sub = false, aliases = "", coding_note = "" } = {}) => ({
+const entry = (
   code,
   display,
   domain,
+  { sub = false, aliases = "", coding_note = "", chapter = "", block = "", definition = "" } = {}
+) => ({
+  code,
+  display,
+  domain,
+  chapter,
+  block,
+  definition,
+  category: categoryFor(code),
   specificity: sub ? SPECIFICITY.SUB : SPECIFICITY.BLOCK,
   release: EMERGENCY_ICD11_MMS.release,
   system: EMERGENCY_ICD11_MMS.system,
@@ -277,6 +308,70 @@ export const EMERGENCY_ICD11 = [
     aliases: "hypothermia",
     coding_note: "Hypothermia from environmental exposure is coded in Chapter 22, not here.",
   }),
+
+  // ---- Presenting symptoms and signs (chapter 21) --------------------------
+  // Verified in the same tabulation. A symptom code records what the patient
+  // presented with; it never becomes the diagnosis.
+  entry("MD30", "Chest pain", "symptoms_signs", {
+    chapter: "21",
+    aliases: "chest pain thoracic pain",
+    coding_note:
+      "Symptom-level category. Coding chest pain does NOT establish acute coronary syndrome — code the diagnosis " +
+      "separately once it is established, and keep this entry as the presenting problem.",
+  }),
+  entry("MD30.0", "Chest pain on breathing", "symptoms_signs", {
+    sub: true,
+    chapter: "21",
+    aliases: "pleuritic chest pain pain on breathing",
+  }),
+  entry("MD30.Z", "Chest pain, unspecified", "symptoms_signs", {
+    sub: true,
+    chapter: "21",
+    aliases: "chest pain unspecified",
+  }),
+  entry("MD11.5", "Dyspnoea", "symptoms_signs", {
+    chapter: "21",
+    aliases: "dyspnoea dyspnea shortness of breath breathless respiratory distress",
+    coding_note: "Symptom-level category — the cause is coded separately when it is established.",
+  }),
+  entry("MD81.4", "Other and unspecified abdominal pain", "symptoms_signs", {
+    chapter: "21",
+    aliases: "abdominal pain tummy pain belly pain",
+    coding_note: "Symptom-level category — surgical diagnoses are coded separately when established.",
+  }),
+
+  // ---- External causes (chapter 23) ---------------------------------------
+  // Chapter 23 was read at block level for release 2026-01 (block ranges are
+  // listed in EMERGENCY_ICD11_EXTERNAL_CAUSE_BLOCKS). Only the two residual
+  // categories below were verified as codes, so no specific external-cause code
+  // is offered — the clinician takes the specific one from the WHO browser.
+  entry("PL2Y", "Other specified external causes of morbidity or mortality", "external_causes", {
+    chapter: "23",
+    aliases: "external cause other specified",
+    coding_note:
+      "Residual category. The specific external cause (transport, fall, assault, self-harm, exposure, healthcare " +
+      "related harm) must be taken from the WHO browser — a general external-cause entry alone does not identify it.",
+  }),
+  entry("PL2Z", "External causes of morbidity or mortality, unspecified", "external_causes", {
+    chapter: "23",
+    aliases: "external cause unspecified",
+    coding_note: "Use only when the external cause is genuinely not known — never as a substitute for the specific cause.",
+  }),
+];
+
+// Chapter 23 block ranges, read from the published tabulation for release
+// 2026-01. These are BLOCK RANGES, not codes: they tell the clinician which part
+// of the chapter to open in the WHO browser. No range is ever stored as a code.
+export const EMERGENCY_ICD11_EXTERNAL_CAUSE_BLOCKS = [
+  { range: "PA00–PB6Z", topic: "Unintentional causes" },
+  { range: "PB80–PD3Z", topic: "Intentional self-harm" },
+  { range: "PD50–PF2Z", topic: "Assault" },
+  { range: "PF40–PH8Z", topic: "Undetermined intent" },
+  { range: "PJ00–PJ0Z", topic: "Exposure to extreme forces of nature" },
+  { range: "PJ20–PJ2Z", topic: "Maltreatment" },
+  { range: "PJ40–PJ4Z", topic: "Legal intervention" },
+  { range: "PJ60–PK6Z", topic: "Armed conflict" },
+  { range: "PK80–PL14.Z", topic: "Causes of healthcare related harm or injury" },
 ];
 
 export const emergencyCatalogFor = (domains) => {
@@ -287,9 +382,54 @@ export const emergencyCatalogFor = (domains) => {
 
 export const EMERGENCY_ICD11_COUNT = EMERGENCY_ICD11.length;
 
+// Diagnostic status is deliberately separate from the code: a code records what
+// a category IS, never how certain this clinician is. These are the statuses an
+// Emergency note may record, and they keep a presenting symptom, a differential,
+// a suspected/provisional diagnosis and a confirmed diagnosis visibly distinct.
+export const EMERGENCY_ICD11_STATUSES = [
+  "Suspected",
+  "Provisional",
+  "Differential — not confirmed",
+  "Confirmed",
+  "Symptom — no definitive diagnosis",
+  "Undiagnosed — investigation pending",
+  "Historical",
+  "Resolved",
+  "In remission",
+];
+
+export const EMERGENCY_ICD11_ROLES = [
+  "Primary",
+  "Secondary",
+  "Differential",
+  "Presenting problem — not a diagnosis",
+];
+
+// Postcoordination: WHO cluster coding expresses one clinical concept with
+// several codes joined by "&" and "/". AMedix cannot build a cluster (that needs
+// the WHO Coding Tool), so the clinician enters the cluster exactly as the
+// browser shows it and it is stored as review required.
+export const EMERGENCY_POSTCOORDINATION_NOTE =
+  "Postcoordination is not generated by AMedix. If the WHO ICD-11 Coding Tool produced a cluster (codes joined with " +
+  "\"&\" and \"/\"), enter it exactly as shown, mark it review required, and record where it was verified.";
+
+// Live integration state — reported to the clinician, never assumed.
+export const EMERGENCY_ICD11_LIVE_API = {
+  connected: false,
+  api: "https://icd.who.int/icdapi",
+  note:
+    "No live WHO ICD-11 API connection is configured for this deployment: the authorised API needs a registered " +
+    "client id and secret (icd.who.int/icdapi), and none are stored. Codes therefore come from the verified bundled " +
+    "catalogue below, or are entered by the clinician from the WHO browser and marked review required. ICD-11 is " +
+    "NOT fully integrated in this build and this app does not claim to implement the full ICD-11 MMS.",
+};
+
 export const EMERGENCY_CODING_LIMITATION =
-  `Catalogue release ${EMERGENCY_ICD11_MMS.release} · ${EMERGENCY_ICD11_COUNT} verified categories covering acute ` +
-  "coronary syndromes, cardiac arrest and shock, stroke and intracranial haemorrhage, sepsis, head and thoracic " +
-  "injury, respiratory failure and pleural injury, metabolic emergencies, status epilepticus, harmful effects of " +
-  "substances and anaphylaxis. No live WHO API is called. A diagnosis outside the catalogue is entered from the WHO " +
-  "browser and marked review required until checked; nothing is generated or completed by the app.";
+  `Verified subset of ICD-11 MMS release ${EMERGENCY_ICD11_MMS.release} — ${EMERGENCY_ICD11_COUNT} categories covering ` +
+  "acute coronary syndromes, cardiac arrest and shock, stroke and intracranial haemorrhage, sepsis, head and thoracic " +
+  "injury, respiratory failure and pleural injury, metabolic emergencies, status epilepticus, poisoning and adverse " +
+  "effects, anaphylaxis, presenting symptoms and residual external causes. Not the full classification: a term outside " +
+  "the subset is entered from the WHO browser (icd.who.int/browse/2026-01/mms/en) and marked review required. No live " +
+  "WHO API is called, inclusion/exclusion notes are not displayed because they were not verified here, and " +
+  "postcoordination must be entered as the browser shows it. Nothing is generated, completed or crosswalked from " +
+  "ICD-10 by the app.";
