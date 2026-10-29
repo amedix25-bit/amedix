@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { DOCUMENT_TYPES } from "@/lib/clinicalDocuments";
+import { isReferralNoteType } from "@/lib/noteSectionPolicy";
 import { getSpecialtyDocs, getDocDef, getSpecialtyLabel, SPECIALTY_KEYS } from "@/lib/specialtyDocuments";
 import DocumentFields, { EmergencyWorkflowStrip, isFieldVisible } from "./DocumentFields";
 import SurgeryGuidelineBasis from "@/components/doctor/notes/SurgeryGuidelineBasis";
@@ -226,7 +227,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
               )}
               <SelectGroup>
                 <SelectLabel>General Documents</SelectLabel>
-                {DOCUMENT_TYPES.filter((d) => !CERTIFICATE_KEYS.includes(d.key)).map((d) => (
+                {DOCUMENT_TYPES.filter((d) => !CERTIFICATE_KEYS.includes(d.key) && !isReferralNoteType(d)).map((d) => (
                   <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>
                 ))}
               </SelectGroup>

@@ -116,6 +116,13 @@ const RETIRED_FIELD_LABEL = [
 // Note types retired from the catalogue (the Surgical Referral note).
 const RETIRED_DOCUMENT_KEYS = ["surg_referral"];
 
+// Referral letters are a document of their own in AMedix (the Referral Letter
+// module), never a clinical note type. No specialty offers a referral note in
+// its note-type list — the rule is by label and key, so a template added
+// later cannot slip back in.
+export const isReferralNoteType = (doc) =>
+  /(^|_)referral(_|$)/i.test(doc.key || "") || /\breferral\b/i.test(doc.label || "");
+
 // Imaging report note types exist to document imaging itself — their own
 // content is left untouched.
 const isImagingReport = (doc) => /imaging/i.test(doc.label || "");
@@ -243,6 +250,7 @@ export const retireNoteFields = (fields) =>
 export const applyNoteSectionPolicy = (docs) =>
   docs
     .filter((doc) => !RETIRED_DOCUMENT_KEYS.includes(doc.key))
+    .filter((doc) => !isReferralNoteType(doc))
     .map((doc) => {
       if (isImagingReport(doc) || !Array.isArray(doc.fields)) return doc;
       const fields = doc.fields

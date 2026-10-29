@@ -186,7 +186,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     if (Array.isArray(d.medications)) setMedications(d.medications);
     if (Array.isArray(d.selected_lab_request_ids)) setSelectedLabs(new Set(d.selected_lab_request_ids));
     if (Array.isArray(d.selected_imaging_request_ids)) setSelectedImaging(new Set(d.selected_imaging_request_ids));
-    if (d.form_data && (d.form_data.history || d.form_data.physical_examination)) setOpenIds((s) => new Set([...s, "encounter"]));
+    // Restoring a draft never expands a section — every section stays
+    // collapsed until the doctor opens the one they are working on.
   };
 
   useEffect(() => {
@@ -346,12 +347,8 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
     setExamValues({});
     setSrhValues({});
     if (!getDocDef(v)?.photos) setPhotoUris([]);
-    setOpenIds((s) => {
-      const n = new Set(s);
-      if (v !== GENERAL_KEY) n.add("template");
-      if (getDocDef(v)?.key === "obgyn_antenatal_followup") n.add("antenatal");
-      return n;
-    });
+    // Choosing a note type loads its template but opens no section — every
+    // specialty template stays collapsed so the whole note fits on screen.
   };
 
   // Note type change — "Diagnosis-Specific Note" first asks for the diagnosis;
@@ -362,10 +359,6 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       // away — the first one loads, and the doctor switches diagnosis from the
       // list. Selecting a template is always the same path as any note type.
       setDiagnosisMode(true);
-      setOpenIds((s) => new Set(s).add("dxTemplates"));
-      setTimeout(() => {
-        document.getElementById("note-section-dxTemplates")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 120);
       return;
     }
     setDiagnosisMode(false);

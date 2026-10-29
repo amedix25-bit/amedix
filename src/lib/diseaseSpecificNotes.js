@@ -7,6 +7,7 @@
 // audit trail. This module simply makes each specialty's disease-specific notes
 // discoverable in one place — "Disease-Specific Note" → view all of them.
 
+import { isReferralNoteType } from "@/lib/noteSectionPolicy";
 import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
 import { NEPHROLOGY_KIDNEY_DOCS } from "@/lib/nephrologyKidneyDocs";
 import { NEPHROLOGY_CONDITION_DOCS } from "@/lib/nephrologyConditionDocs";
@@ -67,7 +68,9 @@ const ALIASES_BY_SPECIALTY = {
 // Every disease-specific template of the specialty, flattened.
 export const getDiseaseDocs = (specialtyKey) => {
   const build = GROUPS_BY_SPECIALTY[specialtyKey];
-  return build ? build().flatMap((g) => g.docs) : [];
+  return build
+    ? build().flatMap((g) => g.docs).filter((d) => !isReferralNoteType(d))
+    : [];
 };
 
 export const getDiseaseDocKeys = (specialtyKey) =>
