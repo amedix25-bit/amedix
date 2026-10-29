@@ -66,6 +66,11 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
   return (
     <div className="space-y-1.5">
       <Label>
+        {f.safetyCritical && (
+          <span className="mr-1.5 text-[10px] uppercase tracking-wide font-semibold text-amber-700 dark:text-amber-400 border border-amber-400/60 dark:border-amber-600/60 rounded px-1 py-0.5 align-middle">
+            Safety-critical
+          </span>
+        )}
         {f.label}
         {f.required && <span className="text-destructive font-semibold"> · Required</span>}
       </Label>
@@ -135,7 +140,23 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
           searchPlaceholder={f.searchPlaceholder}
           catalogRelease={f.catalogRelease}
           catalogNote={f.catalogNote}
+          statuses={f.statuses}
+          roles={f.roles}
+          showCategory={f.showCategory}
+          categories={f.categories}
+          clusterEnabled={f.clusterEnabled}
+          clusterNote={f.clusterNote}
+          requireConfirmation={f.requireConfirmation}
         />
+      )}
+      {f.type === "gcs_score" && (
+        <GcsScoreField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "emergency_resuscitation" && (
+        <EmergencyResuscitationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "decision_rule" && (
+        <DecisionRuleField value={values[f.key]} onChange={(v) => onChange(f.key, v)} ruleOptions={f.ruleOptions} />
       )}
       {f.type === "investigation_panels" && (
         <RheumInvestigationPanels value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

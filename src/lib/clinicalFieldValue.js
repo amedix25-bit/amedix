@@ -90,7 +90,9 @@ export function formatFieldValue(type, value) {
               ? "Mapping review required — code not verified against the catalogue"
               : "Code verified against the ICD-11 catalogue";
         return (
-          `${head}${meta ? ` — ${meta}` : ""} — ${mapping}` +
+          `${head}${meta ? ` — ${meta}` : ""}${d.category ? ` — Concept: ${d.category}` : ""} — ${mapping}` +
+          (d.cluster ? ` — Postcoordinated cluster (as documented): ${String(d.cluster).trim()}` : "") +
+          (d.clinician_confirmed ? " — Code independently checked by the clinician" : "") +
           (d.source ? ` — Verified against: ${String(d.source).trim()}` : "") +
           (d.coding_note ? ` — Coding instruction: ${String(d.coding_note).trim()}` : "") +
           (d.specificity_hint ? ` — ${d.specificity_hint}` : "") +
@@ -98,6 +100,47 @@ export function formatFieldValue(type, value) {
           (d.follow_up ? ` — Follow-up: ${String(d.follow_up).trim()}` : "")
         );
       })
+      .join("\n");
+  }
+
+  // Glasgow Coma Scale — the components as examined and their sum. No severity
+  // band is written into the record, because the band is an interpretation the
+  // clinician makes, not something the app derives from a total.
+  if (type === "gcs_score") {
+    const v = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const part = (label, raw) => {
+      const n = parseInt(String(raw || "").split(" — ")[0], 10);
+      return Number.isFinite(n) ? `${label}${n}` : raw ? `${label} ${raw}` : `${label} not documented`;
+    };
+    const nums = [v.eye, v.verbal, v.motor].map((x) => parseInt(String(x || "").split(" — ")[0], 10));
+    const total = nums.every((n) => Number.isFinite(n)) ? `GCS ${nums.reduce((a, b) => a + b, 0)}` : "GCS not calculable";
+    return [`${part("E", v.eye)}, ${part("V", v.verbal)}, ${part("M", v.motor)}`, `${total} — sum of the documented components only`].join("\n");
+  }
+
+  // Resuscitation log — every event with the time as recorded, in order.
+  if (type === "emergency_resuscitation" && Array.isArray(value)) {
+    if (!value.length) return "No resuscitation events recorded.";
+    return value
+      .map((r) => `${r.time || "time not documented"} — ${r.event || "event not documented"}${r.detail ? `: ${String(r.detail).trim()}` : ""}`)
+      .join("\n");
+  }
+
+  // A validated decision rule, recorded as applied or considered — with its
+  // eligibility, exclusions, missing variables and the result as documented.
+  if (type === "decision_rule") {
+    const v = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    if (!v.rule) return "";
+    return [
+      `Rule: ${v.rule}`,
+      `Use: ${v.applied || "not documented"}`,
+      v.eligibility ? `Exclusions: ${v.eligibility}` : "",
+      v.eligibility_detail ? `Eligibility: ${String(v.eligibility_detail).trim()}` : "",
+      v.variables ? `Required variables: ${v.variables}` : "",
+      v.result ? `Result as documented: ${String(v.result).trim()}` : "",
+      v.limitations ? `Limitations: ${String(v.limitations).trim()}` : "",
+      "No score was calculated or interpreted by AMedix; the rule is decision support only.",
+    ]
+      .filter(Boolean)
       .join("\n");
   }
 

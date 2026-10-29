@@ -35,6 +35,7 @@ import {
   EMERGENCY_POSTCOORDINATION_NOTE,
 } from "@/lib/emergencyIcd11";
 import { EMERGENCY_TIME_CRITICAL_OPTIONS } from "@/lib/emergencySafetyRules";
+import { EMERGENCY_SAFEGUARDS } from "@/lib/emergencySafeguards";
 import {
   emergencyPresentationEnhancements,
   emergencyTriagePresentationEnhancements,
@@ -645,8 +646,15 @@ export const EMERGENCY_ENHANCEMENTS = {
 export const withEmergencyStandards = (docs) =>
   docs.map((doc) => {
     const extra = EMERGENCY_ENHANCEMENTS[doc.key];
-    if (!extra) return doc;
-    const existing = new Set((doc.fields || []).map((f) => f.key));
-    const additions = extra().filter((f) => !existing.has(f.key));
+    const safeguards = EMERGENCY_SAFEGUARDS[doc.key];
+    if (!extra && !safeguards) return doc;
+    // A saved note keeps every field it already had: additions are appended and
+    // a key that already exists is never added a second time.
+    const seen = new Set((doc.fields || []).map((f) => f.key));
+    const additions = [...(extra ? extra() : []), ...(safeguards ? safeguards() : [])].filter((f) => {
+      if (seen.has(f.key)) return false;
+      seen.add(f.key);
+      return true;
+    });
     return { ...doc, fields: [...(doc.fields || []), ...additions] };
   });
