@@ -24,6 +24,45 @@
 
 export const PEDS_LAST_REVIEWED = "2026-10-30";
 
+// Publication or update date of the edition recorded below.
+//
+// Only dates confirmed for that exact edition are entered. Where the date could not be
+// confirmed, the register says so instead of inferring one from the edition number —
+// an unverified date presented as a fact would make the attribution untraceable.
+export const PEDS_PUBLICATION = {
+  aap_bright_futures: "2017",
+  aap_hyperbilirubinemia: "2022",
+  aap_febrile_infant: "2021",
+  aap_bronchiolitis: "2014",
+  aap_aom: "2013",
+  aap_developmental_screening: "2006",
+  aap_autism: "2020",
+  aap_child_abuse: "2015",
+  aap_sids: "2022",
+  aap_obesity: "2023",
+  aap_iron: "2010",
+  aap_uti: "2011",
+  who_imci: "2014",
+  who_growth_standards: "2006",
+  who_growth_reference: "2007",
+  who_newborn: "2017",
+  who_preterm: "2022",
+  who_pneumonia: "2014",
+  who_diarrhoea: "2013",
+  who_oxygen: "2016",
+  who_nurturing_care: "2018",
+  who_inspire: "2016",
+  gina_asthma: "annual — confirm the current report",
+  ilae_seizure_classification: "2017",
+  aha_kawasaki: "2017",
+  palsi_sepsis: "2020",
+};
+
+// The date as it is written into the note's attribution: the year, or a plain
+// statement that it was not confirmed. Never a guessed date.
+export const pedsPublicationLabel = (key) =>
+  PEDS_PUBLICATION[key] ? `published ${PEDS_PUBLICATION[key]}` : "publication date not verified";
+
 export const PEDS_REFERENCES = {
   // ---- American Academy of Pediatrics ---------------------------------------
   aap_bright_futures: {
@@ -569,7 +608,9 @@ export const pedsAttributionText = (noteKey) => {
   if (!entry) return "";
   const refs = entry.basis.map(
     (b) =>
-      `${b.organization} — ${b.title} (${b.edition}); population: ${b.population}; applied to: ${b.applies}${
+      `${b.organization} — ${b.title} (${b.edition}; ${pedsPublicationLabel(b.key)}); population: ${
+        b.population
+      }; applied to: ${b.applies}${
         b.revision_verified ? "" : "; current revision to be confirmed on the publisher's page"
       }${b.url ? `; ${b.url}` : ""}`,
   );
