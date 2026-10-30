@@ -37,6 +37,7 @@ import { formatHemaBlock } from "@/lib/hematologyBlocks";
 import { formatHemaLabs } from "@/lib/hematologyLabCatalogue";
 import { formatHemaScores } from "@/lib/hematologyScores";
 import { formatHemaSafety } from "@/lib/hematologySafetyRules";
+import { formatOrthoSafety } from "@/lib/orthopedicsSafetyRules";
 import {
   akiStaging,
   albuminuriaCategoryFor,
@@ -228,6 +229,7 @@ export function formatFieldValue(type, value) {
   if (type === "hema_labs") return formatHemaLabs(value);
   if (type === "hema_scores") return formatHemaScores(value);
   if (type === "hema_safety") return formatHemaSafety(value);
+  if (type === "ortho_safety") return formatOrthoSafety(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

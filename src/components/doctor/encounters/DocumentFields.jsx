@@ -51,6 +51,7 @@ import HematologyBlockField from "@/components/doctor/notes/HematologyBlockField
 import HematologyLabsField from "@/components/doctor/notes/HematologyLabsField";
 import HematologyScoresField from "@/components/doctor/notes/HematologyScoresField";
 import HematologySafetyPromptsField from "@/components/doctor/notes/HematologySafetyPromptsField";
+import OrthopedicsSafetyPromptsField from "@/components/doctor/notes/OrthopedicsSafetyPromptsField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -337,6 +338,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "hema_safety" && (
         <HematologySafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "ortho_safety" && (
+        <OrthopedicsSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>
