@@ -31,6 +31,9 @@ const NOT_APPLICABLE = "Not applicable";
 // live in their own module and are merged into the same registry, so the form,
 // the saved note, the PDF and the safety prompts read one catalogue.
 import { GASTRO_DISEASE_BLOCKS } from "@/lib/gastroenterologyDiseaseBlocks";
+// Procedure, pre-procedure, time-critical and GI drug-therapy blocks live in
+// their own module for the same reason: one catalogue, one renderer.
+import { GASTRO_PROCEDURE_BLOCKS } from "@/lib/gastroenterologyProcedures";
 
 const CORE_BLOCKS = {
   // ---- Alarm features and escalation -------------------------------------
@@ -282,6 +285,13 @@ const CORE_BLOCKS = {
       T("complication_management", "Complication Management and Who Was Informed"),
       S("recovery", "Recovery and Discharge", ["Recovered and discharged with written advice", "Observed in recovery — plan documented", "Admitted", "Not documented"]),
       S("antithrombotic_plan", "Antithrombotic Plan Around the Procedure", ["Not applicable", "Continued — documented as low risk", "Held — restart documented", "Not documented"]),
+      S("pathology", "Histology / Pathology Tracking", [
+        "Specimens sent — request submitted",
+        "Specimens sent — request pending",
+        "No specimen taken",
+        "Not documented",
+      ]),
+      I("procedure_follow_up", "Follow-Up Arranged and the Clinician Responsible"),
     ],
   },
 
@@ -378,7 +388,7 @@ const CORE_BLOCKS = {
   },
 };
 
-export const GASTRO_BLOCKS = { ...CORE_BLOCKS, ...GASTRO_DISEASE_BLOCKS };
+export const GASTRO_BLOCKS = { ...CORE_BLOCKS, ...GASTRO_DISEASE_BLOCKS, ...GASTRO_PROCEDURE_BLOCKS };
 
 export const gastroBlock = (key) => GASTRO_BLOCKS[key] || null;
 export const GASTRO_BLOCK_KEYS = Object.keys(GASTRO_BLOCKS);
@@ -445,6 +455,14 @@ export const gastroFlags = (values = {}) => {
   const v = values || {};
   const f = (block, key) => gastroFind(v, block, key);
   const l = (block, key) => gastroFindList(v, block, key);
+  // A block counts as documented only when a real answer was entered; the
+  // block's own tag (`__m`) on an otherwise empty block means nothing was.
+  const hasBlock = (block) => {
+    const b = asObject(v[block]);
+    return Object.keys(b).some(
+      (k) => k !== "__m" && (Array.isArray(b[k]) ? b[k].filter((x) => str(x)).length > 0 : str(b[k]) !== "")
+    );
+  };
 
   const aetiology = l("gi_liver", "aetiology");
   const cirrhosis = aetiology.length > 0 && (f("gi_liver", "fibrosis_stage") === "F4 — cirrhosis" || /cirrhosis/i.test(f("gi_liver", "fibrosis_stage")));
@@ -528,6 +546,64 @@ export const gastroFlags = (values = {}) => {
     prophylaxis_unspecified: l("gi_discharge", "surveillance").length === 0,
     warning_signs_missing: isBlank(f("gi_discharge", "warning_signs")),
     follow_up_missing: isBlank(f("gi_discharge", "follow_up_when")),
+
+    // ---- Procedure records ------------------------------------------------
+    uc: /ulcerative colitis/i.test(f("gi_ibd", "disease")),
+    crohn: /crohn/i.test(f("gi_ibd", "disease")),
+    overt_bleeding: /Haematemesis|Melaena|Haematochezia|Coffee-ground/i.test(f("gi_alarm", "bleeding")),
+    unstable_bleeding: /Hypotensive|Shocked/i.test(f("gi_bleeding", "haemodynamics")),
+    bleeding_no_level_of_care: /Hypotensive|Shocked/i.test(f("gi_bleeding", "haemodynamics")) && (isBlank(f("gi_bleeding", "disposition")) || /Not documented/i.test(f("gi_bleeding", "disposition"))),
+    pancreatitis_context: l("gi_pancreatitis", "diagnostic_basis").length > 0 || l("gi_acute", "acute_problem").includes("Acute pancreatitis") || /pancreatitis/i.test(f("gi_pancreatic", "pan_pancreatitis_severity")),
+    pancreatitis_unclassified: l("gi_pancreatitis", "diagnostic_basis").length > 0 && /Not classified|^$/i.test(f("gi_pancreatitis", "severity")),
+    prep_safety_documented: hasBlock("gi_proc_safety"),
+    prep_anticoag_missing:
+      l("gi_proc_safety", "prep_medications").some((x) => /Antiplatelet|Anticoagulant/i.test(x)) && isBlank(f("gi_proc_safety", "prep_anticoag_plan")),
+    pathology_pending: /pending/i.test(f("gi_endoscopy", "pathology")),
+    procedure_followup_missing: hasBlock("gi_proc_safety") && isBlank(f("gi_endoscopy", "procedure_follow_up")),
+
+    // Liver biopsy
+    biopsy_documented: hasBlock("gi_liver_biopsy"),
+    biopsy_coag_missing: hasBlock("gi_liver_biopsy") && (l("gi_liver_biopsy", "lb_coag_record").length === 0 || l("gi_liver_biopsy", "lb_coag_record").includes("None documented")),
+    biopsy_observation_missing: hasBlock("gi_liver_biopsy") && !/Observed/i.test(f("gi_liver_biopsy", "lb_observation")),
+    biopsy_bleeding: l("gi_liver_biopsy", "lb_complications").some((x) => /Bleeding/i.test(x)),
+
+    // Paracentesis
+    paracentesis_documented: hasBlock("gi_paracentesis_proc"),
+    paracentesis_tests_missing: hasBlock("gi_paracentesis_proc") && (l("gi_paracentesis_proc", "pa_tests").length === 0 || l("gi_paracentesis_proc", "pa_tests").includes("Not documented")),
+    large_volume_paracentesis: Number(f("gi_paracentesis_proc", "pa_volume")) >= 5,
+    lvp_without_albumin: Number(f("gi_paracentesis_proc", "pa_volume")) >= 5 && !/Given/i.test(f("gi_paracentesis_proc", "pa_albumin")),
+
+    // EUS
+    eus_fna: /Fine-needle/i.test(f("gi_eus", "eus_tissue")),
+    eus_specimen_record_missing: /Fine-needle/i.test(f("gi_eus", "eus_tissue")) && (isBlank(f("gi_eus", "eus_passes")) || isBlank(f("gi_eus", "eus_onsite"))),
+
+    // Capsule
+    capsule_documented: hasBlock("gi_capsule"),
+    capsule_retention_unassessed: hasBlock("gi_capsule") && /Not documented|^$/i.test(f("gi_capsule", "cap_retention_risk")),
+    capsule_status_missing: hasBlock("gi_capsule") && /Not documented|^$/i.test(f("gi_capsule", "cap_excretion")),
+
+    // ---- Time-critical abdominal presentations ---------------------------
+    acute_problem: l("gi_acute", "acute_problem").filter((x) => x !== "None documented"),
+    peritonism: /^Present/i.test(f("gi_acute", "acute_peritonism")),
+    perforation_documented: l("gi_acute", "acute_problem").includes("Perforation"),
+    obstruction_documented: l("gi_acute", "acute_problem").includes("Obstruction"),
+    dehydration_documented: l("gi_acute", "acute_problem").includes("Severe dehydration"),
+    sepsis_documented: l("gi_acute", "acute_problem").includes("Sepsis"),
+    cholangitis_acute: l("gi_acute", "acute_problem").includes("Acute cholangitis"),
+    ischaemic_bowel: l("gi_acute", "acute_problem").includes("Ischaemic bowel"),
+    acute_no_surgical_opinion: (isBlank(f("gi_acute", "acute_surgical")) || /Not documented/i.test(f("gi_acute", "acute_surgical"))) && !/Not indicated/i.test(f("gi_acute", "acute_surgical")),
+    acute_no_resuscitation: /Not documented/i.test(f("gi_acute", "acute_resuscitation")),
+    acute_no_cultures: /Not documented/i.test(f("gi_acute", "acute_cultures")),
+    acute_no_decompression: /Not documented|Indicated — not placed/i.test(f("gi_acute", "acute_decompression")),
+    acute_no_imaging: /Not documented|Not yet imaged/i.test(f("gi_acute", "acute_imaging")),
+    altered_consciousness: /^Altered/i.test(f("gi_acute", "acute_consciousness")),
+    acute_no_level_of_care: isBlank(f("gi_acute", "acute_level_of_care")) || /Not documented/i.test(f("gi_acute", "acute_level_of_care")),
+
+    // ---- GI-critical drug therapy ----------------------------------------
+    drug_agents: l("gi_drug_safety", "drug_agents").filter((x) => x !== "None of these"),
+    drug_contraindication_missing: l("gi_drug_safety", "drug_agents").some((x) => x !== "None of these") && (isBlank(f("gi_drug_safety", "drug_contraindications")) || /Not documented/i.test(f("gi_drug_safety", "drug_contraindications"))),
+    drug_monitoring_missing: l("gi_drug_safety", "drug_agents").some((x) => x !== "None of these") && /Monitoring not documented|^$/i.test(f("gi_drug_safety", "drug_monitoring")),
+    drug_allergy_missing: l("gi_drug_safety", "drug_agents").some((x) => x !== "None of these") && (isBlank(f("gi_drug_safety", "drug_allergy_check")) || /Not documented/i.test(f("gi_drug_safety", "drug_allergy_check"))),
 
     // ---- Disease-specific blocks ----------------------------------------
     // Upper GI: an eradicated-or-positive H. pylori result without a
