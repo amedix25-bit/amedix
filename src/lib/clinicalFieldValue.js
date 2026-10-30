@@ -26,6 +26,9 @@ import { formatEmergencyPathway } from "@/lib/neurosurgeryEmergency";
 import { formatOperativeRecord } from "@/lib/neurosurgeryOperative";
 import { formatPostopMonitoring } from "@/lib/neurosurgeryPostop";
 import { formatNephMedications } from "@/lib/nephMedications";
+import { formatGastroBlock } from "@/lib/gastroenterologyModules";
+import { formatGastroScores } from "@/lib/gastroenterologyScores";
+import { formatGastroSafety } from "@/lib/gastroenterologySafetyRules";
 import {
   akiStaging,
   albuminuriaCategoryFor,
@@ -204,6 +207,10 @@ export function formatFieldValue(type, value) {
   if (type === "nsg_emergency") return formatEmergencyPathway(value);
   if (type === "nsg_operative") return formatOperativeRecord(value);
   if (type === "nsg_postop") return formatPostopMonitoring(value);
+  if (type === "gi_modules") return formatGastroBlock(value);
+  if (type === "gi_scores") return formatGastroScores(value);
+  if (type === "gi_safety") return formatGastroSafety(value);
+  if (type === "gi_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

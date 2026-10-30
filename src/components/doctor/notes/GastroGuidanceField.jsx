@@ -1,13 +1,34 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BookOpen } from "lucide-react";
 import { gastroNoteBasis } from "@/lib/gastroenterologyReferences";
+
+// The attribution text that travels with the note itself, so an exported record
+// keeps the evidence base it was written from.
+export const guidelineAttributionText = (noteKey) => {
+  const entry = gastroNoteBasis(noteKey);
+  if (!entry) return "";
+  const refs = entry.basis.map(
+    (b) => `${b.organization} — ${b.title} (${b.edition}); population: ${b.population}; applied to: ${b.applies}${b.url ? `; ${b.url}` : ""}`,
+  );
+  return [`${entry.note} — guideline basis`, entry.states, ...refs].join("\n");
+};
 
 // The guideline attribution the note records about itself: which body's guidance
 // its content and prompts were built from, in which edition, and for which
 // population. Where two bodies differ the note says so instead of implying a
 // single universal recommendation.
-export default function GastroGuidanceField({ noteKey }) {
+export default function GastroGuidanceField({ noteKey, value, onChange }) {
   const entry = gastroNoteBasis(noteKey);
+  const text = guidelineAttributionText(noteKey);
+  const stored = value && typeof value === "object" ? value.text : "";
+
+  // Recorded once, into the note itself — the panel is not a second place to
+  // type the same thing.
+  useEffect(() => {
+    if (!text || stored === text) return;
+    onChange?.({ noteKey, text });
+  }, [text, stored]);
+
   if (!entry) return null;
 
   return (

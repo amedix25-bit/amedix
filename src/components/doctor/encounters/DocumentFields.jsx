@@ -38,6 +38,10 @@ import RheumTreatmentField from "@/components/doctor/notes/RheumTreatmentField";
 import RheumComparisonField from "@/components/doctor/notes/RheumComparisonField";
 import RheumReferralsField from "@/components/doctor/notes/RheumReferralsField";
 import RheumEducationField from "@/components/doctor/notes/RheumEducationField";
+import GastroBlockField from "@/components/doctor/notes/GastroBlockField";
+import GastroScoresField from "@/components/doctor/notes/GastroScoresField";
+import GastroSafetyPromptsField from "@/components/doctor/notes/GastroSafetyPromptsField";
+import GastroGuidanceField from "@/components/doctor/notes/GastroGuidanceField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -275,6 +279,22 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "rheum_education" && (
         <RheumEducationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "gi_modules" && (
+        <GastroBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "gi_scores" && (
+        <GastroScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "gi_safety" && (
+        <GastroSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "gi_guidance" && (
+        <GastroGuidanceField
+          noteKey={f.noteKey}
+          value={values[f.key]}
+          onChange={(v) => onChange(f.key, v)}
+        />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>
