@@ -13,6 +13,8 @@ import { formatEndocrineSafety } from "@/lib/endocrineSafetyRules";
 import { formatObgynSafety } from "@/lib/obgynSafetyRules";
 import { formatEmergencySafety } from "@/lib/emergencySafetyRules";
 import { formatCardiologySafety } from "@/lib/cardiologySafetyRules";
+import { formatCardiologyScores } from "@/lib/cardiologyScores";
+import { formatCardiologyStructured } from "@/lib/cardiologyInvestigationSpecs";
 import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
@@ -170,6 +172,9 @@ export function formatFieldValue(type, value) {
   if (type === "obgyn_safety") return formatObgynSafety(value);
   if (type === "emergency_safety") return formatEmergencySafety(value);
   if (type === "cardio_safety") return formatCardiologySafety(value);
+  if (type === "cardio_scores") return formatCardiologyScores(value);
+  if (type === "cardio_ecg" || type === "cardio_echo" || type === "cardio_labs")
+    return formatCardiologyStructured(type, value);
   if (type === "neph_medications") return formatNephMedications(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);

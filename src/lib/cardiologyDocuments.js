@@ -54,6 +54,12 @@
 //     valve findings), the field is kept and the additions go around it.
 
 import { cardiologyCatalogFor } from "@/lib/cardiologyIcd11";
+import {
+  structuredEcg,
+  structuredEcho,
+  structuredLabs,
+  scoresBlock,
+} from "@/lib/cardiologyInvestigationBlocks";
 
 const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
 const I = (key, label, extra) => ({ key, label, type: "input", ...extra });
@@ -673,9 +679,13 @@ const CARDIOLOGY_ENHANCEMENTS = {
     ...riskProfile(),
     ...haemodynamic(),
     ...assessmentBlock(),
+    ...structuredEcg(),
+    ...structuredLabs(),
+    ...structuredEcho([], { key: "echo_status", in: ["Performed — report reviewed"] }),
     ...diagnosticPathway(),
     ...managementBlock(),
     ...monitoringBlock(),
+    ...scoresBlock(),
     ...icdBlock(
       ["ischaemic", "acs", "hf", "hypertension", "svt", "vt", "valve_mitral", "valve_aortic", "myocardium", "pericardium"],
       "Search ICD-11 — ischaemic heart disease, heart failure, hypertension, arrhythmia, valve disease, cardiomyopathy..."
@@ -750,9 +760,13 @@ const CARDIOLOGY_ENHANCEMENTS = {
       S("drug_intolerance_cardiac", "Documented Drug Intolerance Affecting Cardiac Therapy", DRUG_INTOLERANCE),
     ]),
     ...assessmentBlock(),
+    ...structuredEcg(),
+    ...structuredLabs(),
+    ...structuredEcho([], { key: "echo_status", in: ["Performed — report reviewed"] }),
     ...diagnosticPathway(),
     ...managementBlock(),
     ...monitoringBlock(),
+    ...scoresBlock(),
     ...icdBlock(
       ["acs", "ischaemic", "hf", "hypertension", "svt", "vt", "conduction", "valve_mitral", "valve_aortic", "myocardium", "pericardium", "pulmonary", "venous", "arterial"],
       "Search ICD-11 — admission diagnoses, including the acute coronary syndrome or heart-failure phenotype..."
@@ -788,6 +802,8 @@ const CARDIOLOGY_ENHANCEMENTS = {
       S("monitoring_required", "Monitoring Required", MONITORING),
       T("outstanding_diagnostics", "Outstanding Diagnostics and Who Is Following Them Up"),
     ]),
+    ...structuredLabs(),
+    ...scoresBlock(),
     ...icdBlock(
       ["acs", "hf", "svt", "vt", "conduction", "valve_mitral", "valve_aortic", "myocardium"],
       "Search ICD-11 — the active cardiac problems on this review..."
@@ -968,6 +984,10 @@ const CARDIOLOGY_ENHANCEMENTS = {
         "Not assessed",
       ]),
       T("ecg_ischaemia_detail", "Ischaemic Finding — Territory, Leads and Magnitude", when("ecg_ischaemia_finding", "ST-segment elevation", "ST-segment depression", "T-wave inversion", "Hyperacute T waves", "Pathological Q waves")),
+      N("ecg_st_elevation_mm", "Maximum ST Elevation", { unit: "mm", step: "0.5" }, when("ecg_ischaemia_finding", "ST-segment elevation")),
+      S("ecg_t_wave_morphology", "T-Wave Morphology", ["Normal", "Inversion", "Flattening", "Hyperacute", "Peaked", "Biphasic", "Not assessed"]),
+      S("ecg_q_waves", "Q Waves", ["None", "Anterior", "Inferior", "Lateral", "Multiple territories", "Not assessed"]),
+      S("ecg_lvh_voltage", "Left Ventricular Hypertrophy by Voltage", ["Not present", "Present — Sokolow-Lyon criteria", "Present — Cornell criteria", "Present — other documented criteria", "Not assessed"]),
       S("ecg_comparison", "Comparison With a Previous Tracing", [
         "No previous tracing available",
         "Unchanged",
@@ -1043,6 +1063,7 @@ const CARDIOLOGY_ENHANCEMENTS = {
         "Critical finding communicated immediately",
       ]),
     ]),
+    ...structuredEcho(["lvef", "lv_function", "diastolic_function"]),
     ...icdBlock(
       ["hf", "valve_mitral", "valve_aortic", "valve_other", "myocardium", "pericardium", "congenital", "pulmonary"],
       "Search ICD-11 — the structural or functional diagnosis this study shows..."
@@ -1097,6 +1118,7 @@ const CARDIOLOGY_ENHANCEMENTS = {
       S("scd_risk_assessment", "Sudden Cardiac Death Risk Assessment", SCD_RISK),
       S("follow_up_interval", "Follow-Up Arranged", FOLLOW_UP),
     ]),
+    ...scoresBlock(),
     ...icdBlock(
       ["svt", "vt", "conduction", "arrest", "myocardium"],
       "Search ICD-11 — the arrhythmia or conduction diagnosis this recording documents..."
@@ -1259,6 +1281,7 @@ const CARDIOLOGY_ENHANCEMENTS = {
       S("cardiac_rehab_referral", "Cardiac Rehabilitation", CARDIAC_REHAB),
       S("follow_up_interval", "Follow-Up Arranged", FOLLOW_UP),
     ]),
+    ...scoresBlock(),
     ...icdBlock(
       ["acs", "ischaemic", "valve_aortic", "valve_mitral", "hf", "myocardium", "pulmonary"],
       "Search ICD-11 — the coronary or structural diagnosis the study documents..."
