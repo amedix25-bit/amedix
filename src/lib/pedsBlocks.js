@@ -9,9 +9,13 @@ import {
   DEVELOPMENT_BLOCK, IMMUNISATION_BLOCK, CHRONIC_BLOCK, ADOLESCENT_BLOCK,
   SAFEGUARDING_BLOCK, FAMILY_BLOCK, PROCEDURE_BLOCK, REASONING_BLOCK,
 } from "@/lib/pedsCareBlocks";
+import { PEDS_NOTE_BLOCKS } from "@/lib/pedsNoteProfiles";
 import { asObject, str, list } from "@/lib/pedsFieldKit";
 
 export const PEDS_BLOCKS = {
+  // The per-note clinical blocks (history, measurements & examination, assessment,
+  // management & follow-up) generated from each note's own profile.
+  ...PEDS_NOTE_BLOCKS,
   [NEWBORN_BLOCK.key]: NEWBORN_BLOCK,
   [JAUNDICE_BLOCK.key]: JAUNDICE_BLOCK,
   [GROWTH_BLOCK.key]: GROWTH_BLOCK,
@@ -52,6 +56,16 @@ export const formatPedsBlock = (value) => {
   const lines = spec.fields
     .map((f) => {
       const raw = v[f.key];
+      if (f.type === "computed") {
+        // Calculated from what this block recorded — never from an assumption.
+        let calculated = null;
+        try {
+          calculated = f.compute ? f.compute(v) : null;
+        } catch {
+          calculated = null;
+        }
+        return calculated ? `${f.label}: ${calculated}` : null;
+      }
       if (f.type === "multi") {
         const items = list(raw);
         return items.length ? `${f.label}: ${items.join("; ")}` : null;
@@ -62,6 +76,7 @@ export const formatPedsBlock = (value) => {
     .filter(Boolean);
   if (!lines.length) return `${spec.title} — not documented in this note.`;
   const undocumented = spec.fields.filter((f) => {
+    if (f.type === "computed") return false;
     const raw = v[f.key];
     return Array.isArray(raw) ? raw.length === 0 : str(raw) === "";
   }).length;

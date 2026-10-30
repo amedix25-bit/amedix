@@ -15,6 +15,7 @@
 import { pedsBlockValues } from "@/lib/pedsBlocks";
 import { PEDS_REFERENCES } from "@/lib/pedsReferences";
 import { asObject, str, list, num, blockUsed } from "@/lib/pedsFieldKit";
+import { weightBasedDose } from "@/lib/pedsPatientMath";
 
 const refLabel = (key) => {
   const ref = PEDS_REFERENCES[key] || PEDS_REFERENCES.local;
@@ -25,6 +26,29 @@ const b = (values, key) => pedsBlockValues(values, key);
 const f = (values, key, field) => str(b(values, key)[field]);
 const m = (values, key, field) => list(b(values, key)[field]);
 const used = (values, key) => blockUsed(b(values, key));
+
+// The per-note clinical blocks share a prefix (peds_ctx_, peds_exam_, peds_assess_,
+// peds_care_), so a rule reads the note-specific record without having to know which
+// of the eighteen notes it is looking at. Only values that were documented are read.
+const blocksWith = (values, prefix) =>
+  Object.entries(asObject(values))
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, value]) => asObject(value));
+
+const noteValue = (values, prefix, field) =>
+  blocksWith(values, prefix)
+    .map((v) => str(v[field]))
+    .find((v) => v !== "") || "";
+
+const noteList = (values, prefix, field) => blocksWith(values, prefix).flatMap((v) => list(v[field]));
+
+const noteText = (values, prefix, fields) =>
+  fields
+    .map((field) => noteValue(values, prefix, field))
+    .filter(Boolean)
+    .join(" ");
+
+const NOT_RECORDED = (value) => isBlankOrUndocumented(value) || /^not recorded$/i.test(str(value));
 
 const isBlankOrUndocumented = (value) => {
   const v = str(value);
@@ -454,6 +478,239 @@ export const PEDS_SAFETY_RULES = [
       "The code was recorded as review required: it has not been confirmed against the WHO browser. It is not presented as a verified code until a coding review confirms it.",
     fires: (values) =>
       icdEntries(values).some((e) => str(e.code) && str(e.mapping_state) === "review_required"),
+  },
+
+  // ---- The per-note record: dosing, age correction and time-critical findings ----
+  {
+    key: "note_dose_without_weight",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "A medicine is documented without the weight its dose was calculated from",
+    basis:
+      "Every pediatric dose in AMedix is weight-based. This note records a medicine but no measured weight, so the dose cannot be checked against the child it was written for.",
+    fires: (values) => Boolean(noteValue(values, "peds_care_", "rx_drug")) && !noteValue(values, "peds_care_", "rx_weight_kg"),
+  },
+  {
+    key: "note_dose_above_stated_maximum",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "The calculated dose exceeds the maximum recorded for this child",
+    basis:
+      "The medicine, the mg/kg and the maximum are all recorded. The arithmetic puts the calculated dose above that maximum, so the ceiling applies and the dose given must be the ceiling — not the calculated figure.",
+    fires: (values) =>
+      blocksWith(values, "peds_care_").some((v) => {
+        const dose = weightBasedDose({ weightKg: v.rx_weight_kg, perKg: v.rx_mg_per_kg, maxDose: v.rx_max_mg });
+        return Boolean(dose && dose.capped);
+      }),
+  },
+  {
+    key: "note_dose_maximum_not_stated",
+    level: "warning",
+    provenance: "local",
+    source: "local",
+    title: "A weight-based dose is recorded without the maximum for this child",
+    basis:
+      "A mg/kg dose without the maximum stated cannot be checked against the formulary ceiling. The maximum is recorded, or the reason it does not apply is written beside the dose.",
+    fires: (values) =>
+      Boolean(noteValue(values, "peds_care_", "rx_drug")) &&
+      Boolean(noteValue(values, "peds_care_", "rx_mg_per_kg")) &&
+      !noteValue(values, "peds_care_", "rx_max_mg"),
+  },
+  {
+    key: "note_dose_allergy_not_checked",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "A medicine is documented without the allergy check",
+    basis:
+      "The allergy status recorded in this note has not been checked against the medicine prescribed. An unverified allergy is never read as no allergy.",
+    fires: (values) => {
+      if (!noteValue(values, "peds_care_", "rx_drug")) return false;
+      const check = noteValue(values, "peds_care_", "rx_allergy_check");
+      return isBlankOrUndocumented(check) || check === "Not checked";
+    },
+  },
+  {
+    key: "note_young_infant_fever_without_evaluation",
+    level: "critical",
+    provenance: "guideline",
+    source: "who_imci",
+    title: "Fever in an infant under 2 months is documented without an evaluation",
+    basis:
+      "WHO IMCI treats fever (37.5 °C or more) in a young infant as a sign requiring urgent assessment and a full evaluation for serious bacterial infection. This note records the fever and documents no evaluation and no critical severity.",
+    fires: (values) => {
+      const temp = num(noteValue(values, "peds_exam_", "vit_temp_c"));
+      const band = noteValue(values, "peds_exam_", "vit_age_band");
+      if (band !== "Under 2 months" || temp === null || temp < 37.5) return false;
+      const evaluated =
+        noteValue(values, "peds_assess_", "wkp_requested") || noteValue(values, "peds_assess_", "wkp_interpretation");
+      const severity = noteValue(values, "peds_assess_", "asm_severity");
+      return !evaluated && severity !== "Critical — resuscitation or immediate escalation";
+    },
+  },
+  {
+    key: "note_apnoea_without_monitoring",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "Apnoea is documented without a monitoring plan",
+    basis:
+      "A documented apnoea or breathing pause in an infant requires a documented monitoring plan and a named review. The note records the event and no monitoring parameters or frequency.",
+    fires: (values) => {
+      const apnoea =
+        noteList(values, "peds_ctx_", "acu_red_flag_history").includes("Apnoea or breathing pause") ||
+        noteList(values, "peds_exam_", "exs_resp_work").includes("Apnoea") ||
+        Boolean(noteValue(values, "peds_care_", "nx_np_apnoea"));
+      if (!apnoea) return false;
+      return !noteList(values, "peds_care_", "mon_parameters").length || NOT_RECORDED(noteValue(values, "peds_care_", "mon_frequency"));
+    },
+  },
+  {
+    key: "note_cyanosis_without_saturation",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "Cyanosis is documented without an oxygen saturation",
+    basis:
+      "Central cyanosis is a time-critical finding. The note records it and no saturation, so the severity of the hypoxaemia is not documented.",
+    fires: (values) => {
+      const cyanosed =
+        noteList(values, "peds_exam_", "exs_skin").includes("Cyanosis") ||
+        noteList(values, "peds_exam_", "exn_skin_colour").includes("Central cyanosis");
+      return cyanosed && !noteValue(values, "peds_exam_", "vit_spo2");
+    },
+  },
+  {
+    key: "note_shock_signs_without_action",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "Signs of poor perfusion are documented without an action or a disposition",
+    basis:
+      "A capillary refill of 2 seconds or more, cool peripheries or mottling is a documented perfusion abnormality. The note records it with no monitoring frequency, no deterioration trigger and no disposition decision.",
+    fires: (values) => {
+      const poorPerfusion =
+        noteValue(values, "peds_exam_", "vit_crt") === "2 seconds or more" ||
+        ["Cool peripheries documented", "Mottled"].includes(noteValue(values, "peds_exam_", "exs_perfusion")) ||
+        noteList(values, "peds_assess_", "asm_red_flags").includes("Signs of shock");
+      if (!poorPerfusion) return false;
+      const decision = noteValue(values, "peds_care_", "dsp_decision");
+      const undecided = isBlankOrUndocumented(decision) || decision === "Not yet decided";
+      const monitored = noteList(values, "peds_care_", "mon_parameters").length > 0;
+      return undecided && !monitored && !noteValue(values, "peds_care_", "mon_deterioration_trigger");
+    },
+  },
+  {
+    key: "note_seizure_without_management",
+    level: "critical",
+    provenance: "guideline",
+    source: "ilae_seizure_classification",
+    title: "A seizure is documented without any management recorded",
+    basis:
+      "A documented seizure requires the description, the time and the management given, including the anticonvulsant and its dose, or the documented reason none was required. This note records the seizure and no medicine at all.",
+    fires: (values) => {
+      const seizure =
+        noteList(values, "peds_exam_", "exs_neuro").includes("Seizure activity observed") ||
+        noteList(values, "peds_ctx_", "acu_red_flag_history").includes("Seizure");
+      return seizure && !noteValue(values, "peds_care_", "rx_drug");
+    },
+  },
+  {
+    key: "note_reduced_consciousness_without_escalation",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "A reduced conscious level is documented without escalation recorded",
+    basis:
+      "A child who is not alert — drowsy, responding only to voice or pain, unresponsive, or lethargic — needs a documented escalation route, a monitoring frequency and a disposition. None is recorded on this note.",
+    fires: (values) => {
+      const reduced =
+        ["Drowsy or irritable", "Responds to voice", "Responds to pain", "Unresponsive"].includes(
+          noteValue(values, "peds_exam_", "vit_consciousness"),
+        ) || ["Lethargic", "Irritable and inconsolable"].includes(noteValue(values, "peds_exam_", "exs_general"));
+      if (!reduced) return false;
+      const decision = noteValue(values, "peds_care_", "dsp_decision");
+      const undecided = isBlankOrUndocumented(decision) || decision === "Not yet decided";
+      return (
+        undecided &&
+        !noteList(values, "peds_care_", "mon_parameters").length &&
+        !noteValue(values, "peds_care_", "mon_deterioration_trigger")
+      );
+    },
+  },
+  {
+    key: "note_anaphylaxis_without_adrenaline",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "Anaphylaxis is considered in the differential without adrenaline recorded",
+    basis:
+      "Where the note documents anaphylaxis as a differential, the management recorded must include adrenaline (epinephrine) with its weight-based dose, or the documented reason it was not given.",
+    fires: (values) => {
+      const reasoning = noteText(values, "peds_assess_", ["asm_differentials", "asm_leading", "asm_reasoning"]);
+      if (!/anaphyla/i.test(reasoning)) return false;
+      return !/adrenaline|epinephrine/i.test(noteText(values, "peds_care_", ["rx_drug", "rx_dose_basis_note"]));
+    },
+  },
+  {
+    key: "note_safeguarding_screen_without_record",
+    level: "critical",
+    provenance: "guideline",
+    source: "aap_child_abuse",
+    title: "A safeguarding concern is screened positive without a safeguarding record",
+    basis:
+      "The context record states a safeguarding concern was identified at this visit, and no safeguarding assessment is documented on the note. A concern recorded without an assessment, a route and a time leaves the child without a documented response.",
+    fires: (values) =>
+      noteValue(values, "peds_ctx_", "fam_safeguarding_screen") === "Concern identified — see safeguarding record" &&
+      !used(values, "peds_safeguarding"),
+  },
+  {
+    key: "note_preterm_corrected_age_missing",
+    level: "warning",
+    provenance: "guideline",
+    source: "who_preterm",
+    title: "A preterm infant's note does not record the corrected age",
+    basis:
+      "The gestational age recorded is under 37 weeks and the note carries no date of birth and no age, so growth and development cannot be read against the corrected age. The corrected age is recorded, or the reason it does not apply.",
+    fires: (values) => {
+      const gestation = num(noteValue(values, "peds_ctx_", "ctx_ga_weeks"));
+      if (gestation === null || gestation >= 37) return false;
+      return !noteValue(values, "peds_ctx_", "ctx_dob") && !noteValue(values, "peds_ctx_", "ctx_age_value");
+    },
+  },
+  {
+    key: "note_red_flag_without_severity",
+    level: "warning",
+    provenance: "local",
+    source: "local",
+    title: "A red flag is documented without a severity classification",
+    basis:
+      "The note records a time-critical finding but no severity classification, so the reader cannot tell whether it was treated as an emergency.",
+    fires: (values) => {
+      const flags = noteList(values, "peds_assess_", "asm_red_flags").filter((x) => x !== "None documented");
+      if (!flags.length) return false;
+      const severity = noteValue(values, "peds_assess_", "asm_severity");
+      return isBlankOrUndocumented(severity) || severity === "Not classified";
+    },
+  },
+  {
+    key: "note_measurement_without_reference",
+    level: "warning",
+    provenance: "guideline",
+    source: "who_growth_standards",
+    title: "A measurement is recorded without the growth reference applied",
+    basis:
+      "A weight or length without the reference or chart it was read against cannot be interpreted. The reference is recorded, or the reason no chart was used.",
+    fires: (values) => {
+      const measured = ["msr_weight_kg", "msr_length_cm", "msr_head_cm"].some((key) =>
+        Boolean(noteValue(values, "peds_exam_", key)),
+      );
+      if (!measured) return false;
+      const reference = noteValue(values, "peds_exam_", "msr_growth_reference");
+      return isBlankOrUndocumented(reference) || reference === "Not documented";
+    },
   },
 ];
 

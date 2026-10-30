@@ -1,9 +1,11 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { pedsBlock, pedsBlockValue } from "@/lib/pedsBlocks";
+import PedsComputedValue from "@/components/doctor/notes/PedsComputedValue";
 import { asObject } from "@/lib/pedsFieldKit";
 
 // One structured pediatric block. Every item is optional: the clinician documents
@@ -95,7 +97,21 @@ export default function PedsBlockField({ fieldKey, value, onChange }) {
               />
             )}
 
-            {hint && f.type !== "input" && f.type !== "number" && f.type !== "date" && (
+            {f.type === "textarea" && (
+              <Textarea
+                value={current ?? ""}
+                placeholder={hint || ""}
+                rows={2}
+                className="text-sm"
+                onChange={(e) => set(f.key, e.target.value)}
+              />
+            )}
+
+            {f.type === "computed" && (
+              <PedsComputedValue field={f} values={values} />
+            )}
+
+            {hint && !["input", "number", "date", "textarea", "computed"].includes(f.type) && (
               <p className="text-[10px] text-muted-foreground leading-snug">{hint}</p>
             )}
           </div>
