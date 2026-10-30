@@ -102,6 +102,16 @@ const investigationsBlock = () => [
   },
 ];
 
+// The ocular medicines documented on this note, with the safety facts that make
+// them reviewable: eye, concentration, route, frequency, duration and monitoring.
+const medicationsBlock = () => [
+  {
+    key: "ophth_medications",
+    label: "Ocular Medicines & Medication Safety",
+    type: "ophth_medications",
+  },
+];
+
 const scoresBlock = (scores) => [
   { key: "ophth_scores", label: "Guideline-Based Calculations", type: "ophth_scores", scores },
 ];
@@ -139,6 +149,7 @@ export const OPHTH_ENHANCEMENTS = {
     blockField("ophth_emergency"),
     blockField("ophth_impression"),
     ...investigationsBlock(),
+    ...medicationsBlock(),
     ...icdBlock(CONSULT_DOMAINS, "Search ICD-11 — the diagnosis this consultation documents…"),
     ...scoresBlock(["glaucoma_field_stage", "amd_risk", "ocular_trauma_score"]),
     ...safetyBlock(),

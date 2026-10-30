@@ -1,0 +1,127 @@
+{
+  "name": "OphthalmologyStandardReview",
+  "type": "object",
+  "properties": {
+    "specialty": {
+      "type": "string",
+      "default": "ophthalmology",
+      "description": "Specialty the documentation standard belongs to \u2014 always ophthalmology, so this register never mixes with another specialty's review"
+    },
+    "standard_key": {
+      "type": "string",
+      "description": "Note type key the review concerns, e.g. ophth_consultation \u2014 one review record per note type"
+    },
+    "standard_label": {
+      "type": "string",
+      "description": "Note type name at the time of review"
+    },
+    "standard_version": {
+      "type": "string",
+      "description": "Version of the documentation standard that was reviewed, so an approval is always tied to the content it approved"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_review",
+        "approved",
+        "approved_with_comments",
+        "changes_requested"
+      ],
+      "default": "pending_review",
+      "description": "Department review state. TECHNICAL VERIFICATION is not clinical approval: a standard is only department-approved when the Head of the Ophthalmology Department records the decision here"
+    },
+    "reviewer_user_id": {
+      "type": "string",
+      "description": "User id of the clinician who recorded the decision"
+    },
+    "reviewer_name": {
+      "type": "string",
+      "description": "Name of the clinician who recorded the decision"
+    },
+    "reviewer_title": {
+      "type": "string",
+      "description": "Capacity in which the decision was recorded, e.g. Head of the Ophthalmology Department"
+    },
+    "head_confirmed": {
+      "type": "boolean",
+      "default": false,
+      "description": "The reviewer confirmed they hold the authority to approve documentation standards for the department"
+    },
+    "decision_datetime": {
+      "type": "string",
+      "description": "Date and time the decision was recorded (ISO datetime)"
+    },
+    "comments": {
+      "type": "array",
+      "description": "Department review comments \u2014 who, when and what, kept in order so the discussion stays attached to the standard it concerns",
+      "items": {
+        "type": "object",
+        "properties": {
+          "author_user_id": {
+            "type": "string"
+          },
+          "author_name": {
+            "type": "string"
+          },
+          "author_title": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "text"
+        ]
+      }
+    },
+    "change_history": {
+      "type": "array",
+      "description": "Every decision recorded against this standard, kept even after a later decision replaces it",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "standard_key",
+    "standard_version",
+    "status"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
