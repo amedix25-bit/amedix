@@ -125,6 +125,13 @@ function PresentationCard({ spec, block, update }) {
             </ul>
           </div>
 
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-destructive">Why this is time-critical</p>
+            <p className="text-[11px] text-foreground/80 leading-snug">{spec.timeCritical}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-destructive pt-1">Escalation</p>
+            <p className="text-[11px] text-foreground/80 leading-snug">{spec.escalation}</p>
+          </div>
+
           <div>
             <p className="text-[11px] font-semibold text-foreground mb-1">Documented findings</p>
             <FieldGroup fields={spec.fields} bag={docs} setKey={setDocs} />

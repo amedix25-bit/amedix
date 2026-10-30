@@ -83,6 +83,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "compartment_syndrome",
     label: "Acute compartment syndrome",
     level: "immediate",
+    timeCritical:
+      "Decompression is not delayed for a repeat pressure measurement or further observation once the clinical picture is established. The time the diagnosis was considered and the time of decompression are both recorded.",
+    escalation:
+      "Inform the on-call orthopaedic consultant and the anaesthetist at the time the diagnosis is considered; theatre or transfer is arranged by them and the destination and time are recorded.",
     recognition: [
       "Pain out of proportion to the injury, escalating despite analgesia",
       "Pain on passive stretch of the compartment muscles",
@@ -130,6 +134,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "open_fracture",
     label: "Open fracture",
     level: "immediate",
+    timeCritical:
+      "Antibiotics are given as soon as the open fracture is recognised and debridement is planned without avoidable delay. The time of injury, of the first dose and of the planned debridement are recorded.",
+    escalation:
+      "Refer to the orthopaedic team on call and, where soft-tissue cover is in doubt, to plastic surgery; who was informed and at what time are recorded.",
     recognition: [
       "Wound communicating with the fracture or the joint",
       "Bone visible, or bone felt in the wound",
@@ -162,6 +170,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "severe_soft_tissue",
     label: "Severe soft-tissue injury",
     level: "immediate",
+    timeCritical:
+      "Soft-tissue viability is judged at the first assessment, and the time of injury, of the first dressing and of the planned surgical review are recorded.",
+    escalation:
+      "Inform the on-call orthopaedic and plastic surgery teams; where the limb cannot be covered locally, the transfer request and its acceptance are recorded.",
     recognition: [
       "Degloving, avulsion or crush injury",
       "Skin tenting, blistering or a threatened flap over a fracture",
@@ -197,6 +209,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "neurovascular_compromise",
     label: "Neurovascular compromise",
     level: "immediate",
+    timeCritical:
+      "A new deficit is re-examined immediately and again after any reduction, cast or dressing change; both examination times are recorded.",
+    escalation:
+      "Inform the on-call orthopaedic consultant and the vascular team without waiting for imaging; who was called and when is recorded.",
     recognition: [
       "Absent or weakly palpable pulse with a cold, mottled or pale limb",
       "New motor or sensory deficit distal to the injury",
@@ -239,6 +255,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "vascular_injury",
     label: "Vascular injury",
     level: "immediate",
+    timeCritical:
+      "Haemorrhage control and vascular assessment are not delayed for imaging; tourniquet or pressure times and the time of vascular review are recorded.",
+    escalation:
+      "Call the vascular surgeon and activate the major haemorrhage pathway at once; the time of the call and the destination agreed are recorded.",
     recognition: [
       "Hard signs — pulsatile bleeding, expanding haematoma, bruit or thrill, absent pulse, ischaemic limb",
       "Soft signs with a penetrating injury near a vessel",
@@ -283,6 +303,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "unstable_pelvis",
     label: "Unstable pelvic injury",
     level: "immediate",
+    timeCritical:
+      "Mechanical stabilisation and haemorrhage control come before definitive imaging; the time of binder or fixation and of the first transfusion are recorded.",
+    escalation:
+      "Activate the trauma team and the major haemorrhage protocol; who led, who was informed and the destination (theatre, interventional radiology or transfer) are recorded.",
     recognition: [
       "Haemodynamic instability with a pelvic injury",
       "Mechanism of high energy — lateral compression, anteroposterior compression, vertical shear",
@@ -320,6 +344,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "polytrauma",
     label: "Major associated trauma (polytrauma)",
     level: "immediate",
+    timeCritical:
+      "The primary survey is documented with its times, and treatment of the limb never delays treatment of an airway, breathing or circulation problem.",
+    escalation:
+      "Hand over to the trauma team leader; the time of handover and the destination agreed for each injured region are recorded.",
     recognition: [
       "Two or more body regions injured, one of them life-threatening",
       "Physiological derangement — shock, hypoxia, reduced consciousness",
@@ -350,6 +378,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "spinal_cord_injury",
     label: "Spinal cord injury",
     level: "immediate",
+    timeCritical:
+      "Immobilisation and neuroprotection begin at the first assessment; the time of injury, of immobilisation and of the specialist referral are recorded.",
+    escalation:
+      "Inform the spine surgeon or the regional spinal injuries unit immediately; the time of referral and whether the patient was accepted are recorded.",
     recognition: [
       "Motor or sensory deficit below an injury level",
       "Neurogenic shock — hypotension with bradycardia",
@@ -382,6 +414,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "cauda_equina",
     label: "Cauda equina syndrome",
     level: "immediate",
+    timeCritical:
+      "Decompression is time-sensitive: the time of the first symptoms, of this assessment and of the MRI request are recorded, and imaging is not delayed by conservative measures.",
+    escalation:
+      "Inform the on-call spine surgeon at the time the diagnosis is suspected; who was informed and the time of the call are recorded.",
     recognition: [
       "Saddle anaesthesia",
       "Bladder dysfunction — retention, incontinence, loss of awareness of fullness",
@@ -418,6 +454,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "septic_arthritis",
     label: "Septic arthritis",
     level: "same_day",
+    timeCritical:
+      "Joint aspiration and antibiotics are arranged on the same day the diagnosis is suspected; the times of aspiration, of the first dose and of surgical washout are recorded.",
+    escalation:
+      "Inform the on-call orthopaedic team and microbiology the same day; who was informed and the time of the call are recorded.",
     recognition: [
       "Hot, swollen, exquisitely painful joint with reluctance to move it",
       "Fever or systemic upset with a joint effusion",
@@ -448,6 +488,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "osteomyelitis",
     label: "Osteomyelitis",
     level: "same_day",
+    timeCritical:
+      "Deep cultures are taken before antibiotics where the patient is stable, and surgical review takes place the same day; the times of sampling, of the first dose and of review are recorded.",
+    escalation:
+      "Refer to the orthopaedic team and microbiology the same day; the time of referral and the plan agreed are recorded.",
     recognition: [
       "Deep, unremitting bone pain with systemic features",
       "Draining sinus or a wound that will not heal over bone",
@@ -479,6 +523,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "fat_embolism",
     label: "Fat embolism syndrome",
     level: "immediate",
+    timeCritical:
+      "Supportive treatment and the search for the alternative diagnosis — pulmonary embolism, sepsis, transfusion reaction — begin when the syndrome is suspected, and their times are recorded.",
+    escalation:
+      "Inform the anaesthetist and critical care immediately; the time of the call and the level of care the patient was moved to are recorded.",
     recognition: [
       "Hypoxia and breathlessness after long-bone or pelvic fracture",
       "Confusion or a falling level of consciousness without head injury",
@@ -509,6 +557,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "postop_infection",
     label: "Post-operative infection",
     level: "same_day",
+    timeCritical:
+      "Wound review, cultures and the decision on surgical management are made the same day; the time the wound was first noted and the time of review are recorded.",
+    escalation:
+      "Inform the operating surgeon and microbiology the same day; who was informed and the plan for theatre are recorded.",
     recognition: [
       "Wound discharge, spreading cellulitis or dehiscence",
       "Fever, rigors or systemic upset after surgery",
@@ -552,6 +604,10 @@ export const ORTHO_TRAUMA_PRESENTATIONS = [
     key: "thromboembolism",
     label: "Thromboembolic complication",
     level: "same_day",
+    timeCritical:
+      "Anticoagulation and imaging are arranged the same day the diagnosis is suspected, after the bleeding risk is documented; the times of the request and of the first dose are recorded.",
+    escalation:
+      "Inform the treating team and, where there is haemodynamic compromise, critical care immediately; who was informed and when are recorded.",
     recognition: [
       "Unilateral calf pain, swelling or tenderness",
       "Sudden breathlessness, pleuritic pain, tachycardia or hypoxia",
@@ -772,6 +828,8 @@ export const formatOrthoTrauma = (value) => {
     const spec = ORTHO_TRAUMA_MAP[key];
     const block = blockOf(state, key);
     lines.push(`\n${spec.label.toUpperCase()} — ${ORTHO_TRAUMA_LEVELS[spec.level].label.toLowerCase()}`);
+    lines.push(`   Time-critical: ${spec.timeCritical}`);
+    lines.push(`   Escalation: ${spec.escalation}`);
     const docs = block.docs || {};
     spec.fields.forEach((f) => {
       if (str(docs[f.key])) lines.push(`   ${f.label}: ${str(docs[f.key])}`);

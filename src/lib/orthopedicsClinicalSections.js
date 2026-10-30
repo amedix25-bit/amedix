@@ -304,7 +304,7 @@ const investigations = () =>
     T("ortho_labs", "Blood tests — results and times", {
       hint: "FBC, coagulation, group and save / crossmatch, renal function, inflammatory markers — each with its time",
     }),
-    S("ortho_imaging_comparison", "Comparison with previous imaging", [
+    S("ortho_imaging_comparison", "Comparison with previous studies", [
       "Compared with previous studies — documented difference",
       "Compared with previous studies — unchanged",
       "No previous study available",
@@ -328,7 +328,7 @@ const investigations = () =>
 
 const assessmentSection = () =>
   sec("Assessment & diagnostic reasoning", [
-    S("ortho_group", "Working diagnostic group", [
+    S("ortho_group", "Orthopaedic condition group", [
       "Fracture",
       "Open fracture",
       "Dislocation / fracture-dislocation",
@@ -342,7 +342,7 @@ const assessmentSection = () =>
       "Post-operative complication",
       "Other",
     ]),
-    S("ortho_diagnosis_status", "Status of the working diagnosis", [
+    S("ortho_diagnosis_status", "Diagnosis status", [
       "Confirmed",
       "Suspected",
       "Provisional",
@@ -524,6 +524,7 @@ export const ORTHO_CLINICAL_SECTIONS = {
     ...neurovascular(),
     ...severitySection(),
     ...investigations(),
+    ...healingSection(),
     ...traumaSection(),
     ...assessmentSection(),
     ...management(),
@@ -589,6 +590,7 @@ export const ORTHO_CLINICAL_SECTIONS = {
     ...neurovascular(),
     ...severitySection(),
     ...investigations(),
+    ...healingSection(),
     ...traumaSection(),
     ...assessmentSection(),
     ...management(),
@@ -603,6 +605,8 @@ export const ORTHO_CLINICAL_SECTIONS = {
       T("ortho_renal_hepatic", "Renal and hepatic function relevant to anaesthesia"),
       T("ortho_functional_baseline", "Functional baseline before surgery", { hint: "Mobility, aids, social support and discharge destination" }),
     ]),
+    ...healingSection(),
+    ...traumaSection(),
     ...safety(),
   ],
   ortho_operative_note: () => [
@@ -639,12 +643,14 @@ export const ORTHO_CLINICAL_SECTIONS = {
   ortho_postop_note: () => [
     icdFor(ALL, "Search ICD-11 — the procedure diagnosis and any post-operative complication…"),
     ...postopSection(),
+    ...healingSection(),
     ...traumaSection(),
     ...safety(),
   ],
   ortho_daily_progress: () => [
     icdFor(ALL, "Search ICD-11 — the active diagnosis and any complication on this ward day…"),
     ...postopSection(),
+    ...healingSection(),
     ...traumaSection(),
     ...safety(),
   ],
@@ -658,6 +664,7 @@ export const ORTHO_CLINICAL_SECTIONS = {
   ortho_rehab_plan: () => [
     icdFor(["degenerative", "spine", "bone_quality"], "Search ICD-11 — the condition being rehabilitated…"),
     ...rehabSection(),
+    ...healingSection(),
     ...safety(),
   ],
 };

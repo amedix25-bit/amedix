@@ -287,7 +287,29 @@ check(VALUES.includes('type === "ortho_healing"'), "the fracture-healing panel i
 // policy retires, is silently dropped from the form and from the record. That is
 // exactly how the management layer was being lost, so it is asserted here against
 // the real policy module for every note type.
-const PANEL_KEYS = ["ortho_trauma", "ortho_healing", "ortho_safety", "icd11_diagnoses"];
+// Every note carries the coding field and one safety review. The trauma panel is
+// offered wherever an acute presentation can be documented — every note but the
+// rehabilitation plan, which records recovery of an established condition. The
+// healing panel follows the notes that judge union.
+const ALWAYS_KEYS = ["icd11_diagnoses", "ortho_safety"];
+const TRAUMA_NOTES = NOTE_KEYS.filter((k) => k !== "ortho_rehab_plan");
+const HEALING_NOTES = [
+  "ortho_consultation",
+  "ortho_followup",
+  "ortho_fracture_assessment",
+  "ortho_injury_assessment",
+  "ortho_preop_assessment",
+  "ortho_postop_note",
+  "ortho_daily_progress",
+  "ortho_discharge_summary",
+  "ortho_rehab_plan",
+];
+HEALING_NOTES.forEach((k) => check(NOTE_KEYS.includes(k), `the healing scope names an unknown note ${k}`));
+const expectedPanelKeys = (key) => [
+  ...ALWAYS_KEYS,
+  ...(TRAUMA_NOTES.includes(key) ? ["ortho_trauma"] : []),
+  ...(HEALING_NOTES.includes(key) ? ["ortho_healing"] : []),
+];
 NOTE_KEYS.forEach((key) => {
   const doc = { key, label: key, specialty: "orthopedics", fields: sections.ORTHO_CLINICAL_SECTIONS[key]() };
   const kept = policy.applyNoteSectionPolicy([doc])[0];
@@ -295,7 +317,7 @@ NOTE_KEYS.forEach((key) => {
   doc.fields.forEach((f) =>
     check(keptKeys.has(f.key), `note ${key}: field "${f.key}" (${f.label}) is dropped by the clinical-section policy`),
   );
-  PANEL_KEYS.forEach((panel) =>
+  expectedPanelKeys(key).forEach((panel) =>
     check(keptKeys.has(panel), `note ${key}: the ${panel} panel does not survive the clinical-section policy`),
   );
 });
@@ -303,7 +325,9 @@ NOTE_KEYS.forEach((key) => {
 NOTE_KEYS.forEach((key) => {
   const built = docs.withOrthopedicsStandards([{ key, label: key, specialty: "orthopedics", fields: [] }])[0];
   const keys = (built.fields || []).map((f) => f.key);
-  PANEL_KEYS.forEach((panel) => check(keys.includes(panel), `the built template for ${key} is missing the ${panel} panel`));
+  expectedPanelKeys(key).forEach((panel) =>
+    check(keys.includes(panel), `the built template for ${key} is missing the ${panel} panel`),
+  );
 });
 
 // ---- 9. Trauma-emergency presentations ------------------------------------
@@ -317,7 +341,7 @@ const REQUIRED_PRESENTATIONS = [
   "neurovascular_compromise",
   "vascular_injury",
   "unstable_pelvis",
-  "major_associated_trauma",
+  "polytrauma",
   "spinal_cord_injury",
   "cauda_equina",
   "septic_arthritis",
@@ -334,8 +358,8 @@ PRES.forEach((p) => {
   check(Array.isArray(p.references) && p.references.length > 0, `presentation ${p.key} cites no reference`);
   p.references.forEach((r) => check(Boolean(refs.ORTHO_REFERENCE_MAP[r]), `presentation ${p.key} cites unknown reference ${r}`));
   check(Boolean(p.level && trauma.ORTHO_TRAUMA_LEVELS[p.level]), `presentation ${p.key} has no urgency level`);
-  check(Array.isArray(p.timeCritical) && p.timeCritical.length > 0, `presentation ${p.key} has no time-critical instruction`);
-  check(Boolean(p.escalation), `presentation ${p.key} names no escalation route`);
+  check(typeof p.timeCritical === "string" && p.timeCritical.length > 20, `presentation ${p.key} has no time-critical instruction`);
+  check(typeof p.escalation === "string" && p.escalation.length > 20, `presentation ${p.key} names no escalation route`);
 });
 
 // A blank panel must never read as a normal examination.
