@@ -93,6 +93,37 @@ const gcsBlock = () => [
   ]),
 ];
 
+// The structured neurosurgical examination, recorded the same way in every note
+// that needs it, so an observation can be compared with the one before it.
+const examField = () =>
+  sec("Neurological Examination", [
+    {
+      key: "nsg_exam",
+      label:
+        "Structured neurosurgical examination — conscious level and orientation, pupils, cranial nerves, MRC power, sensory level and modality, reflexes with plantar response and clonus, coordination and cerebellar signs, gait, meningeal signs, spinal column with dermatomal and myotomal level",
+      type: "nsg_exam",
+    },
+  ]);
+
+const isncsciBlock = (showIf) =>
+  sec("ISNCSCI / ASIA Examination", [
+    {
+      key: "nsg_isncsci",
+      label: "ISNCSCI / ASIA examination — key muscles, dermatomes, sacral examination, levels and AIS grade",
+      type: "nsg_isncsci",
+      ...(showIf ? { showIf } : {}),
+    },
+  ]);
+
+const scoreBlock = () =>
+  sec("Validated Scores & Classifications", [
+    {
+      key: "nsg_scores",
+      label: "Scores and classifications that apply to this condition — calculated only from documented values",
+      type: "nsg_scores",
+    },
+  ]);
+
 // ---------------------------------------------------------------------------
 // 1. Neurosurgical Consultation
 // ---------------------------------------------------------------------------
@@ -118,6 +149,7 @@ const CONSULTATION = {
       T("review_of_systems", "Review of systems"),
     ]),
     ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Documented focal deficit — distribution, power (MRC), sensory level, reflexes, coordination")]),
+    ...examField(),
     ...sec("Factors That Change the Surgical Decision", [
       S("functional_status", "Functional status before this episode", [
         "Independent",
@@ -169,6 +201,7 @@ const CONSULTATION = {
       S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
       T("followup_detail", "Who reviews the patient, where, and what brings them back sooner"),
     ]),
+    ...scoreBlock(),
     ...guidanceBlock("nsg_consultation"),
   ],
   guidelineBasis: ["NICE NG232", "NICE NG59", "AANS/CNS", "WHO ICD-11 MMS"],
@@ -210,6 +243,7 @@ const SPINE = {
       T("deficit", "Documented deficit — myotomes, dermatomes, reflexes, and any upper motor neurone signs"),
       S("neuro_deterioration", "Documented progression of the deficit", ["No", "Yes", "Unable to assess"]),
     ]),
+    ...examField(),
     ...vitalsBlock(),
     ...examBlock(),
     ...sec("Imaging & Neurophysiology Reviewed", [
@@ -247,6 +281,7 @@ const SPINE = {
       S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", "As needed", NOT_DOCUMENTED]),
       S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
     ]),
+    ...scoreBlock(),
     ...guidanceBlock("nsg_spine"),
   ],
   guidelineBasis: ["NICE NG59", "AANS/CNS", "WHO ICD-11 MMS"],
@@ -292,6 +327,8 @@ const NEUROTRAUMA = {
       S("asia_grade", "ASIA impairment scale grade", ["A", "B", "C", "D", "E", "Not documented"], when("spinal_injury", "Yes — level and grade documented")),
       I("spinal_level", "Documented spinal level", when("spinal_injury", "Suspected", "Yes — level and grade documented")),
     ]),
+    ...examField(),
+    ...isncsciBlock({ key: "spinal_injury", in: ["Suspected", "Yes — level and grade documented"] }),
     ...vitalsBlock(),
     ...examBlock(),
     ...sec("Imaging Reviewed", [
@@ -357,6 +394,7 @@ const CEREBROVASCULAR = {
       S("fisher", "Modified Fisher grade on CT", ["1", "2", "3", "4", NOT_DOCUMENTED]),
     ]),
     ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Documented focal deficit and cranial nerve findings")]),
+    ...examField(),
     ...vitalsBlock(),
     ...examBlock(),
     ...sec("Vascular Imaging & Findings", [
@@ -420,6 +458,7 @@ const CEREBROVASCULAR = {
       S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", "6 months", NOT_DOCUMENTED]),
       T("family_communication", "Communication with the patient and family — what was explained, by whom and when"),
     ]),
+    ...scoreBlock(),
     ...guidanceBlock("nsg_cerebrovascular"),
   ],
   guidelineBasis: ["AANS/CNS", "WHO ICD-11 MMS"],
@@ -447,6 +486,7 @@ const HYDROCEPHALUS = {
       T("symptoms", "Symptoms and their time course — headache, vomiting, drowsiness, visual change, upward gaze palsy"),
     ]),
     ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Documented focal deficit and cranial nerve findings")]),
+    ...examField(),
     ...vitalsBlock(),
     ...examBlock(),
     ...sec("Diversion Device & Imaging", [
@@ -525,6 +565,7 @@ const NEURO_ONCOLOGY = {
       T("steroid_detail", "Steroid regimen — drug, dose, duration and planned taper"),
     ]),
     ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Documented focal deficit and cranial nerve findings")]),
+    ...examField(),
     ...sec("Functional Status", [
       S("kps", "Performance status — Karnofsky band", [
         "90–100: normal activity",
@@ -592,6 +633,7 @@ const NEURO_ONCOLOGY = {
       S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", "6 months", NOT_DOCUMENTED]),
       S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
     ]),
+    ...scoreBlock(),
     ...guidanceBlock("nsg_neuro_oncology"),
   ],
   guidelineBasis: ["AANS/CNS", "WHO ICD-11 MMS"],
@@ -750,6 +792,7 @@ const POSTOP_PROGRESS = {
       T("interval_events", "What happened since the last entry — symptoms, events, results reviewed"),
     ]),
     ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Focal deficit and cranial nerve findings today")]),
+    ...examField(),
     ...vitalsBlock(),
     ...examBlock(),
     ...sec("Wound, Drains & Observations", [
@@ -811,6 +854,7 @@ const DISCHARGE = {
       T("hospital_course", "Hospital course — complications, decisions taken and the response to treatment"),
     ]),
     ...sec("Status at Discharge", [...gcsBlock(), T("deficit", "Residual deficit and functional status at discharge")]),
+    ...examField(),
     ...sec("Wound & Follow-Up Care", [
       S("wound_status", "Wound status at discharge", ["Healed / dry", "Clean — sutures or staples in place", "CSF leak", "Infection — under treatment", NOT_DOCUMENTED]),
       S("shunt_status", "Device status at discharge", ["No device", "Functioning — setting recorded", "Malfunction — plan documented", NOT_DOCUMENTED]),
@@ -836,6 +880,625 @@ const DISCHARGE = {
   guidelineBasis: ["NICE NG232", "AANS/CNS", "WHO ICD-11 MMS"],
 };
 
+// ---------------------------------------------------------------------------
+// 11. Aneurysm & AVM Assessment (unruptured and elective vascular work)
+// ---------------------------------------------------------------------------
+const ANEURYSM_AVM = {
+  key: "nsg_aneurysm_avm",
+  label: "Aneurysm & AVM Assessment",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Presentation & Vascular History", [
+      I("presenting_complaint", "Presenting complaint — and the question this assessment answers", R),
+      T("hpi", "History of present illness — headache pattern, sentinel bleed, seizure, focal symptoms, cranial nerve palsy, tempo", R),
+      S("rupture_status", "Rupture status at this assessment", [
+        "Unruptured — incidental finding",
+        "Unruptured — symptomatic (mass effect or cranial nerve palsy)",
+        "Ruptured — current admission",
+        "Rupture status not established",
+      ]),
+      I("onset_time", "Time of onset when ruptured, or time last seen well", when("rupture_status", "Ruptured — current admission")),
+      S("family_history", "Family history of intracranial aneurysm or subarachnoid haemorrhage", [
+        "None documented",
+        "First-degree relative affected",
+        "Multiple relatives affected",
+        "Unknown",
+      ]),
+      S("risk_factors", "Associated conditions and risk factors documented", [
+        "None documented",
+        "Hypertension",
+        "Current smoking",
+        "Autosomal dominant polycystic kidney disease",
+        "Connective tissue disorder",
+        "Multiple of the above",
+        "Unknown",
+      ]),
+      S("previous_treatment", "Previous treatment of this or another lesion", [
+        "No previous treatment",
+        "Coiling",
+        "Clipping",
+        "Flow diversion",
+        "Embolisation",
+        "Radiosurgery",
+        NOT_DOCUMENTED,
+      ]),
+      T("symptom_detail", "Symptoms and their time course — thunderclap headache, neck stiffness, photophobia, seizure, visual change, cranial nerve palsy"),
+    ]),
+    ...sec("Neurological Status", [
+      ...gcsBlock(),
+      S("wfns", "WFNS grade at worst documented", ["1", "2", "3", "4", "5", NOT_DOCUMENTED]),
+      S("fisher", "Modified Fisher grade on CT", ["1", "2", "3", "4", NOT_DOCUMENTED]),
+      T("deficit", "Documented focal deficit and cranial nerve findings"),
+    ]),
+    ...examField(),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Vascular Imaging & Lesion Detail", [
+      S("vascular_study", "Vascular imaging performed", [
+        "CT angiography — lesion identified",
+        "MR angiography — lesion identified",
+        "Digital subtraction angiography — lesion identified",
+        "No lesion identified",
+        "Not performed",
+        "Pending",
+      ]),
+      S(
+        "lesion_type",
+        "Lesion documented",
+        [
+          "Saccular aneurysm",
+          "Fusiform aneurysm",
+          "Arteriovenous malformation",
+          "Dural arteriovenous fistula",
+          "Cavernous malformation",
+          "Other vascular lesion",
+          NOT_DOCUMENTED,
+        ]
+      ),
+      I("lesion_location", "Location and laterality as documented"),
+      N("lesion_size_mm", "Maximum lesion size documented (mm)", { min: 0, max: 100 }),
+      S("multiplicity", "Multiplicity", ["Single lesion", "Multiple lesions", NOT_DOCUMENTED]),
+      T("avm_features", "AVM features as documented — nidus size, feeding arteries, venous drainage, associated aneurysms", when("lesion_type", "Arteriovenous malformation")),
+      T("imaging_detail", "Neuroradiology detail the plan rests on — blood distribution, hydrocephalus, infarct, mass effect, calcification"),
+    ]),
+    ...scoreBlock(),
+    ...icdBlock("Search the lesion, e.g. cerebral aneurysm, arteriovenous malformation"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including mimics considered and excluded", R),
+      T("formulation", "Formulation — rupture status, the natural history discussed, and the treatment decision with its reasoning"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("treatment_plan", "Plan for the lesion", [
+        "Observation — risks discussed and documented",
+        "Endovascular coiling",
+        "Surgical clipping",
+        "Flow diversion",
+        "AVM resection",
+        "Embolisation then resection",
+        "Radiosurgery referral",
+        "Decision pending MDT or transfer",
+        NOT_DOCUMENTED,
+      ]),
+      I("procedure_planned", "Procedure planned", when("treatment_plan", "Endovascular coiling", "Surgical clipping", "Flow diversion", "AVM resection", "Embolisation then resection", "Radiosurgery referral")),
+      S("consent_status", "Consent discussion recorded", [
+        "Not yet discussed",
+        "Discussed — risks, benefits and alternatives documented",
+        "Declined by the patient",
+        "Not applicable",
+      ]),
+      S("bp_target", "Blood pressure target documented", ["Yes — target and agent recorded", "No", NOT_DOCUMENTED], when("rupture_status", "Ruptured — current admission")),
+      S("nimodipine", "Nimodipine", ["Started", "Not started — reason documented", "Not applicable", NOT_DOCUMENTED]),
+      S("vasospasm_monitoring", "Vasospasm surveillance", ["Not applicable", "TCD / CTA surveillance arranged", "Clinical vasospasm — treatment started", NOT_DOCUMENTED], when("rupture_status", "Ruptured — current admission")),
+      S("seizure_prophylaxis", "Seizure prophylaxis", ["Not started", "Started — duration documented", "Continued from pre-existing therapy", NOT_DOCUMENTED]),
+      S("hydrocephalus_management", "Hydrocephalus management", ["No hydrocephalus", "External ventricular drain", "Lumbar drain", "Shunt", "Observed — no drainage", NOT_DOCUMENTED]),
+      T("monitoring_plan", "What is monitored — observations, blood pressure, sodium, repeat imaging"),
+    ]),
+    ...sec("Follow-Up & Safety Advice", [
+      S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", "6 months", NOT_DOCUMENTED]),
+      S("imaging_surveillance", "Imaging surveillance arranged", ["Not applicable", "Arranged — modality and interval documented", NOT_DOCUMENTED]),
+      S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
+      T("family_communication", "Communication with the patient and family — what was explained, by whom and when"),
+    ]),
+    ...guidanceBlock("nsg_aneurysm_avm"),
+  ],
+  guidelineBasis: [],
+};
+
+// ---------------------------------------------------------------------------
+// 12. Spinal Cord Injury & Cord Compression (ISNCSCI)
+// ---------------------------------------------------------------------------
+const SPINAL_CORD = {
+  key: "nsg_spinal_cord",
+  label: "Spinal Cord Injury & Cord Compression (ISNCSCI)",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Onset & Mechanism", [
+      I("presenting_complaint", "Presenting complaint — and the question this assessment answers", R),
+      S("cord_cause", "Cause of the cord injury or compression", [
+        "Traumatic",
+        "Tumour",
+        "Degenerative",
+        "Infection or abscess",
+        "Haematoma",
+        "Vascular",
+        "Other",
+        "Not established",
+      ]),
+      S("mechanism", "Mechanism when traumatic", [
+        "Road traffic collision",
+        "Fall from height",
+        "Fall from standing",
+        "Assault",
+        "Sport-related",
+        "Penetrating injury",
+        "Other",
+        NOT_DOCUMENTED,
+      ], when("cord_cause", "Traumatic")),
+      I("onset_time", "Time of onset or injury"),
+      S("onset_pattern", "Onset", ["Sudden", "Progressive over hours", "Progressive over days", "Progressive over weeks", "Unknown"]),
+      T("presenting_features", "Presenting features — weakness, sensory change, sphincter dysfunction, pain, respiratory compromise"),
+      S("respiratory", "Respiratory status", ["No compromise", "Compromise — documented below", "Ventilated", "Unable to assess"]),
+      S("bladder_bowel", "Bladder or bowel dysfunction", ["No", "New — since this episode", "Long-standing", "Unable to assess"]),
+    ]),
+    ...sec("Spinal Precautions & Transfer", [
+      S("spinal_precautions", "Spinal precautions", ["Maintained — documented", "Cleared — criteria documented", "Not applicable"]),
+      S("transfer_status", "Transfer status", ["Not transferred", "Accepted for transfer", "Transferred in", NOT_DOCUMENTED]),
+      I("time_to_imaging", "Time imaging was performed"),
+    ]),
+    ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Documented deficit — myotomes, dermatomes, reflexes, upper and lower motor neurone signs")]),
+    ...examField(),
+    ...isncsciBlock(),
+    ...sec("Cord Syndrome & Physiology", [
+      S("cord_syndrome", "Pattern documented", [
+        "Complete cord injury",
+        "Anterior cord syndrome",
+        "Central cord syndrome",
+        "Brown-Séquard syndrome",
+        "Posterior cord syndrome",
+        "Conus medullaris syndrome",
+        "Cauda equina syndrome",
+        "Not classifiable — documented as such",
+      ]),
+      S("neurogenic_shock", "Neurogenic shock", ["No", "Suspected", "Confirmed", "Unable to assess"]),
+      S("spinal_shock", "Spinal shock (flaccid areflexia below the lesion)", ["Not present", "Present — documented", "Unable to assess"]),
+      T("level_detail", "The level and its basis — sensory level, motor level, and what is spared below it"),
+    ]),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Imaging & Injury Classification", [
+      S("imaging", "Imaging reviewed", ["CT", "MRI", "CT and MRI", "Not performed / not available"]),
+      S("cord_signal", "Cord signal change on MRI", [
+        "No cord signal change",
+        "Cord oedema",
+        "Cord contusion or haemorrhage",
+        "Cord compression without signal change",
+        "Not documented",
+      ]),
+      S("canal_compromise", "Canal compromise documented", ["None", "Mild", "Moderate", "Severe", "Not documented"]),
+      S("ao_spine_type", "AO Spine injury type as documented (traumatic injuries)", [
+        "A — compression injury",
+        "B — distraction injury",
+        "C — translation injury",
+        "Not applicable",
+        "Not documented",
+      ]),
+      T("imaging_detail", "Neuroradiology detail the plan rests on — fracture, dislocation, disc, haematoma, ligamentous injury"),
+      T("other_injuries", "Associated injuries documented"),
+    ]),
+    ...scoreBlock(),
+    ...icdBlock("Search the injury or cause, e.g. spinal cord injury, cord compression"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including non-compressive causes of the deficit", R),
+      T("formulation", "Formulation — level, completeness, the mechanism or cause, and what explains the deficit"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("decompression_plan", "Decompression decision", [
+        "No surgical indication documented",
+        "Decompression planned — urgent",
+        "Decompression planned — elective",
+        "Decision pending imaging or transfer",
+        NOT_DOCUMENTED,
+      ]),
+      I("procedure_planned", "Procedure planned", when("decompression_plan", "Decompression planned — urgent", "Decompression planned — elective")),
+      S("map_target", "Mean arterial pressure target documented", ["Yes — target recorded", "No", NOT_DOCUMENTED]),
+      S("steroid_decision", "Steroid decision", [
+        "Not given — reason documented",
+        "Given — per local protocol with the regimen recorded",
+        "Not applicable",
+      ]),
+      T("steroid_regimen", "Steroid regimen and who advised it", when("steroid_decision", "Given — per local protocol with the regimen recorded")),
+      S("bladder_management", "Bladder management", ["Indwelling catheter", "Intermittent catheterisation", "Spontaneous voiding", "Not documented"]),
+      S("vte_prophylaxis", "VTE prophylaxis", ["Not started — documented reason", "Mechanical only", "Pharmacological started", "Deferred — timing documented", NOT_DOCUMENTED]),
+      S("pressure_care", "Pressure area and positioning plan documented", ["Yes", "No", NOT_DOCUMENTED]),
+      T("monitoring_plan", "What is monitored — observations, respiratory function, neurology, bladder, skin"),
+    ]),
+    ...sec("Follow-Up & Rehabilitation", [
+      S("rehab", "Rehabilitation arranged", ["Not required", "Spinal injuries unit referral", "Inpatient neuro-rehabilitation", "Outpatient physiotherapy", NOT_DOCUMENTED]),
+      S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", NOT_DOCUMENTED]),
+      S("red_flags_given", "Safety-netting advice given to the patient or family", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
+    ]),
+    ...guidanceBlock("nsg_spinal_cord"),
+  ],
+  guidelineBasis: [],
+};
+
+// ---------------------------------------------------------------------------
+// 13. Spinal Tumour Assessment
+// ---------------------------------------------------------------------------
+const SPINAL_TUMOUR = {
+  key: "nsg_spinal_tumour",
+  label: "Spinal Tumour Assessment",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Presentation & Oncology History", [
+      I("presenting_complaint", "Presenting complaint — and the question this assessment answers", R),
+      T("hpi", "History of present illness — pain character (mechanical or night/rest pain), progression, weakness, sphincter change", R),
+      S("pain_pattern", "Pain pattern documented", ["Mechanical — worse on movement or load", "Night or rest pain", "Both", "No pain documented"]),
+      S("known_primary", "Known primary cancer", ["No known primary", "Known primary — site documented below", "Primary not established"]),
+      I("primary_site", "Primary site and histology when known", when("known_primary", "Known primary — site documented below")),
+      S("steroid", "Steroid at the time of this assessment", ["Not given", "Given — documented indication", "Given — no indication documented"]),
+      T("steroid_detail", "Steroid regimen — drug, dose, duration and planned taper"),
+      S("functional_status", "Functional status before this episode", ["Independent", "Needs help with some activities", "Needs help with most activities", "Bed-bound", NOT_DOCUMENTED]),
+      T("oncological_status", "Systemic disease status as documented by the oncology team"),
+    ]),
+    ...sec("Neurological Status", [...gcsBlock(), T("deficit", "Documented deficit — level, myotomes, dermatomes, reflexes")]),
+    ...examField(),
+    ...isncsciBlock({ key: "cord_signs", in: ["Present — documented below"] }),
+    ...sec("Cord Involvement", [
+      S("cord_signs", "Cord involvement on examination", ["No cord signs documented", "Present — documented below", "Unable to assess"]),
+      T("cord_detail", "Cord findings — level, myelopathy, sphincter involvement, progression", when("cord_signs", "Present — documented below")),
+    ]),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Imaging & Tissue Diagnosis", [
+      S("imaging", "Imaging reviewed", ["MRI whole spine", "MRI segment only", "CT", "CT and MRI", "Not performed / not available"]),
+      I("level", "Level(s) involved"),
+      S("compartment", "Compartment documented", ["Extradural", "Intradural extramedullary", "Intramedullary", "Vertebral body only", "Not established"]),
+      S("lesion_count", "Number of lesions documented", ["Single", "Multiple", "Not documented"]),
+      T("imaging_detail", "Imaging characteristics — cord compression, signal change, bone involvement, pathological fracture, deformity"),
+      S("histology", "Tissue diagnosis", [
+        "Not yet available",
+        "Histology available — documented below",
+        "Biopsy not planned — decision documented",
+      ]),
+      T("histology_detail", "Histology and grade as reported", when("histology", "Histology available — documented below")),
+    ]),
+    ...scoreBlock(),
+    ...icdBlock("Search the tumour, e.g. spinal metastasis, intradural tumour"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including infection, degenerative and inflammatory mimics", R),
+      T("formulation", "Formulation — what is established, what is presumed, and how the deficit is explained"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("mdt", "MDT discussion", ["Not yet discussed", "Discussed — recommendation documented", "Not applicable"]),
+      S("surgical_plan", "Surgical plan", [
+        "No surgery planned",
+        "Biopsy",
+        "Decompression",
+        "Decompression and stabilisation",
+        "En bloc resection",
+        "Decision pending",
+        NOT_DOCUMENTED,
+      ]),
+      I("procedure_planned", "Procedure planned", when("surgical_plan", "Biopsy", "Decompression", "Decompression and stabilisation", "En bloc resection")),
+      S("adjuvant_plan", "Adjuvant treatment plan recorded", ["Not applicable", "Oncology referral made", "Radiotherapy referral made", "Awaiting histology", NOT_DOCUMENTED]),
+      S("prognosis_discussed", "Prognosis discussion documented", ["Yes — with the patient", "Yes — with the family", "Not yet", NOT_DOCUMENTED]),
+      T("monitoring_plan", "What is monitored — neurology, steroid plan, imaging interval, oncological review"),
+    ]),
+    ...sec("Follow-Up & Safety Advice", [
+      S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", NOT_DOCUMENTED]),
+      S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
+    ]),
+    ...guidanceBlock("nsg_spinal_tumour"),
+  ],
+  guidelineBasis: [],
+};
+
+// ---------------------------------------------------------------------------
+// 14. Functional, Epilepsy & Stereotactic Note
+// ---------------------------------------------------------------------------
+const FUNCTIONAL = {
+  key: "nsg_functional",
+  label: "Functional, Epilepsy & Stereotactic Note",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Referral & Condition", [
+      I("referral_question", "Clinical question this assessment answers", R),
+      S("condition", "Condition under assessment", [
+        "Parkinson disease",
+        "Essential tremor",
+        "Dystonia",
+        "Drug-resistant epilepsy",
+        "Trigeminal neuralgia",
+        "Chronic neuropathic pain",
+        "Spasticity",
+        "Other movement disorder",
+        NOT_DOCUMENTED,
+      ]),
+      T("hpi", "History of present illness — onset, course, treatment trials, functional impact", R),
+      S("medication_trials", "Medical treatment already tried documented", ["Yes — documented below", "No", NOT_DOCUMENTED]),
+      T("medication_detail", "Drugs, doses, durations and response", when("medication_trials", "Yes — documented below")),
+    ]),
+    ...sec("Seizure Assessment", [
+      S("seizure_type", "Seizure type documented", ["Focal aware", "Focal impaired awareness", "Focal to bilateral tonic-clonic", "Generalised tonic-clonic", "Absence", "Multiple types", "Not documented"], when("condition", "Drug-resistant epilepsy")),
+      I("seizure_frequency", "Seizure frequency (as documented)", when("condition", "Drug-resistant epilepsy")),
+      T("semiology", "Semiology as documented by the patient or witnesses — aura, automatisms, lateralising signs, duration, recovery", when("condition", "Drug-resistant epilepsy")),
+      S("seizure_injury", "Injury or status epilepticus documented", ["No", "Yes", "Not documented"], when("condition", "Drug-resistant epilepsy")),
+      T("aed_regimen", "Anti-seizure medications — drugs, doses, adherence and side effects", when("condition", "Drug-resistant epilepsy")),
+    ]),
+    ...sec("Neurological & Cognitive Status", [
+      T("deficit", "Documented neurological findings — tremor, rigidity, bradykinesia, dystonia, gait, cranial nerves"),
+      S("cognition", "Cognitive assessment documented", ["No concern documented", "Concern documented — neuropsychology referred", "Neuropsychology completed", "Not documented"]),
+      S("mood", "Mood or psychiatric history documented", ["No concern documented", "Concern documented", "Not documented"]),
+    ]),
+    ...examField(),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Workup & Targeting", [
+      T("imaging_detail", "MRI findings relevant to targeting — atrophy, vascular burden, lesion, hippocampal changes"),
+      S("eeg", "Electroencephalography", ["Not performed", "Routine EEG — reviewed", "Video-EEG telemetry — reviewed", "Pending"]),
+      S("stereotactic_planning", "Stereotactic planning documented", ["Not yet planned", "Planned — targeting and trajectory documented", "Frame-based", "Frameless"]),
+      I("target", "Target or planned resection documented"),
+      S("neuropsychology", "Neuropsychological assessment", ["Not required", "Referred", "Completed — reviewed", NOT_DOCUMENTED]),
+    ]),
+    ...scoreBlock(),
+    ...icdBlock("Search the condition, e.g. Parkinson disease, drug-resistant epilepsy"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including non-surgical mimics and psychiatric contributors", R),
+      T("formulation", "Formulation — whether the patient meets the criteria for the proposed procedure, and why"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("management", "Management decided", [
+        "Continue medical management",
+        "Refer for MDT or case discussion",
+        "Deep brain stimulation — implantation",
+        "Lesioning procedure",
+        "Resective epilepsy surgery",
+        "Vagus nerve stimulation",
+        "Pain procedure",
+        "Decision pending",
+        NOT_DOCUMENTED,
+      ]),
+      I("procedure_planned", "Procedure planned", when("management", "Deep brain stimulation — implantation", "Lesioning procedure", "Resective epilepsy surgery", "Vagus nerve stimulation", "Pain procedure")),
+      S("consent_status", "Consent and expectations discussion documented", [
+        "Not yet discussed",
+        "Discussed — benefits, risks, alternatives and programming burden documented",
+        "Declined by the patient",
+        "Not applicable",
+      ]),
+      T("programming_plan", "Programming / follow-up plan for the device or procedure"),
+      T("monitoring_plan", "What is monitored — seizure diary, medication changes, device checks, mood and cognition"),
+    ]),
+    ...sec("Follow-Up & Safety Advice", [
+      S("followup_interval", "Follow-up arranged", ["< 1 week", "1–2 weeks", "4–6 weeks", "3 months", "6 months", NOT_DOCUMENTED]),
+      S("driving_advice", "Driving advice given", ["Advised on the legal restriction — documented", "Not applicable", NOT_DOCUMENTED]),
+      S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
+    ]),
+    ...guidanceBlock("nsg_functional"),
+  ],
+  guidelineBasis: [],
+};
+
+// ---------------------------------------------------------------------------
+// 15. Peripheral Nerve & Plexus Assessment
+// ---------------------------------------------------------------------------
+const PERIPHERAL_NERVE = {
+  key: "nsg_peripheral_nerve",
+  label: "Peripheral Nerve & Plexus Assessment",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Presentation & Mechanism", [
+      I("presenting_complaint", "Presenting complaint — and the question this assessment answers", R),
+      S("mechanism", "Mechanism", ["Compression", "Laceration", "Traction or stretch", "Injection injury", "Fracture-related", "Tumour", "Iatrogenic", "Unknown"]),
+      I("onset_time", "Time of onset or injury"),
+      T("distribution", "Distribution of symptoms — which nerve or plexus territory, and its boundaries"),
+      S("laterality", "Side", SIDE),
+      T("weakness_detail", "Weakness — what the patient cannot do, and its progression"),
+      T("sensory_detail", "Sensory change — distribution and character"),
+      N("pain_score", "Pain score (0–10)", { min: 0, max: 10 }),
+      S("tinel", "Tinel sign", ["Absent", "Present at the documented point", "Not examined"]),
+    ]),
+    ...sec("Neurological Status", [
+      I("nerve_involved", "Nerve or plexus involved as documented"),
+      T("deficit", "Documented deficit — power by muscle, sensory loss, reflexes"),
+      S("facial_nerve", "Facial nerve function (when the facial nerve is involved)", ["Not involved", "Involved — graded below", "Not examined"]),
+    ]),
+    ...examField(),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Neurophysiology & Imaging", [
+      S("neurophysiology", "Neurophysiology", ["Not performed", "Nerve conduction studies — reviewed", "EMG — reviewed", "Both reviewed", "Ordered — pending"]),
+      T("neurophysiology_detail", "Neurophysiology findings as reported — axonal or demyelinating, severity, denervation"),
+      S("imaging", "Imaging reviewed", ["Not performed", "Ultrasound — reviewed", "MRI plexus — reviewed", "MRI and ultrasound — reviewed"]),
+      T("imaging_detail", "Imaging findings — neuroma, entrapment point, mass, continuity"),
+    ]),
+    ...scoreBlock(),
+    ...icdBlock("Search the condition, e.g. carpal tunnel syndrome, ulnar neuropathy, brachial plexus injury"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including radiculopathy, plexopathy and systemic causes", R),
+      T("formulation", "Formulation — the level of the lesion, its severity and whether it is likely to recover"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("management", "Management decided", [
+        "Conservative — observation and therapy",
+        "Nerve conduction studies first",
+        "Decompression — planned",
+        "Repair — planned",
+        "Graft or transfer — planned",
+        "Tumour or neuroma excision",
+        "Decision pending",
+        NOT_DOCUMENTED,
+      ]),
+      I("procedure_planned", "Procedure planned", when("management", "Decompression — planned", "Repair — planned", "Graft or transfer — planned", "Tumour or neuroma excision")),
+      S("therapy", "Therapy and splinting arranged", ["Yes", "No", NOT_DOCUMENTED]),
+      T("monitoring_plan", "What is monitored — serial power testing, sensory recovery, Tinel progression, therapy review"),
+    ]),
+    ...sec("Follow-Up & Safety Advice", [
+      S("followup_interval", "Follow-up arranged", ["1–2 weeks", "4–6 weeks", "3 months", "6 months", NOT_DOCUMENTED]),
+      S("red_flags_given", "Safety-netting advice given", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
+    ]),
+    ...guidanceBlock("nsg_peripheral_nerve"),
+  ],
+  guidelineBasis: [],
+};
+
+// ---------------------------------------------------------------------------
+// 16. Paediatric Neurosurgery Note (congenital and developmental)
+// ---------------------------------------------------------------------------
+const PAEDIATRIC = {
+  key: "nsg_paediatric",
+  label: "Paediatric Neurosurgery Note",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Presentation & Developmental History", [
+      I("presenting_complaint", "Presenting complaint — and the question this assessment answers", R),
+      S("age_group", "Age group", ["Neonate (0–28 days)", "Infant (1–12 months)", "Child (1–5 years)", "Child (6–12 years)", "Adolescent (13–18 years)"]),
+      T("birth_history", "Birth history — gestation, delivery, birth weight, neonatal course, prior surgery"),
+      T("developmental_history", "Developmental history — milestones achieved, regression, school function"),
+      S("congenital_condition", "Congenital or developmental condition documented", [
+        "Myelomeningocele",
+        "Tethered cord",
+        "Chiari malformation",
+        "Craniosynostosis",
+        "Encephalocele",
+        "Arachnoid cyst",
+        "Congenital hydrocephalus",
+        "Other congenital condition",
+        "None documented",
+      ]),
+      T("symptoms", "Symptoms and their time course — vomiting, irritability, regression, seizure, head shape, back lesion, gait"),
+      S("feeding", "Feeding and growth documented", ["Normal for age", "Concern documented", "Not documented"]),
+    ]),
+    ...sec("Neurological Status", [
+      T("deficit", "Neurological findings — tone, power, cranial nerves, reflexes; note that infant scales differ from adult scales"),
+      S("fontanelle", "Fontanelle", ["Soft and flat", "Bulging", "Sunken", "Closed", "Not applicable"]),
+      S("head_circumference", "Head circumference", ["Within expected range for age", "Above expected range", "Below expected range", "Not documented"]),
+      S("consciousness_child", "Conscious level as documented for age", ["Alert and interactive", "Irritable but consolable", "Lethargic", "Unresponsive", "Sedated", "Not documented"]),
+    ]),
+    ...examField(),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Imaging & Findings", [
+      S("imaging", "Imaging reviewed", ["Cranial ultrasound", "CT", "MRI", "CT and MRI", "Not performed / not available"]),
+      T("imaging_detail", "Imaging findings — ventricular size, extra-axial fluid, hindbrain position, cord tethering, suture fusion"),
+      S("hydrocephalus", "Hydrocephalus documented", ["No", "Yes — new", "Yes — known and stable", "Yes — with device malfunction"]),
+    ]),
+    ...icdBlock("Search the condition, e.g. congenital hydrocephalus, myelomeningocele, craniosynostosis"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including non-surgical causes of the presentation", R),
+      T("formulation", "Formulation — what is established, the timing of intervention, and the developmental considerations"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("management", "Management decided", [
+        "Observation and developmental follow-up",
+        "Further imaging",
+        "CSF diversion",
+        "Shunt revision",
+        "Cranial remodelling",
+        "Tethered cord release",
+        "Myelomeningocele closure",
+        "Chiari decompression",
+        "Referral to another centre",
+        "Decision pending",
+        NOT_DOCUMENTED,
+      ]),
+      I("procedure_planned", "Procedure planned", when("management", "CSF diversion", "Shunt revision", "Cranial remodelling", "Tethered cord release", "Myelomeningocele closure", "Chiari decompression")),
+      S("anaesthetic_review", "Anaesthetic and airway review documented", ["Yes", "Referral made", "Not yet", "Not applicable"]),
+      S("safeguarding", "Safeguarding or social concerns documented", ["None documented", "Concern documented — referred", "Not documented"]),
+      T("monitoring_plan", "What is monitored — head circumference, fontanelle, development, shunt function, wound"),
+    ]),
+    ...sec("Follow-Up & Family Communication", [
+      S("followup_interval", "Follow-up arranged", ["1–2 weeks", "4–6 weeks", "3 months", "6 months", "12 months", NOT_DOCUMENTED]),
+      T("family_communication", "What was explained to the family, by whom and when"),
+      S("red_flags_given", "Safety-netting advice given to the family", ["Yes — verbal", "Yes — verbal and written", "No", NOT_DOCUMENTED]),
+    ]),
+    ...guidanceBlock("nsg_paediatric"),
+  ],
+  guidelineBasis: [],
+};
+
+// ---------------------------------------------------------------------------
+// 17. Raised ICP & Cerebral Oedema Note
+// ---------------------------------------------------------------------------
+const RAISED_ICP = {
+  key: "nsg_icp",
+  label: "Raised ICP & Cerebral Oedema Note",
+  specialty: "neurosurgery",
+  fields: [
+    ...sec("Presentation & Cause", [
+      I("presenting_complaint", "Presenting complaint — and the question this assessment answers", R),
+      S("cause", "Cause of the raised pressure or oedema", [
+        "Tumour with oedema",
+        "Intracranial haemorrhage",
+        "Traumatic brain injury",
+        "Large territory infarct with oedema",
+        "CNS infection",
+        "Hepatic or metabolic encephalopathy",
+        "Idiopathic intracranial hypertension",
+        "Post-operative swelling",
+        "Other",
+        "Not established",
+      ]),
+      I("onset_time", "Time of onset"),
+      T("symptoms", "Symptoms — headache, vomiting, visual obscurations, drowsiness, seizure, focal change"),
+      S("seizure", "Seizure", ["No", "Yes — current encounter", "Yes — history"]),
+      S("anticoag", "Anticoagulant / antiplatelet status", [
+        "None",
+        "Antiplatelet only",
+        "Anticoagulated — reversal started",
+        "Anticoagulated — not reversed",
+        "Unknown",
+      ]),
+      T("oncological_or_medical", "Relevant background — oncological treatment, steroid use, anticoagulation, comorbidity"),
+    ]),
+    ...sec("Neurological Status", [
+      ...gcsBlock(),
+      S("conscious_trend", "Conscious level trend since the previous observation", ["Improved", "Unchanged", "Deteriorating", "Not documented"]),
+      T("deficit", "Documented focal deficit and cranial nerve findings"),
+      S("herniation_signs", "Signs documented", [
+        "None documented",
+        "Uncal herniation signs",
+        "Central transtentorial signs",
+        "Tonsillar herniation signs",
+        "Unable to assess",
+      ]),
+    ]),
+    ...examField(),
+    ...vitalsBlock(),
+    ...examBlock(),
+    ...sec("Monitoring & Imaging", [
+      S("icp_monitor", "Intracranial pressure monitoring", ["Not monitored", "External ventricular drain", "Intraparenchymal monitor", "Monitored — modality not documented"]),
+      N("icp_value", "Latest ICP documented (mmHg)", { min: 0, max: 120 }),
+      N("cpp_value", "Latest cerebral perfusion pressure (mmHg)", { min: 0, max: 200 }),
+      N("midline_shift", "Midline shift documented (mm)", { min: 0, max: 60 }),
+      S("imaging", "Imaging reviewed", ["CT", "MRI", "CT and MRI", "Not performed / not available"]),
+      T("imaging_detail", "Imaging findings — oedema, effacement, cisterns, herniation, ventricular size, territory involved"),
+      S("tier", "Therapy tier documented", ["Tier 0 — general measures", "Tier 1 — osmotic therapy", "Tier 2 — sedation and controlled ventilation", "Tier 3 — decompressive surgery", "Not documented"]),
+    ]),
+    ...scoreBlock(),
+    ...icdBlock("Search the cause, e.g. cerebral oedema, intracranial hypertension"),
+    ...sec("Assessment & Differential Diagnosis", [
+      T("differential", "Differential diagnosis — including causes of a depressed conscious level other than raised pressure", R),
+      T("formulation", "Formulation — the cause, the trend, and what the documented values are explained by"),
+    ]),
+    ...sec("Management & Monitoring", [
+      S("osmotherapy", "Osmotic therapy", ["Not given", "Mannitol given — regimen documented", "Hypertonic saline given — regimen documented", "Given — regimen not documented"]),
+      S("sedation", "Sedation and ventilation", ["Not required", "Sedated — target documented", "Sedated and paralysed", "Not documented"]),
+      S("steroid", "Steroid", ["Not given", "Given — documented indication", "Given — no indication documented"]),
+      S("surgical", "Surgical decompression", ["Not indicated", "Decompressive craniectomy performed", "Decompressive craniectomy planned", "Tumour resection planned", "Decision pending"]),
+      I("sodium_target", "Sodium and osmolality targets documented"),
+      S("nursing", "Nursing position and precautions documented", ["Head up 30 degrees — documented", "Not documented"]),
+      T("monitoring_plan", "What is monitored, by whom, and what triggers escalation or imaging"),
+    ]),
+    ...sec("Communication & Follow-Up", [
+      T("family_communication", "Communication with the patient and family — what was explained, by whom and when"),
+      S("followup_interval", "Review arranged", ["Continuing critical care review", "< 1 week", "1–2 weeks", "4–6 weeks", NOT_DOCUMENTED]),
+    ]),
+    ...guidanceBlock("nsg_icp"),
+  ],
+  guidelineBasis: [],
+};
+
 // `guidelineBasis` is derived from the attribution registry rather than typed
 // per template, so a note can never cite a document that is not defined — and
 // every note carries the edition/date of the sources it actually follows.
@@ -850,6 +1513,13 @@ export const NEUROSURGERY_DOCS = [
   SPINAL_OPERATIVE,
   POSTOP_PROGRESS,
   DISCHARGE,
+  ANEURYSM_AVM,
+  SPINAL_CORD,
+  SPINAL_TUMOUR,
+  FUNCTIONAL,
+  PERIPHERAL_NERVE,
+  PAEDIATRIC,
+  RAISED_ICP,
 ].map((doc) => ({ ...doc, guidelineBasis: guidelineBasisLabels(doc.key) }));
 
 export const NEUROSURGERY_NOTE_KEYS = NEUROSURGERY_DOCS.map((d) => d.key);

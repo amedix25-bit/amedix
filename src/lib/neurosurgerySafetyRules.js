@@ -19,6 +19,7 @@
 //     make the row look sourced.
 
 import { NSG_PROVENANCE, nsgReference } from "@/lib/neurosurgeryReferences";
+import { nsgExamFlags } from "@/lib/neurosurgeryExam";
 
 export { NSG_PROVENANCE };
 
@@ -32,6 +33,9 @@ export const NSG_SAFETY_CONCERNS = [
   { key: "shunt", label: "Shunt or EVD malfunction / infection" },
   { key: "postop_haematoma", label: "Post-operative haematoma or swelling" },
   { key: "seizure", label: "Seizure — new or recurrent" },
+  { key: "new_deficit", label: "New focal deficit on examination" },
+  { key: "meningism", label: "Meningeal signs — infection or blood" },
+  { key: "neurogenic_shock", label: "Neurogenic shock" },
   { key: "vasospasm", label: "Vasospasm after aneurysmal haemorrhage" },
   { key: "vte_timing", label: "VTE prophylaxis timing around neurosurgery" },
   { key: "steroid", label: "Steroid use — indication and taper" },
@@ -230,7 +234,9 @@ const RULES = [
       },
     ],
     when: (values, concerns) =>
-      isOneOf(values, "shunt_status", ["Suspected malfunction", "Confirmed malfunction"]) || has(concerns, "shunt"),
+      isOneOf(values, "shunt_status", ["Suspected malfunction", "Confirmed malfunction"]) ||
+      isOneOf(values, "hydrocephalus", ["Yes — with device malfunction"]) ||
+      has(concerns, "shunt"),
   },
   {
     key: "postop_haematoma",
@@ -370,6 +376,126 @@ const RULES = [
     when: (values, concerns) =>
       isOneOf(values, "wound_csf", ["CSF leak", "Infection suspected"]) || has(concerns, "wound"),
   },
+  {
+    key: "deteriorating_consciousness",
+    level: "immediate",
+    title: "Depressed or falling conscious level documented",
+    basis:
+      "A conscious level that is depressed, or lower than the previous observation, requires a senior review and a repeat imaging decision. The record carries the comparison, not just the number.",
+    action:
+      "Record the observation before and after, the time, who was informed, and the imaging or escalation decision that followed.",
+    provenance: "guideline",
+    source: "nice_ng232",
+    population: ALL_AGES,
+    variants: [
+      {
+        source: "aans_tbi_4th",
+        population: ADULT_TBI,
+        note: "Where the adult severe-TBI evidence base is applied, record that guideline as the source.",
+      },
+    ],
+    when: (values, concerns) => {
+      const consciousness = String(values?.nsg_exam?.consciousness || "");
+      const depressed = [
+        "Drowsy — rousable",
+        "Responds to voice",
+        "Responds to pain",
+        "Unresponsive",
+      ].includes(consciousness);
+      return depressed || text(values, "conscious_trend") === "Deteriorating" || has(concerns, "new_deficit");
+    },
+  },
+  {
+    key: "fixed_pupil",
+    level: "immediate",
+    title: "Fixed pupil or pupillary asymmetry documented",
+    basis:
+      "A pupil that is fixed, or differs from the other side by a millimetre or more, is a time-critical finding in a raised-pressure or post-operative patient.",
+    action:
+      "Record the time the finding was identified, the observation before it, who was informed, the imaging arranged and the treatment given.",
+    provenance: "guideline",
+    source: "nice_ng232",
+    population: ALL_AGES,
+    when: (values) => {
+      const flags = nsgExamFlags(values?.nsg_exam);
+      return flags.fixed_pupil || flags.pupil_asymmetry;
+    },
+  },
+  {
+    key: "meningism",
+    level: "same_day",
+    title: "Meningeal signs documented — blood or infection in the subarachnoid space",
+    basis:
+      "Meningeal signs require the CT decision, the lumbar puncture decision and its timing, and — where blood is documented — the vascular study, all recorded together.",
+    action:
+      "Record the CT finding, the lumbar puncture decision and timing, the antibiotic or antiviral decision, and the vascular imaging arranged.",
+    provenance: "guideline",
+    source: "eso_eans_esmint_asah",
+    population: "Adults with suspected subarachnoid haemorrhage (European joint guideline)",
+    variants: [
+      {
+        source: null,
+        population: "Suspected CNS infection",
+        note: "Infection follows the local protocol; no guideline is attributed to it here.",
+      },
+    ],
+    when: (values, concerns) => nsgExamFlags(values?.nsg_exam).meningism || has(concerns, "meningism"),
+  },
+  {
+    key: "new_deficit",
+    level: "same_day",
+    title: "Focal weakness documented on examination",
+    basis:
+      "A documented focal deficit needs a comparison with the previous examination, a senior review and an imaging or escalation decision — the grade alone is not the record.",
+    action:
+      "Record the grade documented, the grade at the previous examination, the time, who reviewed the patient and the decision taken.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values, concerns) =>
+      nsgExamFlags(values?.nsg_exam).weakness_recorded || has(concerns, "new_deficit"),
+  },
+  {
+    key: "cord_syndrome",
+    level: "immediate",
+    title: "Spinal cord syndrome documented — level, completeness and timing",
+    basis:
+      "Where a cord syndrome is documented, the neurological level, the completeness and the timing of decompression are the core of the record.",
+    action:
+      "Record the ISNCSCI levels and AIS grade, the time the deficit was recognised, the imaging arranged, who was informed and the decompression decision.",
+    provenance: "guideline",
+    source: "isncsci_2019",
+    population: "Adults and children with spinal cord injury",
+    when: (values, concerns) =>
+      Boolean(text(values, "cord_syndrome")) || has(concerns, "cord_compression"),
+  },
+  {
+    key: "neurogenic_shock",
+    level: "immediate",
+    title: "Neurogenic shock documented or suspected",
+    basis:
+      "Bradycardia with hypotension after a cervical or high thoracic cord injury is neurogenic shock; the pressure target and the vasopressor decision belong in the record.",
+    action:
+      "Record the pressure target, the fluid and vasopressor decision, the time it was taken and who was informed.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values, concerns) =>
+      isOneOf(values, "neurogenic_shock", ["Suspected", "Confirmed"]) || has(concerns, "neurogenic_shock"),
+  },
+  {
+    key: "facial_nerve",
+    level: "documented",
+    title: "Facial nerve palsy documented — eye protection required",
+    basis:
+      "Incomplete eye closure carries a corneal exposure risk; the eye-care measures and the review arranged belong in the record.",
+    action:
+      "Record the House–Brackmann grade, the eye-care measures given, the referral made and the review arranged.",
+    provenance: "guideline",
+    source: "house_brackmann_1985",
+    population: "Patients with facial nerve palsy",
+    when: (values) => isOneOf(values, "facial_nerve", ["Involved — graded below"]),
+  },
 ];
 
 // A source is shown with its own population and attribution state, so a reader
@@ -405,7 +531,7 @@ export const buildNeurosurgerySafetyPrompts = ({ concerns = [], values = {} } = 
   }).map((rule) => {
     const evidence = [];
     if (gcsTotal(values)) evidence.push(`GCS ${gcsTotal(values)}`);
-    ["pupils", "anticoag", "cranial_ct", "cord_compression", "cauda_equina", "csf_leak", "shunt_status", "wound_csf", "postop_neuro"].forEach(
+    ["pupils", "anticoag", "cranial_ct", "cord_compression", "cauda_equina", "csf_leak", "shunt_status", "wound_csf", "postop_neuro", "cord_syndrome", "neurogenic_shock", "facial_nerve", "lesion_type", "condition"].forEach(
       (key) => {
         const v = text(values, key);
         if (v && !/^(No|None|Not documented|No features|Symmetrical and reactive|None documented)$/i.test(v)) {

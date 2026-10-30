@@ -76,6 +76,45 @@ export const NSG_CODING_INSTRUCTIONS = {
     "The discharge summary carries the diagnoses that were established during the admission, with their status at discharge.",
     "A resolved complication stays recorded as such — it is not deleted because the patient recovered.",
   ],
+  nsg_aneurysm_avm: [
+    "Code the aneurysm or vascular malformation as its own entry, with its documented site; rupture status is recorded in the note's fields, not inferred from the code alone.",
+    "Subarachnoid and intracerebral haemorrhage are coded separately when both are documented.",
+    "Clinical grading (WFNS, Hunt and Hess, Spetzler–Martin) is recorded in this note and is never a code.",
+    "A post-procedure complication is coded as its own entry when it is documented.",
+  ],
+  nsg_spinal_cord: [
+    "Code the cause of the cord injury or compression — the fracture, tumour, abscess or degenerative lesion — rather than a symptom-based entry.",
+    "When the injury is traumatic, code the external cause from its own chapter in addition to the cord injury.",
+    "The ASIA impairment grade and the neurological level are recorded in this note's fields; they are not codes and are never converted into one.",
+    "A cord syndrome is documented in the note only when its pattern is documented on examination — it is not inferred from imaging.",
+  ],
+  nsg_spinal_tumour: [
+    "Code the tumour by its documented site and behaviour; the histological grade and molecular markers are recorded in this note's fields.",
+    "A metastasis is coded as metastatic disease, with the primary site coded additionally when it is known.",
+    "A pathological fracture is recorded as its own entry when documented.",
+    "A radiological impression is never coded as a confirmed neoplasm before tissue diagnosis — the status field records what is established.",
+  ],
+  nsg_functional: [
+    "Code the condition the procedure treats, not the procedure — the target, side and device are recorded in the note's fields and the procedure record.",
+    "A seizure diagnosis is coded only from the documented epilepsy classification; seizure type alone is recorded in the note's fields.",
+    "A device complication (infection, migration, malfunction) is coded as its own entry when documented.",
+  ],
+  nsg_peripheral_nerve: [
+    "Code the specific nerve lesion with its side and cause where documented; a broad 'pain' or 'weakness' entry is not a substitute.",
+    "An injury-related nerve lesion takes the external-cause entry in addition, from its own chapter.",
+    "The severity grading and the neurophysiology findings are recorded in this note's fields, not as codes.",
+  ],
+  nsg_paediatric: [
+    "Code the congenital or developmental condition as documented — not the head-circumference or developmental-delay observation alone.",
+    "A shunt or device complication is coded as its own entry, separate from the underlying hydrocephalus.",
+    "Where an external cause applies, code it from its own chapter in addition to the condition.",
+  ],
+  nsg_icp: [
+    "Code the cause of the raised intracranial pressure — the tumour, haemorrhage, infarct or infection — not the raised pressure as a standalone entry when the cause is documented.",
+    "Cerebral oedema is coded only where it is documented, and in addition to its cause.",
+    "A herniation syndrome documented on imaging or examination is recorded as its own entry.",
+    "The Rotterdam CT score and ICP values are recorded in this note's fields and are never codes.",
+  ],
 };
 
 export const codingInstructionsFor = (noteKey) => NSG_CODING_INSTRUCTIONS[noteKey] || [];

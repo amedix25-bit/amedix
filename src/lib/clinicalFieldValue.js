@@ -19,6 +19,9 @@ import { formatMedicationSafety } from "@/lib/cardiologyMedicationSafety";
 import { formatEscalation } from "@/lib/cardiologyEscalation";
 import { auditCodedDiagnoses } from "@/lib/cardiologyCodingGuidance";
 import { formatNeurosurgeryGuidance } from "@/lib/neurosurgeryCoding";
+import { formatNeurosurgicalExam } from "@/lib/neurosurgeryExam";
+import { formatIsncsci } from "@/lib/neurosurgeryIsncsci";
+import { formatNeurosurgeryScores } from "@/lib/neurosurgeryScores";
 import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
@@ -192,6 +195,9 @@ export function formatFieldValue(type, value) {
     return formatCardiologyStructured(type, value);
   if (type === "neph_medications") return formatNephMedications(value);
   if (type === "nsg_guidance") return formatNeurosurgeryGuidance(value);
+  if (type === "nsg_exam") return formatNeurosurgicalExam(value);
+  if (type === "nsg_isncsci") return formatIsncsci(value);
+  if (type === "nsg_scores") return formatNeurosurgeryScores(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

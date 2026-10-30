@@ -23,6 +23,9 @@ import CardiologyStructuredField from "@/components/doctor/notes/CardiologyStruc
 import CardiologyMedicationSafetyField from "@/components/doctor/notes/CardiologyMedicationSafetyField";
 import CardiologyEscalationField from "@/components/doctor/notes/CardiologyEscalationField";
 import NeurosurgeryGuidanceField from "@/components/doctor/notes/NeurosurgeryGuidanceField";
+import NeurosurgicalExamField from "@/components/doctor/notes/NeurosurgicalExamField";
+import IsncsiAssessmentField from "@/components/doctor/notes/IsncsiAssessmentField";
+import NeurosurgeryScoresField from "@/components/doctor/notes/NeurosurgeryScoresField";
 import GcsScoreField from "@/components/doctor/notes/GcsScoreField";
 import EmergencyResuscitationField from "@/components/doctor/notes/EmergencyResuscitationField";
 import DecisionRuleField from "@/components/doctor/notes/DecisionRuleField";
@@ -157,6 +160,15 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "gcs_score" && (
         <GcsScoreField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_exam" && (
+        <NeurosurgicalExamField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_isncsci" && (
+        <IsncsiAssessmentField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_scores" && (
+        <NeurosurgeryScoresField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "emergency_resuscitation" && (
         <EmergencyResuscitationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
