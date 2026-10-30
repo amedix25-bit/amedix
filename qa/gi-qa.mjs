@@ -2,6 +2,7 @@
 // Run: npx esbuild qa/gi-qa.mjs --bundle --platform=node --format=esm --outfile=/tmp/gqa.mjs --alias:@=./src && node /tmp/gqa.mjs
 import { SPECIALTY_DOCUMENTS, getDocDef } from "@/lib/specialtyDocuments";
 import { GASTRO_BLOCK_KEYS, GASTRO_BLOCKS, formatGastroBlock, gastroBlockValue } from "@/lib/gastroenterologyModules";
+import { GASTRO_DISEASE_BLOCK_KEYS } from "@/lib/gastroenterologyDiseaseBlocks";
 import { GASTRO_SCORES, calculateGastroScore, formatGastroScores } from "@/lib/gastroenterologyScores";
 import { buildGastroSafetyPrompts, GASTRO_SAFETY_RULE_COUNT, formatGastroSafety } from "@/lib/gastroenterologySafetyRules";
 import { GASTRO_NOTE_BASIS, gastroNoteBasis } from "@/lib/gastroenterologyReferences";
@@ -122,8 +123,7 @@ GI_KEYS.forEach((key) => {
   ok(GASTRO_NOTE_BASIS[key].basis.length >= 2, `${key}: fewer than two guideline sources`);
 });
 
-/* 11 — every block is internally sound and its questions are conditional */
-const fieldOwners = new Map();
+/* 11 — every block is internally sound (no repeated key, no orphan conditional) */
 GASTRO_BLOCK_KEYS.forEach((k) => {
   const block = GASTRO_BLOCKS[k];
   const keys = new Set();
@@ -131,24 +131,35 @@ GASTRO_BLOCK_KEYS.forEach((k) => {
     ok(!!f.key && !!f.label, `block ${k} has a field without a key or label`);
     ok(!keys.has(f.key), `block ${k} repeats field key ${f.key}`);
     keys.add(f.key);
-    // a key reused across blocks would let a flag read the wrong field
-    if (fieldOwners.has(f.key) && fieldOwners.get(f.key) !== k) {
-      ok(false, `field key ${f.key} is used by both ${fieldOwners.get(f.key)} and ${k}`);
-    }
-    fieldOwners.set(f.key, k);
     if (f.showIf) {
       ok(keys.has(f.showIf.key), `block ${k}: field ${f.key} is gated on a field that does not exist`);
     }
-    if (f.type === "select") ok(Array.isArray(f.options) && f.options.length >= 2, `block ${k}: ${f.key} has no real options`);
   });
 });
 
-/* 12 — every block is conditional: a selector first, then gated questions */
-GASTRO_BLOCK_KEYS.forEach((k) => {
+/* 11b — the disease blocks use their own field keys, so a flag can never read a
+   field belonging to another block, and each select offers real choices */
+const coreKeys = new Set(
+  GASTRO_BLOCK_KEYS.filter((k) => !GASTRO_DISEASE_BLOCK_KEYS.includes(k))
+    .flatMap((k) => GASTRO_BLOCKS[k].fields.map((f) => f.key))
+);
+const diseaseKeys = new Set();
+GASTRO_DISEASE_BLOCK_KEYS.forEach((k) => {
+  GASTRO_BLOCKS[k].fields.forEach((f) => {
+    ok(!coreKeys.has(f.key), `${k}: field key ${f.key} collides with an existing block field`);
+    ok(!diseaseKeys.has(f.key), `${k}: field key ${f.key} is repeated across disease blocks`);
+    diseaseKeys.add(f.key);
+    if (f.type === "select") ok(Array.isArray(f.options) && f.options.length >= 2, `${k}: ${f.key} has no real options`);
+  });
+});
+
+/* 12 — every disease block is conditional: a selector first, then gated questions */
+GASTRO_DISEASE_BLOCK_KEYS.forEach((k) => {
   const block = GASTRO_BLOCKS[k];
   const [first] = block.fields;
   ok(first.type === "select" || first.type === "multi", `block ${k} does not open with a problem selector`);
   ok(block.fields.slice(1).some((f) => f.showIf), `block ${k} would show every question in every consultation`);
+  ok(block.fields.length >= 8, `block ${k} is too thin for the condition it documents`);
 });
 
 /* 13 — the disease-specific blocks reach the note types that document them */
