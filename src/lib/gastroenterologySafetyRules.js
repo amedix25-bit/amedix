@@ -440,6 +440,187 @@ export const GASTRO_SAFETY_RULES = [
     "aasld",
     GASTRO_REFERENCES.aasld_hcc
   ),
+  // ---- Procedures, time-critical presentations and drug therapy ----------
+  rule(
+    "procedure_prep_antithrombotic_without_plan",
+    "same_day",
+    "Antiplatelet or anticoagulant therapy without a documented peri-procedural plan",
+    "ASGE guidance ties the decision to hold, continue or bridge antiplatelet and anticoagulant therapy to the bleeding risk of the procedure and the thrombotic risk of the patient. A record that lists the agent without the decision leaves the next clinician to guess.",
+    "Document the agent, the last dose, the hold interval, the restart date and who made the decision.",
+    "asge",
+    GASTRO_REFERENCES.asge_quality
+  ),
+  rule(
+    "liver_biopsy_coagulation_not_documented",
+    "same_day",
+    "Liver biopsy without documented coagulation and bleeding-risk assessment",
+    "Percutaneous liver biopsy carries a recognised bleeding risk, and the pre-procedure record has to show the platelet count, the INR, the bleeding history and what was held or corrected before the needle.",
+    "Document the platelet count, INR, bleeding history and any correction given before the biopsy.",
+    "asge",
+    GASTRO_REFERENCES.gi_procedure_note
+  ),
+  rule(
+    "liver_biopsy_without_observation",
+    "same_day",
+    "Liver biopsy without documented post-procedure observation",
+    "Post-biopsy observation with recorded observations is how a delayed bleed is detected. An observation section left undocumented reads as no monitoring rather than a normal course.",
+    "Document the observation period, the observations recorded and the condition at discharge.",
+    "asge",
+    GASTRO_REFERENCES.gi_procedure_note
+  ),
+  rule(
+    "liver_biopsy_bleeding",
+    "same_day",
+    "Bleeding after liver biopsy",
+    "Post-biopsy bleeding needs a documented response — resuscitation, imaging, transfusion decision and escalation — recorded at the time it is recognised.",
+    "Document the recognition time, haemodynamic status, resuscitation given, imaging obtained and who was informed.",
+    "asge",
+    GASTRO_REFERENCES.asge_quality
+  ),
+  rule(
+    "paracentesis_fluid_tests_not_documented",
+    "documented",
+    "Paracentesis without documented ascitic fluid analysis",
+    "AASLD guidance bases the diagnosis of spontaneous bacterial peritonitis and the serum-ascites albumin gradient on defined ascitic fluid tests. A tap recorded without the tests sent cannot answer the clinical question it was performed for.",
+    "Record the cell count with neutrophil count, the paired albumin for the gradient and the culture bottles used.",
+    "aasld",
+    GASTRO_REFERENCES.aasld_ascites
+  ),
+  rule(
+    "large_volume_paracentesis_without_albumin",
+    "same_day",
+    "Large-volume paracentesis without documented albumin replacement",
+    "Albumin given after large-volume paracentesis reduces post-paracentesis circulatory dysfunction. A volume of five litres or more removed without albumin given or a documented reason leaves that risk unaddressed.",
+    "Record the albumin given with its dose, or the documented reason it was withheld.",
+    "aasld",
+    GASTRO_REFERENCES.aasld_ascites
+  ),
+  rule(
+    "eus_fna_specimen_record_missing",
+    "documented",
+    "EUS tissue acquisition without the specimen record",
+    "The diagnostic yield of EUS-guided sampling depends on the needle, the number of passes and on-site adequacy assessment. Those details are what the cytopathologist and the next endoscopist need.",
+    "Record the needle gauge, the number of passes, the on-site adequacy assessment and where the specimen was sent.",
+    "asge",
+    GASTRO_REFERENCES.asge_quality
+  ),
+  rule(
+    "capsule_retention_not_assessed",
+    "same_day",
+    "Capsule endoscopy without a documented retention risk assessment",
+    "Capsule retention is the defining serious adverse event of capsule endoscopy, and guidance requires the retention risk to be assessed before ingestion, with a patency capsule where a stricture is suspected.",
+    "Record how retention risk was assessed before ingestion, and the plan if the capsule is retained.",
+    "asge",
+    GASTRO_REFERENCES.asge_quality
+  ),
+  rule(
+    "capsule_status_not_documented",
+    "documented",
+    "Capsule endoscopy without the capsule excretion status recorded",
+    "A capsule that has not been excreted needs to be tracked until it is, and a retained capsule needs a documented management plan. The record must state which applies.",
+    "Record whether the capsule was excreted, or the tracking and management plan arranged.",
+    "asge",
+    GASTRO_REFERENCES.asge_quality
+  ),
+  rule(
+    "acute_peritonism_without_surgical_opinion",
+    "same_day",
+    "Peritonism or a suspected perforation without a documented surgical opinion",
+    "Peritonitic signs and free air are surgical problems until proven otherwise, and the timing of the surgical opinion is a determinant of outcome. The record must show the opinion obtained and when.",
+    "Document the surgical opinion obtained with its time, or the documented reason it was not indicated.",
+    "acg",
+    GASTRO_REFERENCES.acg_ugib
+  ),
+  rule(
+    "acute_abdomen_without_resuscitation_record",
+    "same_day",
+    "Time-critical abdominal presentation without documented resuscitation and reassessment",
+    "Sepsis, perforation, obstruction and dehydration all depend on fluid resuscitation with documented reassessment. A record without it cannot show whether the patient was stabilised before the next decision.",
+    "Document the fluid given, the haemodynamic response and who reassessed the patient.",
+    "acg",
+    GASTRO_REFERENCES.acg_acute_pancreatitis
+  ),
+  rule(
+    "sepsis_without_cultures_and_antibiotics",
+    "same_day",
+    "Sepsis or cholangitis without documented culture timing and antibiotic administration",
+    "Guideline-based sepsis care requires cultures and antibiotics with the times recorded. The interval to antibiotics is the measure the record is audited against.",
+    "Document the cultures taken, the antibiotic given with its time and the source control arranged.",
+    "acg",
+    GASTRO_REFERENCES.tokyo_biliary
+  ),
+  rule(
+    "obstruction_without_decompression",
+    "same_day",
+    "Bowel obstruction without a documented decompression decision",
+    "Bowel decompression is a core step in the initial management of obstruction, and the decision for or against it belongs in the record with its reason.",
+    "Record the tube placed, or the documented reason decompression was not indicated.",
+    "acg",
+    GASTRO_REFERENCES.acg_acute_pancreatitis
+  ),
+  rule(
+    "time_critical_presentation_without_imaging",
+    "same_day",
+    "Suspected perforation or obstruction without documented imaging",
+    "Free air and obstruction are diagnosed on imaging, and the choice of imaging with the reason for any delay has to be documented at the time of the decision.",
+    "Record the imaging performed with its findings, or the documented reason it has not yet been obtained.",
+    "acg",
+    GASTRO_REFERENCES.acg_ugib
+  ),
+  rule(
+    "altered_consciousness_without_airway_plan",
+    "same_day",
+    "Altered consciousness without a documented GCS and airway plan",
+    "In variceal bleeding, acute liver failure and sepsis, an altered level of consciousness changes airway management and the level of care needed. A record without a GCS and airway plan leaves that decision unrecorded.",
+    "Document the GCS, the airway plan and who was informed.",
+    "aasld",
+    GASTRO_REFERENCES.easl_cirrhosis
+  ),
+  rule(
+    "time_critical_presentation_without_level_of_care",
+    "same_day",
+    "Time-critical abdominal presentation without a documented level of care",
+    "Every time-critical GI presentation ends in a documented disposition — escalated, discussed with a consultant, or managed on a ward with observation. Without it the record does not show where the patient was cared for.",
+    "Record the level of care decided, who was informed and the observation plan.",
+    "acg",
+    GASTRO_REFERENCES.acg_ugib
+  ),
+  rule(
+    "gi_drug_contraindications_not_documented",
+    "documented",
+    "GI-critical drug therapy without documented contraindication review",
+    "The agents used in GI and liver disease carry defined contraindications and interactions, and the record has to show they were checked before the agent was given.",
+    "Record the contraindications and interactions reviewed, or the agent changed or withheld and why.",
+    "acg",
+    GASTRO_REFERENCES.acg_liver_chemistries
+  ),
+  rule(
+    "gi_drug_monitoring_not_documented",
+    "documented",
+    "GI-critical drug therapy without documented monitoring",
+    "Guideline-based use of these agents requires defined monitoring parameters and a review interval. Without them the next review has nothing to compare against.",
+    "Record the monitoring parameters, their interval and who reviews them.",
+    "acg",
+    GASTRO_REFERENCES.acg_liver_chemistries
+  ),
+  rule(
+    "gi_drug_allergy_check_not_documented",
+    "documented",
+    "GI-critical drug therapy without a documented allergy check",
+    "The recorded allergies are the safety net for every prescription, and the note has to show they were checked against the agent chosen.",
+    "Record that the recorded allergies were verified, or the alternative used.",
+    "acg",
+    GASTRO_REFERENCES.acg_liver_chemistries
+  ),
+  rule(
+    "procedure_pathology_and_followup_not_documented",
+    "documented",
+    "Procedure with specimens or follow-up left undocumented",
+    "A specimen sent without a documented request, or a procedure without a documented follow-up owner, is how results are lost. Both belong in the procedure record.",
+    "Record where the specimen was sent and with what clinical question, and the follow-up arranged with the clinician responsible.",
+    "asge",
+    GASTRO_REFERENCES.gi_pathology_request
+  ),
   rule(
     "no_responsible_clinician",
     "documented",
@@ -524,6 +705,29 @@ const CONDITION = {
   decompensated_cirrhosis_without_event: (f) => f.decompensated && f.decompensation_event_missing,
   cirrhosis_without_vaccination_review: (f) => f.cir_vaccination_missing,
   transplant_referral_without_criteria: (f) => f.transplant_without_criteria,
+
+  // ---- Procedures, time-critical presentations and drug therapy ----------
+  procedure_prep_antithrombotic_without_plan: (f) => f.prep_anticoag_missing,
+  liver_biopsy_coagulation_not_documented: (f) => f.biopsy_coag_missing,
+  liver_biopsy_without_observation: (f) => f.biopsy_observation_missing,
+  liver_biopsy_bleeding: (f) => f.biopsy_bleeding,
+  paracentesis_fluid_tests_not_documented: (f) => f.paracentesis_tests_missing,
+  large_volume_paracentesis_without_albumin: (f) => f.lvp_without_albumin,
+  eus_fna_specimen_record_missing: (f) => f.eus_specimen_record_missing,
+  capsule_retention_not_assessed: (f) => f.capsule_retention_unassessed,
+  capsule_status_not_documented: (f) => f.capsule_status_missing,
+  acute_peritonism_without_surgical_opinion: (f) => f.peritonism && f.acute_no_surgical_opinion,
+  acute_abdomen_without_resuscitation_record: (f) => f.acute_problem.length > 0 && f.acute_no_resuscitation,
+  sepsis_without_cultures_and_antibiotics: (f) => (f.sepsis_documented || f.cholangitis_acute) && f.acute_no_cultures,
+  obstruction_without_decompression: (f) => f.obstruction_documented && f.acute_no_decompression,
+  time_critical_presentation_without_imaging: (f) => (f.perforation_documented || f.obstruction_documented) && f.acute_no_imaging,
+  altered_consciousness_without_airway_plan: (f) => f.altered_consciousness,
+  time_critical_presentation_without_level_of_care: (f) => f.acute_problem.length > 0 && f.acute_no_level_of_care,
+  gi_drug_contraindications_not_documented: (f) => f.drug_contraindication_missing,
+  gi_drug_monitoring_not_documented: (f) => f.drug_monitoring_missing,
+  gi_drug_allergy_check_not_documented: (f) => f.drug_allergy_missing,
+  procedure_pathology_and_followup_not_documented: (f) =>
+    f.procedure_followup_missing || (f.pathology_pending && (f.biopsy_documented || f.capsule_documented || f.eus_fna)),
 };
 
 // The prompts shown in the panel are also written into the saved note, so a

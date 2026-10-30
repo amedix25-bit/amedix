@@ -553,7 +553,7 @@ export const gastroFlags = (values = {}) => {
     overt_bleeding: /Haematemesis|Melaena|Haematochezia|Coffee-ground/i.test(f("gi_alarm", "bleeding")),
     unstable_bleeding: /Hypotensive|Shocked/i.test(f("gi_bleeding", "haemodynamics")),
     bleeding_no_level_of_care: /Hypotensive|Shocked/i.test(f("gi_bleeding", "haemodynamics")) && (isBlank(f("gi_bleeding", "disposition")) || /Not documented/i.test(f("gi_bleeding", "disposition"))),
-    pancreatitis_context: l("gi_pancreatitis", "diagnostic_basis").length > 0 || l("gi_acute", "acute_problem").includes("Acute pancreatitis") || /pancreatitis/i.test(f("gi_pancreatic", "pan_pancreatitis_severity")),
+    pancreatitis_context: l("gi_pancreatitis", "diagnostic_basis").length > 0 || l("gi_acute", "acute_problem").includes("Acute pancreatitis") || !isBlank(f("gi_pancreatitis", "severity")),
     pancreatitis_unclassified: l("gi_pancreatitis", "diagnostic_basis").length > 0 && /Not classified|^$/i.test(f("gi_pancreatitis", "severity")),
     prep_safety_documented: hasBlock("gi_proc_safety"),
     prep_anticoag_missing:
@@ -591,13 +591,15 @@ export const gastroFlags = (values = {}) => {
     sepsis_documented: l("gi_acute", "acute_problem").includes("Sepsis"),
     cholangitis_acute: l("gi_acute", "acute_problem").includes("Acute cholangitis"),
     ischaemic_bowel: l("gi_acute", "acute_problem").includes("Ischaemic bowel"),
-    acute_no_surgical_opinion: (isBlank(f("gi_acute", "acute_surgical")) || /Not documented/i.test(f("gi_acute", "acute_surgical"))) && !/Not indicated/i.test(f("gi_acute", "acute_surgical")),
-    acute_no_resuscitation: /Not documented/i.test(f("gi_acute", "acute_resuscitation")),
-    acute_no_cultures: /Not documented/i.test(f("gi_acute", "acute_cultures")),
-    acute_no_decompression: /Not documented|Indicated — not placed/i.test(f("gi_acute", "acute_decompression")),
-    acute_no_imaging: /Not documented|Not yet imaged/i.test(f("gi_acute", "acute_imaging")),
-    altered_consciousness: /^Altered/i.test(f("gi_acute", "acute_consciousness")),
-    acute_no_level_of_care: isBlank(f("gi_acute", "acute_level_of_care")) || /Not documented/i.test(f("gi_acute", "acute_level_of_care")),
+    acute_no_surgical_opinion: isBlank(f("gi_acute", "acute_surgical")) && !/Not indicated/i.test(f("gi_acute", "acute_surgical")),
+    acute_no_resuscitation: isBlank(f("gi_acute", "acute_resuscitation")),
+    acute_no_cultures: isBlank(f("gi_acute", "acute_cultures")),
+    acute_no_decompression: isBlank(f("gi_acute", "acute_decompression")) || /Indicated — not placed/i.test(f("gi_acute", "acute_decompression")),
+    acute_no_imaging: isBlank(f("gi_acute", "acute_imaging")),
+    altered_consciousness:
+      f("gi_acute", "acute_consciousness") === "Not assessed" &&
+      (l("gi_acute", "acute_problem").some((x) => /Acute liver failure|Altered consciousness|Sepsis|Variceal/i.test(x))),
+    acute_no_level_of_care: isBlank(f("gi_acute", "acute_level_of_care")),
 
     // ---- GI-critical drug therapy ----------------------------------------
     drug_agents: l("gi_drug_safety", "drug_agents").filter((x) => x !== "None of these"),
