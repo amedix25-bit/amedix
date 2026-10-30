@@ -132,6 +132,7 @@ export const OPHTH_ENHANCEMENTS = {
 
   ophth_preop_assessment: () => [
     blockField("ophth_cataract"),
+    blockField("ophth_refractive"),
     blockField("ophth_va"),
     ...icdBlock(["lens", "cornea", "retina", "glaucoma"], "Search ICD-11 — the diagnosis the operation addresses…"),
     ...safetyBlock(),
