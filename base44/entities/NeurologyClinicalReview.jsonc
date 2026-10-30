@@ -1,0 +1,132 @@
+{
+  "name": "NeurologyClinicalReview",
+  "type": "object",
+  "properties": {
+    "specialty": {
+      "type": "string",
+      "default": "neurology",
+      "description": "Specialty the review belongs to \u2014 always neurology, so this register never mixes with another specialty's review"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "neurology",
+        "emergency_medicine"
+      ],
+      "description": "Review domain: NEUROLOGY \u2014 a qualified Neurology specialist, or the Head of Neurology, reviews the documentation structure, safety thresholds, emergency pathways and medication rules. EMERGENCY_MEDICINE \u2014 a qualified Emergency Medicine specialist reviews the emergency recognition, time-critical pathways and escalation records. Deployment requires an approving decision in both domains."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_review",
+        "approved",
+        "approved_with_comments",
+        "changes_requested"
+      ],
+      "default": "pending_review",
+      "description": "Recorded review decision. Only APPROVED and APPROVED_WITH_COMMENTS count as approval; CHANGES_REQUESTED and PENDING_REVIEW are blockers in the deployment gate"
+    },
+    "reviewer_user_id": {
+      "type": "string",
+      "description": "User id of the clinician who recorded the decision"
+    },
+    "reviewer_name": {
+      "type": "string",
+      "description": "Name of the clinician who recorded the decision"
+    },
+    "reviewer_title": {
+      "type": "string",
+      "description": "Capacity in which the decision was recorded, e.g. Consultant Neurologist or Head of Neurology"
+    },
+    "reviewer_registration": {
+      "type": "string",
+      "description": "Professional registration or licence reference of the reviewer, where the institution records it"
+    },
+    "head_confirmed": {
+      "type": "boolean",
+      "default": false,
+      "description": "The reviewer confirmed they hold the authority to approve neurology clinical documentation for the department. Required on the Neurology review before the deployment gate can open"
+    },
+    "content_version": {
+      "type": "string",
+      "description": "Version of the neurology content that was reviewed, so an approval is always tied to the content it approved. A content change after approval must be reviewed again"
+    },
+    "decision_datetime": {
+      "type": "string",
+      "description": "Date and time the decision was recorded (ISO datetime)"
+    },
+    "comments": {
+      "type": "array",
+      "description": "Review comments \u2014 who, when and what, kept in order so the discussion stays attached to the content it concerns",
+      "items": {
+        "type": "object",
+        "properties": {
+          "author_user_id": {
+            "type": "string"
+          },
+          "author_name": {
+            "type": "string"
+          },
+          "author_title": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "text"
+        ]
+      }
+    },
+    "change_history": {
+      "type": "array",
+      "description": "Every decision recorded against this content, kept even after a later decision replaces it \u2014 the review trail is append-only",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "domain",
+    "status"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
