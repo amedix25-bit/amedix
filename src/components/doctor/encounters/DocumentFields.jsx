@@ -20,6 +20,8 @@ import EmergencySafetyPromptsField from "@/components/doctor/notes/EmergencySafe
 import CardiologySafetyPromptsField from "@/components/doctor/notes/CardiologySafetyPromptsField";
 import CardiologyScoresField from "@/components/doctor/notes/CardiologyScoresField";
 import CardiologyStructuredField from "@/components/doctor/notes/CardiologyStructuredField";
+import CardiologyMedicationSafetyField from "@/components/doctor/notes/CardiologyMedicationSafetyField";
+import CardiologyEscalationField from "@/components/doctor/notes/CardiologyEscalationField";
 import GcsScoreField from "@/components/doctor/notes/GcsScoreField";
 import EmergencyResuscitationField from "@/components/doctor/notes/EmergencyResuscitationField";
 import DecisionRuleField from "@/components/doctor/notes/DecisionRuleField";
@@ -191,6 +193,12 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "cardio_scores" && (
         <CardiologyScoresField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "cardio_medication_safety" && (
+        <CardiologyMedicationSafetyField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "cardio_escalation" && (
+        <CardiologyEscalationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {(f.type === "cardio_ecg" || f.type === "cardio_echo" || f.type === "cardio_labs") && (
         <CardiologyStructuredField

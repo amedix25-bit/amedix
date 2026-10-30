@@ -54,6 +54,7 @@
 //     valve findings), the field is kept and the additions go around it.
 
 import { cardiologyCatalogFor } from "@/lib/cardiologyIcd11";
+import { withCodingGuidance } from "@/lib/cardiologyCodingGuidance";
 import {
   structuredEcg,
   structuredEcho,
@@ -76,8 +77,28 @@ const icdBlock = (domains, placeholder) =>
       key: "icd11_diagnoses",
       label: "Cardiac Diagnoses (ICD-11 MMS) — role, status and clinical basis",
       type: "icd11_diagnoses",
-      catalog: cardiologyCatalogFor(domains),
+      catalog: withCodingGuidance(cardiologyCatalogFor(domains)),
       searchPlaceholder: placeholder,
+    },
+  ]);
+
+// Medication safety and escalation sit beside the safety panel: both record what
+// the clinician did, and neither blocks saving or delays treatment.
+const medicationSafetyBlock = () =>
+  sec("Medication Safety Review", [
+    {
+      key: "cardiology_medication_safety",
+      label: "Reconciliation, allergy, interaction, renal and high-alert therapy review",
+      type: "cardio_medication_safety",
+    },
+  ]);
+
+const escalationBlock = () =>
+  sec("Time-Critical Presentation & Response", [
+    {
+      key: "cardiology_escalation",
+      label: "Time-critical presentation — who was informed, times, treatment delivered and response",
+      type: "cardio_escalation",
     },
   ]);
 
@@ -686,6 +707,8 @@ const CARDIOLOGY_ENHANCEMENTS = {
     ...managementBlock(),
     ...monitoringBlock(),
     ...scoresBlock(),
+    ...medicationSafetyBlock(),
+    ...escalationBlock(),
     ...icdBlock(
       ["ischaemic", "acs", "hf", "hypertension", "svt", "vt", "valve_mitral", "valve_aortic", "myocardium", "pericardium"],
       "Search ICD-11 — ischaemic heart disease, heart failure, hypertension, arrhythmia, valve disease, cardiomyopathy..."
@@ -767,6 +790,8 @@ const CARDIOLOGY_ENHANCEMENTS = {
     ...managementBlock(),
     ...monitoringBlock(),
     ...scoresBlock(),
+    ...medicationSafetyBlock(),
+    ...escalationBlock(),
     ...icdBlock(
       ["acs", "ischaemic", "hf", "hypertension", "svt", "vt", "conduction", "valve_mitral", "valve_aortic", "myocardium", "pericardium", "pulmonary", "venous", "arterial"],
       "Search ICD-11 — admission diagnoses, including the acute coronary syndrome or heart-failure phenotype..."
@@ -804,6 +829,8 @@ const CARDIOLOGY_ENHANCEMENTS = {
     ]),
     ...structuredLabs(),
     ...scoresBlock(),
+    ...medicationSafetyBlock(),
+    ...escalationBlock(),
     ...icdBlock(
       ["acs", "hf", "svt", "vt", "conduction", "valve_mitral", "valve_aortic", "myocardium"],
       "Search ICD-11 — the active cardiac problems on this review..."
@@ -861,6 +888,8 @@ const CARDIOLOGY_ENHANCEMENTS = {
       T("warning_signs_detail", "Warning Signs Given to the Patient — Chest Pain, Breathlessness, Syncope, Weight Gain"),
       T("discharge_self_management", "Self-Management Advice Given — Fluid and Salt, Daily Weight, Activity, Medication"),
     ]),
+    ...medicationSafetyBlock(),
+    ...escalationBlock(),
     ...icdBlock(
       ["acs", "ischaemic", "hf", "hypertension", "svt", "vt", "conduction", "valve_mitral", "valve_aortic", "myocardium"],
       "Search ICD-11 — admission and discharge diagnoses, with the phenotype documented above..."

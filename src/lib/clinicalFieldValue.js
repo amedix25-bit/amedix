@@ -15,6 +15,9 @@ import { formatEmergencySafety } from "@/lib/emergencySafetyRules";
 import { formatCardiologySafety } from "@/lib/cardiologySafetyRules";
 import { formatCardiologyScores } from "@/lib/cardiologyScores";
 import { formatCardiologyStructured } from "@/lib/cardiologyInvestigationSpecs";
+import { formatMedicationSafety } from "@/lib/cardiologyMedicationSafety";
+import { formatEscalation } from "@/lib/cardiologyEscalation";
+import { auditCodedDiagnoses } from "@/lib/cardiologyCodingGuidance";
 import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
@@ -80,7 +83,7 @@ export function formatFieldValue(type, value) {
   }
 
   if (type === "icd11_diagnoses" && Array.isArray(value)) {
-    return value
+    const lines = value
       .map((d) => {
         // The printed note never presents an unverified or absent code as a
         // verified ICD-11 code: the mapping state is stated in the text.
@@ -104,6 +107,15 @@ export function formatFieldValue(type, value) {
         );
       })
       .join("\n");
+    // Coding-consistency prompts travel with the printed note so a reviewer sees
+    // them. They never alter, remove or add a clinician's diagnosis.
+    const issues = auditCodedDiagnoses(value);
+    const audit = issues.length
+      ? `\nCoding review prompts (advisory — the clinician's documented diagnosis stands):\n${issues
+          .map((i) => `   · ${i.message}`)
+          .join("\n")}`
+      : "";
+    return `${lines}${audit}`;
   }
 
   // Glasgow Coma Scale — the components as examined and their sum. No severity
@@ -173,6 +185,8 @@ export function formatFieldValue(type, value) {
   if (type === "emergency_safety") return formatEmergencySafety(value);
   if (type === "cardio_safety") return formatCardiologySafety(value);
   if (type === "cardio_scores") return formatCardiologyScores(value);
+  if (type === "cardio_medication_safety") return formatMedicationSafety(value);
+  if (type === "cardio_escalation") return formatEscalation(value);
   if (type === "cardio_ecg" || type === "cardio_echo" || type === "cardio_labs")
     return formatCardiologyStructured(type, value);
   if (type === "neph_medications") return formatNephMedications(value);
