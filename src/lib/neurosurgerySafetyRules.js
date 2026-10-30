@@ -6,10 +6,17 @@
 // reassurance. No prompt diagnoses, prescribes, orders or prioritises a
 // patient, no prompt blocks saving the note, and none delays treatment.
 //
-// The clinical thresholds that make a presentation time-critical (GCS 8 or less,
-// pupillary asymmetry, cord or cauda equina features, an unreversed
-// anticoagulant before urgent surgery) are recorded as documentation prompts,
-// never as automatic decisions.
+// ATTRIBUTION RULES FOLLOWED HERE
+//   - `source` names the specific published document a prompt's documentation
+//     requirement follows, and carries that document's own population. It is
+//     never a general "society says" claim.
+//   - `variants` are used where the applicable source or population differs
+//     (adult vs child, grading scale vs management guidance). Both are shown and
+//     the clinician records which one was applied — no single recommendation is
+//     presented as universal.
+//   - `source: null` means the requirement is a local documentation standard
+//     with no guideline attributed to it. Nothing is attached to a society to
+//     make the row look sourced.
 
 import { NSG_PROVENANCE, nsgReference } from "@/lib/neurosurgeryReferences";
 
@@ -55,6 +62,9 @@ const isOneOf = (values, key, list) => list.includes(text(values, key));
 
 const PUPIL_RISK = ["Asymmetrical — one pupil larger", "Fixed and dilated — unilateral", "Fixed and dilated — bilateral"];
 
+const ALL_AGES = "Infants, children and adults";
+const ADULT_TBI = "Adults with severe traumatic brain injury";
+
 const RULES = [
   {
     key: "airway_icp",
@@ -66,6 +76,14 @@ const RULES = [
       "Record who assessed the airway and consciousness, the decision taken, the time it was taken, and the observations that follow it.",
     provenance: "guideline",
     source: "nice_ng232",
+    population: ALL_AGES,
+    variants: [
+      {
+        source: "aans_tbi_4th",
+        population: ADULT_TBI,
+        note: "The AANS/CNS severe-TBI guideline is an adult guideline. In a child, apply the paediatric pathway and record it.",
+      },
+    ],
     when: (values, concerns) => (gcsTotal(values) !== null && gcsTotal(values) <= 8) || has(concerns, "raised_icp"),
   },
   {
@@ -78,8 +96,8 @@ const RULES = [
       "Record the time the finding was identified, who was informed, the imaging arranged and the treatment given — documentation never waits for imaging.",
     provenance: "guideline",
     source: "nice_ng232",
-    when: (values, concerns) =>
-      isOneOf(values, "pupils", PUPIL_RISK) || has(concerns, "raised_icp"),
+    population: ALL_AGES,
+    when: (values, concerns) => isOneOf(values, "pupils", PUPIL_RISK) || has(concerns, "raised_icp"),
   },
   {
     key: "deterioration",
@@ -90,7 +108,15 @@ const RULES = [
     action:
       "Record the observation before and after, the time, the senior clinician informed, and the repeat scan decision with its time.",
     provenance: "safety",
-    source: "aans_cns",
+    source: "aans_tbi_4th",
+    population: ADULT_TBI,
+    variants: [
+      {
+        source: "nice_ng232",
+        population: ALL_AGES,
+        note: "NICE NG232 defines the acute assessment and referral pathway for head injury at any age.",
+      },
+    ],
     when: (values) => text(values, "neuro_deterioration") === "Yes",
   },
   {
@@ -102,7 +128,8 @@ const RULES = [
     action:
       "Record the level and grade documented, the time the deficit was recognised, imaging arranged, who was informed and the surgical decision.",
     provenance: "safety",
-    source: "aans_cns",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed",
     when: (values, concerns) =>
       isOneOf(values, "cord_compression", ["Features present"]) || has(concerns, "cord_compression"),
   },
@@ -116,6 +143,14 @@ const RULES = [
       "Record the features documented, the time, the imaging arranged and the surgical or transfer decision.",
     provenance: "guideline",
     source: "nice_ng59",
+    population: "People over 16 years (NICE NG59 scope)",
+    variants: [
+      {
+        source: null,
+        population: "Children",
+        note: "NICE NG59 does not cover children. Record the paediatric source applied instead of carrying the adult pathway across.",
+      },
+    ],
     when: (values, concerns) =>
       isOneOf(values, "cauda_equina", ["Features present"]) || has(concerns, "cauda_equina"),
   },
@@ -129,6 +164,7 @@ const RULES = [
       "Record the agent, the last dose, what was given for reversal, the time, and the haematology or pharmacy advice taken.",
     provenance: "guideline",
     source: "nice_ng232",
+    population: ALL_AGES,
     when: (values, concerns) =>
       isOneOf(values, "anticoag", ["Anticoagulated — not reversed", "Unknown"]) || has(concerns, "anticoagulation"),
   },
@@ -142,6 +178,14 @@ const RULES = [
       "Record the observation frequency, the repeat scan plan with its time, and the neurosurgical review taken.",
     provenance: "guideline",
     source: "nice_ng232",
+    population: ALL_AGES,
+    variants: [
+      {
+        source: "aans_tbi_4th",
+        population: ADULT_TBI,
+        note: "Where the adult severe-TBI evidence base is being applied, record that guideline rather than the age-inclusive pathway.",
+      },
+    ],
     when: (values, concerns) =>
       isOneOf(values, "cranial_ct", ["Traumatic intracranial haemorrhage", "Mass effect or midline shift"]) ||
       has(concerns, "traumatic_haemorrhage"),
@@ -155,7 +199,8 @@ const RULES = [
     action:
       "Record the site and character, the confirmation test used, whether antibiotics were started, and the repair or observation decision.",
     provenance: "safety",
-    source: "aans_cns",
+    source: "nice_ng232",
+    population: "Cranial CSF leak — infants, children and adults; a spinal leak is a local documentation requirement",
     when: (values, concerns) =>
       isOneOf(values, "csf_leak", ["Suspected", "Confirmed"]) ||
       isOneOf(values, "dural_tear", ["Persisting CSF leak"]) ||
@@ -170,7 +215,20 @@ const RULES = [
     action:
       "Record the symptoms, the imaging and shunt series, the tapping result, and the revision or observation decision with times.",
     provenance: "safety",
-    source: "aans_cns",
+    source: "cns_pediatric_hydrocephalus",
+    population: "Children with a shunt or CSF diversion device",
+    variants: [
+      {
+        source: "ispn_guide",
+        population: "Children",
+        note: "The ISPN Guide is continuously updated expert guidance, not a graded guideline — record which source was applied.",
+      },
+      {
+        source: null,
+        population: "Adults",
+        note: "Adult shunt and EVD malfunction follows the treating unit's protocol; record it.",
+      },
+    ],
     when: (values, concerns) =>
       isOneOf(values, "shunt_status", ["Suspected malfunction", "Confirmed malfunction"]) || has(concerns, "shunt"),
   },
@@ -183,7 +241,8 @@ const RULES = [
     action:
       "Record the time identified, the observations, who was informed, the imaging arranged and the return-to-theatre decision.",
     provenance: "safety",
-    source: "aans_cns",
+    source: null,
+    population: "All ages — local post-operative documentation requirement",
     when: (values, concerns) =>
       isOneOf(values, "wound_csf", ["Haematoma / swelling"]) ||
       isOneOf(values, "postop_neuro", ["New deficit — documented"]) ||
@@ -198,7 +257,15 @@ const RULES = [
     action:
       "Record the semiology and duration, whether prophylaxis was started or continued, and the safety and driving advice given.",
     provenance: "guideline",
-    source: "aans_cns",
+    source: "aans_tbi_4th",
+    population: ADULT_TBI,
+    variants: [
+      {
+        source: "nice_ng232",
+        population: ALL_AGES,
+        note: "Where the head-injury pathway is being applied to a child, record NICE NG232 as the source.",
+      },
+    ],
     when: (values, concerns) => isOneOf(values, "seizure", ["Yes — current encounter"]) || has(concerns, "seizure"),
   },
   {
@@ -210,7 +277,15 @@ const RULES = [
     action:
       "Record the surveillance modality and frequency arranged and the nimodipine decision.",
     provenance: "guideline",
-    source: "aans_cns",
+    source: "eso_eans_esmint_asah",
+    population: "Adults with aneurysmal subarachnoid haemorrhage (European joint guideline)",
+    variants: [
+      {
+        source: "wfns_sah_scale",
+        population: "Adults with aneurysmal subarachnoid haemorrhage",
+        note: "The WFNS scale records the clinical grade at presentation only — it sets no surveillance. Where the local protocol differs from the European guideline, record which was applied.",
+      },
+    ],
     when: (values, concerns) =>
       isOneOf(values, "vasospasm_monitoring", ["Not documented"]) || has(concerns, "vasospasm"),
   },
@@ -223,7 +298,8 @@ const RULES = [
     action:
       "Record whether mechanical prophylaxis is in place and when pharmacological prophylaxis is planned or why it is deferred.",
     provenance: "safety",
-    source: "aans_cns",
+    source: null,
+    population: "All ages — local protocol; no guideline timing is attributed to this prompt",
     when: (values, concerns) =>
       isOneOf(values, "vte_prophylaxis", ["Not documented", "Started"]) || has(concerns, "vte_timing"),
   },
@@ -237,6 +313,7 @@ const RULES = [
       "Record the indication, the dose, the planned taper and the review that follows.",
     provenance: "guideline",
     source: "nice_ng232",
+    population: ALL_AGES,
     when: (values, concerns) =>
       isOneOf(values, "steroid", ["Given — no indication documented"]) || has(concerns, "steroid"),
   },
@@ -249,7 +326,20 @@ const RULES = [
     action:
       "Record the imaging, the drainage decision (EVD, lumbar drain, shunt or observation), the time and who decided.",
     provenance: "safety",
-    source: "aans_cns",
+    source: "cns_pediatric_hydrocephalus",
+    population: "Children with hydrocephalus",
+    variants: [
+      {
+        source: "ispn_guide",
+        population: "Children",
+        note: "Continuously updated expert guidance — record which source was applied.",
+      },
+      {
+        source: null,
+        population: "Adults, including normal-pressure hydrocephalus",
+        note: "Adult hydrocephalus follows adult criteria; the source applied is recorded in this note.",
+      },
+    ],
     when: (values, concerns) =>
       isOneOf(values, "cranial_ct", ["Hydrocephalus"]) || has(concerns, "hydrocephalus"),
   },
@@ -262,7 +352,8 @@ const RULES = [
     action:
       "Record the ICP and CPP targets applied and the treatment thresholds agreed with the treating team.",
     provenance: "guideline",
-    source: "aans_cns",
+    source: "aans_tbi_4th",
+    population: ADULT_TBI,
     when: (values) => text(values, "icp") === "Monitored — no target documented",
   },
   {
@@ -274,11 +365,35 @@ const RULES = [
     action:
       "Record the findings, the swab or imaging taken, the antibiotic decision and the review arranged.",
     provenance: "safety",
-    source: "aans_cns",
+    source: null,
+    population: "All ages — local surgical-site documentation requirement",
     when: (values, concerns) =>
       isOneOf(values, "wound_csf", ["CSF leak", "Infection suspected"]) || has(concerns, "wound"),
   },
 ];
+
+// A source is shown with its own population and attribution state, so a reader
+// can see exactly which document and which patient group it covers.
+const resolveSource = (key) => {
+  const doc = nsgReference(key);
+  if (!doc) return null;
+  return {
+    organization: doc.organization,
+    version: doc.version,
+    title: doc.title,
+    edition: doc.edition,
+    published: doc.published,
+    population: doc.population,
+    attribution: doc.attribution,
+    url: doc.url,
+  };
+};
+
+const resolveVariant = (variant) => ({
+  population: variant.population,
+  note: variant.note,
+  source: variant.source ? resolveSource(variant.source) : null,
+});
 
 export const buildNeurosurgerySafetyPrompts = ({ concerns = [], values = {} } = {}) =>
   RULES.filter((rule) => {
@@ -288,7 +403,6 @@ export const buildNeurosurgerySafetyPrompts = ({ concerns = [], values = {} } = 
       return false;
     }
   }).map((rule) => {
-    const source = nsgReference(rule.source);
     const evidence = [];
     if (gcsTotal(values)) evidence.push(`GCS ${gcsTotal(values)}`);
     ["pupils", "anticoag", "cranial_ct", "cord_compression", "cauda_equina", "csf_leak", "shunt_status", "wound_csf", "postop_neuro"].forEach(
@@ -308,7 +422,9 @@ export const buildNeurosurgerySafetyPrompts = ({ concerns = [], values = {} } = 
       evidence,
       provenance: rule.provenance,
       provenanceLabel: NSG_PROVENANCE[rule.provenance] || "",
-      source: source ? { organization: source.organization, version: source.version, url: source.url } : null,
+      population: rule.population,
+      source: resolveSource(rule.source),
+      variants: (rule.variants || []).map(resolveVariant),
     };
   });
 

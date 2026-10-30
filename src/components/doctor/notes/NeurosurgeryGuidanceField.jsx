@@ -12,7 +12,8 @@ import {
   auditNeurosurgicalDiagnoses,
   codingInstructionsFor,
 } from "@/lib/neurosurgeryCoding";
-import { NSG_REFERENCES } from "@/lib/neurosurgeryReferences";
+import { NSG_ICD11, NSG_REVIEW, noteSourcesFor } from "@/lib/neurosurgeryReferences";
+import NeurosurgerySourceAttribution from "@/components/doctor/notes/NeurosurgerySourceAttribution";
 
 // Coding guidance + conditional decision support for the Neurosurgery notes.
 //
@@ -58,7 +59,19 @@ function PromptRow({ prompt, action, onAction, notApplicable, onNotApplicable })
         </p>
       )}
       <p className="text-[11px] text-muted-foreground leading-relaxed">{prompt.basis}</p>
+      {prompt.population && (
+        <p className="text-[10px] text-foreground/80 leading-snug">
+          <span className="font-medium">Population:</span> {prompt.population}
+        </p>
+      )}
       <p className="text-[11px] text-foreground/90 leading-relaxed">{prompt.action}</p>
+      {(prompt.variants || []).map((v, i) => (
+        <p key={`${prompt.key}-v-${i}`} className="text-[10px] text-amber-800 leading-relaxed">
+          <span className="font-semibold">Where it differs:</span>{" "}
+          {v.source ? `${v.source.organization} — ${v.source.title}` : "no guideline attributed"} · {v.population}:{" "}
+          {v.note}
+        </p>
+      ))}
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         <span className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-muted/40 text-muted-foreground">
           {prompt.provenanceLabel || NSG_PROVENANCE.local_decision}
@@ -72,6 +85,7 @@ function PromptRow({ prompt, action, onAction, notApplicable, onNotApplicable })
           >
             <ExternalLink className="w-3 h-3" />
             {prompt.source.organization} — {prompt.source.version}
+            {prompt.source.published ? ` (${prompt.source.published})` : ""}
           </a>
         )}
       </div>
@@ -100,6 +114,7 @@ export default function NeurosurgeryGuidanceField({ value, values, onChange, not
   const prompts = buildNeurosurgerySafetyPrompts({ concerns, values: values || {} });
   const coding = codingInstructionsFor(noteKey);
   const audit = auditNeurosurgicalDiagnoses(values?.icd11_diagnoses);
+  const sourceSnapshot = noteSourcesFor(noteKey);
 
   const set = (patch) => onChange({ ...safe, ...patch });
   const toggleConcern = (key) =>
@@ -118,12 +133,33 @@ export default function NeurosurgeryGuidanceField({ value, values, onChange, not
     basis: p.basis,
     evidence: p.evidence,
     provenanceLabel: p.provenanceLabel,
+    population: p.population,
+    variants: p.variants,
     source: p.source,
   }));
-  const signature = JSON.stringify({ resolved, coding });
-  const storedSignature = JSON.stringify({ resolved: safe.resolved || [], coding: safe.coding || [] });
+  // Attribution travels with the note: the documents shown, the ICD-11 release
+  // and the review state are stored so the saved record and its PDF carry the
+  // same evidence a later reader would need.
+  const sources = sourceSnapshot.documents.map((d) => ({
+    organization: d.organization,
+    title: d.title,
+    edition: d.edition,
+    published: d.published,
+    population: d.population,
+    attribution: d.attribution,
+  }));
+  const review = { checked: NSG_REVIEW.checked, label: NSG_REVIEW.label };
+  const icd11 = { system: NSG_ICD11.system, release: NSG_ICD11.release };
+  const signature = JSON.stringify({ resolved, coding, sources, review, icd11 });
+  const storedSignature = JSON.stringify({
+    resolved: safe.resolved || [],
+    coding: safe.coding || [],
+    sources: safe.sources || [],
+    review: safe.review || null,
+    icd11: safe.icd11 || null,
+  });
   useEffect(() => {
-    if (signature !== storedSignature) onChange({ ...safe, resolved, coding });
+    if (signature !== storedSignature) onChange({ ...safe, resolved, coding, sources, review, icd11 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
 
@@ -158,7 +194,7 @@ export default function NeurosurgeryGuidanceField({ value, values, onChange, not
         </p>
         <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
           Content follows:{" "}
-          {NSG_REFERENCES.map((r, i) => (
+          {sourceSnapshot.documents.map((r, i) => (
             <span key={r.key}>
               {i > 0 && " · "}
               <a href={r.url} target="_blank" rel="noreferrer" className="underline hover:text-primary">
@@ -166,9 +202,15 @@ export default function NeurosurgeryGuidanceField({ value, values, onChange, not
               </a>
             </span>
           ))}
-          . The edition in use must be confirmed by the neurosurgical lead.
+          . Each document, its edition, population and review state are listed below.
         </p>
       </div>
+
+      <NeurosurgerySourceAttribution
+        noteKey={noteKey}
+        attribution={safe.attribution}
+        onChange={(a) => set({ attribution: a })}
+      />
 
       <div className="rounded-lg border border-border bg-muted/40 p-2.5 space-y-1.5">
         <Label className="text-xs">Coding guidance for this note</Label>

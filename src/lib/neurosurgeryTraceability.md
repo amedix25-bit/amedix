@@ -19,6 +19,8 @@ modified.
 | Field renderer | `src/components/doctor/notes/NeurosurgeryGuidanceField.jsx` — renders the guidance block (`nsg_guidance`), wired in `DocumentFields.jsx`. |
 | Examination | `neurosurgery` mapped to its examination set in `clinicalExaminations.js` (neurological, general, musculoskeletal, custom). |
 | Saved note / PDF | `formatNeurosurgeryGuidance` added to `clinicalFieldValue.js`, so the coding guidance, the prompts raised, the documented action and the "not applicable" reasons all print in the saved note and its PDF. |
+| Guideline attribution | `src/lib/neurosurgeryReferences.js` rewritten as the single reference registry (12 documents across 8 organisations, each with title, edition, date, population, review state and link); `src/components/doctor/notes/NeurosurgerySourceAttribution.jsx` renders it inside the note and records which source was applied. |
+| Template basis | Each template's `guidelineBasis` is now derived from that registry instead of typed by hand, so a note cannot cite a document that is not defined. |
 
 Nothing else about the note system changed: keys, ordering, required checks,
 permissions, audit logging and the referral/investigation retirement policy all
@@ -62,6 +64,15 @@ Every prompt is **advisory**. It is never a diagnosis, an order, a score or a
 decision, and none of them fire on an empty note or on reassuring findings. A
 prompt fires only from a structured value the clinician has actually recorded,
 or from a concern they have explicitly selected.
+
+Each prompt carries the **population** its source covers, and where the applicable
+document or population differs it lists the alternative instead of flattening the
+two into one rule (adult severe-TBI evidence vs the age-inclusive NICE pathway;
+the WFNS scale grading the clinical state vs the EANS management guideline;
+paediatric vs adult hydrocephalus). **Four prompts are local documentation
+requirements with no guideline attributed** — cord compression, post-operative
+haematoma, VTE prophylaxis timing and surgical-site concern. They say so rather
+than borrowing a society's name.
 
 | Level | Key | Trigger |
 | --- | --- | --- |
@@ -110,27 +121,41 @@ silently trigger — or silently fail to trigger — the airway prompt.
   spinal compression and so on) and state the classification logic to apply,
   not a code list.
 
-## 5. Sources declared on the notes
+## 5. Sources — as cited, with the state of each citation
 
-| Key | Source |
-| --- | --- |
-| `nice_ng232` | NICE — Head injury: assessment and early management (NG232) |
-| `nice_ng59` | NICE — Low back pain and sciatica in over 16s (NG59) |
-| `aans_cns` | AANS/CNS evidence-based clinical practice guidelines |
-| `icd11` | WHO ICD-11 MMS — diagnosis coding |
+Citations were checked against the publishers on 30 Oct 2026. A document whose
+edition or date could not be confirmed from the publisher carries **no date** and
+says "publication date to be confirmed at local review" — a plausible-looking
+date is never shown in its place.
 
-Each note declares its base guideline in `guidelineBasis`, and each prompt
-shows its organisation and version next to the action field.
+| Organisation | Document | Edition / date | Population | Citation state |
+| --- | --- | --- | --- | --- |
+| AANS (with CNS) | Guidelines for the Management of Severe Traumatic Brain Injury | 4th edition, 2017 | Adults with severe TBI | Verified (Neurosurgery 2017;80(1):6–15) |
+| CNS | Pediatric hydrocephalus: systematic literature review and evidence-based guidelines | CNS guideline series | Children | Title verified — date to confirm |
+| EANS (with ESO, ESMINT) | ESO/EANS/ESMINT guideline on aneurysmal subarachnoid haemorrhage | Joint society guideline | Adults with aSAH, European context | Title verified — date to confirm |
+| WFNS | WFNS subarachnoid haemorrhage grading scale | Committee report, 1988 | Adults with aSAH | Verified |
+| AO Spine | AOSpine Thoracolumbar Spine Injury Classification System | 2013 | Adults | Verified (Spine 2013;38(23):2028–37) |
+| AO Spine | The Thoracolumbar AOSpine Injury Score (TL AOSIS) | 2016 | Adults, thoracolumbar trauma | Verified (Global Spine J 2016;6(4):329–34) |
+| AO Spine | AOSpine Subaxial Cervical Spine Injury Classification System | Classification system | Adults, subaxial trauma | Title verified — date to confirm |
+| ISPN | ISPN Guide to Pediatric Neurosurgery | Living online guide | Children | Title verified — expert guide, not a graded guideline |
+| NICE | Head injury: assessment and early management (NG232) | 2023 | Infants, children and adults | Verified |
+| NICE | Low back pain and sciatica in over 16s (NG59) | 2016 | People over 16 | Verified |
+| WHO | ICD-11 for Mortality and Morbidity Statistics (MMS) | Release 2026-01 | All ages | Verified against the WHO browser |
+| WHO | WHO Classification of Tumours: Central Nervous System Tumours | 5th edition, 2021 | All ages | Verified |
+
+Each note maps to the documents its structure follows, plus the population they
+cover and the points where they diverge; the note shows all of it, and the
+clinician records which source was applied when they differ.
 
 **Limitation stated on the note itself:** these are the published sources, and
-their edition and currency in the reading clinician's jurisdiction must be
-confirmed by the neurosurgical lead. The app does not claim any of them is the
-current edition locally.
+their currency in the reading clinician's jurisdiction must be confirmed by the
+neurosurgical lead. The app does not claim any of them is the current edition
+locally, and does not present one merged recommendation where the sources differ.
 
 ## 6. Verification performed
 
-An automated suite of **117 checks** was run against the built modules, and all
-117 passed:
+An automated suite of **117 structure and safety checks** plus **251 attribution
+checks** was run against the built modules, and all passed.
 
 - catalogue: 10 notes, all on the `neurosurgery` key, no duplicate field keys,
   every note ≥ 19 fields, ICD-11 and guidance fields present on all ten, no
@@ -144,6 +169,13 @@ An automated suite of **117 checks** was run against the built modules, and all
   rules fire on the contradictions above;
 - saved text: coding guidance, prompt, source and documented action all reach
   the stored value and PDF.
+- attribution: all six societies present; every document complete, linked and
+  carrying a valid state; no unconfirmed document carries a date; every note maps
+  to at least two documents including ICD-11; every prompt records its population
+  and resolves its source or states that none is attributed; the EANS/WFNS and
+  adult/paediatric divergences are present rather than merged; the saved text
+  carries the documents, the ICD-11 release, the source applied, the divergence
+  and the review status, with no undefined values.
 
 ## 7. Open items — not yet done
 
@@ -153,8 +185,12 @@ An automated suite of **117 checks** was run against the built modules, and all
    their wording. Nothing here is clinically ratified.
 3. **No pre-verified ICD-11 subcode set** for neurosurgery — a coding review
    queue is still needed, as it is for the other specialties.
-4. **Local thresholds are not ratified.** Where a prompt uses a numeric
-   threshold (GCS 8 for the airway prompt), that threshold must be confirmed
-   against the local protocol rather than assumed from the guideline.
-5. **Arabic translation** of the note labels, section headings, prompts and the
+4. **Local thresholds are not ratified.** The GCS 8 airway threshold is shown as
+   NICE NG232 (all ages) with the adult severe-TBI guideline as a variant, but
+   whether the local protocol uses that point must be confirmed by the
+   neurosurgical lead.
+5. **Four citations still need their edition or date confirmed** (CNS paediatric
+   hydrocephalus, ESO/EANS/ESMINT aSAH, AO Spine subaxial, ISPN Guide). They are
+   displayed without a date and marked accordingly until confirmed.
+6. **Arabic translation** of the note labels, section headings, prompts and the
    saved guidance text is outstanding.

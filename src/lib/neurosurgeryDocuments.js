@@ -27,6 +27,8 @@
 //     unanswered field is never read as normal, and "Not documented" is a real
 //     answer everywhere it appears.
 
+import { guidelineBasisLabels } from "@/lib/neurosurgeryReferences";
+
 const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
 const I = (key, label, extra) => ({ key, label, type: "input", ...extra });
 const N = (key, label, extra) => ({ key, label, type: "number", ...extra });
@@ -834,6 +836,9 @@ const DISCHARGE = {
   guidelineBasis: ["NICE NG232", "AANS/CNS", "WHO ICD-11 MMS"],
 };
 
+// `guidelineBasis` is derived from the attribution registry rather than typed
+// per template, so a note can never cite a document that is not defined — and
+// every note carries the edition/date of the sources it actually follows.
 export const NEUROSURGERY_DOCS = [
   CONSULTATION,
   SPINE,
@@ -845,6 +850,6 @@ export const NEUROSURGERY_DOCS = [
   SPINAL_OPERATIVE,
   POSTOP_PROGRESS,
   DISCHARGE,
-];
+].map((doc) => ({ ...doc, guidelineBasis: guidelineBasisLabels(doc.key) }));
 
 export const NEUROSURGERY_NOTE_KEYS = NEUROSURGERY_DOCS.map((d) => d.key);
