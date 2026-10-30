@@ -122,6 +122,92 @@ GI_KEYS.forEach((key) => {
   ok(GASTRO_NOTE_BASIS[key].basis.length >= 2, `${key}: fewer than two guideline sources`);
 });
 
+/* 11 — every block is internally sound and its questions are conditional */
+const fieldOwners = new Map();
+GASTRO_BLOCK_KEYS.forEach((k) => {
+  const block = GASTRO_BLOCKS[k];
+  const keys = new Set();
+  block.fields.forEach((f) => {
+    ok(!!f.key && !!f.label, `block ${k} has a field without a key or label`);
+    ok(!keys.has(f.key), `block ${k} repeats field key ${f.key}`);
+    keys.add(f.key);
+    // a key reused across blocks would let a flag read the wrong field
+    if (fieldOwners.has(f.key) && fieldOwners.get(f.key) !== k) {
+      ok(false, `field key ${f.key} is used by both ${fieldOwners.get(f.key)} and ${k}`);
+    }
+    fieldOwners.set(f.key, k);
+    if (f.showIf) {
+      ok(keys.has(f.showIf.key), `block ${k}: field ${f.key} is gated on a field that does not exist`);
+    }
+    if (f.type === "select") ok(Array.isArray(f.options) && f.options.length >= 2, `block ${k}: ${f.key} has no real options`);
+  });
+});
+
+/* 12 — every block is conditional: a selector first, then gated questions */
+GASTRO_BLOCK_KEYS.forEach((k) => {
+  const block = GASTRO_BLOCKS[k];
+  const [first] = block.fields;
+  ok(first.type === "select" || first.type === "multi", `block ${k} does not open with a problem selector`);
+  ok(block.fields.slice(1).some((f) => f.showIf), `block ${k} would show every question in every consultation`);
+});
+
+/* 13 — the disease-specific blocks reach the note types that document them */
+const hasBlock = (noteKey, blockKey) =>
+  ((getDocDef(noteKey)?.fields) || []).some((f) => f.type === "gi_modules" && f.key === blockKey);
+[
+  ["gi_consultation", "gi_upper_gi"],
+  ["gi_consultation", "gi_functional"],
+  ["gi_consultation", "gi_coeliac"],
+  ["gi_consultation", "gi_masld"],
+  ["gi_consultation", "gi_viral_hepatitis"],
+  ["gi_consultation", "gi_cirrhosis"],
+  ["gi_followup", "gi_biliary"],
+  ["gi_admission_note", "gi_infection"],
+  ["gi_admission_note", "gi_immune_metabolic"],
+  ["gi_admission_note", "gi_pancreatic"],
+  ["gi_endoscopy_report", "gi_upper_gi"],
+  ["gi_colonoscopy_report", "gi_colorectal"],
+  ["gi_ercp_report", "gi_biliary"],
+  ["gi_discharge_summary", "gi_cirrhosis"],
+].forEach(([noteKey, blockKey]) => ok(hasBlock(noteKey, blockKey), `${noteKey} does not offer the ${blockKey} block`));
+
+/* 14 — APRI is calculated from documented values only, with its own ULN */
+ok(!!calculateGastroScore("apri", {}).missing, "APRI did not report its missing inputs");
+const apri = calculateGastroScore("apri", { ast: 60, ast_uln: 40, platelets: 150 });
+ok(apri.value === 1, `APRI scored ${apri.value}, expected 1.00 from AST 60 / ULN 40 with platelets 150`);
+ok(apri.band && /Indeterminate/.test(apri.band), "APRI 1.00 must read as indeterminate");
+const apriNoUln = calculateGastroScore("apri", { ast: 60, platelets: 150 });
+ok(apriNoUln.value == null, "APRI calculated without the laboratory's upper limit of normal");
+ok(formatGastroScores({ apri: { ast: 60, ast_uln: 40, platelets: 150 } }).includes("APRI"), "APRI does not print in the saved note");
+
+/* 15 — the new documentation gaps raise their guideline prompts */
+const promptKeys = (values) => buildGastroSafetyPrompts({ values }).map((p) => p.key);
+ok(
+  promptKeys({ gi_upper_gi: { upper_problem: ["H. pylori infection"], upper_hp_status: "Positive", upper_hp_confirmation: "Not documented" } })
+    .includes("hp_treated_without_confirmation"),
+  "treated H. pylori without a confirmation test raised no prompt"
+);
+ok(
+  promptKeys({ gi_masld: { mas_status: "MASLD — steatosis with cardiometabolic criteria", mas_risk_stratification: "" } })
+    .includes("masld_without_fibrosis_risk_stratification"),
+  "MASLD without fibrosis risk stratification raised no prompt"
+);
+ok(
+  promptKeys({ gi_cirrhosis: { cir_status: "Decompensated cirrhosis", cir_event: [] } })
+    .includes("decompensated_cirrhosis_without_event"),
+  "decompensated cirrhosis without its event raised no prompt"
+);
+ok(
+  promptKeys({ gi_biliary: { bil_problem: ["Acute cholangitis"], bil_drainage: "" } })
+    .includes("cholangitis_without_drainage_plan"),
+  "acute cholangitis without a drainage plan raised no prompt"
+);
+ok(
+  promptKeys({ gi_infection: { inf_problem: ["Clostridioides difficile infection"], inf_cdiff_agent: "", inf_severity: "" } })
+    .includes("cdiff_without_documented_therapy"),
+  "C. difficile without documented therapy raised no prompt"
+);
+
 /* 10 — nothing outside Gastroenterology changed */
 const otherSpecialties = new Set(SPECIALTY_DOCUMENTS.map((d) => d.specialty));
 ok(otherSpecialties.size >= 15, "other specialties disappeared from the catalogue");

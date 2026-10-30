@@ -26,7 +26,13 @@ const WHEN_IN = (key, values) => ({ showIf: { key, in: values } });
 
 const NOT_APPLICABLE = "Not applicable";
 
-export const GASTRO_BLOCKS = {
+// Disease-specific blocks (upper GI, functional, coeliac, colorectal, pancreas,
+// biliary, infection, viral hepatitis, MASLD, autoimmune/metabolic, cirrhosis)
+// live in their own module and are merged into the same registry, so the form,
+// the saved note, the PDF and the safety prompts read one catalogue.
+import { GASTRO_DISEASE_BLOCKS } from "@/lib/gastroenterologyDiseaseBlocks";
+
+const CORE_BLOCKS = {
   // ---- Alarm features and escalation -------------------------------------
   gi_alarm: {
     title: "Alarm Features & Response",
@@ -372,6 +378,8 @@ export const GASTRO_BLOCKS = {
   },
 };
 
+export const GASTRO_BLOCKS = { ...CORE_BLOCKS, ...GASTRO_DISEASE_BLOCKS };
+
 export const gastroBlock = (key) => GASTRO_BLOCKS[key] || null;
 export const GASTRO_BLOCK_KEYS = Object.keys(GASTRO_BLOCKS);
 
@@ -520,6 +528,70 @@ export const gastroFlags = (values = {}) => {
     prophylaxis_unspecified: l("gi_discharge", "surveillance").length === 0,
     warning_signs_missing: isBlank(f("gi_discharge", "warning_signs")),
     follow_up_missing: isBlank(f("gi_discharge", "follow_up_when")),
+
+    // ---- Disease-specific blocks ----------------------------------------
+    // Upper GI: an eradicated-or-positive H. pylori result without a
+    // confirmation test leaves the treatment unverified (ACG H. pylori guidance).
+    hp_positive: f("gi_upper_gi", "upper_hp_status") === "Positive",
+    hp_treated_without_confirmation: f("gi_upper_gi", "upper_hp_status") === "Positive" && !/arranged/i.test(f("gi_upper_gi", "upper_hp_confirmation")),
+    barrett_without_surveillance:
+      f("gi_upper_gi", "upper_problem") !== "" &&
+      l("gi_upper_gi", "upper_problem").includes("Barrett oesophagus") &&
+      isBlank(f("gi_upper_gi", "upper_barrett_surveillance")),
+
+    // Functional: an organic cause neither tested for nor documented.
+    functional_documented: l("gi_functional", "func_problem").some((x) => /irritable bowel|functional|chronic diarrhoea/i.test(x)),
+    functional_organic_exclusion_missing: l("gi_functional", "func_problem").some((x) => /irritable bowel|functional|chronic diarrhoea/i.test(x)) && l("gi_functional", "func_organic_exclusion").length === 0,
+
+    // Colorectal
+    diverticulitis_followup_missing:
+      l("gi_colorectal", "crc_problem").includes("Acute diverticulitis") && isBlank(f("gi_colorectal", "crc_diverticulitis_followup")),
+    polyp_surveillance_missing:
+      l("gi_colorectal", "crc_problem").some((x) => /polyp|serrated/i.test(x)) && isBlank(f("gi_colorectal", "crc_interval")),
+
+    // Pancreas
+    epi_without_enzyme_replacement:
+      l("gi_pancreatic", "pan_problem").includes("Exocrine pancreatic insufficiency") && isBlank(f("gi_pancreatic", "pan_pert")),
+
+    // Biliary
+    cholangitis_documented: l("gi_biliary", "bil_problem").includes("Acute cholangitis"),
+    cholangitis_drainage_missing: l("gi_biliary", "bil_problem").includes("Acute cholangitis") && isBlank(f("gi_biliary", "bil_drainage")),
+    psc_without_cancer_surveillance:
+      l("gi_biliary", "bil_problem").includes("Primary sclerosing cholangitis") && isBlank(f("gi_biliary", "bil_cca_surveillance")),
+
+    // GI infection
+    infection_documented: l("gi_infection", "inf_problem").length > 0,
+    infection_without_stool_testing: l("gi_infection", "inf_problem").length > 0 && l("gi_infection", "inf_stool_tests").length === 0,
+    cdiff_documented: l("gi_infection", "inf_problem").includes("Clostridioides difficile infection"),
+    cdiff_treatment_missing: l("gi_infection", "inf_problem").includes("Clostridioides difficile infection") && isBlank(f("gi_infection", "inf_cdiff_agent")),
+    cdiff_severity_missing: l("gi_infection", "inf_problem").includes("Clostridioides difficile infection") && isBlank(f("gi_infection", "inf_severity")),
+
+    // Viral hepatitis
+    viral_hepatitis_documented: l("gi_viral_hepatitis", "vir_problem").length > 0,
+    hbv_or_hcv: l("gi_viral_hepatitis", "vir_problem").some((x) => /Hepatitis B|Hepatitis C|Hepatitis D/.test(x)),
+    viral_hepatitis_without_vaccination: l("gi_viral_hepatitis", "vir_problem").length > 0 && l("gi_viral_hepatitis", "vir_vaccination").length === 0,
+    hbv_without_treatment_decision: l("gi_viral_hepatitis", "vir_problem").some((x) => /Hepatitis B|Hepatitis D/.test(x)) && isBlank(f("gi_viral_hepatitis", "vir_hbv_treatment")),
+
+    // MASLD
+    masld_documented: /MASLD|MASH|Steatosis/i.test(f("gi_masld", "mas_status")),
+    masld_without_fibrosis_risk: /MASLD|MASH|Steatosis/i.test(f("gi_masld", "mas_status")) && isBlank(f("gi_masld", "mas_risk_stratification")),
+    masld_without_alcohol_quantification: /MASLD|MASH|Steatosis/i.test(f("gi_masld", "mas_status")) && isBlank(f("gi_masld", "mas_alcohol")),
+
+    // Autoimmune / DILI / metabolic
+    dili_documented: l("gi_immune_metabolic", "aim_problem").includes("Drug-induced liver injury"),
+    dili_causality_missing: l("gi_immune_metabolic", "aim_problem").includes("Drug-induced liver injury") && isBlank(f("gi_immune_metabolic", "aim_dili_rucam")),
+    acute_liver_failure_documented: l("gi_immune_metabolic", "aim_problem").includes("Acute liver failure"),
+    alf_without_transplant_discussion: l("gi_immune_metabolic", "aim_problem").includes("Acute liver failure") && isBlank(f("gi_immune_metabolic", "aim_ali_transplant")),
+    aih_without_induction_decision: l("gi_immune_metabolic", "aim_problem").includes("Autoimmune hepatitis") && isBlank(f("gi_immune_metabolic", "aim_induction")),
+
+    // Cirrhosis, portal hypertension and transplant
+    cirrhosis_block_documented: /cirrhosis/i.test(f("gi_cirrhosis", "cir_status")),
+    decompensated: /Decompensated/i.test(f("gi_cirrhosis", "cir_status")),
+    decompensation_event_missing: /Decompensated/i.test(f("gi_cirrhosis", "cir_status")) && l("gi_cirrhosis", "cir_event").length === 0,
+    cir_variceal_screen_missing: /cirrhosis/i.test(f("gi_cirrhosis", "cir_status")) && isBlank(f("gi_cirrhosis", "cir_variceal_screen")),
+    cir_hcc_surveillance_missing: /cirrhosis/i.test(f("gi_cirrhosis", "cir_status")) && isBlank(f("gi_cirrhosis", "cir_hcc_surveillance")),
+    cir_vaccination_missing: /cirrhosis/i.test(f("gi_cirrhosis", "cir_status")) && l("gi_cirrhosis", "cir_vaccination").length === 0,
+    transplant_without_criteria: /Referred|Under assessment/i.test(f("gi_cirrhosis", "cir_transplant")) && isBlank(f("gi_cirrhosis", "cir_transplant_criteria")),
   };
 };
 

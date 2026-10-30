@@ -340,6 +340,106 @@ export const GASTRO_SAFETY_RULES = [
     "aasld",
     GASTRO_REFERENCES.aasld_ascites
   ),
+  // ---- Disease-specific documentation ----------------------------------
+  rule(
+    "hp_treated_without_confirmation",
+    "documented",
+    "H. pylori treated without a documented confirmation of eradication",
+    "ACG guidance requires confirmation of eradication after treatment, with testing delayed until the PPI has been held for an appropriate interval. An unconfirmed eradication leaves a treated ulcer or gastritis without its cure documented.",
+    "Record the confirmation test arranged and when the PPI is held before it, or the documented reason confirmation is not being done.",
+    "acg",
+    GASTRO_REFERENCES.acg_h_pylori
+  ),
+  rule(
+    "functional_diagnosis_without_organic_exclusion",
+    "documented",
+    "Functional diagnosis without documented exclusion of organic disease",
+    "A diagnosis of IBS or a functional bowel disorder rests on the absence of alarm features and, where indicated, coeliac serology and faecal calprotectin. Recording what was excluded is what makes the diagnosis auditable.",
+    "Record the coeliac serology and calprotectin taken, or the documented reason they are not indicated.",
+    "acg",
+    ROME_REFERENCE
+  ),
+  rule(
+    "diverticulitis_without_followup",
+    "documented",
+    "Acute diverticulitis without documented follow-up colonoscopy decision",
+    "After an episode of complicated, and in most guidance uncomplicated, diverticulitis the decision on a follow-up colonoscopy belongs in the record — it is how a missed malignancy is excluded.",
+    "Record the colonoscopy arranged, or the documented reason it is not indicated.",
+    "acg",
+    GASTRO_REFERENCES.usmstf_surveillance
+  ),
+  rule(
+    "cholangitis_without_drainage_plan",
+    "same_day",
+    "Acute cholangitis without a documented biliary drainage plan",
+    "Tokyo Guidelines grade the severity of acute cholangitis and tie the timing of biliary drainage to that grade. A cholangitis entry without a drainage plan and its timing leaves the definitive treatment unplanned.",
+    "Record the severity grade, the drainage arranged with its time, and the antibiotic regimen.",
+    "acg",
+    GASTRO_REFERENCES.tokyo_biliary
+  ),
+  rule(
+    "cdiff_without_documented_therapy",
+    "same_day",
+    "C. difficile infection without documented therapy and severity",
+    "Guideline-directed treatment of C. difficile depends on the severity and the episode number, and the inciting antibiotic has to be addressed. An entry that records neither leaves treatment to assumption.",
+    "Record the severity, the agent chosen with its dose, and whether the inciting antibiotic was stopped.",
+    "acg",
+    GASTRO_REFERENCES.acg_cdiff
+  ),
+  rule(
+    "hbv_without_treatment_decision",
+    "documented",
+    "Chronic hepatitis B without a documented treatment decision",
+    "AASLD guidance decides treatment from HBV DNA, ALT, HBeAg status and fibrosis stage. Recording the decision — treat, or monitor with its criteria — is what makes the decision reviewable at the next visit.",
+    "Record the phase assessed, the treatment started with its agent, or the monitoring criteria documented.",
+    "aasld",
+    GASTRO_REFERENCES.aasld_hepatitis_b
+  ),
+  rule(
+    "masld_without_fibrosis_risk_stratification",
+    "documented",
+    "MASLD without documented fibrosis risk stratification",
+    "AASLD and EASL guidance stratify MASLD by fibrosis risk using FIB-4 first and a second-line test when FIB-4 is indeterminate. Without that step the patient's risk of advanced fibrosis is undocumented.",
+    "Record the FIB-4 category and, where it is indeterminate or high, the elastography or serum panel arranged.",
+    "aasld",
+    GASTRO_REFERENCES.aasld_masld
+  ),
+  rule(
+    "acute_liver_failure_without_transplant_discussion",
+    "same_day",
+    "Acute liver failure without a documented transplant centre discussion",
+    "Acute liver failure carries a high mortality and its outcome depends on early discussion with a transplant centre. The record must show that discussion happened, or why it was not indicated.",
+    "Record the transplant centre contacted and when, or the documented reason it was not indicated.",
+    "aasld",
+    GASTRO_REFERENCES.easl_cirrhosis
+  ),
+  rule(
+    "decompensated_cirrhosis_without_event",
+    "documented",
+    "Decompensated cirrhosis without the decompensating event recorded",
+    "Decompensation is defined by the event — ascites, variceal bleeding, encephalopathy, jaundice, SBP or HRS-AKI. A record that states decompensation without naming the event cannot be audited or followed.",
+    "Record the event that defines decompensation, and the plan that prevents its recurrence.",
+    "baveno",
+    BAVENO_REFERENCE
+  ),
+  rule(
+    "cirrhosis_without_vaccination_review",
+    "documented",
+    "Cirrhosis without a documented vaccination review",
+    "Patients with cirrhosis are at increased risk from hepatitis A and B, influenza and pneumococcal disease, and vaccination status is part of their routine cirrhosis care.",
+    "Record the vaccines given or arranged, or the documented reason vaccination is not indicated.",
+    "aasld",
+    GASTRO_REFERENCES.easl_cirrhosis
+  ),
+  rule(
+    "transplant_referral_without_criteria",
+    "documented",
+    "Transplant referral without documented criteria and contraindication assessment",
+    "Referral for liver transplantation is judged on disease severity, on the absence of contraindications and on a social and nutritional assessment. A referral recorded without those elements cannot be assessed by the centre.",
+    "Record the MELD or Child-Pugh value, the contraindication assessment and the nutritional and social assessment.",
+    "aasld",
+    GASTRO_REFERENCES.aasld_hcc
+  ),
   rule(
     "no_responsible_clinician",
     "documented",
@@ -411,6 +511,19 @@ const CONDITION = {
   coeliac_without_serology: (f) => f.coeliac_without_serology,
   discharge_without_bundle: (f) => f.prophylaxis_unspecified || f.warning_signs_missing || f.follow_up_missing,
   no_responsible_clinician: (f) => f.no_responsible,
+
+  // ---- Disease-specific documentation ----------------------------------
+  hp_treated_without_confirmation: (f) => f.hp_treated_without_confirmation,
+  functional_diagnosis_without_organic_exclusion: (f) => f.functional_organic_exclusion_missing,
+  diverticulitis_without_followup: (f) => f.diverticulitis_followup_missing,
+  cholangitis_without_drainage_plan: (f) => f.cholangitis_drainage_missing,
+  cdiff_without_documented_therapy: (f) => f.cdiff_documented && (f.cdiff_treatment_missing || f.cdiff_severity_missing),
+  hbv_without_treatment_decision: (f) => f.hbv_without_treatment_decision,
+  masld_without_fibrosis_risk_stratification: (f) => f.masld_without_fibrosis_risk,
+  acute_liver_failure_without_transplant_discussion: (f) => f.alf_without_transplant_discussion,
+  decompensated_cirrhosis_without_event: (f) => f.decompensated && f.decompensation_event_missing,
+  cirrhosis_without_vaccination_review: (f) => f.cir_vaccination_missing,
+  transplant_referral_without_criteria: (f) => f.transplant_without_criteria,
 };
 
 // The prompts shown in the panel are also written into the saved note, so a

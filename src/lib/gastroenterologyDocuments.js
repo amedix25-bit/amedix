@@ -109,19 +109,33 @@ const GASTRO_ENHANCEMENTS = {
   gi_consultation: () => [
     blockField("gi_alarm"),
     blockField("gi_nutrition"),
+    blockField("gi_upper_gi"),
+    blockField("gi_functional"),
+    blockField("gi_coeliac"),
+    blockField("gi_viral_hepatitis"),
+    blockField("gi_masld"),
+    blockField("gi_immune_metabolic"),
     blockField("gi_liver"),
+    blockField("gi_cirrhosis"),
     ...icdBlock([...LUMINAL, "ibd", "functional", ...LIVER, "pancreas"], "Search ICD-11 — the GI or liver diagnosis this consultation documents…"),
-    scoresBlock(["fib4", "child_pugh", "meld_na"]),
+    scoresBlock(["fib4", "apri", "child_pugh", "meld_na"]),
     safetyBlock(),
     guidanceBlock("gi_consultation"),
   ],
 
   gi_followup: () => [
     blockField("gi_ibd"),
+    blockField("gi_upper_gi"),
+    blockField("gi_functional"),
+    blockField("gi_coeliac"),
+    blockField("gi_biliary"),
+    blockField("gi_viral_hepatitis"),
+    blockField("gi_masld"),
     blockField("gi_liver"),
+    blockField("gi_cirrhosis"),
     blockField("gi_nutrition"),
     ...icdBlock(["ibd", "functional", "large_intestine", "small_intestine", ...LIVER], "Search ICD-11 — the condition being followed up…"),
-    scoresBlock(["partial_mayo", "hbi", "fib4", "child_pugh"]),
+    scoresBlock(["partial_mayo", "hbi", "fib4", "apri", "child_pugh"]),
     safetyBlock(),
     guidanceBlock("gi_followup"),
   ],
@@ -129,16 +143,23 @@ const GASTRO_ENHANCEMENTS = {
   gi_admission_note: () => [
     blockField("gi_bleeding"),
     blockField("gi_pancreatitis"),
+    blockField("gi_pancreatic"),
+    blockField("gi_infection"),
+    blockField("gi_biliary"),
+    blockField("gi_immune_metabolic"),
     blockField("gi_liver"),
+    blockField("gi_cirrhosis"),
     ...icdBlock([...LUMINAL, ...LIVER, "pancreas", "vascular", "diverticular"], "Search ICD-11 — the diagnosis this admission documents…"),
-    scoresBlock(["blatchford", "bisap", "child_pugh", "meld_na"]),
+    scoresBlock(["blatchford", "bisap", "child_pugh", "meld_na", "apri"]),
     safetyBlock(),
     guidanceBlock("gi_admission_note"),
   ],
 
   gi_progress_note: () => [
     blockField("gi_bleeding"),
+    blockField("gi_infection"),
     blockField("gi_liver"),
+    blockField("gi_cirrhosis"),
     ...icdBlock(["oesophagus", "stomach_duodenum", "large_intestine", ...LIVER, "pancreas"], "Search ICD-11 — the active problem this progress note documents…"),
     scoresBlock(["child_pugh", "meld_na", "bisap"]),
     safetyBlock(),
@@ -148,6 +169,7 @@ const GASTRO_ENHANCEMENTS = {
   gi_endoscopy_report: () => [
     blockField("gi_endoscopy"),
     blockField("gi_bleeding"),
+    blockField("gi_upper_gi"),
     ...icdBlock(["oesophagus", "stomach_duodenum", "small_intestine", "neoplasm"], "Search ICD-11 — the endoscopic diagnosis documented above…"),
     scoresBlock(["blatchford"]),
     safetyBlock(),
@@ -157,6 +179,7 @@ const GASTRO_ENHANCEMENTS = {
   gi_colonoscopy_report: () => [
     blockField("gi_polypectomy"),
     blockField("gi_endoscopy"),
+    blockField("gi_colorectal"),
     blockField("gi_ibd"),
     ...icdBlock(["large_intestine", "ibd", "anal", "diverticular", "vascular", "neoplasm"], "Search ICD-11 — the colonic diagnosis or polyp condition documented…"),
     safetyBlock(),
@@ -166,6 +189,8 @@ const GASTRO_ENHANCEMENTS = {
   gi_ercp_report: () => [
     blockField("gi_ercp"),
     blockField("gi_endoscopy"),
+    blockField("gi_biliary"),
+    blockField("gi_pancreatic"),
     ...icdBlock(["biliary", "pancreas", "liver", "neoplasm"], "Search ICD-11 — the biliary or pancreatic diagnosis this ERCP documents…"),
     safetyBlock(),
     guidanceBlock("gi_ercp_report"),
@@ -173,6 +198,7 @@ const GASTRO_ENHANCEMENTS = {
 
   gi_procedure_note: () => [
     blockField("gi_endoscopy"),
+    blockField("gi_upper_gi"),
     ...icdBlock([...LUMINAL, ...LIVER, "pancreas", "anal"], "Search ICD-11 — the diagnosis this procedure documents…"),
     safetyBlock(),
     guidanceBlock("gi_procedure_note"),
@@ -180,6 +206,8 @@ const GASTRO_ENHANCEMENTS = {
 
   gi_pathology_request: () => [
     blockField("gi_endoscopy"),
+    blockField("gi_colorectal"),
+    blockField("gi_coeliac"),
     ...icdBlock([...LUMINAL, ...LIVER, "ibd", "pancreas", "neoplasm"], "Search ICD-11 — the coded diagnosis this specimen relates to…"),
     safetyBlock(),
     guidanceBlock("gi_pathology_request"),
@@ -187,10 +215,13 @@ const GASTRO_ENHANCEMENTS = {
 
   gi_discharge_summary: () => [
     blockField("gi_discharge"),
+    blockField("gi_infection"),
+    blockField("gi_biliary"),
     blockField("gi_liver"),
+    blockField("gi_cirrhosis"),
     blockField("gi_ibd"),
     ...icdBlock([...LUMINAL, ...LIVER, "ibd", "pancreas", "neoplasm"], "Search ICD-11 — the discharge diagnoses…"),
-    scoresBlock(["child_pugh", "meld_na"]),
+    scoresBlock(["child_pugh", "meld_na", "apri"]),
     safetyBlock(),
     guidanceBlock("gi_discharge_summary"),
   ],

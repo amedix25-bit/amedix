@@ -92,7 +92,7 @@ const MELD_NA = {
       value,
       detail: `MELD ${rounded} · sodium ${na} mmol/L · creatinine ${v.dialysis === "Yes" ? "set to 4.0 (dialysis)" : `${creat} mg/dL`}`,
       band: value >= 25 ? "High short-term mortality risk — urgent hepatology review" : value >= 15 ? "Intermediate risk" : "Lower risk",
-      note: "Floors of 1.0 apply to bilirubin, INR and creatinine; creatinine is capped at 4.0. Reported score is bounded 6–40 as in the allocation policy.",
+      note: "Version recorded: MELD-Na, the version defined for liver allocation (UNOS/OPTN, 2016). MELD 3.0, which adds sex and albumin, is not calculated here and must not be substituted for this value. Floors of 1.0 apply to bilirubin, INR and creatinine; creatinine is capped at 4.0. Reported score is bounded 6–40 as in the allocation policy.",
     };
   },
   bands: [],
@@ -138,6 +138,47 @@ const FIB4 = {
       value: rounded,
       band,
       note: older ? "Age above 65: the lower threshold of 2.0 is used for the high-risk band." : "",
+    };
+  },
+  bands: [],
+};
+
+// ---- 3b. APRI -------------------------------------------------------------
+const APRI = {
+  key: "apri",
+  name: "APRI (AST to Platelet Ratio Index)",
+  purpose: "Non-invasive estimate of fibrosis and of cirrhosis where elastography is unavailable.",
+  population: "Adults with chronic hepatitis B or C. A normal AST depends on the laboratory's upper limit of normal, so the ULN must be entered.",
+  source: {
+    organization: "WHO and AASLD non-invasive fibrosis assessment guidance (Wai et al., 2003)",
+    title: "APRI for staging fibrosis in chronic viral hepatitis",
+    url: "https://www.aasld.org/",
+  },
+  variables: [
+    num("ast", "AST", "U/L", { min: 0 }),
+    num("ast_uln", "AST upper limit of normal for the reporting laboratory", "U/L", { min: 1 }),
+    num("platelets", "Platelet count", "×10⁹/L", { min: 0 }),
+  ],
+  compute: (v) => {
+    const missing = [];
+    if (!isNum(v.ast)) missing.push("AST");
+    if (!isNum(v.ast_uln)) missing.push("AST upper limit of normal");
+    if (!isNum(v.platelets)) missing.push("Platelet count");
+    if (missing.length) return { missing };
+    if (Number(v.ast_uln) <= 0 || Number(v.platelets) <= 0) {
+      return { missing: ["AST upper limit of normal and platelet count must be greater than zero"] };
+    }
+    const value = (Number(v.ast) / Number(v.ast_uln) / Number(v.platelets)) * 100;
+    const rounded = Math.round(value * 100) / 100;
+    return {
+      value: rounded,
+      band:
+        rounded <= 0.5
+          ? "Low probability of significant fibrosis — APRI 0.5 or less"
+          : rounded >= 1.5
+            ? "High probability of significant fibrosis — specialist assessment"
+            : "Indeterminate — APRI between 0.5 and 1.5, a second test is required",
+      note: "APRI is calculated only from the AST and platelet values documented in this note, using this laboratory's stated upper limit of normal. It is not a substitute for elastography or histology.",
     };
   },
   bands: [],
@@ -302,7 +343,7 @@ const BISAP = {
   bands: [],
 };
 
-export const GASTRO_SCORES = [CHILD_PUGH, MELD_NA, FIB4, PARTIAL_MAYO, HBI, BLATCHFORD, BISAP];
+export const GASTRO_SCORES = [CHILD_PUGH, MELD_NA, FIB4, APRI, PARTIAL_MAYO, HBI, BLATCHFORD, BISAP];
 
 export const gastroScore = (key) => GASTRO_SCORES.find((s) => s.key === key) || null;
 
@@ -346,6 +387,7 @@ export const indicatedGastroScores = (inputs = {}) => {
   if (has("child_pugh")) out.push("child_pugh");
   if (has("meld_na")) out.push("meld_na");
   if (has("fib4")) out.push("fib4");
+  if (has("apri")) out.push("apri");
   if (has("partial_mayo")) out.push("partial_mayo");
   if (has("hbi")) out.push("hbi");
   if (has("blatchford")) out.push("blatchford");
