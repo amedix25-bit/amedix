@@ -18,6 +18,7 @@ import { formatCardiologyStructured } from "@/lib/cardiologyInvestigationSpecs";
 import { formatMedicationSafety } from "@/lib/cardiologyMedicationSafety";
 import { formatEscalation } from "@/lib/cardiologyEscalation";
 import { auditCodedDiagnoses } from "@/lib/cardiologyCodingGuidance";
+import { formatNeurosurgeryGuidance } from "@/lib/neurosurgeryCoding";
 import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
@@ -190,6 +191,7 @@ export function formatFieldValue(type, value) {
   if (type === "cardio_ecg" || type === "cardio_echo" || type === "cardio_labs")
     return formatCardiologyStructured(type, value);
   if (type === "neph_medications") return formatNephMedications(value);
+  if (type === "nsg_guidance") return formatNeurosurgeryGuidance(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

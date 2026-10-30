@@ -49,6 +49,10 @@ const SPECIALTY_EXAMINATIONS = {
   anesthesiology: ["general", "cardiovascular", "respiratory", "neurological", "custom"],
   cardiology: ["cardiovascular", "general", "respiratory", "peripheralVascular", "custom"],
   neurology: ["neurological", "general", "musculoskeletal", "custom"],
+  // Neurosurgery — the neurological examination is the core assessment; the
+  // general, musculoskeletal and free-form sets cover the trauma survey, spinal
+  // range and deformity, and any other system that needs documenting.
+  neurosurgery: ["neurological", "general", "musculoskeletal", "custom"],
   // Psychiatric notes document the mental state examination, which the
   // neurological examination records structurally (mental status, cognition),
   // so retiring the free-text "Mental Status Examination" loses nothing.

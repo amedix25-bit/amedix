@@ -22,6 +22,7 @@ import CardiologyScoresField from "@/components/doctor/notes/CardiologyScoresFie
 import CardiologyStructuredField from "@/components/doctor/notes/CardiologyStructuredField";
 import CardiologyMedicationSafetyField from "@/components/doctor/notes/CardiologyMedicationSafetyField";
 import CardiologyEscalationField from "@/components/doctor/notes/CardiologyEscalationField";
+import NeurosurgeryGuidanceField from "@/components/doctor/notes/NeurosurgeryGuidanceField";
 import GcsScoreField from "@/components/doctor/notes/GcsScoreField";
 import EmergencyResuscitationField from "@/components/doctor/notes/EmergencyResuscitationField";
 import DecisionRuleField from "@/components/doctor/notes/DecisionRuleField";
@@ -199,6 +200,14 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "cardio_escalation" && (
         <CardiologyEscalationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_guidance" && (
+        <NeurosurgeryGuidanceField
+          value={values[f.key]}
+          values={values}
+          noteKey={f.noteKey}
+          onChange={(v) => onChange(f.key, v)}
+        />
       )}
       {(f.type === "cardio_ecg" || f.type === "cardio_echo" || f.type === "cardio_labs") && (
         <CardiologyStructuredField
