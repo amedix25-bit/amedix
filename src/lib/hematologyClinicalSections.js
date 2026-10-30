@@ -29,7 +29,6 @@ const GROUP_TRANSFUSION = [
   "Platelet disorder",
   "Bleeding disorder",
   "Cytopenia or marrow failure",
-  "Transfusion medicine",
 ];
 
 const GROUP_PROCEDURE = [
@@ -185,7 +184,7 @@ const progressNote = () => [
   ...withSection("Assessment", [blk("hema_reasoning", "Assessment & Diagnostic Reasoning")]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_ALL), ...conditionBlocks(GROUP_ALL)]),
   ...withSection("Management", [blk("hema_management", "Management")]),
-  ...withSection("Next Review", [blk("hema_followup", "Follow-Up & Escalation")]),
+  ...withSection("Next Review", [blk("hema_followup", "Follow-Up & Clinical Review")]),
 ];
 
 const transfusionRecord = () => [

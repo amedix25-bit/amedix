@@ -33,6 +33,9 @@ import { formatOphthBlock } from "@/lib/ophthalmologyBlocks";
 import { formatOphthInvestigations } from "@/lib/ophthalmologyInvestigation";
 import { formatOphthScores } from "@/lib/ophthalmologyScores";
 import { formatOphthSafety } from "@/lib/ophthalmologySafetyRules";
+import { formatHemaBlock } from "@/lib/hematologyBlocks";
+import { formatHemaLabs } from "@/lib/hematologyLabCatalogue";
+import { formatHemaScores } from "@/lib/hematologyScores";
 import {
   akiStaging,
   albuminuriaCategoryFor,
@@ -220,6 +223,9 @@ export function formatFieldValue(type, value) {
   if (type === "ophth_scores") return formatOphthScores(value);
   if (type === "ophth_safety") return formatOphthSafety(value);
   if (type === "ophth_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
+  if (type === "hema_modules") return formatHemaBlock(value);
+  if (type === "hema_labs") return formatHemaLabs(value);
+  if (type === "hema_scores") return formatHemaScores(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);
