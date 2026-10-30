@@ -32,6 +32,18 @@
 //      structured primary/secondary diagnosis field whose entries carry code,
 //      release, source, role, status, mapping state and clinical basis. A code
 //      never confirms a diagnosis; an unresolved diagnosis stores no code.
+//      The detail a code cannot carry — laterality, anatomical site, subtype,
+//      severity or stage, complications, associated conditions — is recorded
+//      beside it, and using a less specific category than the catalogue offers
+//      requires a stated reason.
+//   6. History is structured rather than a free-text block: onset, course,
+//      duration, laterality, severity, pain, visual and surface symptoms, past
+//      ocular and surgical history, ocular and systemic medication, lens wear,
+//      family history and risk factors — separated from the examination.
+//   7. Investigations are recorded one per test with eye, date, indication,
+//      status, findings, interpretation and effect on management. Not performed,
+//      report unavailable, pending and normal are four different answers and
+//      none of them is inferred from the others.
 //
 // AUDIT RULES APPLIED HERE
 //   - Nothing duplicates a shared AMedix surface: the patient's recorded history,

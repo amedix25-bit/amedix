@@ -31,7 +31,9 @@ const TMP = path.join(ROOT, "qa", ".ophth-tmp");
 const MODULES = [
   "ophthFieldKit.js",
   "ophthalmologyExamBlocks.js",
+  "ophthalmologyClinicalBlocks.js",
   "ophthalmologyConditionBlocks.js",
+  "ophthalmologyInvestigation.js",
   "ophthalmologyBlocks.js",
   "ophthalmologyReferences.js",
   "ophthalmologyIcd11.js",
@@ -58,6 +60,7 @@ const scores = await import(path.join(TMP, "ophthalmologyScores.js"));
 const safety = await import(path.join(TMP, "ophthalmologySafetyRules.js"));
 const refs = await import(path.join(TMP, "ophthalmologyReferences.js"));
 const icd = await import(path.join(TMP, "ophthalmologyIcd11.js"));
+const investigation = await import(path.join(TMP, "ophthalmologyInvestigation.js"));
 
 const failures = [];
 const check = (ok, message) => {
@@ -247,6 +250,63 @@ for (const domains of [
 ]) {
   check(icd.ophthalmologyCatalogFor(domains).length > 0, `no catalogue entries for domain ${domains[0]}`);
 }
+
+// ---- 5b. WHO ICD-11 only, coded detail carried, no inference --------------
+const icdFields = merged.flatMap((doc) =>
+  doc.fields.filter((f) => f.type === "icd11_diagnoses").map((f) => ({ note: doc.key, field: f })),
+);
+check(icdFields.length === NOTE_KEYS.length, `expected an ICD-11 field on every note, found ${icdFields.length}`);
+for (const { note, field } of icdFields) {
+  check(field.requireConfirmation === true, `${note} does not require clinician verification of the code`);
+  check(field.unspecifiedJustification === true, `${note} does not require a reason for a non-specific code`);
+  check(field.clusterEnabled === true && Boolean(field.clusterNote), `${note} offers no post-coordination`);
+  check(field.catalogRelease === icd.OPHTH_ICD11_MMS.release, `${note} states the wrong ICD-11 release`);
+  check((field.catalog || []).length > 0, `${note} has an empty ICD-11 catalogue`);
+  check(!/ICD-10/i.test(JSON.stringify(field.catalog)), `${note} catalogue offers ICD-10 entries`);
+  check(!/ICD-10/i.test(field.catalogRelease || ""), `${note} states ICD-10 as the release`);
+  check(Array.isArray(field.statuses) && field.statuses.length > 3, `${note} does not separate diagnostic statuses`);
+  check(Array.isArray(field.roles) && field.roles.length >= 2, `${note} records no diagnosis role`);
+  const detailKeys = (field.extraFields || []).map((f) => f.key);
+  for (const required of ["laterality", "anatomical_site", "severity_stage"]) {
+    check(detailKeys.includes(required), `${note} cannot record the code's ${required}`);
+  }
+}
+for (const status of icd.OPHTH_ICD_STATUSES) {
+  check(!/ICD-10/i.test(status), `diagnostic status mentions ICD-10: ${status}`);
+}
+for (const entry of icd.OPHTH_ICD11) {
+  check(Array.isArray(entry.synonyms), `ICD-11 ${entry.code} has no synonym index`);
+  if (entry.parent_code) {
+    check(Boolean(icd.OPHTH_ICD11.find((i) => i.code === entry.parent_code)), `ICD-11 ${entry.code} names a parent outside the catalogue: ${entry.parent_code}`);
+  }
+  check(Boolean(entry.hierarchy && entry.hierarchy.family && entry.hierarchy.level), `ICD-11 ${entry.code} has no hierarchy`);
+}
+
+// ---- 5c. Investigations: stated status, never an implied normal -----------
+const investigationNotes = merged.filter((doc) =>
+  doc.fields.some((f) => f.type === "ophth_investigations"),
+);
+check(investigationNotes.length >= 3, `investigations are recorded on only ${investigationNotes.length} notes`);
+
+check(investigation.formatOphthInvestigations([]) === "", "empty investigations produced text");
+check(investigation.formatOphthInvestigations([{}]) === "", "a blank investigation record produced text");
+const notPerformed = investigation.formatOphthInvestigations([
+  { modality: "Visual field test", eye: "Right", status: "Not performed — reason documented" },
+]);
+check(/Not performed/.test(notPerformed), "a test recorded as not performed lost its status in the note text");
+check(!/Normal/i.test(notPerformed), "a test recorded as not performed was written up as normal");
+const pending = investigation.formatOphthInvestigations([
+  { modality: "OCT — macula", eye: "Left", status: "Ordered — result pending" },
+]);
+check(/pending/.test(pending) && !/findings/i.test(pending), "a pending test was written up as if reported");
+check(
+  investigation.ophthInvestigationIncomplete({ modality: "OCT — macula", status: "Performed — findings documented below" }) !== "",
+  "a performed test with no findings was accepted",
+);
+check(
+  investigation.ophthInvestigationIncomplete({ modality: "OCT — macula", eye: "Right", status: "Performed — findings documented below", findings: "Documented" }) === "",
+  "a complete investigation record was rejected",
+);
 
 // ---- 6. Templates were appended to, not rebuilt ---------------------------
 const templates = fs.readFileSync(path.join(ROOT, "src", "lib", "specialtyDocuments.js"), "utf8");

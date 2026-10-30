@@ -404,6 +404,25 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
       jumpTo("template");
       return;
     }
+    // A confirmed diagnosis coded to a less specific category than the catalogue
+    // offers must state why, so "unspecified" is a documented decision and never
+    // a shortcut. Only fields that ask for that justification enforce it.
+    const unjustifiedCodes = (activeDef?.fields || [])
+      .filter((f) => f.type === "icd11_diagnoses" && f.unspecifiedJustification)
+      .flatMap((f) =>
+        (Array.isArray(dataValues[f.key]) ? dataValues[f.key] : []).filter(
+          (d) => d && d.status === "Confirmed" && d.specificity_hint && !String(d.unspecified_reason || "").trim(),
+        ),
+      );
+    if (unjustifiedCodes.length > 0) {
+      setError(
+        `Justify the less specific ICD-11 category before saving: ${unjustifiedCodes
+          .map((d) => `${d.display || "diagnosis"}${d.code ? ` (${d.code})` : ""}`)
+          .join("; ")}.`,
+      );
+      jumpTo("template");
+      return;
+    }
     const meds = medications.filter((m) => m.name.trim());
     const prescriptionSummary = meds
       .map((m) =>
