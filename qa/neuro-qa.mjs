@@ -75,6 +75,9 @@ const scores = await import(path.join(TMP, "neurologyScores.js"));
 const sections = await import(path.join(TMP, "neurologyClinicalSections.js"));
 const safety = await import(path.join(TMP, "neurologySafetyRules.js"));
 const emerg = await import(path.join(TMP, "neurologyEmergencies.js"));
+const meds = await import(path.join(TMP, "neurologyMedications.js"));
+const escal = await import(path.join(TMP, "neurologyEscalation.js"));
+const audit = await import(path.join(TMP, "neurologyAudit.js"));
 const docs = await import(path.join(TMP, "neurologyDocuments.js"));
 const policy = await import(path.join(TMP, "noteSectionPolicy.js"));
 
@@ -501,13 +504,209 @@ check(/RECORD STILL OWES/.test(printed), "the printed emergency record carries n
 
 // ---- 9. The new sections are rendered and printed ------------------------
 const FORM = fs.readFileSync(path.join(ROOT, "src", "components", "doctor", "encounters", "DocumentFields.jsx"), "utf8");
-["neuro_modules", "neuro_scores", "neuro_safety", "neuro_guidance", "neuro_emergency"].forEach((type) =>
-  check(FORM.includes(`"${type}"`), `the note form does not render ${type}`),
-);
+[
+  "neuro_modules",
+  "neuro_scores",
+  "neuro_safety",
+  "neuro_guidance",
+  "neuro_emergency",
+  "neuro_medications",
+  "neuro_escalation",
+].forEach((type) => check(FORM.includes(`"${type}"`), `the note form does not render ${type}`));
 const VALUE = fs.readFileSync(path.join(ROOT, "src", "lib", "clinicalFieldValue.js"), "utf8");
-["formatNeuroBlock", "formatNeuroScores", "formatNeuroSafety", "formatNeurologyEmergency"].forEach((fn) =>
-  check(VALUE.includes(fn), `the printed record does not use ${fn}`),
+[
+  "formatNeuroBlock",
+  "formatNeuroScores",
+  "formatNeuroSafety",
+  "formatNeurologyEmergency",
+  "formatNeurologyMedications",
+  "formatNeurologyEscalation",
+].forEach((fn) => check(VALUE.includes(fn), `the printed record does not use ${fn}`));
+
+// ---- 11. Medication safety reads documented data only --------------------
+const NO_ALLERGY = meds.NEURO_ALLERGY_STATES[0];
+const ALLERGIES_REVIEWED = meds.NEURO_ALLERGY_STATES[1];
+const REVIEWED = meds.NEURO_INTERACTION_REVIEW_STATES[0];
+
+const medRecord = (over = {}) => ({
+  entries: [],
+  allergy_status: NO_ALLERGY,
+  allergens: "",
+  facts: {},
+  interactions_reviewed: "",
+  interactions_conclusion: "",
+  no_medications: false,
+  not_assessed: false,
+  ...over,
+});
+
+const medKeys = (value) => meds.neurologyMedicationIssues(value).map((i) => i.key);
+const medImmediate = (value) => meds.neurologyMedicationAlerts(value).map((i) => i.key);
+
+// A blank record is never read as "no allergy, nothing given".
+check(medKeys({}).includes("no_state"), "a blank medication record states no gap");
+check(medKeys({}).includes("allergy_status_missing"), "an unrecorded allergy status is read as no allergy");
+check(
+  /not the same as no allergy/i.test(
+    (meds.neurologyMedicationIssues({}).find((i) => i.key === "allergy_status_missing") || {}).message || "",
+  ),
+  "the allergy gap does not say that an unrecorded status is not the same as no allergy",
 );
+
+// A clean, fully documented record raises no alert.
+const clean = medRecord({
+  entries: [{ name: "Levetiracetam", dose: "500 mg", route: "oral", frequency: "Twice daily", timing: "Any time" }],
+});
+check(medImmediate(clean).length === 0, "a clean medication record raises an immediate alert");
+
+// Allergy cross-reactivity fires from the documented allergen …
+const allergyFired = medImmediate(
+  medRecord({
+    allergy_status: ALLERGIES_REVIEWED,
+    allergens: "Penicillin — rash",
+    entries: [{ name: "Ceftriaxone", dose: "2 g", route: "intravenous", frequency: "Single dose", response: "Improved" }],
+  }),
+);
+check(allergyFired.some((k) => k.startsWith("allergy_penicillin_ceftriaxone")), "a documented penicillin allergy does not alert on ceftriaxone");
+// … and stays silent when no allergen is documented — nothing is invented.
+check(
+  medImmediate(
+    medRecord({ entries: [{ name: "Ceftriaxone", dose: "2 g", route: "intravenous", frequency: "Single dose", response: "Improved" }] }),
+  ).every((k) => !k.startsWith("allergy_")),
+  "an allergy alert is raised with no allergen documented",
+);
+
+// Contraindication screening: documented fact fires, explicitly absent fact does not.
+const contraindicated = medRecord({
+  facts: { therapeutic_anticoagulation: "Yes" },
+  entries: [{ name: "Alteplase", dose: "0.9 mg/kg", route: "intravenous", frequency: "Continuous infusion", response: "No change" }],
+});
+check(medImmediate(contraindicated).includes("contraindication_thrombolytic_anticoagulated"), "a documented contraindication raises no immediate alert");
+const cleared = medRecord({
+  facts: { therapeutic_anticoagulation: "No" },
+  entries: [{ name: "Alteplase", dose: "0.9 mg/kg", route: "intravenous", frequency: "Continuous infusion", response: "Improved" }],
+});
+check(!medKeys(cleared).includes("contraindication_thrombolytic_anticoagulated"), "a contraindication documented as absent still alerts");
+check(!medKeys(cleared).includes("contraindication_thrombolytic_anticoagulated_unestablished"), "an absent fact is still reported as unestablished");
+// An undocumented fact is reported as unestablished rather than assumed safe.
+check(
+  medKeys(
+    medRecord({ entries: [{ name: "Alteplase", dose: "0.9 mg/kg", route: "intravenous", frequency: "Continuous infusion", response: "Improved" }] }),
+  ).includes("contraindication_thrombolytic_anticoagulated_unestablished"),
+  "an undocumented contraindication fact is treated as safe",
+);
+
+// Interaction: immediate until the review is recorded, then advisory only.
+const interaction = medRecord({
+  entries: [
+    { name: "Sodium valproate", dose: "500 mg", route: "oral", frequency: "Twice daily", timing: "After food" },
+    { name: "Lamotrigine", dose: "25 mg", route: "oral", frequency: "Once daily", timing: "Any time" },
+  ],
+});
+check(medImmediate(interaction).some((k) => k.includes("interaction_valproate_lamotrigine")), "valproate with lamotrigine raises no immediate alert");
+const interactionReviewed = medRecord({
+  entries: interaction.entries,
+  interactions_reviewed: REVIEWED,
+  interactions_conclusion: "Regimen checked against the product label; slow titration recorded.",
+});
+check(medImmediate(interactionReviewed).length === 0, "a recorded interaction review leaves the interaction as an immediate alert");
+
+// Every rule carries a statement and an attribution that is not AMedix's own.
+[...meds.NEURO_ALLERGY_RULES, ...meds.NEURO_INTERACTION_RULES, ...meds.NEURO_CONTRAINDICATION_RULES].forEach((rule) =>
+  check(
+    Boolean(rule.key) && Boolean(rule.action || rule.message) && ["label", "guideline"].includes(rule.provenance),
+    `medication rule ${rule.key} carries no statement or no attribution`,
+  ),
+);
+[...meds.NEURO_ALLERGY_RULES, ...meds.NEURO_INTERACTION_RULES, ...meds.NEURO_CONTRAINDICATION_RULES]
+  .filter((rule) => rule.sourceId)
+  .forEach((rule) => check(Boolean(refs.NEURO_REFERENCES[rule.sourceId]), `medication rule ${rule.key} cites unknown source ${rule.sourceId}`));
+
+// ---- 12. Escalation reads documented data only ---------------------------
+const completeEvent = {
+  finding_key: "gcs_decline",
+  trigger: escal.NEURO_ESCALATION_TRIGGERS[0],
+  time_identified: "14:05",
+  identified_by: "Nurse A",
+  baseline_observation: "GCS 15",
+  current_observation: "GCS 12",
+  finding_detail: "Fell two points over one hour",
+  who_informed: "Registrar on call",
+  time_informed: "14:10",
+  route: "Ward escalation",
+  acknowledged_by: "Dr B",
+  acknowledged_time: "14:12",
+  decision: "Urgent CT and senior review",
+  decision_by: "Dr B",
+  reassessment_time: "14:30",
+  reassessment: "GCS 13 after treatment",
+};
+
+const escalKeys = (value) => escal.neurologyEscalationIssues(value).map((i) => i.key);
+
+check(escalKeys({ none_documented: true }).length === 0, "a completed escalation statement still reports a gap");
+check(escalKeys({}).includes("no_state"), "a blank escalation record states no gap");
+check(escalKeys({ none_documented: true, events: [completeEvent] }).includes("contradiction"), "a record claiming no event while recording one is accepted");
+check(escalKeys({ events: [completeEvent] }).length === 0, "a complete escalation event still owes documentation");
+
+["time_identified", "who_informed", "acknowledged_by", "decision"].forEach((field) =>
+  check(escalKeys({ events: [{ ...completeEvent, [field]: "" }] }).length > 0, `an event with no ${field} reports nothing`),
+);
+check(
+  escalKeys({ events: [{ ...completeEvent, reassessment_time: "", reassessment: "" }] }).some((k) => k.endsWith("reassessment")),
+  "an immediate-level finding with no reassessment reports nothing",
+);
+check(escalKeys({ events: [{ ...completeEvent, time_informed: "13:50" }] }).some((k) => k.endsWith("time_order")), "a notification timed before the finding is accepted");
+check(
+  escalKeys({ events: [{ ...completeEvent, trigger: escal.NEURO_ESCALATION_TRIGGERS[1], baseline_observation: "GCS 15", current_observation: "GCS 15" }] }).some(
+    (k) => k.endsWith("deterioration_contradiction"),
+  ),
+  "a deterioration with no documented change is accepted",
+);
+check(
+  escal.NEURO_ESCALATION_TRIGGERS.includes("Not documented"),
+  "the escalation trigger list offers no explicit not-documented state",
+);
+escal.NEURO_CRITICAL_FINDINGS.forEach((finding) => {
+  check(Boolean(finding.level) && Boolean(finding.why), `critical finding ${finding.key} carries no level or rationale`);
+  check(Boolean(refs.NEURO_REFERENCES[finding.sourceId]), `critical finding ${finding.key} cites unknown source ${finding.sourceId}`);
+});
+check(
+  /does not diagnose|may not delay/i.test(escal.NEURO_ESCALATION_NOTICE),
+  "the escalation notice states neither that it does not diagnose nor that it may not delay care",
+);
+
+// ---- 13. The audit payload carries documented events only ----------------
+check(audit.buildNeurologyAuditPayload({}) === null, "an empty note writes an audit payload");
+check(audit.buildNeurologyAuditPayload(null) === null, "a null note writes an audit payload");
+
+const auditBlank = audit.buildNeurologyAuditPayload({ neuro_medications: {}, neuro_escalation: {} });
+check(auditBlank.medications.length === 0, "a blank medication panel writes an alert to the audit log");
+check(auditBlank.escalations.length === 0, "a blank escalation panel writes an event to the audit log");
+
+const auditReviewed = audit.buildNeurologyAuditPayload({ neuro_medications: interactionReviewed });
+check(auditReviewed.medications.length === 0, "an advisory-only interaction review is logged as an alert");
+
+const auditCritical = audit.buildNeurologyAuditPayload({
+  neuro_medications: contraindicated,
+  neuro_escalation: { events: [completeEvent] },
+  neuro_emergency: { presentations: ["status_epilepticus"] },
+});
+check(auditCritical.medications.some((m) => m.kind === "contraindication"), "a documented contraindication is missing from the audit log");
+check(auditCritical.escalations.length === 1, "a documented escalation is missing from the audit log");
+check(
+  auditCritical.escalations[0].finding === escal.neuroCriticalFinding("gcs_decline").label,
+  "the logged escalation does not name the documented finding",
+);
+check(auditCritical.counts.escalation_owed === 0, "a complete escalation is logged as owing documentation");
+check(auditCritical.emergencies.some((e) => e.presentation === emerg.NEURO_EMERGENCY_MAP.status_epilepticus.label), "a documented emergency is missing from the audit log");
+check(auditCritical.version === audit.NEURO_AUDIT_VERSION, "the audit payload carries no version");
+
+const many = audit.buildNeurologyAuditPayload({
+  neuro_escalation: { events: Array.from({ length: 25 }, () => ({ ...completeEvent, time_identified: "", who_informed: "" })) },
+});
+check(many.escalations.length <= 15, "the audit payload is unbounded");
+check(many.counts.escalation_owed > 0, "an incomplete escalation is logged as owing nothing");
 
 fs.rmSync(TMP, { recursive: true, force: true });
 
@@ -517,5 +716,7 @@ if (failures > 0) {
   process.exit(1);
 }
 console.log(
-  `PASS — ${NOTE_KEYS.length} Neurology note types enhanced, ${stats.total} ICD-11 MMS entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${blocks.NEURO_BLOCK_KEYS.length} blocks, ${scores.NEURO_SCORES.length} scores, ${safety.NEURO_SAFETY_RULES.length} safety rules verified in both directions, ${EMERGENCIES.length} emergency presentations verified in both directions, ${REGISTER.length} register references.`,
+  `PASS — ${NOTE_KEYS.length} Neurology note types enhanced, ${stats.total} ICD-11 MMS entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${blocks.NEURO_BLOCK_KEYS.length} blocks, ${scores.NEURO_SCORES.length} scores, ${safety.NEURO_SAFETY_RULES.length} safety rules verified in both directions, ${
+    meds.NEURO_ALLERGY_RULES.length + meds.NEURO_INTERACTION_RULES.length + meds.NEURO_CONTRAINDICATION_RULES.length
+  } medication safety rules verified in both directions, ${escal.NEURO_CRITICAL_FINDINGS.length} critical-finding escalations verified in both directions, ${EMERGENCIES.length} emergency presentations verified in both directions, the audit payload verified, ${REGISTER.length} register references.`,
 );

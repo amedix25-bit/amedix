@@ -43,6 +43,12 @@ No key, label, order or existing field was renamed, removed or reordered. Every 
 
 **Stroke and status epilepticus, completed.** Two stroke facts were missing and are now recorded: the time symptoms were discovered, kept distinct from the time last known well, and whether the NIHSS was appropriate to perform, with the reason when it was not. Status epilepticus gains breathing and oxygenation, circulation and access, and the documented response to treatment beside the existing airway, glucose, temperature and staged medicine times.
 
+**Medication safety.** One record in every note covers the medicines given and prescribed: name, dose, route, frequency, timing, when given, indication, response and any adverse effect with what was done about it. It screens seventeen rules against **documented** data only — allergy cross-reactivity (aromatic antiseizure medicines, zonisamide with a sulfonamide reaction, beta-lactam cross-reactivity), pair interactions (valproate with lamotrigine, enzyme inducers with anticoagulants, anticoagulant with antiplatelet, triptan with a serotonergic medicine) and labelled or guideline contraindications (a thrombolytic or anticoagulant with therapeutic anticoagulation, recent surgery or previous intracranial haemorrhage; a triptan with ischaemic heart disease or uncontrolled hypertension; valproate in pregnancy). An unrecorded allergy status is reported as **not the same as no allergy**, an undocumented contraindication fact is reported as unestablished rather than assumed safe, and an alert states the finding, the requirement and its attribution — the product label or the named guideline, never an AMedix threshold presented as one. An interaction becomes advisory once the review and its conclusion are recorded; the record never orders or withholds a medicine.
+
+**Deterioration and escalation record.** One record in every note documents the escalation that was made, after it was made: the critical finding (thirteen, each with its level and its reason), what prompted it, the observation before and at the change, the time identified and by whom, who was informed and at what time, the route used, the acknowledgement, the decision and its authoriser, the destination, the departure time and the reassessment. It reports what the record still owes — a finding with no timestamp, a call recorded as sent but not acknowledged, a notification timed before the finding, a "deterioration" whose before-and-after observations are identical — and it states in the note itself that it does not diagnose, does not order treatment, does not replace the institution's emergency call and may not delay calling for help.
+
+**Audit as events, not sentences.** A saved neurology note writes the panel it documented into the clinical audit log as queryable events, separate from the note text: the medication alerts actually raised, each escalation with its finding, times, who was informed, the destination and what the record still owed, and each documented emergency with its pathway call. Only documented entries are written — a blank panel writes nothing, an advisory-only interaction review is not logged as an alert, a documentation gap is not logged as a clinical alert, and the payload is bounded so a long note cannot flood the log. An audit write never blocks or loses the clinical note.
+
 **Guideline basis.** Each note records the documents it was written against, with edition and what the source does not support, so an exported record keeps its evidence base.
 
 ## 3. Reference register
@@ -53,12 +59,14 @@ Twenty entries: AAN (multiple sclerosis, polyneuropathy, Bell's palsy, brain dea
 
 1. **A score could total from an unrecognised value.** A documented value that matched no option was silently counted as zero, producing a plausible but wrong total — and the safety prompts read from that total. The calculation now withholds the score and names the item as not recognised, so nothing downstream is built on it.
 2. **A section filled only with ticked options read as empty.** The safety review tested free-text values only, so a section where the clinician had ticked checkboxes was treated as undocumented and its prompts stayed silent. The review now counts ticked options as documented content.
+3. **The deterioration and escalation record never reached the doctor.** Its title contains the word "escalation", which the app-wide rule that retires the free-text "Escalation Criteria" section matches by label, so the whole panel was filtered out of every neurology note before it rendered — silently, and while the note form and printer still referenced it. Structured event records (the medication safety record and the escalation record) are now exempt from that label rule, on the same basis as the structured surgical examination panels; the retired free-text section stays retired everywhere. The verification suite asserts every appended section survives the policy, so a panel cannot disappear this way again.
+4. **A documentation gap could be logged as a clinical alert.** The audit summary took every non-advisory medication issue, so a note with a blank medication panel would have written "no medication statement recorded" into the audit log as if an alert had been raised. Only the alerts the panel actually raised are logged now, and the blank case is verified.
 
 ## 5. Verification
 
 `node qa/neuro-qa.mjs` — **PASS**:
 
-> 11 Neurology note types enhanced, 37 ICD-11 MMS entries (all 37 review required, 0 pre-verified by design), 26 blocks, 7 scores, 33 safety rules verified in both directions, 15 emergency presentations verified in both directions, 20 register references.
+> 11 Neurology note types enhanced, 37 ICD-11 MMS entries (all 37 review required, 0 pre-verified by design), 26 blocks, 7 scores, 38 safety rules verified in both directions, 17 medication safety rules verified in both directions, 13 critical-finding escalations verified in both directions, 15 emergency presentations verified in both directions, the audit payload verified, 20 register references.
 
 The suite runs against the real modules the Doctor Portal uses (the app's `@/lib/…` alias is mirrored, not copied), and asserts:
 
@@ -74,7 +82,11 @@ The suite runs against the real modules the Doctor Portal uses (the app's `@/lib
 - the notice in the panel states that it does not diagnose, does not order treatment, does not authorise intervention and may not delay it;
 - an emergency with no recorded call, a red flag with nothing done about it, a herniation sign with no call time and a neuromuscular emergency with no respiratory measurement each raise their prompt, and each stays silent when the record is complete;
 - the printed emergency record prints NOT DOCUMENTED for a required missing field and lists what the record still owes;
-- the note form and the printed record both render the new sections.
+- a blank medication or escalation record is reported as a gap and is never read as "no allergy" or "no event";
+- every medication rule fires on the documented allergen, interaction pair or contraindication fact **and** stays silent when it is not documented, an interaction falls to advisory only when the review and its conclusion are recorded, and every rule's attribution resolves as a product label or a named guideline;
+- every critical finding carries a level, a reason and a source that resolves in the register; an escalation missing its timestamp, its notification, its acknowledgement or its decision reports it, a notification timed before the finding and a "deterioration" with no documented change are both reported, and a complete event reports nothing;
+- the audit payload is written from documented entries only: empty for an empty note, no entry for a blank panel or an advisory-only review, the documented alert, escalation and emergency present with the finding named, and the escalation still-owed count accurate;
+- the note form renders the medication and escalation panels and the printed record uses their formatters.
 
 The production build (`vite build`) completes with no errors.
 

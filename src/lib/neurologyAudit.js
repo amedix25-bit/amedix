@@ -11,7 +11,7 @@
 // The summary is bounded so a long note cannot flood the audit log.
 
 import { asObject, str } from "@/lib/neurologyFieldKit";
-import { neurologyMedicationIssues } from "@/lib/neurologyMedications";
+import { neurologyMedicationAlerts } from "@/lib/neurologyMedications";
 import { neuroCriticalFinding, neurologyEscalationIssues, neurologyEscalationState } from "@/lib/neurologyEscalation";
 import {
   NEURO_EMERGENCY_MAP,
@@ -21,8 +21,6 @@ import {
 
 export const NEURO_AUDIT_VERSION = "neurology-audit-1";
 
-const LEVELS = ["immediate", "documented", "advisory"];
-
 export const buildNeurologyAuditPayload = (values) => {
   const v = asObject(values);
   const medications = v.neuro_medications && typeof v.neuro_medications === "object" ? v.neuro_medications : null;
@@ -30,9 +28,11 @@ export const buildNeurologyAuditPayload = (values) => {
   const emergency = v.neuro_emergency && typeof v.neuro_emergency === "object" ? v.neuro_emergency : null;
   if (!medications && !escalation && !emergency) return null;
 
+  // Only the alerts the panel actually raised are logged: a documentation gap
+  // ("no medication statement recorded") is not a medication alert and must not
+  // read as one in the audit trail.
   const medAlerts = medications
-    ? neurologyMedicationIssues(medications)
-        .filter((i) => LEVELS.includes(i.level) && i.level !== "advisory")
+    ? neurologyMedicationAlerts(medications)
         .slice(0, 20)
         .map((i) => ({ key: i.key, level: i.level, kind: i.kind || "alert", message: String(i.message || "").slice(0, 400) }))
     : [];
