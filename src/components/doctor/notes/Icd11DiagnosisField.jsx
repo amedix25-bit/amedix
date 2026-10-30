@@ -47,9 +47,13 @@ const moreSpecificExists = (item, catalog) =>
   !item.code.includes(".") &&
   (catalog || []).some((c) => c.code.startsWith(`${item.code}.`));
 
-const newEntry = (item, entries, catalog) => ({
+const newEntry = (item, entries, catalog, extraFields = []) => ({
   code: item.code || "",
   display: item.display,
+  synonyms: item.synonyms || [],
+  parent_code: item.parent_code || "",
+  parent_display: item.parent_display || "",
+  hierarchy: item.hierarchy || null,
   definition: item.definition || "",
   specificity: item.specificity || SPECIFICITY.SUB,
   version: `${ICD11_MMS.label} (${item.release || ICD11_MMS.release})`,
@@ -79,6 +83,11 @@ const newEntry = (item, entries, catalog) => ({
   category: item.category || "",
   cluster: "",
   clinician_confirmed: false,
+  // Specialty-defined detail the code itself cannot carry (laterality, site,
+  // subtype, severity or stage, complications, associated conditions). Empty
+  // until the clinician records it — nothing is derived from the code.
+  ...Object.fromEntries(extraFields.map((f) => [f.key, ""])),
+  unspecified_reason: "",
 });
 
 // Searchable ICD-11 diagnosis selection. A code is only ever taken from the
@@ -105,6 +114,10 @@ export default function Icd11DiagnosisField({
   clusterEnabled = false,
   clusterNote = "",
   requireConfirmation = false,
+  // Specialty detail fields recorded beside each code, and the rule that an
+  // unspecified category has to be justified before it is saved as Confirmed.
+  extraFields = [],
+  unspecifiedJustification = false,
 }) {
   const entries = Array.isArray(value) ? value : [];
   const [query, setQuery] = useState("");
@@ -117,7 +130,7 @@ export default function Icd11DiagnosisField({
   const allCodes = new Set(entries.map((e) => e.code));
 
   const add = (item) => {
-    onChange([...entries, newEntry(item, entries, catalog)]);
+    onChange([...entries, newEntry(item, entries, catalog, extraFields)]);
     setQuery("");
   };
 
@@ -216,6 +229,11 @@ export default function Icd11DiagnosisField({
                   </span>
                 )}
               </div>
+              {item.synonyms?.length > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Also indexed as: {item.synonyms.join(", ")}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.definition}</p>
             </button>
           ))}
@@ -319,6 +337,9 @@ export default function Icd11DiagnosisField({
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {e.specificity?.split(" — ")[0]} · {e.version}
               </p>
+              {e.hierarchy?.parent && (
+                <p className="text-[11px] text-muted-foreground">Under: {e.hierarchy.parent}</p>
+              )}
             </div>
             <button type="button" onClick={() => onChange(entries.filter((_, idx) => idx !== i))} aria-label="Remove diagnosis">
               <X className="w-4 h-4 text-muted-foreground hover:text-destructive" />
@@ -408,6 +429,52 @@ export default function Icd11DiagnosisField({
               />
               <p className="text-[11px] text-muted-foreground">{clusterNote}</p>
             </div>
+          )}
+
+          {extraFields.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-md bg-muted/40 p-2.5">
+              {extraFields.map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <Label className="text-xs">{f.label}</Label>
+                  {f.type === "select" ? (
+                    <Select value={e[f.key] || undefined} onValueChange={(v) => update(i, { [f.key]: v })}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        {(f.options || []).map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={e[f.key] ?? ""}
+                      placeholder={f.placeholder || ""}
+                      onChange={(ev) => update(i, { [f.key]: ev.target.value })}
+                    />
+                  )}
+                  {f.hint && <p className="text-[10px] text-muted-foreground">{f.hint}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {unspecifiedJustification && e.specificity_hint && e.status === "Confirmed" && (
+            <div className="space-y-1">
+              <Label className="text-xs">
+                Why this less specific category is used
+                <span className="text-destructive font-semibold"> · Required to save as confirmed</span>
+              </Label>
+              <Input
+                value={e.unspecified_reason ?? ""}
+                placeholder="What prevented selecting the more specific subcategory"
+                onChange={(ev) => update(i, { unspecified_reason: ev.target.value })}
+              />
+            </div>
+          )}
+
+          {requireConfirmation && e.status === "Confirmed" && !String(e.code || "").trim() && (
+            <p className="text-[11px] text-destructive flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" /> A confirmed diagnosis needs a verified ICD-11 code, or the documented
+              reason why it has none.
+            </p>
           )}
 
           {e.criteria_reference && (

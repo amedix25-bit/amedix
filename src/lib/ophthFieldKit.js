@@ -18,6 +18,12 @@ export const NOT_DOCUMENTED = "Not documented";
 export const NOT_ASSESSED = "Not assessed";
 export const NOT_APPLICABLE = "Not applicable";
 export const NONE_DOCUMENTED = "None documented";
+// Four different facts, never interchangeable: a test not done, a record not
+// accessible, a result still awaited, and a recorded negative finding.
+export const NOT_PERFORMED = "Not performed";
+export const NOT_AVAILABLE = "Unavailable — record not accessible";
+export const PENDING = "Pending — result awaited";
+export const NORMAL = "Normal";
 
 // Vision-loss grades used wherever an acuity is entered as a grade rather than
 // a Snellen line, in the order ophthalmology reads them.
@@ -53,5 +59,8 @@ export const blockHasContent = (block) =>
       (Array.isArray(block[k]) ? block[k].filter((x) => str(x)).length > 0 : str(block[k]) !== "")
   );
 
+// A value that recorded the absence of an observation is not a finding: it must
+// never be read by a prompt or a calculation as though something was seen.
 export const isBlank = (v) =>
-  str(v) === "" || /^(not documented|not assessed|not performed|not applicable)$/i.test(str(v));
+  str(v) === "" ||
+  /^(not documented|not assessed|not performed|not applicable|not tested|unavailable|pending)/i.test(str(v));

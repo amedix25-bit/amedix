@@ -42,19 +42,51 @@
 //   - Conditional questions appear only where the context makes them relevant.
 //   - Advisory prompts never block saving and never change a diagnosis.
 
-import { ophthalmologyCatalogFor } from "@/lib/ophthalmologyIcd11";
+import {
+  ophthalmologyCatalogFor,
+  OPHTH_ICD11_MMS,
+  OPHTH_ICD_STATUSES,
+  OPHTH_ICD_ROLES,
+  OPHTH_ICD_DETAIL_FIELDS,
+  OPHTH_ICD_CATALOG_NOTE,
+  OPHTH_ICD_CLUSTER_NOTE,
+} from "@/lib/ophthalmologyIcd11";
 import { ophthGuidelineBasis } from "@/lib/ophthalmologyReferences";
 import { OPHTH_BLOCKS } from "@/lib/ophthalmologyBlocks";
 
 const blockField = (key) => ({ key, label: OPHTH_BLOCKS[key].title, type: "ophth_modules" });
 
+// WHO ICD-11 MMS is the only diagnostic classification in this specialty: the
+// field offers no ICD-10 entry point and no crosswalk. Every entry keeps its code,
+// WHO display term, release, source, role, diagnostic status and clinical basis,
+// plus the detail the code cannot carry — laterality, anatomical site, subtype,
+// severity or stage, complications and associated conditions.
 const icdBlock = (domains, placeholder) => [
   {
     key: "icd11_diagnoses",
     label: "Primary & Secondary Diagnoses (ICD-11 MMS)",
     type: "icd11_diagnoses",
     catalog: ophthalmologyCatalogFor(domains),
-    placeholder,
+    searchPlaceholder: placeholder,
+    catalogRelease: OPHTH_ICD11_MMS.release,
+    catalogNote: OPHTH_ICD_CATALOG_NOTE,
+    statuses: OPHTH_ICD_STATUSES,
+    roles: OPHTH_ICD_ROLES,
+    extraFields: OPHTH_ICD_DETAIL_FIELDS,
+    clusterEnabled: true,
+    clusterNote: OPHTH_ICD_CLUSTER_NOTE,
+    requireConfirmation: true,
+    unspecifiedJustification: true,
+  },
+];
+
+// One structured record per investigation: test, eye, date, indication, status,
+// findings, interpretation and effect on management.
+const investigationsBlock = () => [
+  {
+    key: "ophth_investigations",
+    label: "Investigations Reviewed at This Encounter",
+    type: "ophth_investigations",
   },
 ];
 
@@ -77,6 +109,7 @@ const CONSULT_DOMAINS = [
 
 export const OPHTH_ENHANCEMENTS = {
   ophth_consultation: () => [
+    blockField("ophth_history"),
     blockField("ophth_va"),
     blockField("ophth_pupils"),
     blockField("ophth_motility"),
@@ -92,6 +125,8 @@ export const OPHTH_ENHANCEMENTS = {
     blockField("ophth_neuro"),
     blockField("ophth_peds"),
     blockField("ophth_emergency"),
+    blockField("ophth_impression"),
+    ...investigationsBlock(),
     ...icdBlock(CONSULT_DOMAINS, "Search ICD-11 — the diagnosis this consultation documents…"),
     ...scoresBlock(["glaucoma_field_stage", "amd_risk", "ocular_trauma_score"]),
     ...safetyBlock(),
@@ -106,6 +141,8 @@ export const OPHTH_ENHANCEMENTS = {
     blockField("ophth_retina"),
     blockField("ophth_dr"),
     blockField("ophth_macular"),
+    blockField("ophth_impression"),
+    ...investigationsBlock(),
     ...icdBlock(["glaucoma", "retina", "macula", "optic_nerve", "lens"], "Search ICD-11 — the diagnosis this review follows…"),
     ...scoresBlock(["glaucoma_field_stage", "amd_risk"]),
     ...safetyBlock(),
@@ -134,6 +171,7 @@ export const OPHTH_ENHANCEMENTS = {
     blockField("ophth_cataract"),
     blockField("ophth_refractive"),
     blockField("ophth_va"),
+    ...investigationsBlock(),
     ...icdBlock(["lens", "cornea", "retina", "glaucoma"], "Search ICD-11 — the diagnosis the operation addresses…"),
     ...safetyBlock(),
     ...guidanceBlock("ophth_preop_assessment"),

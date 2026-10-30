@@ -62,7 +62,91 @@ export const OPHTH_ICD11_DOMAINS = {
   congenital: "Congenital anomalies of the eye",
 };
 
+// Clinical synonyms are an INDEXING AID only. They let a clinician find the
+// category by the words used in the clinic; the code is always recorded with
+// WHO's official display term, never with a synonym, and a synonym never widens
+// what a category covers.
+const SYNONYMS = {
+  "9A03": ["entropion", "ectropion", "eyelid malposition"],
+  "9A04": ["trichiasis", "distichiasis", "eyelash disorder"],
+  "9A60": ["pink eye", "conjunctival inflammation"],
+  "9A71": ["microbial keratitis", "bacterial keratitis", "fungal keratitis"],
+  "9A76": ["corneal ulcer", "ulcerative keratitis"],
+  "9A79": ["dry eye disease", "ocular surface disease"],
+  "9A96": ["iritis", "iridocyclitis", "anterior uveitis"],
+  "9B10": ["cataract", "lens opacity"],
+  "9B71.0": ["DR", "diabetic retinopathy"],
+  "9B71.1": ["hypertensive retinopathy"],
+  "9B73": ["retinal detachment", "retinal tear", "rhegmatogenous detachment"],
+  "9B74": ["retinal vein occlusion", "retinal artery occlusion", "CRVO", "BRVO", "CRAO"],
+  "9B75.0": ["AMD", "macular degeneration"],
+  "9B83": ["vitreous haemorrhage"],
+  "9C21": ["endophthalmitis", "intraocular infection"],
+  "9C60": ["glaucoma suspect", "suspected glaucoma"],
+  "9C61.0": ["POAG", "open-angle glaucoma", "chronic open-angle glaucoma"],
+  "9C61.1": ["angle-closure glaucoma", "acute angle closure", "narrow-angle glaucoma"],
+  "9C40.1": ["optic neuritis"],
+  "9C40.4": ["ischaemic optic neuropathy", "AION", "NAION"],
+  "9C80": ["squint", "strabismus", "esotropia", "exotropia"],
+  "9C84": ["nystagmus"],
+  "9D00": ["refractive error", "myopia", "hypermetropia", "astigmatism"],
+  "9D01": ["presbyopia", "accommodation disorder"],
+  "9D40": ["reduced visual acuity"],
+  "9D90": ["blindness", "low vision", "visual impairment"],
+  "NA06.8": ["open globe", "globe rupture", "penetrating eye injury"],
+};
+
+// The diagnostic status a coded entry may carry. A symptom is not a diagnosis, a
+// differential is not a diagnosis, and a historical condition is not a current
+// one — the list keeps the three apart instead of collapsing them into "confirmed".
+export const OPHTH_ICD_STATUSES = [
+  "Confirmed",
+  "Suspected",
+  "Differential diagnosis",
+  "Symptom — not a diagnosis",
+  "Historical — previous episode",
+];
+
+export const OPHTH_ICD_ROLES = ["Primary", "Secondary", "Complication of another diagnosis"];
+
+// Laterality is recorded on the entry as its own fact. WHO carries laterality by
+// postcoordination, and the app never rewrites a stem code to carry it: the eye
+// stays in these fields, and a postcoordinated cluster is stored only when the
+// WHO Coding Tool actually produced one.
+export const OPHTH_LATERALITY = ["Right eye (OD)", "Left eye (OS)", "Both eyes (OU)", "Not applicable"];
+
+export const OPHTH_ANATOMICAL_SITES = [
+  "Eyelid", "Lacrimal apparatus", "Orbit", "Conjunctiva", "Cornea", "Sclera",
+  "Anterior chamber", "Iris", "Ciliary body", "Lens", "Vitreous",
+  "Retina", "Choroid", "Macula", "Optic disc", "Optic nerve",
+  "Optic chiasm", "Retrochiasmal visual pathway", "Visual cortex",
+  "Ocular motor system", "Refractive apparatus",
+];
+
+// The clinical detail a code cannot carry is recorded beside it, in the note.
+export const OPHTH_ICD_DETAIL_FIELDS = [
+  {
+    key: "laterality",
+    label: "Laterality",
+    type: "select",
+    options: OPHTH_LATERALITY,
+    hint: "Recorded beside the code — never appended to it.",
+  },
+  { key: "anatomical_site", label: "Anatomical site", type: "select", options: OPHTH_ANATOMICAL_SITES },
+  { key: "subtype", label: "Subtype or clinical variant", type: "input", placeholder: "e.g. ischaemic, granulomatous, recurrent" },
+  { key: "severity_stage", label: "Severity or stage", type: "input", placeholder: "e.g. moderate, ICROP stage 2 zone II, severe" },
+  { key: "complications", label: "Complications documented", type: "input", placeholder: "e.g. macular oedema, neovascularisation" },
+  { key: "associated_conditions", label: "Associated conditions", type: "input", placeholder: "e.g. type 2 diabetes, hypertension" },
+];
+
+export const OPHTH_ICD_CATALOG_NOTE =
+  "WHO ICD-11 MMS only — ICD-10 is never used and no ICD-10 crosswalk is applied. Codes come from the verified catalogue with their release stored, or are entered from the WHO browser and marked for review. Every code, display term and code description is WHO's; AMedix clinical synonyms are an indexing aid only.";
+
+export const OPHTH_ICD_CLUSTER_NOTE =
+  "Leave empty unless the WHO Coding Tool produced a postcoordinated cluster. A cluster is copied exactly as the WHO browser shows it (codes joined with & and /) — never assembled here, and never extended with a laterality or severity stem the classification does not provide.";
+
 // code | official display term | domain | primary tabulation entry (1 = yes) | Arabic term
+
 const RAW = [
   // ---- Ocular adnexa and orbit --------------------------------------------
   "9A01|Infectious disorders of eyelid|adnexa|1|اضطرابات معدية في الجفن",
@@ -210,9 +294,11 @@ export const OPHTH_ICD11 = RAW.map((row) => {
   const [code, display, domain, primaryFlag, arabic] = row.split("|");
   const isPrimary = primaryFlag === "1";
   const domainLabel = OPHTH_ICD11_DOMAINS[domain] || domain;
+  const synonyms = SYNONYMS[code] || [];
   return {
     code,
     display,
+    synonyms,
     domain,
     domainLabel,
     primary: isPrimary,
@@ -226,7 +312,13 @@ export const OPHTH_ICD11 = RAW.map((row) => {
     specificity: code.includes(".")
       ? "Subcategory — most specific"
       : "Block (stem) — select a subcategory when known",
-    aliases: [display, domainLabel, arabic].filter(Boolean).join(" "),
+    aliases: [display, domainLabel, arabic, ...synonyms].filter(Boolean).join(" "),
+    hierarchy: {
+      chapter: OPHTH_ICD11_MMS.chapter,
+      group: domainLabel,
+      family: code.split(".")[0],
+      level: code.includes(".") ? "Subcategory" : "Category",
+    },
     coding_note: CODING_NOTE[code] || "",
     definition: isPrimary
       ? `WHO ICD-11 MMS category in ${domainLabel}. Inclusion and exclusion notes are not reproduced here — confirm the exact category against the WHO browser before relying on a residual (…Y / …Z) code.`
@@ -234,6 +326,17 @@ export const OPHTH_ICD11 = RAW.map((row) => {
     arabic,
   };
 });
+
+// Where a subcategory's parent category is itself in the catalogue, the entry
+// carries the parent link, so the clinician sees the classification it sits under
+// instead of a flat list.
+for (const entry of OPHTH_ICD11) {
+  const stem = entry.code.split(".")[0];
+  const parent = stem !== entry.code ? OPHTH_ICD11.find((i) => i.code === stem) : null;
+  entry.parent_code = parent ? parent.code : "";
+  entry.parent_display = parent ? parent.display : "";
+  entry.hierarchy.parent = parent ? `${parent.code} ${parent.display}` : "";
+}
 
 // Only the domains one note can code, so an operative note never suggests a
 // refraction code and a test report never suggests a trauma code.

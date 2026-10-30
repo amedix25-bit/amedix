@@ -6,9 +6,10 @@
 
 import { OPHTH_EXAM_BLOCKS } from "@/lib/ophthalmologyExamBlocks";
 import { OPHTH_CONDITION_BLOCKS } from "@/lib/ophthalmologyConditionBlocks";
+import { OPHTH_CLINICAL_BLOCKS } from "@/lib/ophthalmologyClinicalBlocks";
 import { asObject, str, list, blockHasContent } from "@/lib/ophthFieldKit";
 
-export const OPHTH_BLOCKS = { ...OPHTH_EXAM_BLOCKS, ...OPHTH_CONDITION_BLOCKS };
+export const OPHTH_BLOCKS = { ...OPHTH_CLINICAL_BLOCKS, ...OPHTH_EXAM_BLOCKS, ...OPHTH_CONDITION_BLOCKS };
 
 export const ophthBlock = (key) => OPHTH_BLOCKS[key] || null;
 export const OPHTH_BLOCK_KEYS = Object.keys(OPHTH_BLOCKS);

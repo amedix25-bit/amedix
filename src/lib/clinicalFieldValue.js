@@ -30,6 +30,7 @@ import { formatGastroBlock } from "@/lib/gastroenterologyModules";
 import { formatGastroScores } from "@/lib/gastroenterologyScores";
 import { formatGastroSafety } from "@/lib/gastroenterologySafetyRules";
 import { formatOphthBlock } from "@/lib/ophthalmologyBlocks";
+import { formatOphthInvestigations } from "@/lib/ophthalmologyInvestigation";
 import { formatOphthScores } from "@/lib/ophthalmologyScores";
 import { formatOphthSafety } from "@/lib/ophthalmologySafetyRules";
 import {
@@ -215,6 +216,7 @@ export function formatFieldValue(type, value) {
   if (type === "gi_safety") return formatGastroSafety(value);
   if (type === "gi_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
   if (type === "ophth_modules") return formatOphthBlock(value);
+  if (type === "ophth_investigations") return formatOphthInvestigations(value);
   if (type === "ophth_scores") return formatOphthScores(value);
   if (type === "ophth_safety") return formatOphthSafety(value);
   if (type === "ophth_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");

@@ -46,6 +46,7 @@ import OphthalmologyBlockField from "@/components/doctor/notes/OphthalmologyBloc
 import OphthalmologyScoresField from "@/components/doctor/notes/OphthalmologyScoresField";
 import OphthalmologySafetyPromptsField from "@/components/doctor/notes/OphthalmologySafetyPromptsField";
 import OphthalmologyGuidanceField from "@/components/doctor/notes/OphthalmologyGuidanceField";
+import OphthalmologyInvestigationsField from "@/components/doctor/notes/OphthalmologyInvestigationsField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -167,6 +168,8 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
           clusterEnabled={f.clusterEnabled}
           clusterNote={f.clusterNote}
           requireConfirmation={f.requireConfirmation}
+          extraFields={f.extraFields}
+          unspecifiedJustification={f.unspecifiedJustification}
         />
       )}
       {f.type === "gcs_score" && (
@@ -302,6 +305,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "ophth_modules" && (
         <OphthalmologyBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "ophth_investigations" && (
+        <OphthalmologyInvestigationsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "ophth_scores" && (
         <OphthalmologyScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
