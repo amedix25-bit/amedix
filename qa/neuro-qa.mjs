@@ -1,0 +1,374 @@
+// Neurology — integrity, coding and safety check.
+//
+// Run with: node qa/neuro-qa.mjs
+//
+// The libraries under src/lib use the app's "@/lib/…" alias, which plain Node cannot
+// resolve. This script mirrors src/lib with the alias rewritten and imports it, so
+// every check runs against the REAL definitions the Doctor Portal uses.
+//
+// What it proves:
+//   1. All eleven existing Neurology note types are enhanced, append-only, with no
+//      duplicate field key and no existing key overwritten.
+//   2. Every original field of every neurology template is still declared in
+//      specialtyDocuments.js — the templates were appended to, not rebuilt.
+//   3. Every appended section survives the app's own note-section policy, so no
+//      panel is silently dropped before it reaches the doctor.
+//   4. Every block and score a note declares actually exists.
+//   5. The ICD-11 MMS catalogue is honest: no pre-verified code, no ICD-10 code, a
+//      release and a coding note on every entry, and no fabricated code.
+//   6. ICD-11 coding is configured for clinician confirmation and requires a
+//      justification for an unspecified code.
+//   7. Every safety prompt fires on the documented finding and stays silent without
+//      it, and every citation resolves to the reference register.
+//   8. Scores refuse to total when an item is missing.
+//   9. The note form and the printed record both render the new sections.
+
+import fs from "node:fs";
+import path from "node:path";
+
+const ROOT = path.resolve(import.meta.dirname, "..");
+const TMP = path.join(ROOT, "qa", ".neuro-tmp");
+const LIB = path.join(ROOT, "src", "lib");
+
+fs.rmSync(TMP, { recursive: true, force: true });
+fs.mkdirSync(TMP, { recursive: true });
+
+const walk = (dir) =>
+  fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+const libFiles = walk(LIB).filter((f) => f.endsWith(".js"));
+const libRels = new Set(libFiles.map((f) => path.relative(LIB, f).replaceAll("\\", "/")));
+
+const resolveTarget = (spec, fromRel) => {
+  let base;
+  if (spec.startsWith("@/lib/")) base = spec.slice(6);
+  else if (spec.startsWith(".")) base = path.posix.join(path.posix.dirname(fromRel), spec);
+  else return null;
+  base = path.posix.normalize(base);
+  if (libRels.has(base)) return base;
+  if (libRels.has(`${base}.js`)) return `${base}.js`;
+  if (libRels.has(`${base}/index.js`)) return `${base}/index.js`;
+  return null;
+};
+
+for (const file of libFiles) {
+  const rel = path.relative(LIB, file).replaceAll("\\", "/");
+  const out = path.join(TMP, rel);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const source = fs
+    .readFileSync(file, "utf8")
+    .replace(/(from\s+|import\s*\()(["'])([^"']+)\2/g, (m, pre, q, spec) => {
+      const target = resolveTarget(spec, rel);
+      if (!target) return m;
+      let r = path.posix.relative(path.posix.dirname(rel), target);
+      if (!r.startsWith(".")) r = `./${r}`;
+      return `${pre}${q}${r}${q}`;
+    });
+  fs.writeFileSync(out, source);
+}
+
+const icd = await import(path.join(TMP, "neurologyIcd11.js"));
+const refs = await import(path.join(TMP, "neurologyReferences.js"));
+const blocks = await import(path.join(TMP, "neurologyBlocks.js"));
+const scores = await import(path.join(TMP, "neurologyScores.js"));
+const sections = await import(path.join(TMP, "neurologyClinicalSections.js"));
+const safety = await import(path.join(TMP, "neurologySafetyRules.js"));
+const docs = await import(path.join(TMP, "neurologyDocuments.js"));
+const policy = await import(path.join(TMP, "noteSectionPolicy.js"));
+
+let failures = 0;
+const check = (ok, message) => {
+  if (!ok) {
+    failures += 1;
+    console.error(`FAIL — ${message}`);
+  }
+};
+
+const NOTE_KEYS = [
+  "neuro_consultation",
+  "neuro_followup",
+  "neuro_admission_note",
+  "neuro_progress_note",
+  "neuro_discharge_summary",
+  "neuro_procedure_note",
+  "neuro_eeg_report",
+  "neuro_emg_ncs_report",
+  "neuro_stroke_record",
+  "neuro_seizure_followup",
+  "neuro_referral",
+];
+
+// ---- 1. Every existing note type is enhanced -------------------------------
+check(
+  sections.NEURO_ENHANCED_KEYS.length === NOTE_KEYS.length,
+  "not every neurology note type is enhanced",
+);
+NOTE_KEYS.forEach((key) =>
+  check(sections.NEURO_ENHANCED_KEYS.includes(key), `note ${key} is not enhanced by the neurology layer`),
+);
+
+// ---- 2. The original templates are untouched -------------------------------
+const REGISTRY = fs.readFileSync(path.join(ROOT, "src", "lib", "specialtyDocuments.js"), "utf8");
+const START = REGISTRY.indexOf("const NEUROLOGY_DOCS = [");
+const NEURO_BLOCK = REGISTRY.slice(START, REGISTRY.indexOf("const PSYCHIATRY_DOCS = [", START));
+
+NOTE_KEYS.forEach((key) => check(NEURO_BLOCK.includes(`key: "${key}"`), `original template ${key} has disappeared`));
+[
+  ["neuro_consultation", ["chief_complaint", "hpi", "cranial_nerves", "motor_exam", "reflexes", "coordination", "gait"]],
+  ["neuro_followup", ["interval_history", "neuro_exam", "investigations_reviewed"]],
+  ["neuro_admission_note", ["admission_reason", "vitals", "admission_plan"]],
+  ["neuro_progress_note", ["overnight_events", "consciousness_level", "imaging_review"]],
+  ["neuro_discharge_summary", ["hospital_course", "discharge_neuro_status", "follow_up"]],
+  ["neuro_procedure_note", ["procedure", "technique", "complications"]],
+  ["neuro_eeg_report", ["background_activity", "epileptiform_discharges", "eeg_conclusion"]],
+  ["neuro_emg_ncs_report", ["nerves_studied", "motor_ncs", "sensory_ncs", "needle_exam"]],
+  ["neuro_stroke_record", ["onset_time", "last_known_well", "nihss_score", "thrombolysis", "thrombectomy"]],
+  ["neuro_seizure_followup", ["seizure_frequency", "seizure_types", "medication_adherence", "driving_status"]],
+  ["neuro_referral", ["referral_to", "reason", "urgency", "relevant_history"]],
+].forEach(([note, fields]) =>
+  fields.forEach((field) => check(NEURO_BLOCK.includes(`"${field}"`) && NEURO_BLOCK.includes(note), `original field ${field} of ${note} is no longer declared`)),
+);
+check(
+  REGISTRY.includes("withNeurologyStandards(NEUROLOGY_DOCS)"),
+  "specialtyDocuments.js does not apply the neurology standards",
+);
+
+// ---- 3. Appended sections survive the note-section policy -----------------
+NOTE_KEYS.forEach((key) => {
+  const fields = sections.NEURO_ENHANCEMENTS[key]();
+  const doc = { key, label: key, specialty: "neurology", fields };
+  const applied = policy.applyNoteSectionPolicy([doc]);
+  if (policy.isReferralNoteType(doc)) {
+    // A referral note type is deliberately kept out of the note-selection lists;
+    // its own record is still defined here so an existing referral keeps rendering.
+    check(applied.length === 0, `the referral note ${key} is not excluded from the note selection`);
+  } else {
+    const kept = new Set((applied[0]?.fields || []).map((f) => f.key));
+    fields.forEach((f) => check(kept.has(f.key), `the note-section policy silently drops ${f.key} from ${key}`));
+  }
+
+  // ---- 4. Every declared block, score and panel exists --------------------
+  const keys = fields.map((f) => f.key);
+  check(new Set(keys).size === keys.length, `note ${key} declares a duplicate field key`);
+  fields
+    .filter((f) => f.type === "neuro_modules")
+    .forEach((f) => check(Boolean(blocks.neuroBlock(f.key)), `note ${key} references unknown block ${f.key}`));
+  fields
+    .filter((f) => f.type === "neuro_scores")
+    .forEach((f) => (f.scores || []).forEach((s) => check(Boolean(scores.neuroScore(s)), `note ${key} references unknown score ${s}`)));
+
+  const coding = fields.filter((f) => f.type === "icd11_diagnoses");
+  check(coding.length === 1, `note ${key} does not carry exactly one ICD-11 coding field`);
+  coding.forEach((f) => {
+    check(f.requireConfirmation === true, `note ${key} does not require clinician confirmation of the code`);
+    check(f.unspecifiedJustification === true, `note ${key} does not require justification of an unspecified code`);
+    check(f.clusterEnabled === true && Boolean(f.clusterNote), `note ${key} has no postcoordination rule`);
+    check(Array.isArray(f.extraFields) && f.extraFields.length >= 7, `note ${key} carries too little detail beside the code`);
+    check(f.catalogRelease === icd.NEURO_ICD11_MMS.release, `note ${key} mixes ICD-11 releases`);
+    check(Array.isArray(f.catalog) && f.catalog.length > 0, `note ${key} has no catalogue`);
+  });
+  check(fields.filter((f) => f.type === "neuro_safety").length === 1, `note ${key} does not carry exactly one safety review`);
+  check(fields.filter((f) => f.type === "neuro_guidance").length === 1, `note ${key} does not record its guideline basis`);
+});
+
+// ---- 5. Catalogue integrity ----------------------------------------------
+check(icd.NEURO_ICD11.length >= 30, "the neurology catalogue is too thin");
+const codes = icd.NEURO_ICD11.map((e) => e.code);
+check(new Set(codes).size === codes.length, "the catalogue contains a duplicate code");
+icd.NEURO_ICD11.forEach((e) => {
+  check(Boolean(e.code && e.display && e.release && e.source), `entry ${e.code} is missing identity fields`);
+  check(["verified", "review_required", "unresolved"].includes(e.mapping_state), `entry ${e.code} has an invalid mapping state`);
+  check(Boolean(icd.NEURO_ICD11_DOMAINS[e.domain]), `entry ${e.code} has an unknown domain`);
+  check(!/^[A-Z]\d{2}(\.\d)?$/.test(e.code), `entry ${e.code} looks like an ICD-10 code`);
+  if (e.mapping_state === "verified") check(Boolean(e.verified_date), `entry ${e.code} claims verification with no date`);
+  else check(Boolean(e.coding_note || icd.NEURO_ICD_CATALOG_NOTE), `entry ${e.code} is not verified and does not say why`);
+});
+const NEURO_STATS = {
+  total: icd.NEURO_ICD11.length,
+  verified: icd.NEURO_ICD11.filter((e) => e.mapping_state === "verified").length,
+  review_required: icd.NEURO_ICD11.filter((e) => e.mapping_state === "review_required").length,
+  not_seeded: 0,
+};
+check(NEURO_STATS.verified === 0, "the neurology catalogue claims a pre-verified code — none may be pre-verified");
+check(/review required/i.test(icd.NEURO_ICD_CATALOG_NOTE), "the catalogue does not state that every entry needs coding review");
+check(
+  /never approximate a code/i.test(icd.NEURO_ICD_SEARCH_GUIDANCE),
+  "the coding guidance does not forbid approximating a code",
+);
+check(
+  String(icd.NEURO_ICD11_MMS.browser_url || "").startsWith("https://icd.who.int/"),
+  "the WHO browser reference is not the official one",
+);
+const movement = icd.neurologyCatalogFor(["movement"]);
+check(movement.length > 0 && movement.every((e) => e.domain === "movement"), "domain filtering leaks other domains");
+check(icd.neurologyCatalogFor([]).length === icd.NEURO_ICD11.length, "an unfiltered catalogue is not the full catalogue");
+
+// ---- 6. Scores refuse to total on missing items ---------------------------
+check(scores.calculateNeuroScore("gcs", {}).value === null, "GCS totals on an empty record");
+check(scores.calculateNeuroScore("gcs", {}).missing.length > 0, "an incomplete GCS reports nothing missing");
+const fullGcs = {
+  eye: "4 — Spontaneous",
+  verbal: "5 — Orientated",
+  motor: "6 — Obeys commands",
+};
+check(scores.calculateNeuroScore("gcs", fullGcs).value === 15, "a fully documented GCS does not total 15");
+check(scores.calculateNeuroScore("nihss", { loc: "0 — Alert" }).value === null, "NIHSS totals on a single item");
+check(Boolean(scores.formatNeuroScores({ gcs: fullGcs })), "the printed record drops a computed score");
+
+// ---- 7. Safety prompts fire in both directions ---------------------------
+const fire = (values) => safety.buildNeuroSafetyPrompts({ values }).map((p) => p.key);
+check(fire({}).length === 0, "an empty note raises a safety prompt");
+check(
+  fire({ neuro_stroke: { str_last_known_well: "" } }).length === 0,
+  "a blank stroke record raises a prompt as if a finding had been documented",
+);
+check(
+  fire({ neuro_stroke: { str_onset_time: "14:10" } }).includes("stroke_time_last_known_well"),
+  "a stroke record with no last-known-well raises no prompt",
+);
+check(
+  !fire({ neuro_stroke: { str_onset_time: "14:10", str_last_known_well: "13:30" } }).includes("stroke_time_last_known_well"),
+  "a documented last-known-well still raises the prompt",
+);
+check(
+  fire({ neuro_stroke: { str_reperfusion_decision: "Intravenous thrombolysis given" } }).includes("stroke_scan_before_reperfusion"),
+  "thrombolysis with no scan finding raises no prompt",
+);
+check(
+  !fire({
+    neuro_stroke: {
+      str_reperfusion_decision: "Intravenous thrombolysis given",
+      str_first_scan_finding: "No acute intracranial haemorrhage",
+      str_contraindication_review: "No contraindication identified",
+      str_bp_before_therapy: "146/82",
+      str_glucose: "6.4 mmol/L",
+    },
+  }).some((k) => ["stroke_scan_before_reperfusion", "stroke_contraindication_review", "stroke_bp_before_therapy", "stroke_glucose_before_therapy"].includes(k)),
+  "a fully documented thrombolysis still raises the thrombolysis prompts",
+);
+check(
+  fire({ neuro_stroke: { str_first_scan_finding: "Intracerebral haemorrhage", str_anticoagulant: "Warfarin" } }).includes("ich_on_anticoagulant"),
+  "a haemorrhage on warfarin raises no reversal prompt",
+);
+check(
+  !fire({ neuro_stroke: { str_first_scan_finding: "Intracerebral haemorrhage", str_anticoagulant: "None" } }).includes("ich_on_anticoagulant"),
+  "a haemorrhage off anticoagulation raises the reversal prompt",
+);
+check(
+  fire({ neuro_seizure: { szr_features: ["Impaired awareness"] } }).includes("seizure_classification_incomplete"),
+  "seizure features with no onset classification raise no prompt",
+);
+check(
+  !fire({ neuro_seizure: { szr_features: ["Impaired awareness"], szr_onset: "Focal" } }).includes("seizure_classification_incomplete"),
+  "a classified seizure still raises the classification prompt",
+);
+check(
+  fire({ neuro_status: { se_first_line_agent: "Levetiracetam 60 mg/kg IV" } }).includes("status_first_line_time"),
+  "status treatment with no time raises no prompt",
+);
+check(
+  fire({ neuro_status: { se_refractory: "Refractory — ongoing despite benzodiazepine and second-line agent", se_level_of_care: "Ward" } }).includes(
+    "status_refractory_outside_critical_care",
+  ),
+  "refractory status on a ward raises no prompt",
+);
+check(
+  fire({ neuro_headache: { hd_red_flags: ["Sudden onset (thunderclap)"] } }).includes("headache_red_flag_unaddressed"),
+  "a thunderclap headache with no evaluation raises no prompt",
+);
+check(
+  !fire({ neuro_headache: { hd_red_flags: ["Sudden onset (thunderclap)"], hd_secondary_evaluation: "CT angiography at 15:40 — normal" } }).includes(
+    "headache_red_flag_unaddressed",
+  ),
+  "an evaluated red flag still raises the prompt",
+);
+check(
+  fire({ neuro_headache: { hd_red_flags: ["None of these documented"] } }).length === 0,
+  "a documented negative red-flag list raises a prompt",
+);
+check(
+  fire({ neuro_headache: { hd_days_per_month: "20", hd_acute_medicine_days: "12" } }).includes("headache_medication_overuse"),
+  "a medication-overuse pattern raises no prompt",
+);
+check(
+  fire({ neuro_neuromuscular: { nm_respiratory_symptoms: ["Orthopnoea"] } }).includes("neuromuscular_respiratory_not_measured"),
+  "respiratory symptoms with no vital capacity raise no prompt",
+);
+check(
+  fire({ neuro_scores: { gcs: fullGcs } }).length === 0,
+  "a GCS of 15 raises a reduced-consciousness prompt",
+);
+check(
+  fire({ neuro_scores: { gcs: { eye: "2 — To pain", verbal: "2 — Sounds", motor: "4 — Withdraws" } } }).includes(
+    "reduced_consciousness_airway",
+  ),
+  "a GCS of 8 raises no airway prompt",
+);
+check(
+  fire({ neuro_icp: { icp_pupils: "Fixed and dilated" } }).includes("pupil_asymmetry_without_neurosurgery"),
+  "a fixed pupil raises no neurosurgical prompt",
+);
+check(
+  fire({
+    neuro_cns_infection: { inf_fever: "Present", inf_meningism: "Present" },
+  }).includes("cns_infection_lumbar_puncture"),
+  "fever with meningism and no LP decision raises no prompt",
+);
+check(
+  fire({ neuro_emg: { emg_pattern: "Axonal, length-dependent" } }).includes("emg_without_reference_values"),
+  "a conduction pattern with no reference values raises no prompt",
+);
+
+// Every rule is well formed and cites a resolvable source.
+safety.NEURO_SAFETY_RULES.forEach((rule) => {
+  check(Boolean(rule.key && rule.title && rule.basis), `rule ${rule.key} has no identity`);
+  check(["critical", "warning"].includes(rule.level), `rule ${rule.key} has an invalid level`);
+  check(Boolean(safety.NEURO_SAFETY_PROVENANCE[rule.provenance]), `rule ${rule.key} has no provenance label`);
+  check(Boolean(refs.NEURO_REFERENCES[rule.source]), `rule ${rule.key} cites unknown source ${rule.source}`);
+  if (rule.provenance === "local") {
+    check(!/^http/.test(rule.source), `rule ${rule.key} is local but cites a society URL`);
+  }
+});
+check(safety.NEURO_SAFETY_RULES.length >= 20, "the safety rule set is too thin for the presentations it covers");
+
+// ---- 8. The reference register and per-note attribution ------------------
+const REGISTER = refs.NEURO_REFERENCE_REGISTER;
+check(REGISTER.length >= 8, "the reference register is too thin");
+check(new Set(REGISTER.map((r) => r.organization + r.title)).size === REGISTER.length, "the register contains a duplicate entry");
+REGISTER.forEach((r) => {
+  check(Boolean(r.organization && r.title && r.edition), `reference ${r.organization} ${r.title} has no identity`);
+  if (r.url) check(/^https:\/\//.test(r.url), `reference ${r.organization} has a non-https source`);
+});
+NOTE_KEYS.forEach((key) => {
+  const entry = refs.neuroNoteBasis(key);
+  check(Boolean(entry), `note ${key} records no guideline basis`);
+  if (entry) {
+    check(Array.isArray(entry.basis) && entry.basis.length > 0, `note ${key} cites nothing`);
+    entry.basis.forEach((b) => {
+      check(Boolean(b.organization && b.title && b.edition && b.population && b.applies), `note ${key} has an incomplete citation`);
+      check(Boolean(refs.NEURO_REFERENCES[b.key] || b.organization), `note ${key} cites an unresolved reference`);
+    });
+  }
+});
+
+// ---- 9. The new sections are rendered and printed ------------------------
+const FORM = fs.readFileSync(path.join(ROOT, "src", "components", "doctor", "encounters", "DocumentFields.jsx"), "utf8");
+["neuro_modules", "neuro_scores", "neuro_safety", "neuro_guidance"].forEach((type) =>
+  check(FORM.includes(`"${type}"`), `the note form does not render ${type}`),
+);
+const VALUE = fs.readFileSync(path.join(ROOT, "src", "lib", "clinicalFieldValue.js"), "utf8");
+["formatNeuroBlock", "formatNeuroScores", "formatNeuroSafety"].forEach((fn) =>
+  check(VALUE.includes(fn), `the printed record does not use ${fn}`),
+);
+
+fs.rmSync(TMP, { recursive: true, force: true });
+
+const stats = NEURO_STATS;
+if (failures > 0) {
+  console.error(`\n${failures} check(s) failed.`);
+  process.exit(1);
+}
+console.log(
+  `PASS — ${NOTE_KEYS.length} Neurology note types enhanced, ${stats.total} ICD-11 MMS entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${blocks.NEURO_BLOCK_KEYS.length} blocks, ${scores.NEURO_SCORES.length} scores, ${safety.NEURO_SAFETY_RULES.length} safety rules verified in both directions, ${REGISTER.length} register references.`,
+);

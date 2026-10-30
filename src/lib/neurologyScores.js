@@ -203,6 +203,16 @@ export const calculateNeuroScore = (key, inputs) => {
     return { spec, missing: [], value: chosen ? chosen.value : null, band: chosen ? chosen.label : "" };
   }
 
+  // A documented value that matches no option is never counted as zero: the total
+  // is withheld and the item is named, so a mistyped or legacy value can never
+  // produce a wrong score — and no safety prompt or printed record is built on one.
+  const unmatched = spec.variables.filter(
+    (v) => !v.options.some((o) => String(o.value) === String(values[v.key])),
+  );
+  if (unmatched.length) {
+    return { spec, missing: unmatched.map((v) => `${v.label} (value not recognised)`), value: null, band: "" };
+  }
+
   const total = spec.variables.reduce((sum, v) => {
     const chosen = v.options.find((o) => String(o.value) === String(values[v.key]));
     return sum + (chosen ? Number(chosen.value) : 0);

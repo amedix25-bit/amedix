@@ -40,6 +40,9 @@ import { formatHemaSafety } from "@/lib/hematologySafetyRules";
 import { formatOrthoSafety } from "@/lib/orthopedicsSafetyRules";
 import { formatOrthoTrauma } from "@/lib/orthopedicsTrauma";
 import { formatOrthoHealing } from "@/lib/orthopedicsManagement";
+import { formatNeuroBlock } from "@/lib/neurologyBlocks";
+import { formatNeuroScores } from "@/lib/neurologyScores";
+import { formatNeuroSafety } from "@/lib/neurologySafetyRules";
 import {
   akiStaging,
   albuminuriaCategoryFor,
@@ -234,6 +237,10 @@ export function formatFieldValue(type, value) {
   if (type === "ortho_safety") return formatOrthoSafety(value);
   if (type === "ortho_trauma") return formatOrthoTrauma(value);
   if (type === "ortho_healing") return formatOrthoHealing(value);
+  if (type === "neuro_modules") return formatNeuroBlock(value);
+  if (type === "neuro_scores") return formatNeuroScores(value);
+  if (type === "neuro_safety") return formatNeuroSafety(value);
+  if (type === "neuro_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

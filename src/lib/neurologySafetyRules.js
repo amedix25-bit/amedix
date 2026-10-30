@@ -28,7 +28,10 @@ const REF = (key) => NEURO_REFERENCES[key];
 const bv = (values, block) => neuroBlockValues(values, block);
 const f = (values, block, field) => str(bv(values, block)[field]);
 const m = (values, block, field) => list(bv(values, block)[field]);
-const blockUsed = (values, block) => Object.keys(bv(values, block)).some((k) => k !== "__n" && !Array.isArray(bv(values, block)[k]) && str(bv(values, block)[k]));
+const blockUsed = (values, block) =>
+  Object.entries(bv(values, block)).some(([k, v]) =>
+    k === "__n" ? false : Array.isArray(v) ? v.length > 0 : str(v) !== "",
+  );
 
 const REPERFUSION_GIVEN = ["Intravenous thrombolysis given", "Mechanical thrombectomy performed", "Thrombolysis and thrombectomy"];
 const REPERFUSION_CONSIDERED = [...REPERFUSION_GIVEN, "Considered and not given — reason documented"];
