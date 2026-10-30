@@ -52,7 +52,8 @@ const RETIRED_SECTION = [
   /^medication review$/i,
   /^laborator/i,
   /^labs?\b/i,
-  /^imaging$/i,
+  /^imaging\b/i,
+  /^images?\b/i,
   /^investigations?\b/i,
   /^encounter context/i,
   /^plan$/i,
@@ -96,6 +97,9 @@ const GLOBAL_RETIRED_FIELD_LABEL = [
   /^treatment$/i,
   /laborator/i,
   /^labs?\b/i,
+  /\blabs?\b/i, // Relevant Labs, Imaging / Labs Reviewed, Labs at Review …
+  /\bradiolog/i, // Radiology Reviewed, Radiology Report — never the note's own imaging record
+  /\bimages?\b/i, // Images / Studies, Images Acquired
   /^plan\b/i,
   /^referral/i,
 ];
@@ -108,9 +112,22 @@ const RETIRED_FIELD_LABEL = [
   /antimicrobial/i,
   /escalat/i, // covers Escalation Criteria and De-Escalation
   /investigation/i,
-  /^imaging\b/i, // Imaging Reviewed / Findings / Performed / Guidance …
-  /\bimaging$/i, // Pelvic / Chest Imaging, Respiratory Imaging, Staging Imaging …
+  /\bimaging\b/i, // Imaging Reviewed / Findings / Performed / Guidance, Pelvic / Chest Imaging, Staging Imaging …
+  /\bimages?\b/i, // Images / Series Acquired
+  /\bradiolog/i, // Radiology Review / Radiology Findings
   /working diagnosis/i,
+];
+
+// Structured laboratory / imaging result entry (blood-count panels, renal
+// panels, cardiac laboratory panels, investigation pickers). The note carries no
+// laboratory or imaging result entry in any specialty — an imaging report note's
+// own content (a radiologist's report) is exempt above.
+const RETIRED_FIELD_TYPES = [
+  "hema_labs",
+  "renal_labs",
+  "cardio_labs",
+  "ophth_investigations",
+  "investigation_panels",
 ];
 
 // Note types retired from the catalogue (the Surgical Referral note).
@@ -236,6 +253,7 @@ const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation", "peds_
 
 const isRetiredField = (field, specialty) => {
   if (STRUCTURED_RECORD_TYPES.includes(field.type)) return false;
+  if (RETIRED_FIELD_TYPES.includes(field.type)) return true;
   const label = field.label || "";
   if (isGloballyRetiredField(field)) return true;
   if (specialty === "surgery" && SURGERY_RETIRED_FIELD_LABEL.some((re) => re.test(label))) return true;
@@ -256,6 +274,7 @@ export const retireNoteFields = (fields) =>
     .filter((field) => !isRetiredSection(field.section))
     .filter((field) => !RETIRED_INSIDE_KEPT_SECTION(field))
     .filter((field) => !isGloballyRetiredField(field))
+    .filter((field) => !RETIRED_FIELD_TYPES.includes(field.type))
     .map((field) => (field.section ? { ...field, section: renameKeptSection(field.section) } : field));
 
 export const applyNoteSectionPolicy = (docs) =>
