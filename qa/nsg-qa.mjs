@@ -61,49 +61,83 @@ NSG_EMERGENCY_PRESENTATIONS.forEach((p, i) => {
   ok(s.length >= 6, `pathway ${key}: only ${s.length} sections`);
   s.forEach((sec) => ok(String(sec.title || "").trim(), `pathway ${key}: untitled section`));
 });
-const emSample = { presentation: "Herniation", stability: "Deteriorating", airway: "Not assessed", gcs_trend: "Falling GCS", herniation: "Signs present", imaging: "Not available", actions: "Mannitol given", discuss: "Not discussed", transfer: "Declined", responsible: "" };
+const emSample = { presentation: "Traumatic brain injury", presentation_detail: "Fall, GCS 9", herniation: "Uncal herniation suspected", airway: "", scan_timing: "", discussion_with: "", transfer_status: "", responsible_clinician: "" };
 const emText = formatEmergencyPathway(emSample);
-ok(emText.includes("Herniation") && emText.split("\n").length >= 6, "emergency format incomplete");
+ok(emText.includes("Traumatic brain injury") && emText.split("\n").length >= 6, "emergency format incomplete");
 const emFlags = emergencyFlags(emSample);
-ok(emFlags.herniation && emFlags.noAirway && emFlags.fallingGcs && emFlags.noImaging && emFlags.notDiscussed, `emergency flags: ${JSON.stringify(emFlags)}`);
+ok(
+  emFlags.documented && emFlags.herniation && emFlags.no_airway && emFlags.no_scan &&
+  emFlags.no_discussion && emFlags.no_transfer_decision && emFlags.no_responsible,
+  `emergency flags: ${JSON.stringify(emFlags)}`
+);
+ok(!emergencyFlags({ presentation: "TBI", airway: "Patent", scan_timing: "Immediate", discussion_with: "Neurosurgery", transfer_status: "Accepted", responsible_clinician: "Dr A" }).no_responsible, "documented emergency flagged as missing the responsible clinician");
 
 /* 4 — Operation record */
 ok(NSG_PROCEDURE_TYPES.length >= 9, `procedure types: ${NSG_PROCEDURE_TYPES.length}`);
-ok(operativeSections("full").length >= 10, `operative sections: ${operativeSections("full").length}`);
+ok(operativeSections("full").length >= 7, `operative sections: ${operativeSections("full").length}`);
 NSG_PROCEDURE_TYPES.forEach((p) => {
   const key = typeof p === "string" ? p : p.key;
   ok(operativeSections("procedure", key).length >= 2, `procedure ${key}: too few blocks`);
 });
-const opSample = { procedure: "Decompressive craniectomy", diagnosis: "Acute subdural haematoma", indication: "Falling GCS", consent: "Documented", team: "Consultant + registrar", anaesthesia: "General", positioning: "Supine, head turned", approach: "Trauma flap", steps: "Flap, haematoma evacuation", anatomy: "Cortical surface intact", implants: "Yes — not documented", specimens: "Not documented", blood_loss: "450 ml", drains: "Subdural drain, no output recorded", complications: "None", closure: "Layered", destination: "ICU", postop: "CT at 6 hours" };
+const opSample = { procedure: "Decompressive craniectomy", diagnosis: "Acute subdural haematoma", consent: "Documented, patient intubated with next of kin consent by phone", counts: "Confirmed correct", postop_neuro: "Pupils equal, GCS 7 at end of procedure" };
 const opText = formatOperativeRecord(opSample);
 ok(opText.includes("Decompressive craniectomy"), "operative format lost the procedure");
-const opFlags = operativeFlags(opSample);
-ok(opFlags.untraceableImplant && !opFlags.consentMissing, `operative flags: ${JSON.stringify(opFlags)}`);
-ok(operativeFlags({ ...opSample, consent: "" }).consentMissing === true, "missing consent not detected");
+const opBad = operativeFlags({ ...opSample, implants: "Yes — cranioplasty plate", implant_traceability: "", consent: "", drain: "Subdural drain", drain_detail: "", postop_neuro: "", counts: "Incorrect" });
+ok(
+  opBad.implant_untraceable && opBad.consent_missing && opBad.counts_not_confirmed &&
+  opBad.drain_without_detail && opBad.no_postop_neuro,
+  `operative flags: ${JSON.stringify(opBad)}`
+);
+ok(!operativeFlags(opSample).consent_missing, "documented consent flagged as missing");
 const legacyOp = operativeFlags({ implants: "Yes — not documented", consent: "Not documented" });
-ok(legacyOp.untraceableImplant && legacyOp.consentMissing, "legacy flat operation values not read by the rules");
+ok(legacyOp.implant_untraceable && legacyOp.consent_missing, "legacy flat operation values not read by the rules");
 
 /* 5 — Postoperative monitoring */
 ok(postopSections("monitoring").length === 2, `monitoring sections: ${postopSections("monitoring").length}`);
 ok(postopSections("full").length >= 4, `postop sections: ${postopSections("full").length}`);
-ok(formatPostopMonitoring({}).split("\n").length >= 4, "postop format on an empty record");
-const poFlags = postopFlags({ interval: "", threshold: "ICP > 20", thresholdAction: "", responsible: "" });
-ok(poFlags.noInterval && poFlags.thresholdNoAction && poFlags.noResponsible, `postop flags: ${JSON.stringify(poFlags)}`);
+ok(/not documented/i.test(formatPostopMonitoring({})), "postop format on an empty record");
+ok(/not documented/i.test(formatPostopMonitoring(undefined)), "postop format on an undefined record");
+const poDoc = postopFlags({ obs_frequency: "Hourly neuro obs", gcs_trend: "Stable", responsible_clinician: "Dr A", criteria_met: [] });
+ok(poDoc.documented && !poDoc.no_observation_interval && !poDoc.no_responsible, `documented postop flagged: ${JSON.stringify(poDoc)}`);
+const poBad = postopFlags({ gcs_trend: "Deteriorating", pupil_trend: "Asymmetrical", csf: "Suspected CSF leak", bleeding: "Suspected", infection: "Meningism", drain_function: "Blocked", seizure: "First seizure", criteria_met: ["ICP > 20"], responsible_clinician: "" });
+ok(
+  poBad.documented && poBad.no_observation_interval && poBad.deterioration && poBad.pupil_change &&
+  poBad.csf_leak && poBad.bleeding && poBad.infection && poBad.drain_problem && poBad.seizure &&
+  poBad.no_responsible && poBad.criteria.length === 1,
+  `postop flags: ${JSON.stringify(poBad)}`
+);
 
 /* 6 — Safety rules */
 ok(NSG_SAFETY_RULE_COUNT >= 24, `rule count ${NSG_SAFETY_RULE_COUNT}`);
+const promptKeys = (values) => buildNeurosurgerySafetyPrompts({ values }).map((p) => p.key);
 [
-  ["herniation", { nsg_emergency: { herniation: "Signs present" } }],
-  ["airway", { nsg_emergency: { airway: "Not assessed" } }],
-  ["specialist discussion", { nsg_emergency: { discuss: "Not discussed" } }],
-  ["transfer", { nsg_emergency: { transfer: "Declined" } }],
-  ["consent", { nsg_operative: { consent: "Not documented" } }],
-  ["implant traceability", { nsg_operative: { implants: "Yes — not documented" } }],
-  ["observation interval", { nsg_postop: { interval: "" } }],
-  ["threshold action", { nsg_postop: { threshold: "ICP > 20", thresholdAction: "" } }],
-  ["responsible clinician", { nsg_postop: { responsible: "" } }],
-].forEach(([label, values]) => {
-  ok(buildNeurosurgerySafetyPrompts({ values }).length > 0, `no advisory prompt raised for ${label}`);
+  ["herniation", "herniation", { nsg_emergency: { presentation: "TBI", herniation: "Uncal herniation suspected" } }],
+  ["scan not recorded", "emergency_scan_not_recorded", { nsg_emergency: { presentation: "TBI", scan_timing: "" } }],
+  ["specialist discussion", "no_specialist_discussion", { nsg_emergency: { presentation: "TBI", discussion_with: "" } }],
+  ["transfer decision", "transfer_decision_missing", { nsg_emergency: { presentation: "TBI", transfer_status: "" } }],
+  ["consent", "consent_not_recorded", { nsg_operative: { procedure: "Craniectomy", consent: "" } }],
+  ["implant traceability", "implant_traceability", { nsg_operative: { procedure: "Craniectomy", implants: "Yes — plate", implant_traceability: "" } }],
+  ["observation interval", "postop_observation_interval", { nsg_postop: { gcs_trend: "Stable" } }],
+  ["threshold action", "postop_threshold_without_action", { nsg_postop: { obs_frequency: "Hourly", criteria_met: ["ICP > 20"], action_taken: "" } }],
+  ["responsible clinician", "no_responsible_clinician", { nsg_postop: { obs_frequency: "Hourly", responsible_clinician: "" } }],
+].forEach(([label, key, values]) => {
+  const keys = promptKeys(values);
+  ok(keys.includes(key), `no advisory prompt ${key} for ${label} (raised: ${keys.join(", ") || "none"})`);
+});
+// Legacy notes: the same values at the top level must still raise the prompt.
+ok(promptKeys({ presentation: "TBI", herniation: "Uncal herniation suspected" }).includes("herniation"), "legacy flat emergency values not read by the rules");
+ok(promptKeys({ consent: "Not documented", procedure: "Craniectomy" }).includes("consent_not_recorded"), "legacy flat operation values not read by the rules (rules)");
+// A fully documented note must stay silent.
+[
+  "herniation", "emergency_scan_not_recorded", "no_specialist_discussion", "transfer_decision_missing",
+  "consent_not_recorded", "implant_traceability", "postop_observation_interval",
+  "postop_threshold_without_action", "no_responsible_clinician",
+].forEach((key) => {
+  ok(!promptKeys({
+    nsg_emergency: { presentation: "TBI", airway: "Patent", scan_timing: "Immediate", discussion_with: "Neurosurgery", transfer_status: "Accepted", responsible_clinician: "Dr A" },
+    nsg_operative: { procedure: "Craniectomy", consent: "Documented", counts: "Confirmed correct", postop_neuro: "Pupils equal" },
+    nsg_postop: { obs_frequency: "Hourly", gcs_trend: "Stable", responsible_clinician: "Dr A", criteria_met: [], action_taken: "Continued observation" },
+  }).includes(key), `fully documented note still raised ${key}`);
 });
 ok(Array.isArray(buildNeurosurgerySafetyPrompts({ values: {} })), "rules failed on an empty note");
 

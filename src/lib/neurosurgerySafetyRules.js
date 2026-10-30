@@ -543,7 +543,7 @@ const RULES = [
     provenance: "guideline",
     source: "nice_ng232",
     population: ALL_AGES,
-    when: (values, concerns) => emergencyFlags(values?.nsg_emergency).herniation || has(concerns, "herniation"),
+    when: (values, concerns) => emergencyFlags(emergencyOf(values)).herniation || has(concerns, "herniation"),
   },
   {
     key: "airway_not_recorded",
@@ -557,7 +557,7 @@ const RULES = [
     source: null,
     population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
     when: (values) => {
-      const emergency = emergencyFlags(values?.nsg_emergency);
+      const emergency = emergencyFlags(emergencyOf(values));
       if (!emergency.documented || !emergency.no_airway) return false;
       const total = gcsTotal(values);
       const consciousness = String(values?.nsg_exam?.consciousness || "");
@@ -576,7 +576,7 @@ const RULES = [
     source: null,
     population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
     when: (values) => {
-      const emergency = emergencyFlags(values?.nsg_emergency);
+      const emergency = emergencyFlags(emergencyOf(values));
       return emergency.documented && emergency.no_scan;
     },
   },
@@ -592,7 +592,7 @@ const RULES = [
     source: null,
     population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
     when: (values) => {
-      const emergency = emergencyFlags(values?.nsg_emergency);
+      const emergency = emergencyFlags(emergencyOf(values));
       return emergency.documented && emergency.no_discussion;
     },
   },
@@ -608,7 +608,7 @@ const RULES = [
     source: null,
     population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
     when: (values) => {
-      const emergency = emergencyFlags(values?.nsg_emergency);
+      const emergency = emergencyFlags(emergencyOf(values));
       return emergency.documented && emergency.no_transfer_decision;
     },
   },
@@ -631,7 +631,7 @@ const RULES = [
       },
     ],
     when: (values) => {
-      const emergency = emergencyFlags(values?.nsg_emergency);
+      const emergency = emergencyFlags(emergencyOf(values));
       const presentation = String(values?.nsg_emergency?.presentation || "");
       const cordDocumented =
         /Cauda equina|Spinal cord compression/i.test(presentation) ||
@@ -724,7 +724,7 @@ const RULES = [
     source: null,
     population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
     when: (values) => {
-      const emergency = emergencyFlags(values?.nsg_emergency);
+      const emergency = emergencyFlags(emergencyOf(values));
       const postop = postopFlags(postopOf(values));
       return (
         (emergency.documented && emergency.no_responsible) ||
