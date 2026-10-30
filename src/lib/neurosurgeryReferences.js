@@ -466,6 +466,23 @@ export const NSG_NOTE_SOURCES = {
       "Histological and molecular classification follows the WHO CNS tumour classification edition recorded in this note; a radiological impression is never coded as an established neoplasm.",
     ],
   },
+  nsg_emergency_cranial: {
+    population: "Infants, children and adults",
+    documents: ["nice_ng232", "aans_tbi_4th", "eso_eans_esmint_asah", icd],
+    divergences: [
+      "NICE NG232 covers infants, children and adults; the AANS/CNS 4th edition is adult severe-TBI evidence. Record which one was applied in a child.",
+      "The ESO/EANS/ESMINT guideline applies to aneurysmal subarachnoid haemorrhage only — a spontaneous intracerebral haemorrhage follows the local stroke pathway, which is recorded rather than merged into the subarachnoid guidance.",
+    ],
+  },
+  nsg_emergency_spine: {
+    population: "Adults — a child is documented against the paediatric source",
+    documents: ["nice_ng59", "ao_spine_tl_classification", "ao_spine_subaxial", "isncsci_2019", icd],
+    divergences: [
+      "NICE NG59 defines the urgent pathway for suspected cauda equina syndrome over 16; it is not a paediatric document.",
+      "Malignant cord compression follows the local oncology pathway, which is not attributed to a society document here — the record says so.",
+      "The AO Spine classifications describe injury morphology and instability; they do not set a timing target for decompression.",
+    ],
+  },
   nsg_cranial_operative: {
     population: "Adults",
     documents: ["aans_tbi_4th", "nice_ng232", icd],

@@ -32,6 +32,18 @@ export const NSG_CODING_INSTRUCTIONS = {
     "Where the diagnosis is still differential, record the differential entries and leave the primary entry's status as documented — a suspected entry is never coded as confirmed.",
     "Record the mechanism chapter entry only where the presentation is injury-related.",
   ],
+  nsg_emergency_cranial: [
+    "Code the emergency condition that required the intervention — the haemorrhage, the injury or the hydrocephalus — not the symptom that announced it (a falling conscious level or a headache is not the diagnosis).",
+    "Where the emergency is a complication of a device or an operation, code the complication in addition to the underlying condition.",
+    "A herniation syndrome is documented in the note's structured fields as a clinical state; it does not replace the code for the lesion causing it.",
+    "Confirm the specific haemorrhage or injury entry in the WHO browser rather than a broad 'head injury' term.",
+  ],
+  nsg_emergency_spine: [
+    "Code the cord or cauda equina compression with its documented cause (disc, tumour, abscess, haematoma, fracture) — not 'back pain' or 'weakness'.",
+    "Where a metastasis compresses the cord, code the metastatic disease and record the primary site additionally when it is known.",
+    "Level and laterality are recorded in the note's structured fields; the app does not build a postcoordinated cluster.",
+    "Cauda equina syndrome is coded only when it is documented clinically, never from a scan report alone.",
+  ],
   nsg_spine: [
     "Code the specific spinal degenerative or disc entry with its level; 'back pain' alone is not a substitute for a documented nerve-root or canal diagnosis.",
     "Radiculopathy and myelopathy are coded as documented — neither is inferred from a scan report.",

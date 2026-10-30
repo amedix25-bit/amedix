@@ -29,100 +29,32 @@
 
 import { guidelineBasisLabels } from "@/lib/neurosurgeryReferences";
 
-const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
-const I = (key, label, extra) => ({ key, label, type: "input", ...extra });
-const N = (key, label, extra) => ({ key, label, type: "number", ...extra });
-const S = (key, label, options, extra) => ({ key, label, type: "select", options, ...extra });
-
-const R = { required: true };
-const when = (key, ...values) => ({ showIf: { key, in: values } });
-const sec = (section, fields) => fields.map((f) => ({ ...f, section }));
-
-const NOT_DOCUMENTED = "Not documented";
-const SIDE = ["Left", "Right", "Bilateral", "Midline", "Not applicable", NOT_DOCUMENTED];
-const PUPILS = [
-  "Symmetrical and reactive",
-  "Asymmetrical — one pupil larger",
-  "Fixed and dilated — unilateral",
-  "Fixed and dilated — bilateral",
-  "Unable to assess",
-];
-
-const vitalsBlock = () => sec("Observations", [{ key: "vitals", label: "Vital Signs", type: "vitals" }]);
-
-const examBlock = () =>
-  sec("Examination", [
-    {
-      key: "examinations",
-      label: "Select Examination",
-      type: "examinations",
-      examinationTypes: ["neurological", "general", "musculoskeletal", "custom"],
-    },
-  ]);
-
-const icdBlock = (placeholder) =>
-  sec("Diagnosis Classification (ICD-11)", [
-    {
-      key: "icd11_diagnoses",
-      label: "Neurosurgical Diagnoses (ICD-11 MMS) — role, status and clinical basis",
-      type: "icd11_diagnoses",
-      catalog: [],
-      searchPlaceholder: placeholder,
-      catalogNote:
-        "Neurosurgery has no verified code subset bundled in this build. Enter the code and official term from the WHO ICD-11 browser — the entry is stored as review required until it is checked.",
-    },
-  ]);
-
-const guidanceBlock = (noteKey) =>
-  sec("Coding Guidance & Clinical Decision Support", [
-    {
-      key: "nsg_guidance",
-      label: "Neurosurgical coding guidance and conditional safety prompts",
-      type: "nsg_guidance",
-      noteKey,
-    },
-  ]);
-
-const gcsBlock = () => [
-  { key: "gcs", label: "Glasgow Coma Scale (GCS) — components as examined", type: "gcs_score" },
-  S("pupils", "Pupillary findings", PUPILS),
-  S("neuro_deterioration", "Documented neurological deterioration during this episode", [
-    "No",
-    "Yes",
-    "Unable to assess",
-  ]),
-];
-
-// The structured neurosurgical examination, recorded the same way in every note
-// that needs it, so an observation can be compared with the one before it.
-const examField = () =>
-  sec("Neurological Examination", [
-    {
-      key: "nsg_exam",
-      label:
-        "Structured neurosurgical examination — conscious level and orientation, pupils, cranial nerves, MRC power, sensory level and modality, reflexes with plantar response and clonus, coordination and cerebellar signs, gait, meningeal signs, spinal column with dermatomal and myotomal level",
-      type: "nsg_exam",
-    },
-  ]);
-
-const isncsciBlock = (showIf) =>
-  sec("ISNCSCI / ASIA Examination", [
-    {
-      key: "nsg_isncsci",
-      label: "ISNCSCI / ASIA examination — key muscles, dermatomes, sacral examination, levels and AIS grade",
-      type: "nsg_isncsci",
-      ...(showIf ? { showIf } : {}),
-    },
-  ]);
-
-const scoreBlock = () =>
-  sec("Validated Scores & Classifications", [
-    {
-      key: "nsg_scores",
-      label: "Scores and classifications that apply to this condition — calculated only from documented values",
-      type: "nsg_scores",
-    },
-  ]);
+// The field builders and the shared blocks live in their own module, so a new
+// note type can be added without this catalogue growing for every note.
+import {
+  I,
+  N,
+  NOT_DOCUMENTED,
+  PUPILS,
+  R,
+  S,
+  SIDE,
+  T,
+  emergencyBlock,
+  examBlock,
+  examField,
+  gcsBlock,
+  guidanceBlock,
+  icdBlock,
+  isncsciBlock,
+  operativeBlock,
+  postopBlock,
+  scoreBlock,
+  sec,
+  vitalsBlock,
+  when,
+} from "@/lib/neurosurgeryNoteBlocks";
+import { EMERGENCY_CRANIAL, EMERGENCY_SPINE } from "@/lib/neurosurgeryEmergencyNotes";
 
 // ---------------------------------------------------------------------------
 // 1. Neurosurgical Consultation
@@ -331,6 +263,7 @@ const NEUROTRAUMA = {
     ...isncsciBlock({ key: "spinal_injury", in: ["Suspected", "Yes — level and grade documented"] }),
     ...vitalsBlock(),
     ...examBlock(),
+    ...emergencyBlock(),
     ...sec("Imaging Reviewed", [
       S("cranial_ct", "Cranial CT — worst documented finding", [
         "No acute intracranial abnormality",
@@ -647,65 +580,7 @@ const CRANIAL_OPERATIVE = {
   label: "Cranial Operative Note",
   specialty: "neurosurgery",
   fields: [
-    ...sec("Procedure & Indication", [
-      I("procedure", "Procedure performed", R),
-      T("indication", "Indication and the diagnosis the operation treats", R),
-      S("side", "Side", SIDE),
-      S("urgency", "Urgency", ["Elective", "Semi-elective", "Urgent", "Emergency"]),
-      S("consent_status", "Consent and site marking confirmed", [
-        "Confirmed — documented",
-        "Not documented",
-        "Not applicable — emergency",
-      ]),
-    ]),
-    ...sec("Anaesthesia & Positioning", [
-      S("anaesthesia", "Anaesthesia", ["General", "Awake craniotomy", "Sedation", "Local"]),
-      I("positioning", "Position and head fixation"),
-      S("neuronavigation", "Neuronavigation", ["Used", "Not used", "Not available"]),
-      S("neuromonitoring", "Intra-operative neurophysiological monitoring", [
-        "Not used",
-        "Motor mapping",
-        "Somatosensory evoked potentials",
-        "Cortical mapping — language",
-        "Combined monitoring",
-        "Not documented",
-      ]),
-      S("antibiotic_prophylaxis", "Antibiotic prophylaxis", ["Given — agent and time documented", "Not given — reason documented", NOT_DOCUMENTED]),
-    ]),
-    ...sec("Operative Steps", [
-      S("craniotomy", "Approach / bone work", ["Craniotomy", "Craniectomy", "Burr hole", "Keyhole", "Transsphenoidal", "Other"]),
-      S("dural_opening", "Dural handling", ["Opened and repaired at closure", "Opened — dural substitute used", "Not opened", "Repaired primarily"]),
-      T("operative_findings", "Operative findings — pathology, anatomy, vessels, nerves, unexpected findings"),
-      S("resection_extent", "Extent of resection achieved", [
-        "Not applicable",
-        "Biopsy only",
-        "Partial",
-        "Subtotal",
-        "Gross total",
-        NOT_DOCUMENTED,
-      ]),
-      S("haemostasis", "Haemostasis", ["Achieved — documented", "Achieved after additional measures", "Concern at closure"]),
-      S("closure", "Closure", ["Bone flap replaced and fixed", "Craniectomy — bone stored", "Dura closed watertight", "Dura closed with graft"]),
-    ]),
-    ...sec("Drains, Counts & Specimens", [
-      S("drain", "Drain left in place", ["None", "Subdural drain", "Wound drain", "External ventricular drain", "Lumbar drain"]),
-      S("vte_prophylaxis", "VTE prophylaxis decision for after theatre", [
-        "Mechanical only — pharmacological timing documented",
-        "Pharmacological started",
-        "Deferred — timing documented",
-        NOT_DOCUMENTED,
-      ]),
-      N("blood_loss", "Estimated blood loss (mL)", { min: 0, max: 20000 }),
-      S("implants", "Implants used", ["None", "Yes — recorded in the implant record", "Yes — not documented"]),
-      S("specimens", "Specimens sent", ["None", "Histology", "Microbiology", "Histology and microbiology", NOT_DOCUMENTED]),
-      S("postop_destination", "Post-operative destination", ["Neurosurgical ward", "ICU / high-dependency", "Recovery — routine observation", NOT_DOCUMENTED]),
-      S("postop_scan", "Post-operative imaging decision", [
-        "Not indicated — reason documented",
-        "Planned within 24 hours",
-        "Performed — reviewed",
-        NOT_DOCUMENTED,
-      ]),
-    ]),
+    ...operativeBlock(),
     ...icdBlock("Search the condition the operation treated"),
     ...guidanceBlock("nsg_cranial_operative"),
   ],
@@ -720,59 +595,7 @@ const SPINAL_OPERATIVE = {
   label: "Spinal Operative Note",
   specialty: "neurosurgery",
   fields: [
-    ...sec("Procedure & Indication", [
-      I("procedure", "Procedure performed", R),
-      T("indication", "Indication and the diagnosis the operation treats", R),
-      I("levels", "Levels operated"),
-      S("side", "Side of the decompression or approach", SIDE),
-      S("urgency", "Urgency", ["Elective", "Semi-elective", "Urgent", "Emergency"]),
-      S("consent_status", "Consent and site marking confirmed", ["Confirmed — documented", "Not documented"]),
-    ]),
-    ...sec("Anaesthesia & Positioning", [
-      S("anaesthesia", "Anaesthesia", ["General", "Spinal", "Sedation"]),
-      I("positioning", "Position — prone, lateral or supine, with any frames used"),
-      S("neuromonitoring", "Intra-operative neurophysiological monitoring", [
-        "Not used",
-        "Motor evoked potentials",
-        "Somatosensory evoked potentials",
-        "Combined monitoring",
-        "Not documented",
-      ]),
-      S("antibiotic_prophylaxis", "Antibiotic prophylaxis", ["Given — agent and time documented", "Not given — reason documented", NOT_DOCUMENTED]),
-    ]),
-    ...sec("Operative Steps", [
-      S("approach", "Approach", ["Posterior", "Anterior", "Lateral", "Posterolateral", "Minimally invasive tubular", "Other"]),
-      S("decompression", "Decompression performed", ["Laminectomy", "Laminotomy", "Discectomy", "Foraminotomy", "Cortical bone removal", "Not performed"]),
-      S("instrumentation", "Instrumentation", ["None", "Pedicle screws and rods", "Interbody cage", "Lateral mass screws", "Anterior plate", "Other"]),
-      S("graft", "Graft / fusion material", ["None", "Autograft", "Allograft", "Synthetic cage", "Bone substitute", NOT_DOCUMENTED]),
-      T("operative_findings", "Operative findings — compression, disc, ligament, deformity, CSF and nerve-root observations"),
-      S("dural_tear", "Dural tear", ["None", "Repaired primarily", "Repaired with patch", "Persisting CSF leak", NOT_DOCUMENTED]),
-      S("closure", "Closure", ["Layered closure — documented", "Closure with drain", "Closure with graft"]),
-    ]),
-    ...sec("Drains, Counts & Post-Operative Status", [
-      S("drain", "Drain left in place", ["None", "Wound drain", "Subfascial drain", "Lumbar drain"]),
-      N("blood_loss", "Estimated blood loss (mL)", { min: 0, max: 20000 }),
-      S("implants", "Implants used", ["None", "Yes — recorded in the implant record", "Yes — not documented"]),
-      S("postop_neuro", "Neurological status at the end of the procedure", [
-        "Unchanged",
-        "Improved",
-        "New deficit — documented",
-        "Unable to assess",
-      ]),
-      S("vte_prophylaxis", "VTE prophylaxis decision for after theatre", [
-        "Mechanical only — pharmacological timing documented",
-        "Pharmacological started",
-        "Deferred — timing documented",
-        NOT_DOCUMENTED,
-      ]),
-      S("postop_scan", "Post-operative imaging decision", [
-        "Not indicated — reason documented",
-        "Planned within 24 hours",
-        "Performed — reviewed",
-        NOT_DOCUMENTED,
-      ]),
-      S("postop_destination", "Post-operative destination", ["Neurosurgical ward", "ICU / high-dependency", "Recovery — routine observation", NOT_DOCUMENTED]),
-    ]),
+    ...operativeBlock(),
     ...icdBlock("Search the condition the operation treated, with its level"),
     ...guidanceBlock("nsg_spinal_operative"),
   ],
@@ -809,6 +632,7 @@ const POSTOP_PROGRESS = {
       S("mobility", "Mobility", ["Independent", "With assistance", "Bed-bound", NOT_DOCUMENTED]),
       S("vte_prophylaxis", "VTE prophylaxis", ["Not started — documented reason", "Started", "Deferred — timing documented", NOT_DOCUMENTED]),
     ]),
+    ...postopBlock("monitoring"),
     ...sec("Course & Complication", [
       S("complication", "Complication documented", [
         "None documented",
@@ -1520,6 +1344,8 @@ export const NEUROSURGERY_DOCS = [
   PERIPHERAL_NERVE,
   PAEDIATRIC,
   RAISED_ICP,
+  EMERGENCY_CRANIAL,
+  EMERGENCY_SPINE,
 ].map((doc) => ({ ...doc, guidelineBasis: guidelineBasisLabels(doc.key) }));
 
 export const NEUROSURGERY_NOTE_KEYS = NEUROSURGERY_DOCS.map((d) => d.key);

@@ -22,6 +22,9 @@ import { formatNeurosurgeryGuidance } from "@/lib/neurosurgeryCoding";
 import { formatNeurosurgicalExam } from "@/lib/neurosurgeryExam";
 import { formatIsncsci } from "@/lib/neurosurgeryIsncsci";
 import { formatNeurosurgeryScores } from "@/lib/neurosurgeryScores";
+import { formatEmergencyPathway } from "@/lib/neurosurgeryEmergency";
+import { formatOperativeRecord } from "@/lib/neurosurgeryOperative";
+import { formatPostopMonitoring } from "@/lib/neurosurgeryPostop";
 import { formatNephMedications } from "@/lib/nephMedications";
 import {
   akiStaging,
@@ -198,6 +201,9 @@ export function formatFieldValue(type, value) {
   if (type === "nsg_exam") return formatNeurosurgicalExam(value);
   if (type === "nsg_isncsci") return formatIsncsci(value);
   if (type === "nsg_scores") return formatNeurosurgeryScores(value);
+  if (type === "nsg_emergency") return formatEmergencyPathway(value);
+  if (type === "nsg_operative") return formatOperativeRecord(value);
+  if (type === "nsg_postop") return formatPostopMonitoring(value);
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

@@ -26,6 +26,9 @@ import NeurosurgeryGuidanceField from "@/components/doctor/notes/NeurosurgeryGui
 import NeurosurgicalExamField from "@/components/doctor/notes/NeurosurgicalExamField";
 import IsncsiAssessmentField from "@/components/doctor/notes/IsncsiAssessmentField";
 import NeurosurgeryScoresField from "@/components/doctor/notes/NeurosurgeryScoresField";
+import EmergencyPathwayField from "@/components/doctor/notes/EmergencyPathwayField";
+import OperativeRecordField from "@/components/doctor/notes/OperativeRecordField";
+import PostopMonitoringField from "@/components/doctor/notes/PostopMonitoringField";
 import GcsScoreField from "@/components/doctor/notes/GcsScoreField";
 import EmergencyResuscitationField from "@/components/doctor/notes/EmergencyResuscitationField";
 import DecisionRuleField from "@/components/doctor/notes/DecisionRuleField";
@@ -169,6 +172,19 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "nsg_scores" && (
         <NeurosurgeryScoresField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_emergency" && (
+        <EmergencyPathwayField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_operative" && (
+        <OperativeRecordField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "nsg_postop" && (
+        <PostopMonitoringField
+          value={values[f.key]}
+          variant={f.variant}
+          onChange={(v) => onChange(f.key, v)}
+        />
       )}
       {f.type === "emergency_resuscitation" && (
         <EmergencyResuscitationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

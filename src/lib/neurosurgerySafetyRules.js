@@ -20,6 +20,9 @@
 
 import { NSG_PROVENANCE, nsgReference } from "@/lib/neurosurgeryReferences";
 import { nsgExamFlags } from "@/lib/neurosurgeryExam";
+import { emergencyFlags } from "@/lib/neurosurgeryEmergency";
+import { operativeFlags } from "@/lib/neurosurgeryOperative";
+import { postopFlags } from "@/lib/neurosurgeryPostop";
 
 export { NSG_PROVENANCE };
 
@@ -41,9 +44,41 @@ export const NSG_SAFETY_CONCERNS = [
   { key: "steroid", label: "Steroid use — indication and taper" },
   { key: "wound", label: "Surgical site concern" },
   { key: "hydrocephalus", label: "Hydrocephalus — new or worsening" },
+  { key: "herniation", label: "Herniation syndrome" },
 ];
 
-const text = (values, key) => String(values?.[key] ?? "").trim();
+// A value may sit at the top level (assessment notes, and every note saved
+// before the structured records existed) or inside the operation record, its
+// procedure-specific block, the post-operative block or the time-critical
+// pathway. All four are read, so a rule keeps working on an older note and on a
+// note saved through the new blocks.
+const valueOf = (values, key) => {
+  const direct = values?.[key];
+  if (direct !== undefined && direct !== null && String(direct).trim() !== "") return direct;
+  const nested = [values?.nsg_operative, values?.nsg_postop, values?.nsg_emergency];
+  for (const block of nested) {
+    if (!block || typeof block !== "object") continue;
+    const own = block[key];
+    if (own !== undefined && own !== null && String(own).trim() !== "") return own;
+    const specific = block.specific;
+    if (specific && typeof specific === "object" && specific[key] !== undefined) {
+      return specific[key];
+    }
+  }
+  return direct;
+};
+
+const text = (values, key) => String(valueOf(values, key) ?? "").trim();
+
+// The structured blocks when they exist, otherwise the note itself — so a rule
+// written for the operation record also reads an older note whose operative
+// values sit at the top level.
+const blockOf = (values, key) => {
+  const block = values?.[key];
+  return block && typeof block === "object" && Object.keys(block).length ? block : values;
+};
+const operativeOf = (values) => blockOf(values, "nsg_operative");
+const postopOf = (values) => blockOf(values, "nsg_postop");
 
 // GCS is stored as its three documented components; the total is only meaningful
 // when all three were assessed (an intubated patient has no verbal score).
@@ -495,6 +530,206 @@ const RULES = [
     source: "house_brackmann_1985",
     population: "Patients with facial nerve palsy",
     when: (values) => isOneOf(values, "facial_nerve", ["Involved — graded below"]),
+  },
+  {
+    key: "herniation",
+    level: "immediate",
+    title: "Herniation syndrome documented",
+    basis:
+      "A herniation syndrome is a clinical state with a minutes-to-hours window: the features, the times and the decompression decision are what the record has to carry.",
+    action:
+      "Record the features and their times, the airway and ventilation decisions, osmotherapy given, who was informed, and the decompression decision.",
+    provenance: "guideline",
+    source: "nice_ng232",
+    population: ALL_AGES,
+    when: (values, concerns) => emergencyFlags(values?.nsg_emergency).herniation || has(concerns, "herniation"),
+  },
+  {
+    key: "airway_not_recorded",
+    level: "immediate",
+    title: "Emergency documented without an airway assessment recorded",
+    basis:
+      "In a neurosurgical emergency with an impaired conscious level, the airway and breathing assessment is what the treatment decision rests on. An unrecorded airway is not a patent airway.",
+    action:
+      "Record the airway and breathing assessment, who assessed it, and the decision that followed.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const emergency = emergencyFlags(values?.nsg_emergency);
+      if (!emergency.documented || !emergency.no_airway) return false;
+      const total = gcsTotal(values);
+      const consciousness = String(values?.nsg_exam?.consciousness || "");
+      return (total !== null && total <= 8) || /Unresponsive|Responds to pain/.test(consciousness);
+    },
+  },
+  {
+    key: "emergency_scan_not_recorded",
+    level: "same_day",
+    title: "Emergency pathway documented without the CT or MRI record",
+    basis:
+      "The imaging decision and its timing drive every subsequent decision in a cranial emergency; an empty field reads as an unrecorded one, not as a scan that was not needed.",
+    action:
+      "Record whether a scan was performed, when, its finding, or the documented reason it was not indicated.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const emergency = emergencyFlags(values?.nsg_emergency);
+      return emergency.documented && emergency.no_scan;
+    },
+  },
+  {
+    key: "no_specialist_discussion",
+    level: "same_day",
+    title: "Emergency documented without a recorded specialist discussion",
+    basis:
+      "The record has to show who was spoken to, when, and what was agreed — including where the decision was made without a discussion and why.",
+    action:
+      "Record the consultant or senior spoken to, the time, and the advice given; where no discussion took place, record the reason.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const emergency = emergencyFlags(values?.nsg_emergency);
+      return emergency.documented && emergency.no_discussion;
+    },
+  },
+  {
+    key: "transfer_decision_missing",
+    level: "same_day",
+    title: "Emergency documented without a transfer decision",
+    basis:
+      "Where the service needed is not on site, the transfer decision — accepted, requested, declined and why — is part of the clinical record, not an administrative note.",
+    action:
+      "Record the decision, the receiving centre, the accepting clinician, the time and the mode of transfer.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const emergency = emergencyFlags(values?.nsg_emergency);
+      return emergency.documented && emergency.no_transfer_decision;
+    },
+  },
+  {
+    key: "decompression_time_not_recorded",
+    level: "immediate",
+    title: "Cord or cauda equina compression documented without the decompression timing",
+    basis:
+      "In cord and cauda equina compression the interval between the deficit being recognised and decompression is the outcome-relevant variable, and it can only be shown if both times are recorded.",
+    action:
+      "Record the time the deficit was recognised, the time the scan was requested, the target time to decompression, and whether it was met.",
+    provenance: "guideline",
+    source: "nice_ng59",
+    population: "People over 16 in the NICE pathway",
+    variants: [
+      {
+        source: null,
+        population: "Malignant cord compression",
+        note: "Follows the local oncology pathway; no society document is attributed to the timing target here.",
+      },
+    ],
+    when: (values) => {
+      const emergency = emergencyFlags(values?.nsg_emergency);
+      const presentation = String(values?.nsg_emergency?.presentation || "");
+      const cordDocumented =
+        /Cauda equina|Spinal cord compression/i.test(presentation) ||
+        Boolean(text(values, "cord_syndrome")) ||
+        /Present/i.test(text(values, "cord_compression"));
+      const timing = text(values, "target_time");
+      return emergency.documented && cordDocumented && !timing;
+    },
+  },
+  {
+    key: "implant_traceability",
+    level: "documented",
+    title: "Implant recorded without its traceability detail",
+    basis:
+      "An implant left in a patient has to be traceable to its manufacturer, model, size and lot, or to the implant record it was entered into.",
+    action:
+      "Record the implant detail and where it is held; where the label is not yet transcribed, record that and complete it before discharge.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => operativeFlags(operativeOf(values)).implant_untraceable,
+  },
+  {
+    key: "consent_not_recorded",
+    level: "documented",
+    title: "Operation recorded without a consent position",
+    basis:
+      "Every operation carries a consent position — documented consent, or the emergency exception and who made the decision. A blank field is not a record of either.",
+    action:
+      "Record the consent and site marking, or the emergency exception and the clinician who made the decision.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const operative = operativeFlags(operativeOf(values));
+      return operative.documented && operative.consent_missing;
+    },
+  },
+  {
+    key: "drain_not_documented",
+    level: "documented",
+    title: "Drain or catheter recorded without its detail",
+    basis:
+      "A drain left in place needs its type, site, setting and planned removal recorded, because the next clinician manages it from that record.",
+    action: "Record the drain type, site, setting, output and planned removal or review.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) =>
+      operativeFlags(operativeOf(values)).drain_without_detail ||
+      (postopFlags(postopOf(values)).drain_problem && !text(values, "drain_output")),
+  },
+  {
+    key: "postop_observation_interval",
+    level: "documented",
+    title: "Post-operative entry without the observation interval",
+    basis:
+      "The frequency of neurological observation is the safety net after neurosurgery; a post-operative entry that does not state it leaves the next shift without an instruction.",
+    action:
+      "Record the observation frequency in place, who ordered it, and any planned change to it.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => postopFlags(postopOf(values)).no_observation_interval,
+  },
+  {
+    key: "postop_threshold_without_action",
+    level: "same_day",
+    title: "Post-operative threshold recorded without the action taken",
+    basis:
+      "Where a documented threshold for concern was reached, the record has to show what was done about it and who was called — otherwise the finding is recorded but not acted on.",
+    action:
+      "Record who was called, what was done, the time, and what it changed — including a decision to continue observation with the reason.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const postop = postopFlags(postopOf(values));
+      return postop.criteria.length > 0 && !text(values, "action_taken");
+    },
+  },
+  {
+    key: "no_responsible_clinician",
+    level: "documented",
+    title: "Entry without the clinician responsible for the patient",
+    basis:
+      "Every emergency and post-operative entry names the clinician responsible, so the next decision has a named owner rather than a team.",
+    action: "Record the clinician responsible, the senior review and the next review time.",
+    provenance: "safety",
+    source: null,
+    population: "All ages — local documentation requirement; no guideline is attributed to this prompt",
+    when: (values) => {
+      const emergency = emergencyFlags(values?.nsg_emergency);
+      const postop = postopFlags(postopOf(values));
+      return (
+        (emergency.documented && emergency.no_responsible) ||
+        (postop.documented && postop.no_responsible)
+      );
+    },
   },
 ];
 
