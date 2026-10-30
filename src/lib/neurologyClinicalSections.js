@@ -76,6 +76,21 @@ const guidance = (noteKey) => [
   { key: "neuro_guidance", label: "Guideline Basis & Reference Register", type: "neuro_guidance", section: "Guideline basis", noteKey },
 ];
 
+// Every note carries one emergency record: recognition, the reason it is urgent
+// and the urgent-pathway record. It is optional like every other section, and a
+// blank is reported as owed — never as "no emergency".
+const emergency = () => [
+  {
+    key: "neuro_emergency",
+    label: "Neurological Emergencies — Recognition & Urgent Pathway",
+    type: "neuro_emergency",
+    section: "Emergency recognition",
+  },
+];
+
+const condition = (key) => block(key, "Condition-specific record");
+const reasoning = () => block("neuro_reasoning", "Clinical reasoning");
+
 export const NEURO_ENHANCEMENTS = {
   neuro_consultation: () => [
     block("neuro_history", "History"),
@@ -88,6 +103,11 @@ export const NEURO_ENHANCEMENTS = {
     block("neuro_cognitive", "Cognition & function"),
     block("neuro_headache", "Presentation-specific record"),
     block("neuro_seizure", "Presentation-specific record"),
+    condition("neuro_movement"),
+    condition("neuro_neuropathy"),
+    condition("neuro_dizziness"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(ALL_DOMAINS, "Search ICD-11 — the diagnosis this consultation documents…"),
     ...scoresFor(["gcs", "mrs"]),
     ...safety(),
@@ -104,6 +124,11 @@ export const NEURO_ENHANCEMENTS = {
     block("neuro_headache", "Presentation-specific record"),
     block("neuro_seizure", "Presentation-specific record"),
     block("neuro_ms", "Presentation-specific record"),
+    condition("neuro_movement"),
+    condition("neuro_neuropathy"),
+    condition("neuro_dizziness"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(ALL_DOMAINS, "Search ICD-11 — the diagnosis this review follows…"),
     ...scoresFor(["gcs", "mrs"]),
     ...safety(),
@@ -123,6 +148,10 @@ export const NEURO_ENHANCEMENTS = {
     block("neuro_status", "Acute presentation"),
     block("neuro_icp", "Acute presentation"),
     block("neuro_cns_infection", "Acute presentation"),
+    condition("neuro_movement"),
+    condition("neuro_dizziness"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(ALL_DOMAINS, "Search ICD-11 — the diagnoses this admission documents…"),
     ...scoresFor(["nihss", "gcs", "ich_score", "mrs"]),
     ...safety(),
@@ -137,6 +166,8 @@ export const NEURO_ENHANCEMENTS = {
     block("neuro_reflexes", "Neurological examination"),
     block("neuro_icp", "Monitoring"),
     block("neuro_status", "Monitoring"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(ALL_DOMAINS, "Search ICD-11 — the diagnosis being followed on this ward round…"),
     ...scoresFor(["gcs", "mrs"]),
     ...safety(),
@@ -145,6 +176,8 @@ export const NEURO_ENHANCEMENTS = {
 
   neuro_discharge_summary: () => [
     block("neuro_discharge", "Status at discharge"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(ALL_DOMAINS, "Search ICD-11 — the discharge diagnoses…"),
     ...scoresFor(["mrs", "gcs"]),
     ...safety(),
@@ -153,6 +186,7 @@ export const NEURO_ENHANCEMENTS = {
 
   neuro_procedure_note: () => [
     block("neuro_procedure", "Procedure"),
+    ...emergency(),
     ...icdFor(["cerebrovascular", "epilepsy", "headache"], "Search ICD-11 — the indication for this procedure…"),
     ...safety(),
     ...guidance("neuro_procedure_note"),
@@ -161,6 +195,7 @@ export const NEURO_ENHANCEMENTS = {
   neuro_eeg_report: () => [
     block("neuro_eeg", "Recording"),
     block("neuro_seizure", "Seizure classification"),
+    ...emergency(),
     ...icdFor(["epilepsy"], "Search ICD-11 — the epilepsy or seizure diagnosis this recording addresses…"),
     ...safety(),
     ...guidance("neuro_eeg_report"),
@@ -169,6 +204,9 @@ export const NEURO_ENHANCEMENTS = {
   neuro_emg_ncs_report: () => [
     block("neuro_emg", "Study"),
     block("neuro_neuromuscular", "Clinical correlation"),
+    condition("neuro_neuropathy"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(["neuromuscular"], "Search ICD-11 — the neuromuscular diagnosis this study addresses…"),
     ...safety(),
     ...guidance("neuro_emg_ncs_report"),
@@ -177,6 +215,8 @@ export const NEURO_ENHANCEMENTS = {
   neuro_stroke_record: () => [
     block("neuro_stroke", "Hyperacute record"),
     block("neuro_icp", "Monitoring"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(["cerebrovascular"], "Search ICD-11 — intracerebral haemorrhage, cerebral ischaemic stroke, TIA…"),
     ...scoresFor(["nihss", "ich_score", "mrs", "cha2ds2_vasc", "has_bled", "abcd2"]),
     ...safety(),
@@ -186,6 +226,8 @@ export const NEURO_ENHANCEMENTS = {
   neuro_seizure_followup: () => [
     block("neuro_seizure", "Seizure classification"),
     block("neuro_status", "Status epilepticus history"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(["epilepsy"], "Search ICD-11 — the epilepsy or seizure diagnosis…"),
     ...safety(),
     ...guidance("neuro_seizure_followup"),
@@ -193,6 +235,8 @@ export const NEURO_ENHANCEMENTS = {
 
   neuro_referral: () => [
     block("neuro_referral_question", "Handover"),
+    ...emergency(),
+    reasoning(),
     ...icdFor(ALL_DOMAINS, "Search ICD-11 — the diagnosis being discussed…"),
     ...safety(),
     ...guidance("neuro_referral"),

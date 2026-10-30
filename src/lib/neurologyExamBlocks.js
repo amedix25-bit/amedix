@@ -46,6 +46,19 @@ export const HISTORY_BLOCK = {
     { key: "hist_prior_events", label: "Prior documented neurological events", type: "textarea", placeholder: "Previous strokes, seizures, admissions, documented diagnoses and where they were recorded" },
     { key: "hist_relatives", label: "Relatives with a similar or related condition", type: "input", placeholder: "Relationship and condition, or 'none reported'" },
     {
+      key: "hist_medications",
+      label: "Medications and adherence as reviewed",
+      type: "textarea",
+      placeholder: "Current medicines as they were reviewed, doses and any missed or stopped — the patient record is attached to this note separately",
+    },
+    {
+      key: "hist_allergies",
+      label: "Allergies and reactions as reviewed",
+      type: "select",
+      options: ["No known allergy — confirmed at interview", "Allergy recorded — see patient record", "Not established — not yet confirmed", "Not asked"],
+    },
+    { key: "hist_previous_results", label: "Previous results reviewed (outside AMedix)", type: "textarea", placeholder: "What was reviewed, where from, and what it showed" },
+    {
       key: "hist_source",
       label: "Source of the history",
       type: "select",

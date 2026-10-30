@@ -16,6 +16,7 @@
 import { neuroBlockValues } from "@/lib/neurologyBlocks";
 import { calculateNeuroScore } from "@/lib/neurologyScores";
 import { NEURO_REFERENCES } from "@/lib/neurologyReferences";
+import { neurologyEmergencyState } from "@/lib/neurologyEmergencies";
 import { asObject, str, list } from "@/lib/neurologyFieldKit";
 
 export const NEURO_SAFETY_PROVENANCE = {
@@ -389,6 +390,101 @@ export const NEURO_SAFETY_RULES = [
       Boolean(f(values, "neuro_emg", "emg_pattern")) && !f(values, "neuro_emg", "emg_reference_values"),
   },
 ];
+
+// ---- Emergency-record rules ----------------------------------------------
+// These read the emergency panel and fire only on what it records. They are
+// advisory: they name the gap and the reason, never the treatment.
+const emergencyState = (values) => neurologyEmergencyState(asObject(values).neuro_emergency);
+const emergencyBlock = (state, key) => asObject(asObject(state.blocks)[key]);
+const hasEmergency = (values, key) => neurologyEmergencyState(asObject(values).neuro_emergency).presentations.includes(key);
+
+NEURO_SAFETY_RULES.push(
+  {
+    key: "emergency_pathway_unrecorded",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "An emergency is recorded with no urgent pathway",
+    basis:
+      "The emergency record names what the clinician found but not who was informed and at what time. The institution's deteriorating-patient policy requires that call to be recorded, because it is the only evidence that help was sought.",
+    fires: (values) => {
+      const state = emergencyState(values);
+      if (!state.presentations.length) return false;
+      return state.presentations.some((key) => {
+        const pathway = asObject(emergencyBlock(state, key).pathway);
+        return !str(pathway.who_informed) || !str(pathway.time_informed);
+      });
+    },
+  },
+  {
+    key: "emergency_red_flag_without_record",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "A red flag is recorded with no emergency or pathway record",
+    basis:
+      "A red flag was ticked in the emergency screen, but no presentation was selected and no urgent pathway was recorded. The finding that prompted the flag is in the note; what happened about it is not.",
+    fires: (values) => {
+      const state = emergencyState(values);
+      return state.red_flags.length > 0 && state.presentations.length === 0;
+    },
+  },
+  {
+    key: "emergency_herniation_unreported",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "Signs of impeding herniation are recorded without a recorded call",
+    basis:
+      "Pupil asymmetry, extensor posturing or a falling Glasgow Coma Scale with hypertension and bradycardia were recorded, but no time of escalation to a neurosurgeon or intensivist is in the record. These signs change within minutes.",
+    fires: (values) => {
+      const state = emergencyState(values);
+      const herniation =
+        state.presentations.includes("impending_herniation") ||
+        state.presentations.includes("raised_icp") ||
+        state.red_flags.includes("pupil_change") ||
+        state.red_flags.includes("posturing");
+      if (!herniation) return false;
+      const keys = ["impending_herniation", "raised_icp"].filter((k) => state.presentations.includes(k));
+      if (!keys.length) return true;
+      return keys.every((key) => !str(asObject(emergencyBlock(state, key).pathway).time_informed));
+    },
+  },
+  {
+    key: "emergency_respiratory_not_measured",
+    level: "critical",
+    provenance: "guideline",
+    source: "ean_gbs",
+    title: "A neuromuscular emergency is recorded without a respiratory measurement",
+    basis:
+      "Guillain-Barré syndrome or myasthenic crisis was recorded with respiratory or bulbar compromise, but no vital capacity or single breath count is documented. Respiratory failure in these conditions develops before the patient looks distressed.",
+    fires: (values) => {
+      const state = emergencyState(values);
+      const keys = ["gbs_respiratory_autonomic", "myasthenic_crisis"].filter((k) => state.presentations.includes(k));
+      if (!keys.length) return false;
+      return keys.some((key) => {
+        const docs = asObject(emergencyBlock(state, key).docs);
+        return !str(docs.vital_capacity) && !str(docs.single_breath);
+      });
+    },
+  },
+  {
+    key: "emergency_stroke_timing_missing",
+    level: "critical",
+    provenance: "guideline",
+    source: "aha_ais_2019",
+    title: "Acute stroke recorded without the time last known well",
+    basis:
+      "The acute ischaemic stroke guideline decides reperfusion eligibility from the time the patient was last known to be at baseline. The emergency record names the stroke but carries no documented time.",
+    fires: (values) => {
+      if (!hasEmergency(values, "acute_ischaemic_stroke")) return false;
+      const state = emergencyState(values);
+      const docs = asObject(emergencyBlock(state, "acute_ischaemic_stroke").docs);
+      const blockTime = str(asObject(asObject(values).neuro_stroke).str_last_known_well);
+      return !str(docs.lkw) && !blockTime;
+    },
+  },
+);
 
 const LEVEL_LABEL = { critical: "ACT NOW", warning: "REVIEW" };
 

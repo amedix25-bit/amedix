@@ -18,6 +18,17 @@ export const STROKE_BLOCK = {
       type: "select",
       options: ["Witnessed onset", "Unwitnessed onset", "Wake-up stroke", "Not documented"],
     },
+    { key: "str_symptom_discovery_time", label: "Time symptoms were discovered", type: "input", placeholder: "When the patient was found — distinct from the time last known well" },
+    {
+      key: "str_nihss_state",
+      label: "NIHSS — whether it was appropriate to perform",
+      type: "select",
+      options: [
+        "Performed — items recorded",
+        "Not performed — reason documented (e.g. deficit resolved, pre-morbid limitation, sedation)",
+        "Not documented",
+      ],
+    },
     { key: "str_premorbid_mrs", label: "Pre-morbid modified Rankin grade", type: "select", options: ["0", "1", "2", "3", "4", "5", "Not documented"] },
     {
       key: "str_symptoms",
@@ -205,11 +216,25 @@ export const STATUS_EPILEPTICUS_BLOCK = {
     { key: "se_second_line_agent", label: "Second-line agent and dose", type: "input" },
     { key: "se_second_line_time", label: "Second-line agent given at", type: "input" },
     {
+      key: "se_treatment_response",
+      label: "Documented response to treatment",
+      type: "select",
+      options: [
+        "Seizure stopped after first-line agent",
+        "Seizure stopped after second-line agent",
+        "Continued — refractory stage documented",
+        "Recurred after initial control — times recorded",
+        "Not documented",
+      ],
+    },
+    {
       key: "se_airway",
       label: "Airway",
       type: "select",
       options: ["Patent and protected", "At risk — positioning and suction documented", "Intubated", "Not documented"],
     },
+    { key: "se_oxygenation", label: "Breathing and oxygenation", type: "input", placeholder: "SpO2, oxygen delivery and respiratory support, with time" },
+    { key: "se_circulation", label: "Circulation and intravenous access", type: "input", placeholder: "Blood pressure, pulse, access obtained and when" },
     { key: "se_glucose", label: "Blood glucose at presentation", type: "input", placeholder: "mmol/L" },
     { key: "se_temperature", label: "Temperature at presentation", type: "input", placeholder: "°C" },
     { key: "se_eeg_requested", label: "EEG requested", type: "select", options: ["Yes — time documented", "No", "Not documented"] },

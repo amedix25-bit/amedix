@@ -10,6 +10,8 @@ import {
   DISCHARGE_BLOCK, REFERRAL_BLOCK,
 } from "@/lib/neurologyClinicalBlocks";
 import { EEG_BLOCK, EMG_BLOCK, PROCEDURE_BLOCK } from "@/lib/neurologyReportBlocks";
+import { MOVEMENT_BLOCK, NEUROPATHY_BLOCK, DIZZINESS_BLOCK } from "@/lib/neurologyConditionBlocks";
+import { REASONING_BLOCK } from "@/lib/neurologyReasoningBlocks";
 import { asObject, str, list } from "@/lib/neurologyFieldKit";
 
 export const NEURO_BLOCKS = {
@@ -35,6 +37,10 @@ export const NEURO_BLOCKS = {
   [EEG_BLOCK.key]: EEG_BLOCK,
   [EMG_BLOCK.key]: EMG_BLOCK,
   [PROCEDURE_BLOCK.key]: PROCEDURE_BLOCK,
+  [MOVEMENT_BLOCK.key]: MOVEMENT_BLOCK,
+  [NEUROPATHY_BLOCK.key]: NEUROPATHY_BLOCK,
+  [DIZZINESS_BLOCK.key]: DIZZINESS_BLOCK,
+  [REASONING_BLOCK.key]: REASONING_BLOCK,
 };
 
 export const NEURO_BLOCK_KEYS = Object.keys(NEURO_BLOCKS);

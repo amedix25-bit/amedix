@@ -74,6 +74,7 @@ const blocks = await import(path.join(TMP, "neurologyBlocks.js"));
 const scores = await import(path.join(TMP, "neurologyScores.js"));
 const sections = await import(path.join(TMP, "neurologyClinicalSections.js"));
 const safety = await import(path.join(TMP, "neurologySafetyRules.js"));
+const emerg = await import(path.join(TMP, "neurologyEmergencies.js"));
 const docs = await import(path.join(TMP, "neurologyDocuments.js"));
 const policy = await import(path.join(TMP, "noteSectionPolicy.js"));
 
@@ -352,13 +353,159 @@ NOTE_KEYS.forEach((key) => {
   }
 });
 
+// ---- 10. The emergency recognition layer --------------------------------
+const REQUIRED_EMERGENCIES = [
+  "acute_ischaemic_stroke",
+  "intracranial_haemorrhage",
+  "subarachnoid_haemorrhage",
+  "tia",
+  "status_epilepticus",
+  "prolonged_recurrent_seizures",
+  "acute_altered_consciousness",
+  "meningitis",
+  "encephalitis",
+  "raised_icp",
+  "impending_herniation",
+  "spinal_cord_compression",
+  "cauda_equina",
+  "gbs_respiratory_autonomic",
+  "myasthenic_crisis",
+];
+const EMERGENCIES = emerg.NEURO_EMERGENCY_PRESENTATIONS;
+
+REQUIRED_EMERGENCIES.forEach((key) =>
+  check(Boolean(emerg.NEURO_EMERGENCY_MAP[key]), `emergency ${key} is not defined`),
+);
+check(EMERGENCIES.length === REQUIRED_EMERGENCIES.length, "the emergency catalogue carries presentations the team did not ask for");
+
+EMERGENCIES.forEach((p) => {
+  check(Boolean(emerg.NEURO_EMERGENCY_LEVELS[p.level]), `${p.label} has no urgency level`);
+  check(p.why.length > 60, `${p.label} does not explain why it is urgent`);
+  check(p.timeCritical.length > 40, `${p.label} carries no time-critical statement`);
+  check(p.pathway.length > 40, `${p.label} directs to no institutional pathway`);
+  check(p.recognition.length >= 3, `${p.label} lists fewer than three recognition findings`);
+  check(p.fields.length >= 3, `${p.label} records nothing about the presentation`);
+  (p.requires || []).forEach((fieldKey) =>
+    check(p.fields.some((f) => f.key === fieldKey), `${p.label} requires an undocumented field ${fieldKey}`),
+  );
+  check(
+    p.references.length > 0 && p.references.every((r) => Boolean(refs.NEURO_REFERENCES[r])),
+    `${p.label} cites a reference that does not resolve in the register`,
+  );
+  check(
+    p.provenance === "local" ||
+      (p.provenance === "guideline" && p.references.some((r) => refs.NEURO_REFERENCES[r].type !== "Local policy")),
+    `${p.label} claims a guideline without a guideline source`,
+  );
+  p.fields.forEach((f) => {
+    check(
+      !/^(give|administer|prescribe|start|order|thrombolyse)\b/i.test(f.label),
+      `${p.label} carries an order field ("${f.label}") — the panel documents, it does not order`,
+    );
+  });
+});
+
+// The notice must say plainly what the panel does not do.
+const NOTICE = emerg.NEURO_EMERGENCY_NOTICE;
+["does not diagnose", "does not order treatment", "does not authorise", "delay"].forEach((phrase) =>
+  check(NOTICE.includes(phrase), `the emergency notice does not state "${phrase}"`),
+);
+
+// Every note carries the emergency record, and every red flag names a destination.
+const EMERGENCY_FIELD_NOTE_KEYS = NOTE_KEYS.filter((key) =>
+  (sections.NEURO_ENHANCEMENTS[key]() || []).some((f) => f.type === "neuro_emergency"),
+);
+check(EMERGENCY_FIELD_NOTE_KEYS.length === NOTE_KEYS.length, "a neurology note type carries no emergency record");
+emerg.NEURO_RED_FLAGS.forEach((flag) => {
+  check(Boolean(emerg.NEURO_EMERGENCY_MAP[flag.pointsTo]), `red flag ${flag.key} points to no presentation`);
+  check(Boolean(emerg.NEURO_EMERGENCY_LEVELS[flag.level]), `red flag ${flag.key} has no urgency level`);
+});
+
+// Completeness runs in both directions.
+const incomplete = emerg.neurologyEmergencyIssues({ presentations: ["acute_ischaemic_stroke"], blocks: {} });
+check(
+  incomplete.some((i) => i.key === "acute_ischaemic_stroke_pathway"),
+  "an emergency with no urgent pathway raises no issue",
+);
+check(
+  incomplete.some((i) => i.key === "acute_ischaemic_stroke_lkw"),
+  "an acute stroke with no time last known well raises no issue",
+);
+const complete = emerg.neurologyEmergencyIssues({
+  presentations: ["acute_ischaemic_stroke"],
+  blocks: {
+    acute_ischaemic_stroke: {
+      docs: {
+        lkw: "18:20",
+        glucose_result: "Measured — value recorded in this note",
+        imaging_state: "Performed — finding recorded",
+      },
+      pathway: { who_informed: "On-call neurologist", time_informed: "18:35" },
+    },
+  },
+});
+check(
+  complete.filter((i) => i.level === "immediate").length === 0,
+  "a fully documented emergency still reports an outstanding immediate item",
+);
+check(
+  emerg.neurologyEmergencyIssues({}).some((i) => i.key === "no_state"),
+  "an empty emergency record does not ask for a statement",
+);
+check(
+  emerg.neurologyEmergencyIssues({ none_documented: true, presentations: ["tia"] }).some((i) => i.key === "contradiction"),
+  "a contradictory emergency record is accepted",
+);
+
+// The emergency rules read the panel, in both directions.
+check(
+  fire({ neuro_emergency: { presentations: ["acute_ischaemic_stroke"] } }).includes("emergency_pathway_unrecorded"),
+  "an emergency with no recorded call raises no safety prompt",
+);
+check(
+  fire({ neuro_emergency: { red_flags: ["pupil_change"] } }).includes("emergency_red_flag_without_record"),
+  "a red flag with nothing done about it raises no safety prompt",
+);
+check(
+  fire({
+    neuro_emergency: { presentations: ["myasthenic_crisis"], blocks: { myasthenic_crisis: { docs: { weakness: "Bulbar" } } } },
+  }).includes("emergency_respiratory_not_measured"),
+  "a neuromuscular emergency with no respiratory measurement raises no prompt",
+);
+check(
+  !fire({
+    neuro_emergency: {
+      presentations: ["myasthenic_crisis"],
+      blocks: { myasthenic_crisis: { docs: { weakness: "Bulbar", vital_capacity: "1.2 L" } } },
+    },
+  }).includes("emergency_respiratory_not_measured"),
+  "a documented vital capacity still raises the respiratory prompt",
+);
+check(
+  !fire({
+    neuro_emergency: {
+      presentations: ["impending_herniation"],
+      blocks: { impending_herniation: { docs: {}, pathway: { who_informed: "Neurosurgeon", time_informed: "18:40" } } },
+    },
+  }).includes("emergency_herniation_unreported"),
+  "a recorded herniation call still raises the prompt",
+);
+
+// The printed record says NOT DOCUMENTED and never implies normality.
+const printed = emerg.formatNeurologyEmergency({
+  presentations: ["spinal_cord_compression"],
+  blocks: { spinal_cord_compression: { docs: {}, pathway: {} } },
+});
+check(printed.includes("NOT DOCUMENTED"), "the printed emergency record hides a missing field");
+check(/RECORD STILL OWES/.test(printed), "the printed emergency record carries no outstanding list");
+
 // ---- 9. The new sections are rendered and printed ------------------------
 const FORM = fs.readFileSync(path.join(ROOT, "src", "components", "doctor", "encounters", "DocumentFields.jsx"), "utf8");
-["neuro_modules", "neuro_scores", "neuro_safety", "neuro_guidance"].forEach((type) =>
+["neuro_modules", "neuro_scores", "neuro_safety", "neuro_guidance", "neuro_emergency"].forEach((type) =>
   check(FORM.includes(`"${type}"`), `the note form does not render ${type}`),
 );
 const VALUE = fs.readFileSync(path.join(ROOT, "src", "lib", "clinicalFieldValue.js"), "utf8");
-["formatNeuroBlock", "formatNeuroScores", "formatNeuroSafety"].forEach((fn) =>
+["formatNeuroBlock", "formatNeuroScores", "formatNeuroSafety", "formatNeurologyEmergency"].forEach((fn) =>
   check(VALUE.includes(fn), `the printed record does not use ${fn}`),
 );
 
@@ -370,5 +517,5 @@ if (failures > 0) {
   process.exit(1);
 }
 console.log(
-  `PASS — ${NOTE_KEYS.length} Neurology note types enhanced, ${stats.total} ICD-11 MMS entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${blocks.NEURO_BLOCK_KEYS.length} blocks, ${scores.NEURO_SCORES.length} scores, ${safety.NEURO_SAFETY_RULES.length} safety rules verified in both directions, ${REGISTER.length} register references.`,
+  `PASS — ${NOTE_KEYS.length} Neurology note types enhanced, ${stats.total} ICD-11 MMS entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${blocks.NEURO_BLOCK_KEYS.length} blocks, ${scores.NEURO_SCORES.length} scores, ${safety.NEURO_SAFETY_RULES.length} safety rules verified in both directions, ${EMERGENCIES.length} emergency presentations verified in both directions, ${REGISTER.length} register references.`,
 );

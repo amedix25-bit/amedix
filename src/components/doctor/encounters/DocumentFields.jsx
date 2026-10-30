@@ -56,6 +56,7 @@ import OrthopedicsTraumaField from "@/components/doctor/notes/OrthopedicsTraumaF
 import OrthopedicsHealingField from "@/components/doctor/notes/OrthopedicsHealingField";
 import NeurologyBlockField from "@/components/doctor/notes/NeurologyBlockField";
 import NeurologyScoresField from "@/components/doctor/notes/NeurologyScoresField";
+import NeurologyEmergencyField from "@/components/doctor/notes/NeurologyEmergencyField";
 import NeurologySafetyPromptsField from "@/components/doctor/notes/NeurologySafetyPromptsField";
 import NeurologyGuidanceField from "@/components/doctor/notes/NeurologyGuidanceField";
 
@@ -362,6 +363,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "neuro_safety" && (
         <NeurologySafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "neuro_emergency" && (
+        <NeurologyEmergencyField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "neuro_guidance" && (
         <NeurologyGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
