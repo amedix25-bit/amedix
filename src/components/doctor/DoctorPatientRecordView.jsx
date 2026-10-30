@@ -21,6 +21,9 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
   const [activeTab, setActiveTab] = useState(null);
   const [showNoteForm, setShowNoteForm] = useState(false);
 
+  // Antenatal Care belongs to the OBGYN portal only.
+  const isObgyn = /obstetric|gyneco/i.test(doctorProfile?.specialization || "");
+
   const tabButton = (key, label, Icon) => (
     <button
       type="button"
@@ -45,7 +48,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
 
       <div className="flex flex-wrap rounded-xl border border-border bg-card p-1 gap-1 max-w-3xl">
         {tabButton("history", "Patient History", History)}
-        {patient.gender === "female" && tabButton("antenatal", "Antenatal Care", Baby)}
+        {isObgyn && patient.gender === "female" && tabButton("antenatal", "Antenatal Care", Baby)}
         {tabButton("notes", "Clinical Notes", FileText)}
         {tabButton("prescriptions", "Prescriptions", Pill)}
         {tabButton("medhistory", "Medication History", ClipboardList)}
