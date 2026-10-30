@@ -243,7 +243,7 @@ export const GASTRO_NOTE_BASIS = {
   gi_admission_note: {
     note: "GI Admission Note",
     basis: [GASTRO_REFERENCES.acg_ugib, GASTRO_REFERENCES.acg_acute_pancreatitis, BAVENO, GASTRO_REFERENCES.aasld_ascites, WHO_ICD11],
-    states: "Severity at presentation — bleeding risk score, pancreatitis severity or decompensation stage — and the immediate actions it triggers.",
+    states: "Severity at presentation — bleeding risk score, pancreatitis severity or decompensation stage — the time-critical problem with its resuscitation, surgical opinion and level of care, and the immediate actions it triggers.",
   },
   gi_progress_note: {
     note: "GI Progress Note",
@@ -267,8 +267,8 @@ export const GASTRO_NOTE_BASIS = {
   },
   gi_procedure_note: {
     note: "GI Procedure Note",
-    basis: [GASTRO_REFERENCES.asge_quality, GASTRO_REFERENCES.esge_ercp, WHO_ICD11],
-    states: "Consent and time-out, sedation, specimens, complications and the disposition of the patient.",
+    basis: [GASTRO_REFERENCES.asge_quality, GASTRO_REFERENCES.esge_ercp, GASTRO_REFERENCES.aasld_ascites, WHO_ICD11],
+    states: "Consent and time-out, sedation, the peri-procedural antithrombotic decision, the liver biopsy and paracentesis records, EUS sampling and capsule retention, specimens, complications and the disposition of the patient.",
   },
   gi_pathology_request: {
     note: "Biopsy / Pathology Request (GI)",

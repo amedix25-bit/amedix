@@ -200,6 +200,7 @@ const GASTRO_ENHANCEMENTS = {
   gi_ercp_report: () => [
     blockField("gi_ercp"),
     blockField("gi_endoscopy"),
+    blockField("gi_proc_safety"),
     blockField("gi_biliary"),
     blockField("gi_pancreatic"),
     ...icdBlock(["biliary", "pancreas", "liver", "neoplasm"], "Search ICD-11 — the biliary or pancreatic diagnosis this ERCP documents…"),
@@ -209,7 +210,13 @@ const GASTRO_ENHANCEMENTS = {
 
   gi_procedure_note: () => [
     blockField("gi_endoscopy"),
+    blockField("gi_proc_safety"),
+    blockField("gi_liver_biopsy"),
+    blockField("gi_paracentesis_proc"),
+    blockField("gi_eus"),
+    blockField("gi_capsule"),
     blockField("gi_upper_gi"),
+    blockField("gi_drug_safety"),
     ...icdBlock([...LUMINAL, ...LIVER, "pancreas", "anal"], "Search ICD-11 — the diagnosis this procedure documents…"),
     safetyBlock(),
     guidanceBlock("gi_procedure_note"),
@@ -231,6 +238,7 @@ const GASTRO_ENHANCEMENTS = {
     blockField("gi_liver"),
     blockField("gi_cirrhosis"),
     blockField("gi_ibd"),
+    blockField("gi_drug_safety"),
     ...icdBlock([...LUMINAL, ...LIVER, "ibd", "pancreas", "neoplasm"], "Search ICD-11 — the discharge diagnoses…"),
     scoresBlock(["child_pugh", "meld_na", "apri"]),
     safetyBlock(),

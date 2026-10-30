@@ -50,7 +50,7 @@ const GI_AGENTS = [
 export const GASTRO_PROCEDURE_BLOCKS = {
   // ---- Pre-procedure preparation, medication and allergy safety ------------
   gi_proc_safety: {
-    title: "Pre-Procedure Preparation & Medication Safety",
+    title: "Pre-Procedure Preparation & Antithrombotic Safety",
     fields: [
       S("prep_fitness", "Preparation and Fitness for the Procedure", [
         "Fasting and airway assessment documented",
