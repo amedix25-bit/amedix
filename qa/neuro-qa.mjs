@@ -208,9 +208,9 @@ check(icd.neurologyCatalogFor([]).length === icd.NEURO_ICD11.length, "an unfilte
 check(scores.calculateNeuroScore("gcs", {}).value === null, "GCS totals on an empty record");
 check(scores.calculateNeuroScore("gcs", {}).missing.length > 0, "an incomplete GCS reports nothing missing");
 const fullGcs = {
-  eye: "4 — Spontaneous",
-  verbal: "5 — Orientated",
-  motor: "6 — Obeys commands",
+  eye: "4",
+  verbal: "5",
+  motor: "6",
 };
 check(scores.calculateNeuroScore("gcs", fullGcs).value === 15, "a fully documented GCS does not total 15");
 check(scores.calculateNeuroScore("nihss", { loc: "0 — Alert" }).value === null, "NIHSS totals on a single item");
@@ -300,7 +300,7 @@ check(
   "a GCS of 15 raises a reduced-consciousness prompt",
 );
 check(
-  fire({ neuro_scores: { gcs: { eye: "2 — To pain", verbal: "2 — Sounds", motor: "4 — Withdraws" } } }).includes(
+  fire({ neuro_scores: { gcs: { eye: "2", verbal: "2", motor: "4" } } }).includes(
     "reduced_consciousness_airway",
   ),
   "a GCS of 8 raises no airway prompt",
