@@ -229,7 +229,13 @@ const applyClinicalFieldRules = (doc) => {
   return { ...doc, fields: moveReviewOfSystems(fields) };
 };
 
+// Structured decision-support records carry their own typed events (medication
+// safety events, deterioration escalations) — they are never the free-text
+// "Escalation Criteria" section this rule retires.
+const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation"];
+
 const isRetiredField = (field, specialty) => {
+  if (STRUCTURED_RECORD_TYPES.includes(field.type)) return false;
   const label = field.label || "";
   if (isGloballyRetiredField(field)) return true;
   if (specialty === "surgery" && SURGERY_RETIRED_FIELD_LABEL.some((re) => re.test(label))) return true;
