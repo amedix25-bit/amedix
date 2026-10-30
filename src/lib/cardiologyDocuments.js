@@ -316,7 +316,7 @@ const MANAGEMENT_DECISION = [
 const ANTITHROMBOTIC = [
   "None",
   "Aspirin alone",
-  "P2Cl2 inhibitor alone",
+  "P2Y12 inhibitor alone",
   "Dual antiplatelet therapy",
   "Oral anticoagulant alone",
   "Oral anticoagulant plus antiplatelet",
@@ -740,7 +740,6 @@ const CARDIOLOGY_ENHANCEMENTS = {
       ...HF_FIELDS,
       S("bp_severity", "Blood-Pressure Category on Admission", BP_SEVERITY),
       S("rhythm_diagnosis", "Rhythm at Presentation", RHYTHM_DIAGNOSIS),
-      T("presenting_ecg_link", "ECG on Admission — Key Findings and Time Recorded"),
     ]),
     ...haemodynamic(),
     ...sec("Cardiovascular Risk Profile on Admission", [
@@ -751,7 +750,6 @@ const CARDIOLOGY_ENHANCEMENTS = {
       S("drug_intolerance_cardiac", "Documented Drug Intolerance Affecting Cardiac Therapy", DRUG_INTOLERANCE),
     ]),
     ...assessmentBlock(),
-    ...assessmentBlockExtraForAdmission(),
     ...diagnosticPathway(),
     ...managementBlock(),
     ...monitoringBlock(),
@@ -783,7 +781,6 @@ const CARDIOLOGY_ENHANCEMENTS = {
       S("rhythm_diagnosis", "Rhythm on This Review", RHYTHM_DIAGNOSIS),
       S("thromboembolic_risk", "Thromboembolic Risk in Atrial Fibrillation", THROMBOEMBOLIC_RISK, when("rhythm_diagnosis", "Atrial fibrillation")),
       S("anticoagulation_status", "Anticoagulation Status", ANTICOAGULATION, when("rhythm_diagnosis", "Atrial fibrillation")),
-      T("telemetry_review", "Telemetry — Arrhythmia Burden, Pauses and Rate Control"),
     ]),
     ...sec("Assessment on This Review", [
       T("differential_update", "Assessment — What Changed and Why"),
@@ -1270,19 +1267,17 @@ const CARDIOLOGY_ENHANCEMENTS = {
   ],
 };
 
-// The admission note's assessment section carries the two classifications the
-// escalation decisions depend on, in the same section as the assessment itself.
-function assessmentBlockExtraForAdmission() {
-  return [];
-}
-
 // Appends — never replaces — so a saved note keeps every field it already had.
 export const withCardiologyStandards = (docs) =>
   docs.map((doc) => {
     const extra = CARDIOLOGY_ENHANCEMENTS[doc.key];
     if (!extra) return doc;
     const existing = new Set((doc.fields || []).map((f) => f.key));
-    const additions = extra().filter((f) => !existing.has(f.key));
+    const additions = extra().filter((f) => {
+      if (existing.has(f.key)) return false;
+      existing.add(f.key);
+      return true;
+    });
     if (!additions.length) return doc;
     return {
       ...doc,

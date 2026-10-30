@@ -9,6 +9,7 @@ import {
   CARDIOLOGY_SAFETY_PROVENANCE,
   buildCardiologySafetyPrompts,
 } from "@/lib/cardiologySafetyRules";
+import { CARDIOLOGY_MANDATORY_REFERENCES } from "@/lib/cardiologyReferences";
 
 // Conditional decision support for the Cardiology notes.
 //
@@ -173,6 +174,18 @@ export default function CardiologySafetyPromptsField({ value, values, onChange }
           Urgent care comes first. If the patient is unstable, treat and then document — nothing on this page has to be
           completed before treatment. A prompt does not diagnose, prescribe or order anything, and it never decides that
           a patient is stable: that judgement, and the decision taken, are recorded here by the clinician.
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1.5 leading-relaxed">
+          Note content and prompts are built from:{" "}
+          {CARDIOLOGY_MANDATORY_REFERENCES.map((r, i) => (
+            <span key={r.short}>
+              {i > 0 && " · "}
+              <a href={r.url} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                {r.short}
+              </a>
+            </span>
+          ))}{" "}
+          — {CARDIOLOGY_MANDATORY_REFERENCES.map((r) => r.label).join("; ")}.
         </p>
       </div>
 

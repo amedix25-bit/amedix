@@ -17,6 +17,7 @@ import EntSafetyPromptsField from "@/components/doctor/notes/EntSafetyPromptsFie
 import EndocrineSafetyPromptsField from "@/components/doctor/notes/EndocrineSafetyPromptsField";
 import ObgynSafetyPromptsField from "@/components/doctor/notes/ObgynSafetyPromptsField";
 import EmergencySafetyPromptsField from "@/components/doctor/notes/EmergencySafetyPromptsField";
+import CardiologySafetyPromptsField from "@/components/doctor/notes/CardiologySafetyPromptsField";
 import GcsScoreField from "@/components/doctor/notes/GcsScoreField";
 import EmergencyResuscitationField from "@/components/doctor/notes/EmergencyResuscitationField";
 import DecisionRuleField from "@/components/doctor/notes/DecisionRuleField";
@@ -182,6 +183,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "obgyn_safety" && (
         <ObgynSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "cardio_safety" && (
+        <CardiologySafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "emergency_safety" && (
         <EmergencySafetyPromptsField

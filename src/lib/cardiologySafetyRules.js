@@ -248,16 +248,6 @@ const CONCERN_SPECS = {
     sourceId: "esc_cardiomyopathy_2023",
     provenance: "clinical_recommendation",
   },
-  pe_pathway_not_documented: {
-    level: "same_day",
-    title: "Pulmonary embolism assessed as likely without a documented diagnostic pathway",
-    basis:
-      "The ESC pulmonary embolism guideline requires either imaging or a documented reason not to image once clinical probability is at least intermediate, together with an anticoagulation decision.",
-    action:
-      "Record the imaging or D-dimer pathway requested, the anticoagulation decision and its timing.",
-    sourceId: "esc_pe_2019",
-    provenance: "clinical_recommendation",
-  },
   ascvd_no_lipid_therapy: {
     level: "documented",
     title: "Established atherosclerotic disease without lipid-lowering therapy documented",
@@ -290,22 +280,12 @@ const CONCERN_SPECS = {
   },
   cardiomyopathy_scd_not_assessed: {
     level: "documented",
-    title: "Cardiomyopathy without a documented sudden-death risk assessment",
+    title: "Sudden cardiac death risk not documented",
     basis:
-      "The ESC cardiomyopathy guideline requires a structured assessment of sudden cardiac death risk and family screening in every cardiomyopathy, with the decision and its basis recorded.",
+      "The ESC cardiomyopathy guideline requires a structured assessment of sudden cardiac death risk and family screening in every cardiomyopathy or inherited arrhythmia, with the decision and its basis recorded.",
     action:
       "Record the risk assessment performed and its outcome, and the family screening advice given.",
     sourceId: "esc_cardiomyopathy_2023",
-    provenance: "clinical_recommendation",
-  },
-  pericarditis_therapy_not_documented: {
-    level: "documented",
-    title: "Pericarditis without a documented anti-inflammatory regimen",
-    basis:
-      "The ESC pericardial disease guideline recommends an NSAID plus colchicine as first-line anti-inflammatory treatment for acute pericarditis, with a documented reason where either is withheld.",
-    action:
-      "Record the regimen started, the gastroprotection and the restriction on strenuous activity advised, or the documented reason for a different regimen.",
-    sourceId: "esc_pericardial_2015",
     provenance: "clinical_recommendation",
   },
   renal_potassium_monitoring_not_documented: {
@@ -330,7 +310,7 @@ const FROM_VALUES = [
     return { key: "ecg_not_yet_performed", evidence: `Chest pain: ${pain}; ECG: not yet performed` };
   },
   (v) => {
-    if (!/STEMI/i.test(text(v, "acs_classification"))) return null;
+    if (!/^ST-elevation myocardial infarction/i.test(text(v, "acs_classification"))) return null;
     const strategy = text(v, "reperfusion_strategy");
     if (strategy && !/^Not documented|^Not applicable/i.test(strategy)) return null;
     return {
@@ -370,36 +350,25 @@ const FROM_VALUES = [
     return { key: "ventricular_arrhythmia_recorded", evidence: `Rhythm: ${text(v, "rhythm_diagnosis")}` };
   },
   (v) => {
-    if (!/^Likely/.test(text(v, "pe_probability"))) return null;
-    if (text(v, "pe_pathway") !== "Not documented") return null;
-    return { key: "pe_pathway_not_documented", evidence: "PE probability: likely; diagnostic pathway: not documented" };
-  },
-  (v) => {
-    if (!/^Established ASCVD/.test(text(v, "ascvd_risk_category"))) return null;
+    if (!/^Established atherosclerotic/i.test(text(v, "ascvd_risk_category"))) return null;
     if (!/^Not (prescribed|documented)/i.test(text(v, "lipid_therapy"))) return null;
     return { key: "ascvd_no_lipid_therapy", evidence: `Risk: ${text(v, "ascvd_risk_category")}; lipid therapy: ${text(v, "lipid_therapy")}` };
   },
   (v) => {
-    if (text(v, "lvef_category") !== "LVEF ≤ 35%") return null;
+    if (text(v, "lvef_category") !== "LVEF 35% or less") return null;
     if (text(v, "device_therapy_discussion") !== "Not documented") return null;
-    return { key: "device_therapy_not_discussed", evidence: "LVEF ≤ 35%; device therapy: not documented" };
+    return { key: "device_therapy_not_discussed", evidence: "LVEF 35% or less; device therapy: not documented" };
   },
   (v) => {
     const acs = text(v, "acs_classification");
-    if (!/STEMI|NSTEMI|Unstable angina/i.test(acs)) return null;
+    if (!/^(ST-elevation myocardial infarction|Non-ST-elevation myocardial infarction|Unstable angina)/i.test(acs))
+      return null;
     if (text(v, "cardiac_rehab_referral") !== "Not documented") return null;
     return { key: "post_mi_rehab_not_documented", evidence: `Classification: ${acs}; cardiac rehabilitation: not documented` };
   },
   (v) => {
-    if (!text(v, "cardiomyopathy_phenotype")) return null;
     if (text(v, "scd_risk_assessment") !== "Not documented") return null;
     return { key: "cardiomyopathy_scd_not_assessed", evidence: `Cardiomyopathy: ${text(v, "cardiomyopathy_phenotype")}; SCD risk: not documented` };
-  },
-  (v) => {
-    if (!text(v, "pericarditis_present")) return null;
-    if (text(v, "pericarditis_present") === "Not applicable") return null;
-    if (text(v, "pericarditis_regimen") !== "Not documented") return null;
-    return { key: "pericarditis_therapy_not_documented", evidence: "Pericarditis documented; anti-inflammatory regimen: not documented" };
   },
   (v) => {
     const pillars = text(v, "hf_gdmt_status");
