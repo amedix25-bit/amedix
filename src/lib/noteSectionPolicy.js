@@ -186,7 +186,7 @@ const isHaemodynamicStatusField = (field) => {
 
 // Structured examination modules record their own structured findings — they are
 // never the single free-text examination field this rule retires.
-const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci"];
+const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci", "peds_modules"];
 
 const isExaminationField = (field) => {
   if (STRUCTURED_EXAM_TYPES.includes(field.type)) return false;
@@ -232,7 +232,7 @@ const applyClinicalFieldRules = (doc) => {
 // Structured decision-support records carry their own typed events (medication
 // safety events, deterioration escalations) — they are never the free-text
 // "Escalation Criteria" section this rule retires.
-const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation"];
+const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation", "peds_modules", "peds_safety", "peds_guidance"];
 
 const isRetiredField = (field, specialty) => {
   if (STRUCTURED_RECORD_TYPES.includes(field.type)) return false;

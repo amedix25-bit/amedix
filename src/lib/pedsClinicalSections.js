@@ -80,22 +80,22 @@ const guidance = (noteKey) => [
   },
 ];
 
-const growth = () => block("peds_growth", "Growth & nutrition");
-const development = () => block("peds_development", "Development & behaviour");
-const immunisation = () => block("peds_immunisation", "Immunisation");
-const newborn = () => block("peds_newborn", "Newborn assessment");
-const jaundice = () => block("peds_jaundice", "Newborn assessment");
-const triage = () => block("peds_triage", "Acute assessment");
-const fever = () => block("peds_fever", "Acute assessment");
-const respiratory = () => block("peds_respiratory", "Acute assessment");
-const dehydration = () => block("peds_dehydration", "Acute assessment");
-const malnutrition = () => block("peds_malnutrition", "Growth & nutrition");
-const chronic = () => block("peds_chronic", "Chronic care");
-const adolescent = () => block("peds_adolescent", "Adolescent health");
-const safeguarding = () => block("peds_safeguarding", "Safeguarding");
-const family = () => block("peds_family", "Family education");
-const procedure = () => block("peds_procedure", "Procedure safety");
-const reasoning = () => block("peds_reasoning", "Clinical reasoning");
+const growth = () => [block("peds_growth", "Growth & nutrition")];
+const development = () => [block("peds_development", "Development & behaviour")];
+const immunisation = () => [block("peds_immunisation", "Immunisation")];
+const newborn = () => [block("peds_newborn", "Newborn assessment")];
+const jaundice = () => [block("peds_jaundice", "Newborn assessment")];
+const triage = () => [block("peds_triage", "Acute assessment")];
+const fever = () => [block("peds_fever", "Acute assessment")];
+const respiratory = () => [block("peds_respiratory", "Acute assessment")];
+const dehydration = () => [block("peds_dehydration", "Acute assessment")];
+const malnutrition = () => [block("peds_malnutrition", "Growth & nutrition")];
+const chronic = () => [block("peds_chronic", "Chronic care")];
+const adolescent = () => [block("peds_adolescent", "Adolescent health")];
+const safeguarding = () => [block("peds_safeguarding", "Safeguarding")];
+const family = () => [block("peds_family", "Family education")];
+const procedure = () => [block("peds_procedure", "Procedure safety")];
+const reasoning = () => [block("peds_reasoning", "Clinical reasoning")];
 
 export const PEDS_ENHANCEMENTS = {
   peds_consultation: () => [
