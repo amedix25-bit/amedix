@@ -29,6 +29,9 @@ import { formatNephMedications } from "@/lib/nephMedications";
 import { formatGastroBlock } from "@/lib/gastroenterologyModules";
 import { formatGastroScores } from "@/lib/gastroenterologyScores";
 import { formatGastroSafety } from "@/lib/gastroenterologySafetyRules";
+import { formatOphthBlock } from "@/lib/ophthalmologyBlocks";
+import { formatOphthScores } from "@/lib/ophthalmologyScores";
+import { formatOphthSafety } from "@/lib/ophthalmologySafetyRules";
 import {
   akiStaging,
   albuminuriaCategoryFor,
@@ -211,6 +214,10 @@ export function formatFieldValue(type, value) {
   if (type === "gi_scores") return formatGastroScores(value);
   if (type === "gi_safety") return formatGastroSafety(value);
   if (type === "gi_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
+  if (type === "ophth_modules") return formatOphthBlock(value);
+  if (type === "ophth_scores") return formatOphthScores(value);
+  if (type === "ophth_safety") return formatOphthSafety(value);
+  if (type === "ophth_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
 
   if (type === "rheum_treatment") return formatTreatmentPlan(value);
   if (type === "rheum_comparison") return formatComparison(value);

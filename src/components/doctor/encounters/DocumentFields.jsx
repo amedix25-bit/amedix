@@ -42,6 +42,10 @@ import GastroBlockField from "@/components/doctor/notes/GastroBlockField";
 import GastroScoresField from "@/components/doctor/notes/GastroScoresField";
 import GastroSafetyPromptsField from "@/components/doctor/notes/GastroSafetyPromptsField";
 import GastroGuidanceField from "@/components/doctor/notes/GastroGuidanceField";
+import OphthalmologyBlockField from "@/components/doctor/notes/OphthalmologyBlockField";
+import OphthalmologyScoresField from "@/components/doctor/notes/OphthalmologyScoresField";
+import OphthalmologySafetyPromptsField from "@/components/doctor/notes/OphthalmologySafetyPromptsField";
+import OphthalmologyGuidanceField from "@/components/doctor/notes/OphthalmologyGuidanceField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -291,6 +295,22 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "gi_guidance" && (
         <GastroGuidanceField
+          noteKey={f.noteKey}
+          value={values[f.key]}
+          onChange={(v) => onChange(f.key, v)}
+        />
+      )}
+      {f.type === "ophth_modules" && (
+        <OphthalmologyBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "ophth_scores" && (
+        <OphthalmologyScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "ophth_safety" && (
+        <OphthalmologySafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "ophth_guidance" && (
+        <OphthalmologyGuidanceField
           noteKey={f.noteKey}
           value={values[f.key]}
           onChange={(v) => onChange(f.key, v)}

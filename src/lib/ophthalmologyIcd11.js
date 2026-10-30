@@ -124,7 +124,7 @@ const RAW = [
   "9B75.3|Macular telangiectasia|macula|1|توسع الشعيرات البقعي",
 
   // ---- Glaucoma -----------------------------------------------------------
-  "9C60|Glaucoma suspect|glaucoma|1|مشتبه glaucoma — اشتباه الزرق",
+  "9C60|Glaucoma suspect|glaucoma|1|اشتباه الزرق (الجلوكوما)",
   "9C61|Glaucoma|glaucoma|1|الزرق (الجلوكوما)",
   "9C61.0|Primary open-angle glaucoma|glaucoma|1|الزرق الأولي مفتوح الزاوية",
   "9C61.1|Primary angle closure or angle closure glaucoma|glaucoma|1|انغلاق الزاوية الأولي أو الزرق انغلاقي الزاوية",
