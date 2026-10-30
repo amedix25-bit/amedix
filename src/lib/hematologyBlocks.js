@@ -6,9 +6,15 @@
 
 import { HISTORY_BLOCKS, INTERVAL_BLOCK } from "@/lib/hematologyClinicalBlocks";
 import { CONDITION_BLOCKS } from "@/lib/hematologyConditionBlocks";
+import { ASH_MANAGEMENT_BLOCKS } from "@/lib/hematologyAshManagement";
 import { asObject, str, list } from "@/lib/hematologyFieldKit";
 
-export const HEMA_BLOCKS = { ...HISTORY_BLOCKS, ...INTERVAL_BLOCK, ...CONDITION_BLOCKS };
+export const HEMA_BLOCKS = {
+  ...HISTORY_BLOCKS,
+  ...INTERVAL_BLOCK,
+  ...CONDITION_BLOCKS,
+  ...ASH_MANAGEMENT_BLOCKS,
+};
 
 export const hemaBlock = (key) => HEMA_BLOCKS[key] || null;
 export const HEMA_BLOCK_KEYS = Object.keys(HEMA_BLOCKS);

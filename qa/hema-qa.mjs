@@ -29,7 +29,20 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const TMP = path.join(ROOT, "qa", ".hema-tmp");
 
-const MODULES = ["hematologyIcd11.js", "hematologyDocuments.js"];
+const MODULES = [
+  "hematologyFieldKit.js",
+  "hematologyLabCatalogue.js",
+  "hematologyAshGuidelines.js",
+  "hematologyAshManagement.js",
+  "hematologyClinicalBlocks.js",
+  "hematologyConditionBlocks.js",
+  "hematologyBlocks.js",
+  "hematologyScores.js",
+  "hematologyClinicalSections.js",
+  "hematologyIcd11.js",
+  "hematologySafetyRules.js",
+  "hematologyDocuments.js",
+];
 
 fs.rmSync(TMP, { recursive: true, force: true });
 fs.mkdirSync(TMP, { recursive: true });
@@ -41,6 +54,11 @@ for (const file of MODULES) {
 
 const icd = await import(path.join(TMP, "hematologyIcd11.js"));
 const docs = await import(path.join(TMP, "hematologyDocuments.js"));
+const blocks = await import(path.join(TMP, "hematologyBlocks.js"));
+const sections = await import(path.join(TMP, "hematologyClinicalSections.js"));
+const safety = await import(path.join(TMP, "hematologySafetyRules.js"));
+const ash = await import(path.join(TMP, "hematologyAshGuidelines.js"));
+const ashMgmt = await import(path.join(TMP, "hematologyAshManagement.js"));
 
 const PART4 = fs.readFileSync(path.join(ROOT, "src", "lib", "specialtyDocumentsPart4.js"), "utf8");
 const TEMPLATES = fs.readFileSync(path.join(ROOT, "src", "lib", "specialtyDocuments.js"), "utf8");
@@ -185,6 +203,157 @@ check(
   !/hema_[a-z_]+", label:/.test(TEMPLATES.slice(TEMPLATES.indexOf("export const SPECIALTY_DOCUMENTS"))),
   "a Hematology note was redefined inside the aggregated list",
 );
+
+// ---- 8. ASH guideline register --------------------------------------------
+const GUIDELINES = ash.HEMA_ASH_GUIDELINES;
+check(GUIDELINES.length >= 10, "the ASH register is unexpectedly small");
+GUIDELINES.forEach((g) => {
+  check(Boolean(g.key && g.title && g.edition && g.population), `ASH guideline ${g.key} is missing identity fields`);
+  check(/^https:\/\//.test(g.url), `ASH guideline ${g.key} has no https source`);
+  check(Array.isArray(g.scope) && g.scope.length > 0, `ASH guideline ${g.key} declares no scope`);
+  check(
+    Array.isArray(g.notCovered) && g.notCovered.length > 0,
+    `ASH guideline ${g.key} does not state what it does not cover`,
+  );
+  check(Array.isArray(g.domains) && g.domains.length > 0, `ASH guideline ${g.key} has no ICD domain mapping`);
+});
+const GAP_KEYS = new Set(ash.HEMA_ASH_GAPS.map((g) => g.key));
+ash.HEMA_ASH_GAPS.forEach((g) => {
+  check(Boolean(g.question && g.ashStatus), `gap ${g.key} does not state the question and the ASH status`);
+  check(
+    Boolean(g.complementary && g.complementary.organization && g.complementary.url),
+    `gap ${g.key} names no complementary source`,
+  );
+});
+Object.entries(ash.ASH_BY_GROUP).forEach(([group, entry]) => {
+  entry.guidelines.forEach((k) => check(Boolean(ash.ashGuideline(k)), `group ${group} references unknown ASH key ${k}`));
+  entry.gaps.forEach((k) => check(GAP_KEYS.has(k), `group ${group} references unknown gap ${k}`));
+});
+
+// ---- 9. Sections, blocks and the safety review ----------------------------
+NOTE_KEYS.forEach((key) => {
+  const fields = sections.HEMA_CLINICAL_SECTIONS[key]();
+  const safetyFields = fields.filter((f) => f.type === "hema_safety");
+  check(safetyFields.length === 1, `note ${key} does not carry exactly one safety review`);
+  const keys = fields.map((f) => f.key);
+  check(new Set(keys).size === keys.length, `note ${key} declares a duplicate field key`);
+  fields
+    .filter((f) => f.type === "hema_modules")
+    .forEach((f) => {
+      const spec = blocks.hemaBlock(f.key);
+      check(Boolean(spec), `note ${key} uses ${f.key}, which is not in the block registry`);
+      if (spec) check(Array.isArray(spec.fields) && spec.fields.length > 0, `block ${f.key} has no fields`);
+    });
+});
+
+// Every ASH management block is registered, and every one is actually shown on
+// at least one note type — no block is written and then orphaned.
+Object.keys(ashMgmt.ASH_BLOCK_GROUP_RULES).forEach((key) =>
+  check(Boolean(blocks.hemaBlock(key)), `group rule ${key} has no block`),
+);
+const USED_BLOCK_KEYS = new Set(
+  NOTE_KEYS.flatMap((key) => sections.HEMA_CLINICAL_SECTIONS[key]().filter((f) => f.type === "hema_modules").map((f) => f.key)),
+);
+Object.keys(ashMgmt.ASH_MANAGEMENT_BLOCKS).forEach((key) =>
+  check(USED_BLOCK_KEYS.has(key), `ASH management block ${key} is never shown on a note`),
+);
+const DOCUMENT_FIELDS = fs.readFileSync(
+  path.join(ROOT, "src", "components", "doctor", "encounters", "DocumentFields.jsx"),
+  "utf8",
+);
+check(DOCUMENT_FIELDS.includes('f.type === "hema_safety"'), "the note form has no renderer for the safety review");
+const FIELD_VALUE = fs.readFileSync(path.join(ROOT, "src", "lib", "clinicalFieldValue.js"), "utf8");
+check(FIELD_VALUE.includes('type === "hema_safety"'), "the safety review is not printed into the saved record");
+
+// ---- 10. Safety prompts — required set, triggers, thresholds, attribution --
+const REQUIRED_PROMPTS = [
+  "critical_anaemia",
+  "severe_thrombocytopenia",
+  "active_major_bleeding",
+  "suspected_acute_leukaemia",
+  "febrile_neutropenia",
+  "acute_thromboembolism",
+  "severe_haemolysis",
+  "sickle_emergency",
+  "suspected_dic",
+  "acute_transfusion_reaction",
+];
+REQUIRED_PROMPTS.forEach((k) =>
+  check(
+    safety.HEMA_SAFETY_CONCERNS.some((c) => c.key === k),
+    `required safety concern ${k} is missing`,
+  ),
+);
+
+const promptsFor = (values, thresholds) => safety.buildHemaSafetyPrompts({ values, thresholds }).map((p) => p.key);
+check(promptsFor({}).length === 0, "an empty note raises a safety prompt");
+check(
+  promptsFor({ hema_cbc: [{ analyte: "hb", value: "68", unit: "g/L", date: "2026-10-30" }] }).includes("critical_anaemia"),
+  "haemoglobin 68 g/L does not raise the critical-anaemia prompt",
+);
+check(
+  !promptsFor({ hema_cbc: [{ analyte: "hb", value: "118", unit: "g/L" }] }).includes("critical_anaemia"),
+  "a normal haemoglobin raises the critical-anaemia prompt",
+);
+check(
+  !promptsFor({ hema_cbc: [{ analyte: "hb", value: "68" }] }, { critical_hb: "60" }).includes("critical_anaemia"),
+  "a lowered local threshold is ignored",
+);
+check(
+  promptsFor({ hema_cbc: [{ analyte: "plt", value: "12" }] }).includes("severe_thrombocytopenia"),
+  "platelets 12 x10^9/L do not raise the severe-thrombocytopenia prompt",
+);
+check(
+  promptsFor({ hema_cbc: [{ analyte: "blasts", value: "30" }] }).includes("suspected_acute_leukaemia"),
+  "blasts on the differential do not raise the acute-leukaemia prompt",
+);
+check(
+  promptsFor({ hema_presentation: { fever: "Febrile neutropenia" }, hema_cbc: [{ analyte: "neut", value: "0.2" }] }).includes(
+    "febrile_neutropenia",
+  ),
+  "fever with neutropenia does not raise the febrile-neutropenia prompt",
+);
+check(
+  promptsFor({ hema_emergency: { presentation: "Disseminated intravascular coagulation" } }).includes("suspected_dic"),
+  "a DIC emergency presentation does not raise the DIC prompt",
+);
+check(
+  promptsFor({ hema_transfusion_assessment: { reaction: "Anaphylaxis" } }).includes("acute_transfusion_reaction"),
+  "an anaphylactic reaction does not raise the transfusion-reaction prompt",
+);
+check(
+  !promptsFor({ hema_transfusion_assessment: { reaction: "None observed" } }).includes("acute_transfusion_reaction"),
+  "a documented 'no reaction' raises the transfusion-reaction prompt",
+);
+check(
+  promptsFor({ hema_exam: { active_bleeding: "Present", bleeding_site: "Epistaxis" } }).includes("active_major_bleeding"),
+  "active bleeding documented on examination does not raise the bleeding prompt",
+);
+
+// Attribution guard: ASH is cited only where an ASH guideline covers it.
+REQUIRED_PROMPTS.forEach((k) => {
+  const p = safety.buildHemaSafetyPrompts({ concerns: [k] })[0];
+  check(Boolean(p && p.basis && p.action), `prompt ${k} has no basis or action`);
+  if (!p) return;
+  check(
+    Object.keys(safety.HEMA_SAFETY_PROVENANCE).includes(p.provenance),
+    `prompt ${k} has an unknown provenance`,
+  );
+  if (p.provenance === "ash_guideline") {
+    check(/^ASH/.test(p.source?.organization || ""), `prompt ${k} claims ASH but cites ${p.source?.organization}`);
+  } else {
+    check(!/^ASH/.test(p.source?.organization || ""), `prompt ${k} attributes a non-ASH recommendation to ASH`);
+  }
+});
+
+safety.HEMA_SAFETY_THRESHOLDS.forEach((t) => {
+  check(Number.isFinite(t.value), `threshold ${t.key} has no numeric default`);
+  check(
+    Object.keys(safety.HEMA_SAFETY_PROVENANCE).includes(t.provenance),
+    `threshold ${t.key} has an unknown provenance`,
+  );
+  if (t.provenance !== "local") check(Boolean(t.source && t.source.url), `threshold ${t.key} names no source`);
+});
 
 // ---- Report ---------------------------------------------------------------
 fs.rmSync(TMP, { recursive: true, force: true });

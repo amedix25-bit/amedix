@@ -10,6 +10,8 @@
 // clinician records that working group, so an anaemia review never asks about
 // cord compression and a transfusion record never asks about pica.
 
+import { ASH_BLOCK_GROUP_RULES } from "@/lib/hematologyAshManagement";
+
 const GROUP_ALL = [
   "Anaemia",
   "Haemoglobinopathy",
@@ -74,6 +76,47 @@ const blk = (key, label, showGroup) => ({
 });
 
 const labs = (key, label, panels) => ({ key, label, type: "hema_labs", panels });
+
+// ---- ASH management & patient-safety layer --------------------------------
+// Appended to the existing structure, never replacing it. The safety review is
+// on every note type; the management blocks follow the working diagnostic group
+// recorded in the note, so a review does not present chemotherapy documentation
+// where no neoplasm is recorded.
+const safety = () => [{ key: "hema_safety", label: "Patient Safety Review", type: "hema_safety" }];
+
+const ASH_LABELS = {
+  hema_ash_plan: "Treatment Plan & Guideline Basis",
+  hema_medication_order: "Medication Order",
+  hema_anticoagulation: "Anticoagulation",
+  hema_transfusion_prescription: "Transfusion Prescription",
+  hema_iron_nutrition: "Iron & Nutritional Replacement",
+  hema_immunosuppression: "Immunosuppressive & Disease-Modifying Therapy",
+  hema_chemo_targeted: "Chemotherapy & Targeted Therapy",
+  hema_infection_support: "Infection Prevention & Supportive Care",
+  hema_thromboprophylaxis: "Thrombosis & Bleeding Prevention",
+  hema_counsel: "Counselling & Shared Decision-Making",
+};
+
+const ashFields = (keys) =>
+  keys.map((key) => ({
+    key,
+    label: ASH_LABELS[key],
+    type: "hema_modules",
+    ...(ASH_BLOCK_GROUP_RULES[key] ? { showIf: { key: "diagnostic_group", in: ASH_BLOCK_GROUP_RULES[key] } } : {}),
+  }));
+
+const ASH_ALL = [
+  "hema_ash_plan",
+  "hema_medication_order",
+  "hema_anticoagulation",
+  "hema_transfusion_prescription",
+  "hema_iron_nutrition",
+  "hema_immunosuppression",
+  "hema_chemo_targeted",
+  "hema_infection_support",
+  "hema_thromboprophylaxis",
+  "hema_counsel",
+];
 
 // One condition block per working group, each behind its own answer.
 const conditionBlocks = (options) =>
@@ -140,7 +183,8 @@ const consultation = () => [
     { key: "hema_scores", label: "Validated Assessment Tools", type: "hema_scores" },
   ]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_ALL), ...conditionBlocks(GROUP_ALL)]),
-  ...withSection("Management", [blk("hema_management", "Management")]),
+  ...withSection("Management", [blk("hema_management", "Management"), ...ashFields(ASH_ALL)]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Follow-Up Arrangements")]),
 ];
 
@@ -165,7 +209,8 @@ const followup = () => [
     { key: "hema_scores", label: "Validated Assessment Tools", type: "hema_scores" },
   ]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_ALL), ...conditionBlocks(GROUP_ALL)]),
-  ...withSection("Management", [blk("hema_management", "Management")]),
+  ...withSection("Management", [blk("hema_management", "Management"), ...ashFields(ASH_ALL)]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Follow-Up Arrangements")]),
 ];
 
@@ -183,7 +228,11 @@ const progressNote = () => [
   ]),
   ...withSection("Assessment", [blk("hema_reasoning", "Assessment & Diagnostic Reasoning")]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_ALL), ...conditionBlocks(GROUP_ALL)]),
-  ...withSection("Management", [blk("hema_management", "Management")]),
+  ...withSection("Management", [
+    blk("hema_management", "Management"),
+    ...ashFields(["hema_medication_order", "hema_infection_support", "hema_thromboprophylaxis", "hema_ash_plan"]),
+  ]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Next Review", [blk("hema_followup", "Follow-Up & Clinical Review")]),
 ];
 
@@ -197,6 +246,8 @@ const transfusionRecord = () => [
     labs("hema_coag", "Coagulation Profile (plasma or cryoprecipitate)", ["coag"]),
   ]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_TRANSFUSION), ...conditionBlocks(GROUP_TRANSFUSION)]),
+  ...withSection("Transfusion Prescription", ashFields(["hema_transfusion_prescription", "hema_medication_order"])),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Follow-Up Arrangements")]),
 ];
 
@@ -207,6 +258,10 @@ const infusionRecord = () => [
     labs("hema_biochem", "Renal, Liver & Metabolic", ["biochem"]),
   ]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_INFUSION), ...conditionBlocks(GROUP_INFUSION)]),
+  ...withSection("Treatment Documentation", [
+    ...ashFields(["hema_chemo_targeted", "hema_medication_order", "hema_infection_support"]),
+  ]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Follow-Up Arrangements")]),
 ];
 
@@ -219,11 +274,15 @@ const boneMarrowRecord = () => [
     blk("hema_reasoning", "Diagnostic Reasoning at the Time of the Procedure"),
   ]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_PROCEDURE), ...conditionBlocks(GROUP_PROCEDURE)]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Result Follow-Up")]),
 ];
 
 const treatmentPlan = () => [
-  ...withSection("Treatment & Supportive Care", [blk("hema_management", "Treatment & Supportive Care")]),
+  ...withSection("Treatment & Supportive Care", [
+    blk("hema_management", "Treatment & Supportive Care"),
+    ...ashFields(ASH_ALL),
+  ]),
   ...withSection("Treatment Response & Toxicity", [blk("hema_response", "Treatment Response & Toxicity")]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_TREATMENT), ...conditionBlocks(GROUP_TREATMENT)]),
   ...withSection("Monitoring", [
@@ -231,6 +290,7 @@ const treatmentPlan = () => [
     labs("hema_biochem", "Renal, Liver & Metabolic", ["biochem"]),
     labs("hema_infection", "Infection Screening", ["infection"]),
   ]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Review & Response Assessment")]),
 ];
 
@@ -239,7 +299,11 @@ const dischargeSummary = () => [
   ...withSection("Findings at Discharge", [blk("hema_exam", "Physical Findings at Discharge")]),
   ...withSection("Counts at Discharge", [labs("hema_cbc", "Blood Counts & Film at Discharge", ["cbc", "retic"])]),
   ...withSection("Condition-Specific Documentation", [group(GROUP_ALL), ...conditionBlocks(GROUP_ALL)]),
-  ...withSection("Medication & Ongoing Treatment", [blk("hema_management", "Ongoing Management")]),
+  ...withSection("Medication & Ongoing Treatment", [
+    blk("hema_management", "Ongoing Management"),
+    ...ashFields(["hema_medication_order", "hema_infection_support", "hema_thromboprophylaxis", "hema_counsel"]),
+  ]),
+  ...withSection("Patient Safety", safety()),
   ...withSection("Follow-Up Arrangements", [blk("hema_followup", "Follow-Up Arrangements")]),
 ];
 
