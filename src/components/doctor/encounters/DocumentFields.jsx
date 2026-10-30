@@ -381,6 +381,15 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       {f.type === "neuro_guidance" && (
         <NeurologyGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
+      {f.type === "peds_modules" && (
+        <PedsBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "peds_safety" && (
+        <PedsSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "peds_guidance" && (
+        <PedsGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>
           <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
