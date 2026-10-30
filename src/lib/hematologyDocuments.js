@@ -44,6 +44,7 @@ import {
   HEMA_ICD_CATALOG_NOTE,
   HEMA_ICD_CLUSTER_NOTE,
 } from "@/lib/hematologyIcd11";
+import { HEMA_CLINICAL_SECTIONS } from "@/lib/hematologyClinicalSections";
 
 const ALL_DOMAINS = [
   "erythroid",
@@ -123,12 +124,17 @@ export const HEMA_ENHANCEMENTS = {
 };
 
 // Appends — never replaces — so a saved note keeps every field it already had.
+// Two layers are appended to each note type, in this order: the ICD-11 coding
+// field, then the strengthened clinical sections (history, findings, reported
+// results, reasoning, condition block, management, follow-up).
 export const withHematologyStandards = (docs) =>
   docs.map((doc) => {
     const extra = HEMA_ENHANCEMENTS[doc.key];
-    if (!extra) return doc;
+    const sections = HEMA_CLINICAL_SECTIONS[doc.key];
+    if (!extra && !sections) return doc;
     const existing = new Set((doc.fields || []).map((f) => f.key));
-    const additions = extra().filter((f) => {
+    const candidates = [...(extra ? extra() : []), ...(sections ? sections() : [])];
+    const additions = candidates.filter((f) => {
       if (existing.has(f.key)) return false;
       existing.add(f.key);
       return true;

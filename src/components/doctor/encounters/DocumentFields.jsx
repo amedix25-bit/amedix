@@ -47,6 +47,9 @@ import OphthalmologyScoresField from "@/components/doctor/notes/OphthalmologySco
 import OphthalmologySafetyPromptsField from "@/components/doctor/notes/OphthalmologySafetyPromptsField";
 import OphthalmologyGuidanceField from "@/components/doctor/notes/OphthalmologyGuidanceField";
 import OphthalmologyInvestigationsField from "@/components/doctor/notes/OphthalmologyInvestigationsField";
+import HematologyBlockField from "@/components/doctor/notes/HematologyBlockField";
+import HematologyLabsField from "@/components/doctor/notes/HematologyLabsField";
+import HematologyScoresField from "@/components/doctor/notes/HematologyScoresField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -321,6 +324,15 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
           value={values[f.key]}
           onChange={(v) => onChange(f.key, v)}
         />
+      )}
+      {f.type === "hema_modules" && (
+        <HematologyBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "hema_labs" && (
+        <HematologyLabsField value={values[f.key]} panels={f.panels} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "hema_scores" && (
+        <HematologyScoresField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>
