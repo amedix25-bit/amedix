@@ -29,7 +29,15 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const TMP = path.join(ROOT, "qa", ".ortho-tmp");
 
-const MODULES = ["orthopedicsIcd11.js", "orthopedicsClinicalSections.js", "orthopedicsSafetyRules.js", "orthopedicsDocuments.js"];
+const MODULES = [
+  "orthopedicsIcd11.js",
+  "orthopedicsReferences.js",
+  "orthopedicsTrauma.js",
+  "orthopedicsManagement.js",
+  "orthopedicsClinicalSections.js",
+  "orthopedicsSafetyRules.js",
+  "orthopedicsDocuments.js",
+];
 
 fs.rmSync(TMP, { recursive: true, force: true });
 fs.mkdirSync(TMP, { recursive: true });
@@ -39,10 +47,52 @@ for (const file of MODULES) {
   fs.writeFileSync(path.join(TMP, file), source.replace(/@\/lib\/([A-Za-z0-9_]+)/g, "./$1.js"));
 }
 
+// The whole src/lib tree is mirrored a second time so the REAL governance module
+// (noteSectionPolicy) can be imported: the orthopedics templates are then checked
+// against the same rules the Doctor Portal applies, not against a copy of them.
+const LIB = path.join(ROOT, "src", "lib");
+const POLICY_TMP = path.join(TMP, "lib");
+const walk = (dir) =>
+  fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+const libFiles = walk(LIB).filter((f) => f.endsWith(".js"));
+const libRels = new Set(libFiles.map((f) => path.relative(LIB, f).replaceAll("\\", "/")));
+const resolveTarget = (spec, fromRel) => {
+  let base;
+  if (spec.startsWith("@/lib/")) base = spec.slice(6);
+  else if (spec.startsWith(".")) base = path.posix.join(path.posix.dirname(fromRel), spec);
+  else return null;
+  base = path.posix.normalize(base);
+  if (libRels.has(base)) return base;
+  if (libRels.has(`${base}.js`)) return `${base}.js`;
+  if (libRels.has(`${base}/index.js`)) return `${base}/index.js`;
+  return null;
+};
+for (const file of libFiles) {
+  const rel = path.relative(LIB, file).replaceAll("\\", "/");
+  const out = path.join(POLICY_TMP, rel);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const source = fs
+    .readFileSync(file, "utf8")
+    .replace(/(from\s+|import\s*\()(["'])([^"']+)\2/g, (m, pre, q, spec) => {
+      const target = resolveTarget(spec, rel);
+      if (!target) return m;
+      let r = path.posix.relative(path.posix.dirname(rel), target);
+      if (!r.startsWith(".")) r = `./${r}`;
+      return `${pre}${q}${r}${q}`;
+    });
+  fs.writeFileSync(out, source);
+}
+
 const icd = await import(path.join(TMP, "orthopedicsIcd11.js"));
+const refs = await import(path.join(TMP, "orthopedicsReferences.js"));
+const trauma = await import(path.join(TMP, "orthopedicsTrauma.js"));
+const management = await import(path.join(TMP, "orthopedicsManagement.js"));
 const sections = await import(path.join(TMP, "orthopedicsClinicalSections.js"));
 const safety = await import(path.join(TMP, "orthopedicsSafetyRules.js"));
 const docs = await import(path.join(TMP, "orthopedicsDocuments.js"));
+const policy = await import(path.join(POLICY_TMP, "noteSectionPolicy.js"));
 
 let failures = 0;
 const check = (ok, message) => {
@@ -225,8 +275,229 @@ check(/not a statement that no urgent problem exists/.test(printedEmpty), "an em
 // ---- 7. Rendering is wired ------------------------------------------------
 const FIELDS = fs.readFileSync(path.join(ROOT, "src", "components", "doctor", "encounters", "DocumentFields.jsx"), "utf8");
 check(FIELDS.includes('f.type === "ortho_safety"'), "the note form has no renderer for the orthopedics safety review");
+check(FIELDS.includes('f.type === "ortho_trauma"'), "the note form has no renderer for the trauma-emergency panel");
+check(FIELDS.includes('f.type === "ortho_healing"'), "the note form has no renderer for the fracture-healing panel");
 const VALUES = fs.readFileSync(path.join(ROOT, "src", "lib", "clinicalFieldValue.js"), "utf8");
 check(VALUES.includes('type === "ortho_safety"'), "the safety review is not printed into the saved record");
+check(VALUES.includes('type === "ortho_trauma"'), "the trauma-emergency panel is not printed into the saved record");
+check(VALUES.includes('type === "ortho_healing"'), "the fracture-healing panel is not printed into the saved record");
+
+// ---- 8. The templates survive the clinical-section governance -------------
+// A field whose label reads as an examination, or that sits under a section the
+// policy retires, is silently dropped from the form and from the record. That is
+// exactly how the management layer was being lost, so it is asserted here against
+// the real policy module for every note type.
+const PANEL_KEYS = ["ortho_trauma", "ortho_healing", "ortho_safety", "icd11_diagnoses"];
+NOTE_KEYS.forEach((key) => {
+  const doc = { key, label: key, specialty: "orthopedics", fields: sections.ORTHO_CLINICAL_SECTIONS[key]() };
+  const kept = policy.applyNoteSectionPolicy([doc])[0];
+  const keptKeys = new Set((kept?.fields || []).map((f) => f.key));
+  doc.fields.forEach((f) =>
+    check(keptKeys.has(f.key), `note ${key}: field "${f.key}" (${f.label}) is dropped by the clinical-section policy`),
+  );
+  PANEL_KEYS.forEach((panel) =>
+    check(keptKeys.has(panel), `note ${key}: the ${panel} panel does not survive the clinical-section policy`),
+  );
+});
+// And the panels must reach the built templates, not only the per-note builder.
+NOTE_KEYS.forEach((key) => {
+  const built = docs.withOrthopedicsStandards([{ key, label: key, specialty: "orthopedics", fields: [] }])[0];
+  const keys = (built.fields || []).map((f) => f.key);
+  PANEL_KEYS.forEach((panel) => check(keys.includes(panel), `the built template for ${key} is missing the ${panel} panel`));
+});
+
+// ---- 9. Trauma-emergency presentations ------------------------------------
+const PRES = trauma.ORTHO_TRAUMA_PRESENTATIONS;
+check(PRES.length >= 14, "the trauma-emergency layer does not cover the required presentations");
+check(new Set(PRES.map((p) => p.key)).size === PRES.length, "a trauma presentation key is duplicated");
+const REQUIRED_PRESENTATIONS = [
+  "compartment_syndrome",
+  "open_fracture",
+  "severe_soft_tissue",
+  "neurovascular_compromise",
+  "vascular_injury",
+  "unstable_pelvis",
+  "major_associated_trauma",
+  "spinal_cord_injury",
+  "cauda_equina",
+  "septic_arthritis",
+  "osteomyelitis",
+  "fat_embolism",
+  "postop_infection",
+  "thromboembolism",
+];
+REQUIRED_PRESENTATIONS.forEach((key) =>
+  check(Boolean(trauma.ORTHO_TRAUMA_MAP[key]), `trauma presentation ${key} is missing`),
+);
+PRES.forEach((p) => {
+  check(Boolean(p.label && p.recognition), `presentation ${p.key} has no recognition criteria`);
+  check(Array.isArray(p.references) && p.references.length > 0, `presentation ${p.key} cites no reference`);
+  p.references.forEach((r) => check(Boolean(refs.ORTHO_REFERENCE_MAP[r]), `presentation ${p.key} cites unknown reference ${r}`));
+  check(Boolean(p.level && trauma.ORTHO_TRAUMA_LEVELS[p.level]), `presentation ${p.key} has no urgency level`);
+  check(Array.isArray(p.timeCritical) && p.timeCritical.length > 0, `presentation ${p.key} has no time-critical instruction`);
+  check(Boolean(p.escalation), `presentation ${p.key} names no escalation route`);
+});
+
+// A blank panel must never read as a normal examination.
+check(
+  trauma.orthoTraumaIssues(trauma.emptyOrthoTrauma()).some((i) => i.key === "no_state"),
+  "a blank trauma panel does not report that nothing was assessed",
+);
+check(
+  trauma
+    .orthoTraumaIssues({ ...trauma.emptyOrthoTrauma(), presentations: ["open_fracture"] })
+    .some((i) => /pathway/.test(i.key)),
+  "an open fracture with no recorded time-critical pathway is not flagged",
+);
+check(
+  trauma
+    .orthoTraumaIssues({ ...trauma.emptyOrthoTrauma(), none_documented: true, presentations: ["open_fracture"] })
+    .some((i) => i.key === "contradiction"),
+  "stating that no emergency was documented while recording one is not flagged",
+);
+check(
+  trauma
+    .orthoTraumaIssues({
+      ...trauma.emptyOrthoTrauma(),
+      red_flag_state: trauma.ORTHO_RED_FLAG_STATES[0],
+      red_flags: ["Visible bone or implant"],
+    })
+    .some((i) => i.key === "red_flag_contradiction"),
+  "red flags stated as absent and recorded at the same time is not flagged",
+);
+const traumaRecord = (postNv) => ({
+  ...trauma.emptyOrthoTrauma(),
+  presentations: ["compartment_syndrome"],
+  blocks: {
+    compartment_syndrome: {
+      pathway: { who_informed: "Registrar", time_informed: "19:10" },
+      intervention: { performed: "Yes — performed here", time: "20:00", procedure: "Fasciotomy" },
+      pre_nv: { pre_nv_time: "19:00", pre_nv_pulses: "Palpable" },
+      post_nv: postNv,
+    },
+  },
+});
+check(
+  trauma.orthoTraumaIssues(traumaRecord({})).some((i) => /post_nv/.test(i.key)),
+  "an urgent intervention with no post-intervention neurovascular check is not flagged",
+);
+check(
+  !trauma
+    .orthoTraumaIssues(traumaRecord({ post_nv_time: "20:30", post_nv_pulses: "Palpable" }))
+    .some((i) => /post_nv/.test(i.key)),
+  "a completed post-intervention reassessment is still flagged",
+);
+// The printed record must never print an empty panel as reassurance.
+check(
+  !/none documented/i.test(trauma.formatOrthoTrauma(trauma.emptyOrthoTrauma())),
+  "an empty trauma panel prints as a statement that nothing was found",
+);
+// ---- 10. Fracture-healing assessment --------------------------------------
+const STATES = management.ORTHO_HEALING_STATES;
+check(STATES.length >= 7, "the fracture-healing layer does not distinguish enough union states");
+check(new Set(STATES.map((s) => s.key)).size === STATES.length, "a fracture-healing state key is duplicated");
+STATES.forEach((s) => {
+  check(Boolean(s.label && s.definition), `healing state ${s.key} has no definition`);
+  check(Array.isArray(s.references) && s.references.length > 0, `healing state ${s.key} cites no reference`);
+  (s.references || []).forEach((r) =>
+    check(Boolean(refs.ORTHO_REFERENCE_MAP[r]), `healing state ${s.key} cites unknown reference ${r}`),
+  );
+});
+check(
+  management.orthoHealingIssues({}).some((i) => i.key === "no_state"),
+  "an undocumented healing state is treated as normal union",
+);
+const nonunionBare = management.orthoHealingIssues({ ortho_healing_state: "Nonunion" });
+check(nonunionBare.some((i) => i.key === "justification"), "nonunion recorded with no justification is not flagged");
+check(nonunionBare.some((i) => i.key === "interval"), "nonunion recorded with no interval is not flagged");
+check(
+  management.orthoHealingIssues({
+    ortho_healing_state: "Nonunion",
+    ortho_healing_interval: "9 months",
+    ortho_healing_radiograph: "Reviewed by the treating clinician",
+    ortho_healing_justification: "Fracture 9 months old, no progression on three consecutive films, pain on loading",
+  }).length === 0,
+  "a fully documented nonunion is still flagged as incomplete",
+);
+check(
+  management
+    .orthoHealingIssues({
+      ortho_healing_state: "Union",
+      ortho_healing_interval: "12 weeks",
+      ortho_healing_radiograph: "Pending",
+    })
+    .some((i) => i.key === "union_without_film"),
+  "union recorded while the radiograph is still pending is not flagged",
+);
+check(
+  management
+    .orthoHealingIssues({
+      ortho_healing_state: "Malunion",
+      ortho_healing_interval: "20 weeks",
+      ortho_healing_radiograph: "Not performed",
+    })
+    .some((i) => i.key === "no_film"),
+  "a union state recorded with no radiograph is not flagged",
+);
+check(management.orthoUnionConcern({ ortho_healing_state: "Nonunion" }) === true, "nonunion does not raise the union concern");
+check(management.orthoUnionConcern({ ortho_healing_state: "Union" }) === false, "union raises the union concern");
+
+// ---- 11. The reference register -------------------------------------------
+const REGISTER = refs.ORTHO_REFERENCES;
+check(REGISTER.length >= 8, "the reference register is too thin to support the panels");
+check(new Set(REGISTER.map((r) => r.key)).size === REGISTER.length, "the register contains a duplicate key");
+REGISTER.forEach((r) => {
+  check(Boolean(r.organization && r.title && r.edition), `reference ${r.key} has no identity`);
+  check(Boolean(refs.ORTHO_REFERENCE_KINDS[r.kind]), `reference ${r.key} has an unknown kind`);
+  check(Boolean(r.supports), `reference ${r.key} does not say what it supports`);
+  check(Boolean(r.doesNotSay), `reference ${r.key} does not say what it does not cover`);
+  if (r.kind !== "local") check(/^https:\/\//.test(r.url || ""), `reference ${r.key} has no https source`);
+  // Nobody else's guidance may be attributed to AAOS or OTA.
+  if (/AAOS/.test(r.organization)) check(["guideline", "auc"].includes(r.kind), `${r.key} names AAOS but is not an AAOS guideline`);
+  if (/OTA/.test(r.organization)) check(["classification", "standard"].includes(r.kind), `${r.key} names OTA but is not an OTA standard`);
+});
+check(
+  /no society endorses/i.test(refs.ORTHO_ATTRIBUTION_NOTICE),
+  "the register does not state that no society endorses an AMedix threshold",
+);
+// Every citation used by a presentation or the healing layer resolves.
+const cited = new Set();
+PRES.forEach((p) => (p.references || []).forEach((r) => cited.add(r)));
+STATES.forEach((s) => (s.references || []).forEach((r) => cited.add(r)));
+cited.forEach((r) => check(Boolean(refs.ORTHO_REFERENCE_MAP[r]), `cited reference ${r} is not in the register`));
+
+// ---- 12. New safety prompts fire in both directions -----------------------
+const traumaValues = (key) => ({ ortho_trauma: { presentations: [key] } });
+check(prompts(traumaValues("unstable_pelvis")).includes("unstable_pelvis"), "a documented pelvis injury raises no prompt");
+check(!prompts({}).includes("unstable_pelvis"), "an empty note raises the pelvis prompt");
+check(prompts(traumaValues("thromboembolism")).includes("thromboembolism"), "a documented clot raises no prompt");
+check(!prompts({}).includes("thromboembolism"), "an empty note raises the clot prompt");
+check(
+  prompts({ ortho_healing: { ortho_healing_state: "Nonunion" } }).includes("union_complication"),
+  "a nonunion raises no healing prompt",
+);
+check(
+  !prompts({ ortho_healing: { ortho_healing_state: "Union" } }).includes("union_complication"),
+  "a united fracture raises the healing prompt",
+);
+["vascular_injury", "septic_arthritis", "osteomyelitis", "postop_infection", "fat_embolism", "severe_soft_tissue", "spinal_cord_injury"].forEach(
+  (key) => {
+    check(prompts(traumaValues(key)).includes(key), `${key} raises no prompt`);
+    check(!prompts({}).includes(key), `an empty note raises the ${key} prompt`);
+  },
+);
+// A trauma presentation recorded in the panel must also fire the pre-existing
+// prompts it duplicates — otherwise the same injury is graded twice, differently.
+check(prompts(traumaValues("open_fracture")).includes("open_fracture"), "panel open fracture raises no open-fracture prompt");
+check(
+  prompts(traumaValues("neurovascular_compromise")).includes("neurovascular_deficit"),
+  "panel neurovascular compromise raises no deficit prompt",
+);
+check(prompts(traumaValues("cauda_equina")).includes("cauda_equina"), "panel cauda equina raises no prompt");
+check(
+  prompts(traumaValues("compartment_syndrome")).includes("compartment_syndrome"),
+  "panel compartment syndrome raises no compartment prompt",
+);
 
 fs.rmSync(TMP, { recursive: true, force: true });
 
@@ -236,5 +507,5 @@ if (failures > 0) {
   process.exit(1);
 }
 console.log(
-  `PASS — ${NOTE_KEYS.length} Orthopedics note types enhanced, ${stats.total} ICD-11 MMS seed entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${stats.not_seeded} trauma families taken from the WHO browser, ${safety.ORTHO_SAFETY_CONCERNS.length} safety prompts verified in both directions.`,
+  `PASS — ${NOTE_KEYS.length} Orthopedics note types enhanced, ${stats.total} ICD-11 MMS seed entries (all ${stats.review_required} review required, ${stats.verified} pre-verified by design), ${stats.not_seeded} trauma families taken from the WHO browser, ${PRES.length} trauma-emergency presentations, ${STATES.length} healing states, ${REGISTER.length} register references, ${safety.ORTHO_SAFETY_CONCERNS.length} safety prompts verified in both directions.`,
 );
