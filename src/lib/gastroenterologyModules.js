@@ -1,0 +1,526 @@
+// Gastroenterology / Hepatology — structured documentation blocks.
+//
+// These are the reusable blocks the existing GI note types gain. Each block is
+// one field of type `gi_modules` on the note, and its own definition lives here,
+// so the form, the saved note, the printed record and the safety prompts all read
+// the same specification. Nothing here duplicates a shared AMedix surface:
+// vital signs, the structured abdominal examination, laboratory and imaging
+// results, medications, allergies and the patient's recorded history are
+// provided by the shared note tabs and the unified Patient Record.
+//
+// Rules applied throughout:
+//  - "Not assessed" and "Not documented" are real answers, so a blank field is
+//    never read as normal.
+//  - Guideline questions appear only where the context makes them relevant
+//    (`showIf`), so a follow-up note never asks for a Forrest class.
+//  - Every option set is the vocabulary the cited guideline actually uses.
+
+const T = (key, label, extra) => ({ key, label, type: "textarea", ...extra });
+const I = (key, label, extra) => ({ key, label, type: "input", ...extra });
+const N = (key, label, extra) => ({ key, label, type: "number", ...extra });
+const S = (key, label, options, extra) => ({ key, label, type: "select", options, ...extra });
+const M = (key, label, options, extra) => ({ key, label, type: "multi", options, ...extra });
+
+const WHEN = (key, value) => ({ showIf: { key, equals: value } });
+const WHEN_IN = (key, values) => ({ showIf: { key, in: values } });
+
+const NOT_APPLICABLE = "Not applicable";
+
+export const GASTRO_BLOCKS = {
+  // ---- Alarm features and escalation -------------------------------------
+  gi_alarm: {
+    title: "Alarm Features & Response",
+    fields: [
+      S("bleeding", "Overt GI Bleeding", ["None documented", "Haematemesis", "Melaena", "Haematochezia", "Occult — iron deficiency anaemia", "Not assessed"]),
+      S("dysphagia", "Dysphagia / Odynophagia", ["None documented", "Progressive dysphagia", "Intermittent dysphagia", "Odynophagia only", "Not assessed"]),
+      S("weight_loss", "Unintentional Weight Loss", ["None documented", "Yes — quantified below", "Not assessed"]),
+      I("weight_loss_kg", "Weight Lost (kg) / Interval", WHEN("weight_loss", "Yes — quantified below")),
+      S("anaemia", "Anaemia", ["None documented", "Iron deficiency anaemia documented", "Anaemia of another cause", "Not assessed"]),
+      S("mass", "Mass, Organomegaly or Lymphadenopathy", ["None documented", "Abdominal mass", "Organomegaly", "Lymphadenopathy", "Not assessed"]),
+      S("family_history", "Family History of GI Malignancy", ["No", "Yes — first-degree relative with colorectal or oesophageal / gastric cancer", "Not documented"]),
+      S("persistent_vomiting", "Persistent Vomiting", ["No", "Yes — documented", "Not assessed"]),
+      S("new_onset_older", "New-Onset Symptoms at an Age That Warrants Investigation", ["Not applicable", "Yes — documented", "No", "Not documented"]),
+      S("escalation", "Urgency of the Clinical Response", [
+        "Routine — outpatient pathway",
+        "Expedited — investigation within days",
+        "Two-week / fast-track suspected-cancer pathway",
+        "Emergency — admitted or transferred today",
+        "Not documented",
+      ]),
+      T("escalation_detail", "Who Was Informed, When, and What Was Arranged"),
+      I("responsible_clinician", "Clinician Responsible for the Next Step"),
+    ],
+  },
+
+  // ---- GI bleeding -------------------------------------------------------
+  gi_bleeding: {
+    title: "GI Bleeding Assessment",
+    fields: [
+      S("presentation", "Presentation", ["Haematemesis", "Coffee-ground vomiting", "Melaena", "Haematochezia", "Occult / anaemia only", "Other — documented"]),
+      I("onset", "Time of Onset (as documented)"),
+      S("haemodynamics", "Haemodynamic Status at Assessment", ["Stable", "Postural change on standing", "Tachycardic", "Hypotensive", "Shocked — resuscitation in progress", "Not documented"]),
+      I("haemoglobin", "Documented Haemoglobin (g/L)"),
+      S("transfusion", "Transfusion", [
+        "Not required",
+        "Cross-matched and transfused — units documented",
+        "Massive transfusion protocol activated",
+        "Transfusion threshold documented, not yet reached",
+        "Not documented",
+      ]),
+      S("antithrombotic", "Antiplatelet / Anticoagulant Therapy", ["None", "Antiplatelet", "Anticoagulant", "Dual antiplatelet", "Anticoagulant plus antiplatelet", "Not documented"]),
+      T("antithrombotic_plan", "Reversal, Holding and Restart Plan", WHEN_IN("antithrombotic", ["Antiplatelet", "Anticoagulant", "Dual antiplatelet", "Anticoagulant plus antiplatelet"])),
+      S("endoscopy_timing", "Endoscopy Timing", [
+        "Within 24 hours after resuscitation",
+        "Within 12 hours — high-risk features documented",
+        "Immediate — exsanguinating or unstable",
+        "Deferred — reason documented",
+        "Not documented",
+      ]),
+      S("lesion", "Bleeding Lesion at Endoscopy", [
+        "Not yet endoscoped",
+        "Peptic ulcer",
+        "Erosive disease",
+        "Mallory-Weiss tear",
+        "Vascular lesion / angiodysplasia",
+        "Varices",
+        "Tumour",
+        "No source identified",
+      ]),
+      S("forrest", "Forrest Class (Ulcer)", [
+        "Not applicable — no ulcer",
+        "Ia — spurting",
+        "Ib — oozing",
+        "IIa — non-bleeding visible vessel",
+        "IIb — adherent clot",
+        "IIc — flat pigmented spot",
+        "III — clean base",
+        "Not documented",
+      ], WHEN_IN("lesion", ["Peptic ulcer"])),
+      S("haemostasis", "Endoscopic Haemostasis", [
+        "Not applicable",
+        "Dual therapy — adrenaline injection plus a mechanical or thermal method",
+        "Mechanical (clip / band ligation)",
+        "Thermal",
+        "Haemostatic powder",
+        "Fibrin glue",
+        "Attempted, not achieved",
+        "Not documented",
+      ]),
+      S("varices", "Varices", [
+        "Not applicable",
+        "Oesophageal varices — grade documented",
+        "Gastric varices — GOV1 / GOV2 / IGV documented",
+        "Gastric varices with active bleeding",
+        "Not documented",
+      ]),
+      S("vasoactive", "Vasoactive Therapy (Variceal Bleeding)", ["Not indicated", "Terlipressin", "Octreotide", "Somatostatin", "Not documented"]),
+      S("antibiotic_prophylaxis", "Antibiotic Prophylaxis in Cirrhosis with Bleeding", [
+        "Not applicable — no cirrhosis",
+        "Ceftriaxone documented",
+        "Alternative agent documented",
+        "Not documented",
+      ]),
+      S("ppi", "Acid Suppression", ["Intravenous PPI documented", "Oral PPI documented", "Not indicated", "Not documented"]),
+      S("rebleeding", "Rebleeding", ["No", "Yes — further bleeding documented", "Not assessed"]),
+      S("disposition", "Disposition", ["Ward", "High dependency / ICU", "Transferred for specialist care", "Discharged with plan", "Not documented"]),
+      T("restart_plan", "Antithrombotic Restart and Follow-Up Plan"),
+    ],
+  },
+
+  // ---- Inflammatory bowel disease ----------------------------------------
+  gi_ibd: {
+    title: "Inflammatory Bowel Disease Assessment",
+    fields: [
+      S("disease", ["Ulcerative colitis", "Crohn disease", "IBD unclassified", "Not applicable"]),
+      S("extent", "Documented Extent", [
+        "Proctitis",
+        "Left-sided colitis",
+        "Extensive colitis",
+        "Pan-colonic",
+        "Ileal",
+        "Ileocolonic",
+        "Colonic",
+        "Upper GI plus ileocolonic",
+        "Perianal disease only",
+        "Not documented",
+      ]),
+      S("activity_instrument", "Activity Instrument Used", ["Partial Mayo Score", "Harvey-Bradshaw Index", "Physician global assessment", "Endoscopic score only", "Not documented"]),
+      S("endoscopic_severity", "Endoscopic Severity (where an examination was performed)", ["Mayo endoscopic 0", "Mayo endoscopic 1", "Mayo endoscopic 2", "Mayo endoscopic 3", "SES-CD documented", "Not documented", "Not performed"]),
+      M("extraintestinal", "Extraintestinal Manifestations", ["None documented", "Arthritis / arthralgia", "Skin (erythema nodosum, pyoderma)", "Eyes (uveitis, episcleritis)", "Primary sclerosing cholangitis", "Thrombosis", "Not assessed"]),
+      S("perianal", "Perianal Disease", ["None", "Fissure", "Fistula", "Abscess", "Not assessed"]),
+      S("biologic", "Biologic Therapy", ["None", "Infliximab", "Adalimumab", "Ustekinumab", "Vedolizumab", "Tofacitinib or other small molecule", "Other — documented"]),
+      S("immunomodulator", "Immunomodulator", ["None", "Azathioprine", "Mercaptopurine", "Methotrexate"]),
+      M("pretreatment_screening", "Screening Before Immunosuppression", [
+        "Tuberculosis screening documented (IGRA and/or chest imaging)",
+        "Hepatitis B serology documented",
+        "HIV and hepatitis C status documented",
+        "Varicella immunity documented",
+        "Vaccinations reviewed",
+        "None documented",
+      ], WHEN_IN("biologic", ["Infliximab", "Adalimumab", "Ustekinumab", "Vedolizumab", "Tofacitinib or other small molecule", "Other — documented"])),
+      S("cdiff", "Clostridioides difficile Testing in a Flare", ["Not indicated", "Tested — negative", "Tested — positive", "Not documented"]),
+      S("acute_severe", "Acute Severe Colitis", ["Not present", "Present — Truelove and Witts criteria documented", "Not assessed"]),
+      S("rescue", "Rescue Therapy Considered", ["Not applicable", "Intravenous corticosteroid started", "Infliximab considered or given", "Surgical opinion obtained", "Not documented"], WHEN("acute_severe", "Present — Truelove and Witts criteria documented")),
+      S("dysplasia_surveillance", "Dysplasia Surveillance", ["Not due", "Chromoscopy performed at this examination", "Due — arranged", "Not documented"]),
+      S("bone_health", "Bone Health and Nutrition", ["Bone density documented", "Vitamin D and calcium addressed", "Referred for assessment", "Not addressed"]),
+      S("treatment_target", "Documented Treatment Target", ["Clinical remission", "Endoscopic remission", "Steroid-free remission", "Transmural healing", "Not documented"]),
+    ],
+  },
+
+  // ---- Hepatology --------------------------------------------------------
+  gi_liver: {
+    title: "Liver Disease Assessment",
+    fields: [
+      M("aetiology", "Documented Aetiology", [
+        "Hepatitis B",
+        "Hepatitis C",
+        "Alcohol-associated liver disease",
+        "Metabolic dysfunction-associated steatotic liver disease",
+        "Autoimmune hepatitis",
+        "Primary biliary cholangitis",
+        "Primary sclerosing cholangitis",
+        "Haemochromatosis",
+        "Wilson disease",
+        "Alpha-1 antitrypsin deficiency",
+        "Drug-induced liver injury",
+        "Vascular",
+        "No cause identified — documented as such",
+      ]),
+      T("aetiology_evidence", "Evidence for the Aetiology (serology, imaging, histology, exposure)"),
+      S("noninvasive_test", "Non-Invasive Fibrosis Assessment", ["FIB-4 (calculated in this note)", "Transient elastography — value documented", "Serum fibrosis panel", "Not performed"]),
+      I("liver_stiffness", "Liver Stiffness (kPa), where measured"),
+      S("fibrosis_stage", "Documented Fibrosis Stage", ["F0", "F1", "F2", "F3", "F4 — cirrhosis", "Not documented"]),
+      M("decompensation", "Decompensation Events", ["None documented", "Ascites", "Variceal bleeding", "Hepatic encephalopathy", "Jaundice", "Spontaneous bacterial peritonitis", "Hepatorenal syndrome / AKI", "Not assessed"]),
+      S("ascites_grade", "Ascites", ["None", "Mild — detectable on ultrasound only", "Moderate", "Severe / tense", "Refractory", "Not assessed"]),
+      S("paracentesis", "Diagnostic Paracentesis", [
+        "Not indicated",
+        "Performed — ascitic neutrophil count documented",
+        "Performed — result not yet documented",
+        "Indicated, not performed — reason documented",
+        "Not documented",
+      ], WHEN_IN("ascites_grade", ["Mild — detectable on ultrasound only", "Moderate", "Severe / tense", "Refractory"])),
+      S("sbp", "Spontaneous Bacterial Peritonitis", ["Not present", "Confirmed — neutrophils ≥ 250/mm³", "Culture negative but treated", "Not assessed"]),
+      S("sbp_prophylaxis", "SBP Prophylaxis", ["Not indicated", "Norfloxacin documented", "Ciprofloxacin documented", "Other agent documented", "Not documented"]),
+      S("encephalopathy_grade", "Hepatic Encephalopathy Grade (West Haven)", ["None", "Covert / minimal", "Grade I", "Grade II", "Grade III", "Grade IV", "Not assessed"]),
+      S("varices", "Varices Status", [
+        "Not yet screened",
+        "None — non-invasive criteria met (liver stiffness ≤ 20 kPa and platelets ≥ 150 ×10⁹/L)",
+        "Small",
+        "Medium",
+        "Large",
+        "Not documented",
+      ]),
+      S("variceal_prophylaxis", "Portal Hypertension Prophylaxis", ["Not indicated", "Non-selective beta-blocker", "Carvedilol", "Endoscopic band ligation", "Not documented"]),
+      S("hcc_surveillance", "HCC Surveillance", [
+        "Not indicated for this patient",
+        "Up to date — next examination date recorded",
+        "Started — first examination arranged",
+        "Overdue — arranged now",
+        "Not documented",
+      ]),
+      I("hcc_next_date", "Next Surveillance Examination Due"),
+      S("alcohol_assessment", "Alcohol Use Assessment", ["Not applicable", "Documented — quantity and pattern recorded", "Structured tool (AUDIT-C) recorded", "Referred to alcohol service", "Not documented"]),
+      S("hbv_treatment", "Hepatitis B Treatment Status", ["Not applicable", "On antiviral therapy — agent documented", "Monitoring only — criteria documented", "Not documented"]),
+      S("transplant_referral", "Transplant Assessment", ["Not indicated", "Referred", "Under assessment", "Not documented"]),
+      T("liver_plan", "Management and Prevention Documented at This Visit"),
+    ],
+  },
+
+  // ---- Acute pancreatitis ------------------------------------------------
+  gi_pancreatitis: {
+    title: "Acute Pancreatitis Assessment",
+    fields: [
+      M("diagnostic_basis", "Diagnostic Criteria Met (two of three required)", [
+        "Characteristic epigastric pain",
+        "Lipase or amylase greater than three times the upper limit of normal",
+        "Imaging consistent with pancreatitis",
+      ]),
+      I("lipase", "Documented Lipase / Amylase"),
+      S("aetiology", "Aetiology", ["Gallstones", "Alcohol", "Hypertriglyceridaemia", "Hypercalcaemia", "Post-ERCP", "Drug-induced", "Idiopathic — after work-up", "Other — documented"]),
+      M("aetiology_workup", "Aetiology Work-Up Performed", [
+        "Transabdominal ultrasound",
+        "Triglycerides",
+        "Serum calcium",
+        "Medication review",
+        "MRCP or EUS considered",
+        "None documented",
+      ]),
+      S("severity", "Severity Classification (Revised Atlanta)", ["Mild — no organ failure, no local complication", "Moderately severe — transient organ failure or local complication", "Severe — persistent organ failure beyond 48 hours", "Not classified"]),
+      M("organ_failure", "Organ Failure Present", ["None", "Respiratory", "Cardiovascular", "Renal"]),
+      S("fluids", "Early Fluid Therapy", [
+        "Moderately aggressive crystalloid with documented reassessment",
+        "Crystalloid without documented reassessment",
+        "Restricted — reason documented",
+        "Not documented",
+      ]),
+      S("feeding", "Nutrition", ["Oral as tolerated", "Enteral feeding started within 72 hours", "Parenteral nutrition", "Nil by mouth — reason documented", "Not documented"]),
+      S("necrosis", "Necrosis / Collections", ["None", "Not assessed", "Sterile necrosis or collection", "Infected necrosis"]),
+      S("antibiotics", "Antibiotics", ["Not indicated", "Documented for infected necrosis or another infection", "Given without documented indication", "Not documented"]),
+      S("disposition", "Disposition", ["Ward", "High dependency / ICU", "Discharged with plan", "Transfer", "Not documented"]),
+    ],
+  },
+
+  // ---- Endoscopy safety and quality -------------------------------------
+  gi_endoscopy: {
+    title: "Endoscopy Safety & Quality Record",
+    fields: [
+      S("consent", "Consent", ["Written informed consent documented", "Emergency procedure — rationale documented", "Not documented"]),
+      S("timeout", "Time-Out", ["Performed — identity, procedure, allergies and antithrombotic therapy verified", "Not documented"]),
+      S("asa", "ASA Physical Status", ["ASA I", "ASA II", "ASA III", "ASA IV", "Not documented"]),
+      S("sedation", "Sedation", ["Midazolam with or without opioid", "Propofol — anaesthetist or sedationist present", "Propofol — endoscopist administered", "No sedation", "Not documented"]),
+      S("monitoring", "Monitoring During Sedation", ["Pulse oximetry, blood pressure and ECG documented", "Pulse oximetry only", "Not documented"]),
+      S("insufflation", "Insufflation", ["Carbon dioxide", "Air", "Not documented"]),
+      S("photodocumentation", "Photodocumentation of Key Landmarks and Lesions", ["Documented", "Partial", "Not documented"]),
+      S("hp_testing", "Helicobacter pylori Assessment", ["Not indicated", "Rapid urease test", "Histology", "Stool antigen", "Urea breath test", "Not documented"]),
+      M("complications", "Complications Recognised", ["None", "Bleeding", "Perforation", "Sedation-related event", "Aspiration", "Other — documented"]),
+      T("complication_management", "Complication Management and Who Was Informed"),
+      S("recovery", "Recovery and Discharge", ["Recovered and discharged with written advice", "Observed in recovery — plan documented", "Admitted", "Not documented"]),
+      S("antithrombotic_plan", "Antithrombotic Plan Around the Procedure", ["Not applicable", "Continued — documented as low risk", "Held — restart documented", "Not documented"]),
+    ],
+  },
+
+  // ---- Colonoscopy / polypectomy ----------------------------------------
+  gi_polypectomy: {
+    title: "Colonoscopy Quality & Polypectomy Record",
+    fields: [
+      S("prep_scale", "Preparation Scale Used", ["Boston Bowel Preparation Scale", "Aronchick scale", "Not documented"]),
+      S("prep_quality", "Preparation Quality for the Examination", ["Adequate — all segments", "Inadequate — repeat examination required", "Inadequate — repeat arranged", "Not documented"]),
+      I("prep_score", "Documented Preparation Score (total, where a scale was used)"),
+      S("cecal_intubation", "Cecal Intubation", ["Yes — photodocumented", "Yes — not photodocumented", "No — reason documented", "Not documented"]),
+      N("withdrawal_minutes", "Withdrawal Time (minutes)"),
+      S("withdrawal_adequacy", "Withdrawal Time Documented as Adequate", ["Yes — ≥ 6 minutes recorded", "No — reason documented", "Not documented"]),
+      N("polyp_count", "Number of Polyps Removed"),
+      N("largest_polyp_mm", "Largest Polyp (mm)"),
+      T("polyp_detail", "Polyp Detail — Site, Size, Paris Morphology, Resection Method and Retrieval"),
+      M("resection", "Resection Techniques Used", ["Cold snare", "Hot snare", "Endoscopic mucosal resection", "Submucosal dissection", "Piecemeal resection", "Not applicable"]),
+      S("specimens", "Specimen Handling", ["All retrieved and sent in separate containers by site", "Retrieved — containers not separated by site", "Incomplete retrieval — documented", "Not applicable"]),
+      S("clearance", "Clearance Status", ["Complete", "Clearance examination arranged", "Incomplete — reasons documented", "Not documented"]),
+      S("surveillance", "Surveillance Interval Recommended", ["1 year", "3 years", "5 years", "10 years", "No surveillance", "Not determined — reasons documented"]),
+      S("surveillance_basis", "Interval Based On", ["USMSTF 2020", "ESGE 2020", "Local protocol", "Not documented"]),
+      S("perforation_check", "Perforation Assessment", ["No perforation suspected", "Suspected — management documented", "Not documented"]),
+      S("bleeding_check", "Post-Polypectomy Bleeding", ["None", "Immediate — controlled endoscopically", "Delayed — documented", "Not assessed"]),
+      S("antibiotic_prophylaxis", "Antibiotic Prophylaxis", ["Not indicated", "Given — indication documented", "Not documented"]),
+    ],
+  },
+
+  // ---- ERCP ---------------------------------------------------------------
+  gi_ercp: {
+    title: "ERCP Safety Record",
+    fields: [
+      S("difficulty", "Procedure Difficulty (Schutz grade)", ["Grade I", "Grade II", "Grade III", "Grade IV", "Not graded"]),
+      S("cannulation", "Cannulation Technique", [
+        "Standard catheter with guidewire",
+        "Double-wire technique",
+        "Pancreatic guidewire placement",
+        "Transpapillary balloon dilation",
+        "Precut / fistulotomy",
+        "Not documented",
+      ]),
+      S("sphincterotomy", "Sphincterotomy", ["None", "Biliary — standard", "Biliary — large", "Biliary with pancreatic sphincterotomy", "Not documented"]),
+      S("stent", "Stent Placed", ["None", "Plastic — straight", "Plastic — pigtail", "Metal — covered", "Metal — uncovered", "Biliary and pancreatic stents"]),
+      I("stent_specification", "Stent Specification (length, diameter, number)"),
+      S("stent_plan", "Stent Plan", ["Not applicable", "Left in place — removal arranged", "Exchanged at this procedure", "Removed at this procedure"]),
+      M("peps_prophylaxis", "Post-ERCP Pancreatitis Prophylaxis", [
+        "Rectal non-steroidal anti-inflammatory drug given",
+        "Periprocedural hydration documented",
+        "Pancreatic stent placed",
+        "Not indicated",
+        "Not documented",
+      ]),
+      S("antibiotic_prophylaxis", "Antibiotic Prophylaxis", ["Not indicated", "Given — indication documented", "Not documented"]),
+      S("perforation_check", "Perforation Assessment", ["No perforation suspected", "Suspected — management documented", "Not documented"]),
+      S("bleeding_check", "Post-Sphincterotomy Bleeding", ["None", "Immediate — controlled", "Delayed — documented", "Not assessed"]),
+      S("cholecystectomy", "Cholecystectomy Plan (after duct clearance for stones)", ["Not applicable", "Referred for cholecystectomy", "Already performed", "Deferred — reason documented", "Not documented"]),
+      T("post_procedure_plan", "Post-Procedure Monitoring and Follow-Up"),
+    ],
+  },
+
+  // ---- Nutrition and malabsorption ---------------------------------------
+  gi_nutrition: {
+    title: "Nutrition & Malabsorption",
+    fields: [
+      S("weight_trend", "Weight Trend", ["Stable", "Unintentional loss greater than 5% in three months", "Unintentional gain", "Not documented"]),
+      N("bmi", "Documented BMI"),
+      M("micronutrients", "Micronutrient Deficiencies Documented", ["None documented", "Vitamin B12", "Folate", "Iron / ferritin", "Vitamin D", "Calcium", "Zinc", "Magnesium", "Not assessed"]),
+      S("dietitian", "Dietitian Involvement", ["Referred", "Review in progress", "Not indicated", "Not documented"]),
+      S("support", "Nutritional Support", ["Not required", "Oral supplements", "Nasogastric feeding", "Nasojejunal feeding", "Parenteral nutrition", "Not documented"]),
+      S("coeliac_serology", "Coeliac Serology (where coeliac disease is being considered)", [
+        "Not applicable",
+        "tTG-IgA with total IgA taken on a gluten-containing diet",
+        "Serology taken while on a gluten-free diet — interpret with caution",
+        "Not documented",
+      ]),
+      T("plan", "Nutrition Plan and Education Given"),
+    ],
+  },
+
+  // ---- Discharge bundle --------------------------------------------------
+  gi_discharge: {
+    title: "Discharge Bundle",
+    fields: [
+      S("medication_reconciliation", "Medication Reconciliation", ["Documented", "Not documented"]),
+      M("high_risk_medications", "High-Risk Therapy Reviewed", ["Anticoagulant", "Antiplatelet", "Non-steroidal anti-inflammatory drug", "Corticosteroid", "Immunomodulator", "Biologic", "None applicable"]),
+      M("prophylaxis", "Prophylaxis Documented at Discharge", ["SBP prophylaxis", "Variceal bleeding prophylaxis", "Venous thromboembolism prophylaxis", "Bone protection", "None indicated"]),
+      M("surveillance", "Surveillance Arranged", ["HCC ultrasound with or without AFP", "Variceal screening", "Colonoscopy surveillance", "IBD dysplasia surveillance", "None indicated"]),
+      S("biologic_monitoring", "Biologic Safety Monitoring", ["Not applicable", "Laboratory and infection monitoring scheduled", "Not documented"]),
+      S("readmission_risk", "Readmission Risk", ["Low", "Moderate", "High — mitigation plan documented"]),
+      T("warning_signs", "Warning Signs Explained to the Patient"),
+      I("follow_up_who", "Follow-Up With"),
+      I("follow_up_when", "Follow-Up Date"),
+      I("responsible_clinician", "Clinician Responsible"),
+    ],
+  },
+};
+
+export const gastroBlock = (key) => GASTRO_BLOCKS[key] || null;
+export const GASTRO_BLOCK_KEYS = Object.keys(GASTRO_BLOCKS);
+
+const asObject = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+const str = (v) => String(v ?? "").trim();
+const list = (v) => (Array.isArray(v) ? v.filter((x) => str(x)) : str(v) ? [str(v)] : []);
+
+// The block value a field holds, tagged with its own block key so the saved
+// note, the screen and the PDF can be rebuilt without the form's context.
+export const gastroBlockValue = (blockKey, value) => {
+  const v = asObject(value);
+  return { ...v, __m: blockKey };
+};
+
+export const gastroBlockFrom = (value) => {
+  const v = asObject(value);
+  return v.__m && GASTRO_BLOCKS[v.__m] ? GASTRO_BLOCKS[v.__m] : null;
+};
+
+export const formatGastroBlock = (value) => {
+  const v = asObject(value);
+  const spec = gastroBlockFrom(value);
+  if (!spec) return "";
+  const lines = spec.fields
+    .map((f) => {
+      const raw = v[f.key];
+      if (f.type === "multi") {
+        const items = list(raw);
+        return items.length ? `${f.label}: ${items.join("; ")}` : null;
+      }
+      const val = str(raw);
+      return val ? `${f.label}: ${val}` : null;
+    })
+    .filter(Boolean);
+  if (!lines.length) return `${spec.title} — not documented in this note.`;
+  return lines.join("\n");
+};
+
+// Reads a value for a flag from any GI block or from the note itself, so a rule
+// keeps working whether the value sits in its block or on the note.
+export const gastroFind = (values, blockKey, key) => {
+  const block = asObject(values?.[blockKey]);
+  if (str(block[key])) return str(block[key]);
+  const direct = str(values?.[key]);
+  if (direct) return direct;
+  for (const k of GASTRO_BLOCK_KEYS) {
+    const other = asObject(values?.[k]);
+    if (str(other[key])) return str(other[key]);
+  }
+  return "";
+};
+
+export const gastroFindList = (values, blockKey, key) => {
+  const block = asObject(values?.[blockKey]);
+  if (list(block[key]).length) return list(block[key]);
+  return list(values?.[key]);
+};
+
+const isBlank = (v) => str(v) === "" || /^(not documented|not assessed|not performed)$/i.test(str(v));
+
+// Every flag the advisory prompts are built on, computed once from the note.
+export const gastroFlags = (values = {}) => {
+  const v = values || {};
+  const f = (block, key) => gastroFind(v, block, key);
+  const l = (block, key) => gastroFindList(v, block, key);
+
+  const aetiology = l("gi_liver", "aetiology");
+  const cirrhosis = aetiology.length > 0 && (f("gi_liver", "fibrosis_stage") === "F4 — cirrhosis" || /cirrhosis/i.test(f("gi_liver", "fibrosis_stage")));
+  const ascites = !/^(None|Not assessed)$/i.test(f("gi_liver", "ascites_grade")) && f("gi_liver", "ascites_grade") !== "";
+  const ibd = /ulcerative colitis|crohn|ibd unclassified/i.test(f("gi_ibd", "disease"));
+  const onImmunosuppression = !/^(None|)$/i.test(f("gi_ibd", "biologic")) || !/^(None|)$/i.test(f("gi_ibd", "immunomodulator"));
+  const alarm = f("gi_alarm", "bleeding") !== "None documented" && f("gi_alarm", "bleeding") !== "";
+
+  return {
+    // Alarm / escalation
+    dysphagia: /Progressive dysphagia/i.test(f("gi_alarm", "dysphagia")),
+    weight_loss: /Yes/i.test(f("gi_alarm", "weight_loss")),
+    anaemia: /Iron deficiency/i.test(f("gi_alarm", "anaemia")),
+    family_history: /^Yes/i.test(f("gi_alarm", "family_history")),
+    alarm_escalation_missing: /Not documented|Routine/i.test(f("gi_alarm", "escalation")) && (alarm || /Progressive/i.test(f("gi_alarm", "dysphagia")) || /Yes/i.test(f("gi_alarm", "weight_loss"))),
+    no_responsible: isBlank(f("gi_alarm", "responsible_clinician")) && isBlank(v?.responsible_clinician),
+
+    // Bleeding
+    bleeding_documented: !isBlank(f("gi_bleeding", "presentation")),
+    endoscopy_timing_missing: isBlank(f("gi_bleeding", "endoscopy_timing")),
+    variceal_bleeding: /Oesophageal varices|Gastric varices/i.test(f("gi_bleeding", "varices")),
+    vasoactive_missing: isBlank(f("gi_bleeding", "vasoactive")),
+    antibiotic_missing: isBlank(f("gi_bleeding", "antibiotic_prophylaxis")),
+    on_antithrombotic: !/^(None|Not documented|)$/i.test(f("gi_bleeding", "antithrombotic")),
+    antithrombotic_plan_missing: !/^(None|Not documented|)$/i.test(f("gi_bleeding", "antithrombotic")) && isBlank(f("gi_bleeding", "antithrombotic_plan")),
+    ulcer_without_forrest: /Peptic ulcer/i.test(f("gi_bleeding", "lesion")) && isBlank(f("gi_bleeding", "forrest")),
+    rebleed: /^Yes/i.test(f("gi_bleeding", "rebleeding")),
+
+    ulcer_hp_missing: /Peptic ulcer/i.test(f("gi_bleeding", "lesion")) && (isBlank(f("gi_endoscopy", "hp_testing")) || /Not documented/i.test(f("gi_endoscopy", "hp_testing"))),
+    dili_without_causality: /Drug-induced/i.test(aetiology.join(" ")) && isBlank(f("gi_liver", "aetiology_evidence")),
+    coeliac_without_serology: /^Not documented$/i.test(f("gi_nutrition", "coeliac_serology")),
+
+    // IBD
+    ibd,
+    onImmunosuppression,
+    screening_missing: ibd && onImmunosuppression && l("gi_ibd", "pretreatment_screening").length === 0,
+    acute_severe: /Present/i.test(f("gi_ibd", "acute_severe")),
+    rescue_missing: /Present/i.test(f("gi_ibd", "acute_severe")) && isBlank(f("gi_ibd", "rescue")),
+    cdiff_missing: ibd && isBlank(f("gi_ibd", "cdiff")),
+    surveillance_missing: ibd && isBlank(f("gi_ibd", "dysplasia_surveillance")),
+
+    // Liver
+    liver_disease: aetiology.length > 0,
+    cirrhosis,
+    fib4_missing: aetiology.length > 0 && isBlank(f("gi_liver", "noninvasive_test")),
+    ascites,
+    paracentesis_missing: ascites && isBlank(f("gi_liver", "paracentesis")),
+    sbp: /Confirmed|Culture negative/i.test(f("gi_liver", "sbp")),
+    sbp_prophylaxis_missing: /Confirmed|Culture negative/i.test(f("gi_liver", "sbp")) && /Not documented/i.test(f("gi_liver", "sbp_prophylaxis")),
+    hcc_surveillance_missing: cirrhosis && (isBlank(f("gi_liver", "hcc_surveillance")) || /Overdue/i.test(f("gi_liver", "hcc_surveillance"))),
+    varices_missing: cirrhosis && isBlank(f("gi_liver", "varices")),
+    variceal_prophylaxis_missing: cirrhosis && /Small|Medium|Large/i.test(f("gi_liver", "varices")) && isBlank(f("gi_liver", "variceal_prophylaxis")),
+    severe_encephalopathy: /Grade III|Grade IV/i.test(f("gi_liver", "encephalopathy_grade")),
+    alcohol_disease: /Alcohol-associated/i.test(aetiology.join(" ")),
+    alcohol_assessment_missing: /Alcohol-associated/i.test(aetiology.join(" ")) && isBlank(f("gi_liver", "alcohol_assessment")),
+
+    // Pancreatitis
+    pancreatitis_documented: l("gi_pancreatitis", "diagnostic_basis").length > 0,
+    pancreatitis_criteria_incomplete: l("gi_pancreatitis", "diagnostic_basis").length > 0 && l("gi_pancreatitis", "diagnostic_basis").length < 2,
+    pancreatitis_aetiology_workup_missing: l("gi_pancreatitis", "diagnostic_basis").length > 0 && l("gi_pancreatitis", "aetiology_workup").length === 0,
+    severe_pancreatitis: /Severe/i.test(f("gi_pancreatitis", "severity")),
+    fluids_missing: /not documented/i.test(f("gi_pancreatitis", "fluids")),
+
+    // Endoscopy / colonoscopy / ERCP
+    consent_missing: /Not documented/i.test(f("gi_endoscopy", "consent")),
+    timeout_missing: /Not documented/i.test(f("gi_endoscopy", "timeout")),
+    sedation_monitoring_missing: /Not documented/i.test(f("gi_endoscopy", "monitoring")),
+    cecal_missing: isBlank(f("gi_polypectomy", "cecal_intubation")) || /^No/i.test(f("gi_polypectomy", "cecal_intubation")),
+    prep_inadequate: /Inadequate/i.test(f("gi_polypectomy", "prep_quality")),
+    withdrawal_missing: isBlank(f("gi_polypectomy", "withdrawal_adequacy")),
+    polyps_without_surveillance: (Number(f("gi_polypectomy", "polyp_count")) > 0) && isBlank(f("gi_polypectomy", "surveillance")),
+    perforation_unassessed: /Not documented/i.test(f("gi_polypectomy", "perforation_check")) || /Not documented/i.test(f("gi_ercp", "perforation_check")),
+    peps_prophylaxis_missing: l("gi_ercp", "peps_prophylaxis").length === 0,
+    stent_unspecified: !/^None/i.test(f("gi_ercp", "stent")) && isBlank(f("gi_ercp", "stent_specification")),
+
+    // Nutrition
+    weight_loss_nutrition: /Unintentional loss/i.test(f("gi_nutrition", "weight_trend")),
+    micronutrient_untested: /Not assessed/i.test(f("gi_nutrition", "micronutrients")),
+
+    // Discharge
+    prophylaxis_unspecified: l("gi_discharge", "surveillance").length === 0,
+    warning_signs_missing: isBlank(f("gi_discharge", "warning_signs")),
+    follow_up_missing: isBlank(f("gi_discharge", "follow_up_when")),
+  };
+};
+
+export const GASTRO_BLOCK_COUNT = GASTRO_BLOCK_KEYS.length;
