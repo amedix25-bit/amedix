@@ -12,15 +12,19 @@ modified.
 | Area | Change |
 | --- | --- |
 | Specialty resolution | `Neurosurgery` previously resolved to the `surgery` key, so it had **no templates of its own** and fell back to the General Surgery notes. It now resolves to its own key, `neurosurgery`. |
-| Note catalogue | `src/lib/neurosurgeryDocuments.js` — 10 new note types, registered first in the catalogue. |
+| Note catalogue | `src/lib/neurosurgeryDocuments.js` — 17 note types, registered first in the catalogue. |
 | References | `src/lib/neurosurgeryReferences.js` — the guideline sources each note declares. |
-| Decision support | `src/lib/neurosurgerySafetyRules.js` — 17 conditional, advisory prompts. |
+| Decision support | `src/lib/neurosurgerySafetyRules.js` — 24 conditional, advisory prompts. |
 | Coding | `src/lib/neurosurgeryCoding.js` — per-note ICD-11 coding instructions, diagnosis audit, saved-text formatter. |
 | Field renderer | `src/components/doctor/notes/NeurosurgeryGuidanceField.jsx` — renders the guidance block (`nsg_guidance`), wired in `DocumentFields.jsx`. |
 | Examination | `neurosurgery` mapped to its examination set in `clinicalExaminations.js` (neurological, general, musculoskeletal, custom). |
 | Saved note / PDF | `formatNeurosurgeryGuidance` added to `clinicalFieldValue.js`, so the coding guidance, the prompts raised, the documented action and the "not applicable" reasons all print in the saved note and its PDF. |
 | Guideline attribution | `src/lib/neurosurgeryReferences.js` rewritten as the single reference registry (12 documents across 8 organisations, each with title, edition, date, population, review state and link); `src/components/doctor/notes/NeurosurgerySourceAttribution.jsx` renders it inside the note and records which source was applied. |
 | Template basis | Each template's `guidelineBasis` is now derived from that registry instead of typed by hand, so a note cannot cite a document that is not defined. |
+| Scope expansion | The set was extended to the whole specialty — neuro-oncology, neurovascular, spinal tumours, functional/epilepsy/stereotactic, peripheral nerve, paediatric and raised-ICP notes — so the specialty is not represented by consultations, trauma and hydrocephalus alone. |
+| Structured examination | `src/lib/neurosurgeryExam.js` + `NeurosurgicalExamField.jsx` (`nsg_exam`) — conscious level and trend, orientation, pupils with measured asymmetry, cranial nerves, power, sensory level, reflexes, coordination, gait, meningeal signs and spinal column findings, recorded as structured observations. |
+| ISNCSCI / ASIA | `src/lib/neurosurgeryIsncsci.js` + `IsncsiAssessmentField.jsx` (`nsg_isncsci`) — the full motor, light-touch and pin-prick key muscles/dermatomes, sensory and motor levels, NLI, AIS grade, completeness and the list of what is still missing. |
+| Clinical scores | `src/lib/neurosurgeryScores.js` + `NeurosurgeryScoresField.jsx` (`nsg_scores`) — condition-specific scales (Spetzler–Martin, Hunt & Hess, WFNS, modified Fisher, Barrow, Sundt, Rotterdam, Marshall, TL AOSIS, mJOA, Nurick, ASIA, House–Brackmann, mRS, ILAE, Engel and others), each shown only where the documented findings indicate it. |
 
 Nothing else about the note system changed: keys, ordering, required checks,
 permissions, audit logging and the referral/investigation retirement policy all
@@ -42,9 +46,16 @@ what the clinician actually sees.
 | `nsg_cranial_operative` | Cranial Operative Note | 25 |
 | `nsg_spinal_operative` | Spinal Operative Note | 26 |
 | `nsg_postop_progress` | Post-Operative Neurosurgical Progress | 21 |
-| `nsg_discharge` | Neurosurgical Discharge Summary | 19 |
+| `nsg_discharge` | Neurosurgical Discharge Summary | 20 |
+| `nsg_aneurysm_avm` | Aneurysm & AVM Assessment | 42 |
+| `nsg_spinal_cord` | Spinal Cord Injury & Cord Compression (ISNCSCI) | 46 |
+| `nsg_spinal_tumour` | Spinal Tumour Assessment | 39 |
+| `nsg_functional` | Functional, Epilepsy & Stereotactic Note | 34 |
+| `nsg_peripheral_nerve` | Peripheral Nerve & Plexus Assessment | 30 |
+| `nsg_paediatric` | Paediatric Neurosurgery Note | 29 |
+| `nsg_icp` | Raised ICP & Cerebral Oedema Note | 37 |
 
-**261 structured fields in total.** Every note carries:
+**541 structured fields in total across 17 note types.** Every note carries:
 
 - `examinations` — "Select Examination", the structured neurological
   examination (plus general / musculoskeletal where the note needs a trauma
@@ -55,10 +66,39 @@ what the clinician actually sees.
   note type.
 
 Neurological status — including the GCS with its three components — is recorded
-in the seven notes that document a clinical assessment, and deliberately not in
-the two operative notes, which document the procedure instead.
+in the fifteen notes that document a clinical assessment, and deliberately not in
+the two operative notes, which document the procedure instead. Ten notes carry
+the structured examination and the ISNCSCI assessment; ten carry the conditional
+score block; the discharge summary and the operative notes carry neither, because
+they summarise or record a procedure rather than assess the patient.
 
-## 3. Decision support — 17 rules
+### 2.1 What the examination records, and what it refuses to infer
+
+- Pupils are recorded per side with a size and a reactivity; when the two sides
+  differ, the note prints the measured difference rather than the word
+  "asymmetry".
+- Power is recorded per myotome as an MRC grade; a documented grade of 3 or less
+  raises the focal-deficit prompt instead of being counted as normal.
+- The sensory level, reflexes (including plantar response and clonus),
+  coordination, gait and meningeal signs are separate recorded observations. A
+  blank examination prints **"Neurological examination not documented in this
+  note."** — never "normal".
+- **The ISNCSCI engine derives, it does not grade on the clinician's behalf.** It
+  computes the sensory and motor levels, the neurological level of injury, the
+  motor and sensory totals and the AIS grade **only** when all 28 dermatomes,
+  10 key muscles per side and the sacral examination are recorded; otherwise it
+  returns "not classified" together with the exact list of what is missing. AIS A
+  is decided by absence of sacral sparing alone, so a complete injury at any level
+  is graded A even when no normal segment above the lesion was recorded.
+- Scores are computed from documented findings only. A score whose inputs are
+  incomplete is displayed as not calculated, with the missing items named — it is
+  never defaulted to a value. Every calculated score prints its own version,
+  source, interpretation band and the sentence describing what the number does
+  **not** mean (for example: the Rotterdam score is a prognostic research tool and
+  does not direct treatment, and the Spetzler–Martin grade does not by itself
+  determine operability).
+
+## 3. Decision support — 24 rules
 
 Every prompt is **advisory**. It is never a diagnosis, an order, a score or a
 decision, and none of them fire on an empty note or on reassuring findings. A
@@ -69,10 +109,11 @@ Each prompt carries the **population** its source covers, and where the applicab
 document or population differs it lists the alternative instead of flattening the
 two into one rule (adult severe-TBI evidence vs the age-inclusive NICE pathway;
 the WFNS scale grading the clinical state vs the EANS management guideline;
-paediatric vs adult hydrocephalus). **Four prompts are local documentation
+paediatric vs adult hydrocephalus). **Six prompts are local documentation
 requirements with no guideline attributed** — cord compression, post-operative
-haematoma, VTE prophylaxis timing and surgical-site concern. They say so rather
-than borrowing a society's name.
+haematoma, VTE prophylaxis timing, surgical-site concern, a documented focal
+weakness and neurogenic shock. They say so rather than borrowing a society's
+name.
 
 | Level | Key | Trigger |
 | --- | --- | --- |
@@ -93,6 +134,13 @@ than borrowing a society's name.
 | documented | `vasospasm` | Vasospasm surveillance not documented after aneurysmal haemorrhage |
 | documented | `vte_timing` | VTE prophylaxis timing after neurosurgery not documented |
 | documented | `icp_target` | ICP monitored without a documented target |
+| immediate | `deteriorating_consciousness` | Conscious level depressed on the structured examination, or recorded as deteriorating |
+| immediate | `fixed_pupil` | Fixed pupil or a recorded pupillary asymmetry |
+| immediate | `cord_syndrome` | Spinal cord syndrome documented (central, anterior, Brown–Séquard, conus, cauda equina) |
+| immediate | `neurogenic_shock` | Neurogenic shock documented or suspected |
+| same_day | `meningism` | Meningeal signs documented on examination |
+| same_day | `new_deficit` | Focal weakness recorded on the structured examination |
+| documented | `facial_nerve` | Facial nerve involvement documented |
 
 Each prompt records, per patient: the finding that raised it (the documented
 evidence), the action taken, or a reason it does not apply. An incomplete GCS
@@ -155,7 +203,27 @@ locally, and does not present one merged recommendation where the sources differ
 ## 6. Verification performed
 
 An automated suite of **117 structure and safety checks** plus **251 attribution
-checks** was run against the built modules, and all passed.
+checks** was run against the built modules, and all passed. The scope expansion
+was then verified by a further **175 checks**, also all passing:
+
+- catalogue: 17 notes, unique keys, no duplicate field keys within a note, the
+  guidance and ICD-11 blocks on every note, a required differential and a
+  structured examination on every assessment note, and the score block present
+  exactly where it is meant to be;
+- ISNCSCI: complete examination recognised; AIS A for absent sacral sparing
+  including the all-zero examination; AIS E for a normal examination with the
+  correct totals (100 motor, 112 light touch, 112 pin prick); AIS C and AIS D
+  separated by the "at least half preserved" rule; an incomplete examination
+  returns no grade and names the missing item by side and level;
+- scores: Spetzler–Martin, Rotterdam and mJOA computed to the expected totals and
+  bands; an incomplete score reports missing inputs and no total; a scale is
+  surfaced only when the documented findings indicate it; the saved text carries
+  the source, the band and the limitation sentence;
+- examination text: pupils printed with the measured asymmetry, dermatomal level,
+  meningeal signs and the spinal column findings all reach the saved value; an
+  empty examination prints the explicit "not documented" sentence;
+- decision support: each of the seven added prompts fires from its recorded
+  finding, and the whole set stays silent on an empty note.
 
 - catalogue: 10 notes, all on the `neurosurgery` key, no duplicate field keys,
   every note ≥ 19 fields, ICD-11 and guidance fields present on all ten, no
@@ -181,8 +249,8 @@ checks** was run against the built modules, and all passed.
 
 1. **No live session with an authorized Neurosurgery account.** The notes have
    not been opened, filled and saved end to end in the running app.
-2. **Neurosurgical lead sign-off** on the note structure, the 17 prompts and
-   their wording. Nothing here is clinically ratified.
+2. **Neurosurgical lead sign-off** on the note structure, the 24 prompts, the
+   examination item set and their wording. Nothing here is clinically ratified.
 3. **No pre-verified ICD-11 subcode set** for neurosurgery — a coding review
    queue is still needed, as it is for the other specialties.
 4. **Local thresholds are not ratified.** The GCS 8 airway threshold is shown as
@@ -194,3 +262,16 @@ checks** was run against the built modules, and all passed.
    displayed without a date and marked accordingly until confirmed.
 6. **Arabic translation** of the note labels, section headings, prompts and the
    saved guidance text is outstanding.
+7. **Score versions are not locally ratified.** The scales added with the
+   expanded scope (Spetzler–Martin, Hunt & Hess, WFNS, modified Fisher, Barrow,
+   Sundt, Rotterdam, Marshall, TL AOSIS, mJOA, Nurick, House–Brackmann, mRS,
+   ILAE, Engel, ISNCSCI) each carry the version recorded in the registry, but the
+   institution must confirm which version it uses — the mJOA variant, the time
+   point for the mRS, and the seizure-freedom definition for Engel/I-
+   LAE all differ between publications.
+8. **The AIS classification is validated for adults.** Applying it to young
+   children requires the lead's decision, and the paediatric note states that
+   rather than implying the grade is equivalent.
+9. **Editions and dates of the score and classification sources added with the
+   expanded scope still need publisher-level confirmation** at local review, in
+   the same way as the four outstanding citations above.
