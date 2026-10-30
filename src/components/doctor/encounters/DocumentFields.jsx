@@ -59,6 +59,8 @@ import NeurologyScoresField from "@/components/doctor/notes/NeurologyScoresField
 import NeurologyEmergencyField from "@/components/doctor/notes/NeurologyEmergencyField";
 import NeurologySafetyPromptsField from "@/components/doctor/notes/NeurologySafetyPromptsField";
 import NeurologyGuidanceField from "@/components/doctor/notes/NeurologyGuidanceField";
+import NeurologyMedicationField from "@/components/doctor/notes/NeurologyMedicationField";
+import NeurologyEscalationField from "@/components/doctor/notes/NeurologyEscalationField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -366,6 +368,12 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "neuro_emergency" && (
         <NeurologyEmergencyField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "neuro_medications" && (
+        <NeurologyMedicationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "neuro_escalation" && (
+        <NeurologyEscalationField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "neuro_guidance" && (
         <NeurologyGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

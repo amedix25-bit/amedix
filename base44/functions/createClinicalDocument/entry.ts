@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
 import { generateClinicalRef, logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { isKnownDocumentType, getDocumentSpecialty, isConfidentialDocumentType } from "../../shared/clinicalDocumentCatalog.ts";
+import { logNeurologyAudit } from "../../shared/neurologyAudit.ts";
 
 // Universal clinical documentation — the general document types plus the
 // specialty-specific paperwork, available to every doctor regardless of
@@ -125,6 +126,22 @@ export default async function(req) {
       document_id,
       hospital: encounter.hospital,
       department: encounter.department,
+    });
+
+    // Neurology decision-support events are audited individually: a medication
+    // alert, a critical finding and an escalation each become a queryable entry
+    // rather than only text in the note.
+    await logNeurologyAudit(base44, payload.neurology_audit, {
+      actor_user_id: user.id,
+      actor_name: doctor.full_name,
+      patient_id: patient.id,
+      patient_user_id: patient.user_id || "",
+      patient_cin: patient.cin || "",
+      patient_name: patient.full_name || "",
+      encounter_id: encounter.encounter_id || "",
+      document_id,
+      hospital: encounter.hospital || "",
+      department: encounter.department || "",
     });
 
     return Response.json({ document, checkin_id: checkin.id });

@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, ExternalLink, ShieldCheck } from "lucide-react";
 import { buildNeuroSafetyPrompts } from "@/lib/neurologySafetyRules";
+import NeurologyApprovalBanner from "@/components/doctor/neurology/NeurologyApprovalBanner";
 
 // The neurology safety review. Prompts are computed from what this note recorded and
 // stored with the note, so the saved record and the PDF never show a later
@@ -37,6 +38,7 @@ export default function NeurologySafetyPromptsField({ value, values, onChange })
 
   return (
     <div className="space-y-3">
+      <NeurologyApprovalBanner />
       <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2">
         <ShieldCheck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
         <p className="text-[11px] text-muted-foreground leading-snug">

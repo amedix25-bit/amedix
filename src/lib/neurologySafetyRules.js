@@ -17,10 +17,13 @@ import { neuroBlockValues } from "@/lib/neurologyBlocks";
 import { calculateNeuroScore } from "@/lib/neurologyScores";
 import { NEURO_REFERENCES } from "@/lib/neurologyReferences";
 import { neurologyEmergencyState } from "@/lib/neurologyEmergencies";
+import { neurologyMedicationAlerts } from "@/lib/neurologyMedications";
+import { neurologyEscalationIssues } from "@/lib/neurologyEscalation";
 import { asObject, str, list } from "@/lib/neurologyFieldKit";
 
 export const NEURO_SAFETY_PROVENANCE = {
   guideline: "Guideline requirement",
+  label: "Product-label check — verified by the prescriber and pharmacist against the current label",
   local: "AMedix local decision — not a guideline claim",
 };
 
@@ -36,6 +39,9 @@ const blockUsed = (values, block) =>
 
 const REPERFUSION_GIVEN = ["Intravenous thrombolysis given", "Mechanical thrombectomy performed", "Thrombolysis and thrombectomy"];
 const REPERFUSION_CONSIDERED = [...REPERFUSION_GIVEN, "Considered and not given — reason documented"];
+
+const medIssues = (values) => neurologyMedicationAlerts(asObject(asObject(values).neuro_medications));
+const escIssues = (values) => neurologyEscalationIssues(asObject(asObject(values).neuro_escalation));
 
 const gcsTotal = (values) => {
   const result = calculateNeuroScore("gcs", asObject(asObject(values).neuro_scores?.gcs));
@@ -483,6 +489,56 @@ NEURO_SAFETY_RULES.push(
       const blockTime = str(asObject(asObject(values).neuro_stroke).str_last_known_well);
       return !str(docs.lkw) && !blockTime;
     },
+  },
+  {
+    key: "med_allergy_conflict",
+    level: "critical",
+    provenance: "label",
+    source: "local",
+    title: "A documented allergy conflicts with a medicine recorded in this note",
+    basis:
+      "The medication record holds an allergen and a medicine from a group that cross-reacts with it. This is a product-label check: the prescriber and pharmacist verify the choice against the current label, and the reasoning for the medicine chosen is recorded.",
+    fires: (values) => medIssues(values).some((i) => i.kind === "allergy"),
+  },
+  {
+    key: "med_contraindication_conflict",
+    level: "critical",
+    provenance: "label",
+    source: "local",
+    title: "A documented contraindication fact conflicts with a medicine recorded in this note",
+    basis:
+      "A contraindication fact documented as present matches a medicine recorded in this note. The record must show the contraindication review, the decision and the clinician who made it.",
+    fires: (values) => medIssues(values).some((i) => i.kind === "contraindication"),
+  },
+  {
+    key: "med_interaction_conflict",
+    level: "warning",
+    provenance: "label",
+    source: "local",
+    title: "Two recorded medicines interact and the review is not recorded",
+    basis:
+      "Two medicines recorded in this note form a known interaction pair and the interaction review carries no conclusion. The interacting medicines are verified against the current product label before the next dose.",
+    fires: (values) => medIssues(values).some((i) => i.kind === "interaction"),
+  },
+  {
+    key: "med_adverse_effect_unactioned",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "An adverse effect is recorded with no action taken",
+    basis:
+      "A medicine in this note has an adverse effect recorded and no documented action. An adverse effect is never left without a recorded response and the clinician responsible.",
+    fires: (values) => medIssues(values).some((i) => i.kind === "adverse"),
+  },
+  {
+    key: "escalation_record_incomplete",
+    level: "critical",
+    provenance: "local",
+    source: "local",
+    title: "A critical finding or escalation is recorded without the detail that makes it auditable",
+    basis:
+      "An escalation in this note is missing an element the record requires — the time the finding was identified, who was informed and when, or the acknowledgement of an immediate finding. The escalation was performed; the record must be completed.",
+    fires: (values) => escIssues(values).some((i) => i.level === "immediate"),
   },
 );
 

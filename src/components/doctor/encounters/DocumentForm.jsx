@@ -16,6 +16,7 @@ import { CERTIFICATE_DEFS, CERTIFICATE_KEYS } from "@/lib/specialtyDocumentsPart
 import { Loader2, Lock, PenLine } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import { formatFieldValue } from "@/lib/clinicalFieldValue";
+import { buildNeurologyAuditPayload } from "@/lib/neurologyAudit";
 
 // Creates a new clinical document in an encounter, or — in amend mode — a
 // new VERSION of a signed document (the original is never overwritten).
@@ -56,6 +57,10 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
   const hasFields = !!(def && def.fields && def.fields.length > 0);
 
   const setData = (key, value) => setDataValues((s) => ({ ...s, [key]: value }));
+  // Neurology medication alerts, critical findings, escalations and emergencies are
+  // sent beside the note so each becomes its own audit entry. Built from the values
+  // the clinician documented; null for every other specialty.
+  const neurologyAudit = buildNeurologyAuditPayload(dataValues);
 
   // The interactive Tooth Chart is linked to the patient's dental encounters
   // and dental treatment history — tooth statuses recorded in the patient's
@@ -172,6 +177,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
           data,
           photo_file_uris: photoUris,
           amendment_reason: amendmentReason,
+          neurology_audit: neurologyAudit,
         });
         onSaved(res.data.document);
       } else {
@@ -188,6 +194,7 @@ export default function DocumentForm({ doctorProfile, patient, encounter, amendO
           content,
           data,
           photo_file_uris: photoUris,
+          neurology_audit: neurologyAudit,
         });
         onSaved(res.data.document);
       }

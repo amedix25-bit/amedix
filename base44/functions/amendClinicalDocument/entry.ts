@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { logNeurologyAudit } from "../../shared/neurologyAudit.ts";
 
 // DOCUMENT VERSION CONTROL. A signed version is never overwritten — a
 // correction creates a NEW version under the same AMedix Document ID:
@@ -84,6 +85,21 @@ export default async function(req) {
       document_id: original.document_id,
       hospital: original.hospital,
       department: original.department,
+    });
+
+    // An amendment carries its own neurology events, so a corrected escalation or
+    // a resolved alert is visible in the trail beside the version it belongs to.
+    await logNeurologyAudit(base44, payload.neurology_audit, {
+      actor_user_id: user.id,
+      actor_name: original.doctor_name,
+      patient_id: original.patient_id,
+      patient_user_id: original.patient_user_id || "",
+      patient_cin: original.patient_cin || "",
+      patient_name: original.patient_name || "",
+      encounter_id: original.encounter_id || "",
+      document_id: original.document_id || "",
+      hospital: original.hospital || "",
+      department: original.department || "",
     });
 
     return Response.json({ document: amended, checkin_id: checkin.id });

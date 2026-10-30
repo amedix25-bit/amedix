@@ -91,7 +91,7 @@ const emergency = () => [
 const condition = (key) => block(key, "Condition-specific record");
 const reasoning = () => block("neuro_reasoning", "Clinical reasoning");
 
-export const NEURO_ENHANCEMENTS = {
+const BASE_ENHANCEMENTS = {
   neuro_consultation: () => [
     block("neuro_history", "History"),
     block("neuro_mental_status", "Neurological examination"),
@@ -242,5 +242,37 @@ export const NEURO_ENHANCEMENTS = {
     ...guidance("neuro_referral"),
   ],
 };
+
+// Medication safety and escalation are appended to EVERY neurology note, in the
+// same append-only way: no existing field is renamed, removed or reordered, and a
+// saved note keeps its meaning. They are inserted before the guideline basis so the
+// clinical content keeps its reading order.
+const medications = () => [
+  {
+    key: "neuro_medications",
+    label: "Medication Safety, Allergy & Interaction Record",
+    type: "neuro_medications",
+    section: "Medications & safety",
+  },
+];
+
+const escalation = () => [
+  {
+    key: "neuro_escalation",
+    label: "Deterioration, Critical Findings & Escalation",
+    type: "neuro_escalation",
+    section: "Escalation & audit",
+  },
+];
+
+const withSafetyRecords = (fields) => {
+  const at = fields.findIndex((f) => f.type === "neuro_guidance");
+  const extra = [...medications(), ...escalation()];
+  return at === -1 ? [...fields, ...extra] : [...fields.slice(0, at), ...extra, ...fields.slice(at)];
+};
+
+export const NEURO_ENHANCEMENTS = Object.fromEntries(
+  Object.entries(BASE_ENHANCEMENTS).map(([key, build]) => [key, () => withSafetyRecords(build())])
+);
 
 export const NEURO_ENHANCED_KEYS = Object.keys(NEURO_ENHANCEMENTS);
