@@ -184,7 +184,12 @@ const isHaemodynamicStatusField = (field) => {
   return !/pressure/i.test(label);
 };
 
+// Structured examination modules record their own structured findings — they are
+// never the single free-text examination field this rule retires.
+const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci"];
+
 const isExaminationField = (field) => {
+  if (STRUCTURED_EXAM_TYPES.includes(field.type)) return false;
   const label = field.label || "";
   if (!EXAMINATION_WORD.test(label)) return false;
   return !KEPT_EXAMINATION_LABEL.some((re) => re.test(label));

@@ -79,6 +79,7 @@ const blockOf = (values, key) => {
 };
 const operativeOf = (values) => blockOf(values, "nsg_operative");
 const postopOf = (values) => blockOf(values, "nsg_postop");
+const emergencyOf = (values) => blockOf(values, "nsg_emergency");
 
 // GCS is stored as its three documented components; the total is only meaningful
 // when all three were assessed (an intubated patient has no verbal score).

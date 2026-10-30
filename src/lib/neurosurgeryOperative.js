@@ -112,7 +112,7 @@ export const NSG_PROCEDURE_TYPES = [
       { key: "catheter_depth", label: "Catheter depth and trajectory", type: "input" },
       { key: "opening_pressure", label: "CSF opening pressure and appearance", type: "input" },
       { key: "drain_height", label: "Drain height and volume target set", type: "input" },
-      { key: "csf_sent", label: "CSF sent for laboratory examination", type: "select", options: ["Yes — microbiology and cell count", "No — reason documented", NOT_DOCUMENTED] },
+      { key: "csf_sent", label: "CSF sent for microbiology and cell count", type: "select", options: ["Yes — microbiology and cell count", "No — reason documented", NOT_DOCUMENTED] },
     ],
   },
   {
