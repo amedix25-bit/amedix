@@ -16,6 +16,9 @@
 // tetanus) or as an AMedix local decision that requires Orthopedics approval —
 // never dressed up as a society guideline.
 
+import { ORTHO_TRAUMA_MAP } from "@/lib/orthopedicsTrauma";
+import { ORTHO_HEALING_STATE_MAP, orthoHealingState } from "@/lib/orthopedicsManagement";
+
 export const ORTHO_SAFETY_PROVENANCE = {
   aaos_guideline: "AAOS guideline",
   ota_standard: "OTA reference standard",
@@ -117,7 +120,26 @@ export const ORTHO_SAFETY_CONCERNS = [
   { key: "tetanus", label: "Open wound with tetanus status not up to date", level: "same_day" },
   { key: "vte_prophylaxis", label: "Thromboprophylaxis not prescribed after major lower-limb surgery", level: "same_day" },
   { key: "postop_complication", label: "Documented post-operative complication (wound, hardware, union)", level: "same_day" },
+  // Raised from the trauma-emergency panel and the healing assessment, so the
+  // prompts follow what the note actually recorded for each presentation.
+  { key: "vascular_injury", label: "Vascular injury or ischaemic limb", level: "immediate" },
+  { key: "unstable_pelvis", label: "Unstable pelvic injury with haemodynamic concern", level: "immediate" },
+  { key: "spinal_cord_injury", label: "Spinal cord injury", level: "immediate" },
+  { key: "severe_soft_tissue", label: "Severe soft-tissue injury threatening cover or viability", level: "immediate" },
+  { key: "fat_embolism", label: "Suspected fat embolism syndrome", level: "immediate" },
+  { key: "septic_arthritis", label: "Suspected septic arthritis", level: "same_day" },
+  { key: "osteomyelitis", label: "Suspected osteomyelitis", level: "same_day" },
+  { key: "postop_infection", label: "Post-operative surgical-site infection", level: "same_day" },
+  { key: "thromboembolism", label: "Suspected venous thromboembolism", level: "same_day" },
+  { key: "union_complication", label: "Delayed union, nonunion or malunion recorded", level: "same_day" },
 ];
+
+// The presentations documented in this note's trauma panel.
+const traumaPresentations = (v) => {
+  const panel = v && typeof v.ortho_trauma === "object" && !Array.isArray(v.ortho_trauma) ? v.ortho_trauma : {};
+  return Array.isArray(panel.presentations) ? panel.presentations : [];
+};
+const hasTrauma = (v, key) => traumaPresentations(v).includes(key);
 
 const SPECS = {
   open_fracture: {

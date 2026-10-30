@@ -41,6 +41,13 @@ import {
   ORTHO_ICD_CLUSTER_NOTE,
   ORTHO_ICD_SEARCH_GUIDANCE,
 } from "@/lib/orthopedicsIcd11";
+import {
+  ORTHO_DECISION_FIELDS,
+  ORTHO_IMMOBILISATION_FIELDS,
+  ORTHO_MEDICATION_FIELDS,
+  ORTHO_RECOVERY_FIELDS,
+  ORTHO_SURGICAL_INDICATION_FIELDS,
+} from "@/lib/orthopedicsManagement";
 
 const T = (key, label, extra = {}) => ({ key, label, type: "textarea", ...extra });
 const I = (key, label, extra = {}) => ({ key, label, type: "input", ...extra });
@@ -171,11 +178,48 @@ const neurovascular = () =>
       showIf: { key: "ortho_compartment_assessment", in: ["Firm — repeat assessment required", "Hard / tense"] },
     }),
     I("ortho_nv_assessed_at", "Neurovascular assessment documented at", { placeholder: "Time of assessment" }),
-    S("ortho_nv_completeness", "Documentation of the neurovascular examination", [
+    S("ortho_nv_completeness", "Completeness of the neurovascular record", [
       "All documented",
       "Partially documented — deficit of the record stated",
       "Not documented",
     ]),
+  ]);
+
+// Life- and limb-threatening assessment. One panel per note, driven by what was
+// actually documented — never a checklist that defaults to normal.
+const traumaSection = () =>
+  sec("Trauma emergency assessment", [
+    {
+      key: "ortho_trauma",
+      label: "Life- and limb-threatening presentation, red flags and time-critical pathway",
+      type: "ortho_trauma",
+    },
+  ]);
+
+// Injury severity and physiology, so a limb-threatening injury is not documented
+// as an isolated fracture in a patient who is physiologically abnormal.
+const severitySection = () =>
+  sec("Injury severity & physiology", [
+    S("ortho_polytrauma", "Major associated trauma", [
+      "No — single-region injury",
+      "Yes — two or more regions injured",
+      "Yes — physiologically unstable",
+      "Not assessed",
+    ]),
+    I("ortho_iss", "Injury Severity Score, where calculated", { placeholder: "Calculated from the AIS of the three most severely injured regions" }),
+    T("ortho_ais_regions", "Injured regions and their AIS", {
+      hint: "Head/neck, face, chest, abdomen, extremities, external — with the score recorded for each",
+    }),
+    S("ortho_physiology", "Physiological state", ["Stable", "Borderline", "Unstable", "In extremis", "Not documented"]),
+    I("ortho_shock_index_inputs", "Heart rate and systolic pressure at assessment", { placeholder: "e.g. HR 118, SBP 92 — the ratio is recorded with the observation" }),
+    I("ortho_lactate", "Lactate / base deficit, where measured"),
+    T("ortho_transfusion", "Blood products and major haemorrhage protocol", { hint: "Units given, times, and whether the protocol was activated" }),
+  ]);
+
+// Fracture healing, recorded as an explicit state.
+const healingSection = () =>
+  sec("Fracture healing", [
+    { key: "ortho_healing", label: "Fracture healing assessment", type: "ortho_healing" },
   ]);
 
 const fractureDetail = () =>
@@ -253,11 +297,13 @@ const fractureDetail = () =>
   ]);
 
 const investigations = () =>
-  sec("Investigations", [
+  sec("Imaging & laboratory review", [
     T("ortho_xray", "X-ray — views taken and findings"),
     T("ortho_ct", "CT — findings"),
     T("ortho_mri", "MRI — findings"),
-    T("ortho_labs", "Laboratory studies", { hint: "FBC, coagulation, group and save / crossmatch, renal function, inflammatory markers" }),
+    T("ortho_labs", "Blood tests — results and times", {
+      hint: "FBC, coagulation, group and save / crossmatch, renal function, inflammatory markers — each with its time",
+    }),
     S("ortho_imaging_comparison", "Comparison with previous imaging", [
       "Compared with previous studies — documented difference",
       "Compared with previous studies — unchanged",
@@ -341,6 +387,14 @@ const management = () =>
       "Not referred — reason documented",
       "Not applicable",
     ]),
+    // The decision and its reason — operative or not — with the alternatives,
+    // the indications, the consent record, the immobilisation actually applied
+    // and checked, the medication and wound plan, and the recovery prescription.
+    ...sec("Decision & rationale", ORTHO_DECISION_FIELDS),
+    ...sec("Surgical indications & consent", ORTHO_SURGICAL_INDICATION_FIELDS),
+    ...sec("Immobilisation, cast & reduction", ORTHO_IMMOBILISATION_FIELDS),
+    ...sec("Analgesia, wound & infection prevention", ORTHO_MEDICATION_FIELDS),
+    ...sec("Recovery & follow-up", ORTHO_RECOVERY_FIELDS),
   ]);
 
 const preopSection = () =>
@@ -468,7 +522,9 @@ export const ORTHO_CLINICAL_SECTIONS = {
     ...injuryHistory(),
     ...examination(),
     ...neurovascular(),
+    ...severitySection(),
     ...investigations(),
+    ...traumaSection(),
     ...assessmentSection(),
     ...management(),
     ...safety(),
@@ -488,9 +544,11 @@ export const ORTHO_CLINICAL_SECTIONS = {
       T("ortho_function_at_review", "Function and range at this review"),
       T("ortho_rehab_adherence", "Rehabilitation progress and adherence"),
     ]),
+    ...healingSection(),
     ...investigations(),
     ...assessmentSection(),
     ...management(),
+    ...traumaSection(),
     ...safety(),
   ],
   ortho_fracture_assessment: () => [
@@ -499,7 +557,10 @@ export const ORTHO_CLINICAL_SECTIONS = {
     ...fractureDetail(),
     ...examination(),
     ...neurovascular(),
+    ...severitySection(),
     ...investigations(),
+    ...healingSection(),
+    ...traumaSection(),
     ...assessmentSection(),
     ...management(),
     ...safety(),
@@ -526,7 +587,9 @@ export const ORTHO_CLINICAL_SECTIONS = {
     ]),
     ...examination(),
     ...neurovascular(),
+    ...severitySection(),
     ...investigations(),
+    ...traumaSection(),
     ...assessmentSection(),
     ...management(),
     ...safety(),
@@ -545,6 +608,7 @@ export const ORTHO_CLINICAL_SECTIONS = {
   ortho_operative_note: () => [
     icdFor(ALL, "Search ICD-11 — the pre-operative and post-operative diagnosis…"),
     ...operativeSection(),
+    ...traumaSection(),
     ...safety(),
   ],
   ortho_procedure_note: () => [
@@ -566,24 +630,29 @@ export const ORTHO_CLINICAL_SECTIONS = {
         "Not applicable",
       ]),
       T("ortho_post_procedure_nv", "Neurovascular status after the procedure"),
-      T("ortho_post_procedure_imaging", "Imaging after the procedure"),
+      T("ortho_post_procedure_imaging", "Post-procedure films — views and findings"),
       S("ortho_analgesia_effective", "Analgesia adequate after the procedure", ["Yes", "No — plan documented", "Not assessed"]),
     ]),
+    ...traumaSection(),
     ...safety(),
   ],
   ortho_postop_note: () => [
     icdFor(ALL, "Search ICD-11 — the procedure diagnosis and any post-operative complication…"),
     ...postopSection(),
+    ...traumaSection(),
     ...safety(),
   ],
   ortho_daily_progress: () => [
     icdFor(ALL, "Search ICD-11 — the active diagnosis and any complication on this ward day…"),
     ...postopSection(),
+    ...traumaSection(),
     ...safety(),
   ],
   ortho_discharge_summary: () => [
     icdFor(ALL, "Search ICD-11 — the admission, procedure and discharge diagnoses…"),
     ...dischargeSection(),
+    ...traumaSection(),
+    ...healingSection(),
     ...safety(),
   ],
   ortho_rehab_plan: () => [
