@@ -2,11 +2,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, MessageSquarePlus, Search } from "lucide-react";
+import { Loader2, MessageSquarePlus, Search } from "lucide-react";
 import ThreadListItem from "@/components/messaging/ThreadListItem";
 import ConversationThread from "@/components/messaging/ConversationThread";
 import NewConversationForm from "@/components/messaging/NewConversationForm";
-import MessagingNotificationsPanel from "@/components/messaging/MessagingNotificationsPanel";
+import MessagingNotificationBell from "@/components/messaging/MessagingNotificationBell";
 import useMessagingRealtime from "@/hooks/useMessagingRealtime";
 import { MESSAGING_CATEGORIES } from "@/lib/messaging";
 
@@ -26,7 +26,6 @@ export default function DoctorMessages({ profile, hospitalSession }) {
   const [audit, setAudit] = useState([]);
   const [sending, setSending] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -84,6 +83,21 @@ export default function DoctorMessages({ profile, hospitalSession }) {
     }
   }, []);
 
+  // A notification always opens the conversation it refers to, even when that
+  // conversation is not in the current hospital or filter view.
+  const openNotificationThread = async (threadId) => {
+    const loaded = threads.find((t) => t.id === threadId);
+    if (loaded) { openThread(loaded); return; }
+    try {
+      const res = await base44.functions.invoke("messagingApi", { action: "listThreads" });
+      const found = (res.data.threads || []).find((t) => t.id === threadId);
+      if (found) openThread(found);
+      else loadThreads();
+    } catch (e) {
+      loadThreads();
+    }
+  };
+
   const refresh = useCallback(() => {
     loadThreads();
     if (selected?.id) {
@@ -126,9 +140,10 @@ export default function DoctorMessages({ profile, hospitalSession }) {
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowNotifications((v) => !v)}>
-            <Bell className="w-4 h-4" /> Notifications
-          </Button>
+          <MessagingNotificationBell
+            activeThreadId={selected?.id}
+            onOpenThread={openNotificationThread}
+          />
           <Button size="sm" onClick={() => { setShowNew(true); setSelected(null); }}>
             <MessageSquarePlus className="w-4 h-4" /> New Conversation
           </Button>
@@ -136,19 +151,6 @@ export default function DoctorMessages({ profile, hospitalSession }) {
       </div>
 
       {error && <p className="rounded-lg border border-critical/30 bg-critical/5 px-3 py-2 text-xs text-critical">{error}</p>}
-
-      {showNotifications && (
-        <div className="flex justify-end">
-          <MessagingNotificationsPanel
-            onClose={() => setShowNotifications(false)}
-            onOpenThread={(threadId) => {
-              const t = threads.find((x) => x.id === threadId);
-              if (t) openThread(t);
-              else loadThreads();
-            }}
-          />
-        </div>
-      )}
 
       {hospitals.length > 1 && (
         <div className="flex flex-wrap gap-1.5">

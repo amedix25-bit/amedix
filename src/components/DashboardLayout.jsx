@@ -89,7 +89,13 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
             >
               <Icon className="w-5 h-5 shrink-0" />
               <span className="truncate">{t(item.label)}</span>
-              {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />}
+              {item.badge > 0 ? (
+                <span className="ml-auto shrink-0 rounded-full border border-critical/30 bg-critical/10 px-1.5 text-[10px] font-semibold text-critical">
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              ) : isActive ? (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />
+              ) : null}
             </button>
           );
         })}

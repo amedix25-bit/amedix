@@ -207,6 +207,18 @@ export default async function (req) {
           detail: `${previousUnread} unread message(s) read`,
         });
       }
+      // Opening a conversation clears its notifications too, so the bell count
+      // always matches what the recipient has actually read.
+      if (body.mark_read !== false) {
+        try {
+          await base44.asServiceRole.entities.MessageNotification.updateMany(
+            { recipient_user_id: user.id, thread_id: thread.id, is_read: false },
+            { $set: { is_read: true, read_datetime: now() } }
+          );
+        } catch (err) {
+          // the notification list refresh reflects the stored state either way
+        }
+      }
       return Response.json({ thread: fresh, messages, audit, actor: publicActor() });
     }
 
@@ -366,7 +378,8 @@ export default async function (req) {
         });
       }
 
-      const kind = isDoctor ? ((thread.message_count || 0) > 0 ? "reply" : "new_message") : "reply";
+      const isFirstMessage = (thread.message_count || 0) === 0;
+      const kind = isFirstMessage ? "new_message" : "reply";
       const notificationMessage = previewOf(text, attachments);
       if (isDoctor) {
         const recipients = await hospitalNotificationRecipients(base44, thread.hospital_user_id);
@@ -396,7 +409,7 @@ export default async function (req) {
           hospitalName: thread.hospital_name,
           doctorUserId: thread.doctor_user_id,
           kind: "reply",
-          title: `${thread.hospital_name} replied`,
+          title: isFirstMessage ? `${thread.hospital_name} started a conversation` : `${thread.hospital_name} replied`,
           message: notificationMessage,
           actorName: actor.displayName,
           actorUserId: user.id,
@@ -418,6 +431,7 @@ export default async function (req) {
       const statusHistory = [...(thread.status_history || [])];
       const assignmentHistory = [...(thread.assignment_history || [])];
       const systemLines = [];
+      let newlyAssignedStaff = null;
 
       if (body.status && THREAD_STATUSES.includes(body.status) && body.status !== thread.status) {
         updates.status = body.status;
@@ -463,6 +477,7 @@ export default async function (req) {
             datetime: stamp,
           });
           systemLines.push(staffUserId ? `${thread.assigned_staff_user_id ? "Transferred" : "Assigned"} to ${staffName}` : "Unassigned");
+          if (staffUserId) newlyAssignedStaff = { userId: staffUserId, name: staffName };
         }
       }
 
@@ -520,6 +535,26 @@ export default async function (req) {
           actorUserId: user.id,
           category: thread.category,
           dedupeKey: `update:${stamp}`,
+        });
+      }
+
+      // Whoever the conversation was just assigned to is told directly, so an
+      // assigned staff member never learns about it by accident.
+      if (newlyAssignedStaff && newlyAssignedStaff.userId !== user.id) {
+        await notifyRecipient(base44, {
+          recipientUserId: newlyAssignedStaff.userId,
+          recipientRole: "hospital",
+          threadId: thread.id,
+          hospitalUserId: thread.hospital_user_id,
+          hospitalName: thread.hospital_name,
+          doctorUserId: thread.doctor_user_id,
+          kind: "assignment",
+          title: "A conversation was assigned to you",
+          message: `${thread.subject} · ${thread.doctor_name}`,
+          actorName: actor.displayName,
+          actorUserId: user.id,
+          category: thread.category,
+          dedupeKey: `assigned:${newlyAssignedStaff.userId}:${stamp}`,
         });
       }
 

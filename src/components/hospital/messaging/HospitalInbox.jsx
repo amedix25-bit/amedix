@@ -2,11 +2,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bell, Loader2, MessageSquarePlus, Search } from "lucide-react";
+import { Loader2, MessageSquarePlus, Search } from "lucide-react";
 import ThreadListItem from "@/components/messaging/ThreadListItem";
 import ConversationThread from "@/components/messaging/ConversationThread";
 import NewConversationForm from "@/components/messaging/NewConversationForm";
-import MessagingNotificationsPanel from "@/components/messaging/MessagingNotificationsPanel";
+import MessagingNotificationBell from "@/components/messaging/MessagingNotificationBell";
 import HospitalConversationControls from "@/components/hospital/messaging/HospitalConversationControls";
 import useMessagingRealtime from "@/hooks/useMessagingRealtime";
 import { MESSAGING_CATEGORIES, THREAD_STATUS_META } from "@/lib/messaging";
@@ -27,7 +27,6 @@ export default function HospitalInbox({ actor, staff = [], departments = [], ini
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [error, setError] = useState("");
 
@@ -68,6 +67,25 @@ export default function HospitalInbox({ actor, staff = [], departments = [], ini
   useEffect(() => {
     if (initialThread) openThread(initialThread);
   }, [initialThread?.id, openThread]);
+
+  // A notification always opens the conversation it refers to, clearing the
+  // filters that would otherwise hide it.
+  const openNotificationThread = async (threadId) => {
+    const loaded = threads.find((t) => t.id === threadId);
+    if (loaded) { setStatus("all"); setCategory("all"); setUnreadOnly(false); openThread(loaded); return; }
+    try {
+      const res = await base44.functions.invoke("messagingApi", { action: "listThreads" });
+      const found = (res.data.threads || []).find((t) => t.id === threadId);
+      if (found) {
+        setStatus("all");
+        setCategory("all");
+        setUnreadOnly(false);
+        openThread(found);
+      } else loadThreads();
+    } catch (e) {
+      loadThreads();
+    }
+  };
 
   const refresh = useCallback(() => {
     loadThreads();
@@ -135,9 +153,10 @@ export default function HospitalInbox({ actor, staff = [], departments = [], ini
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowNotifications((v) => !v)}>
-            <Bell className="w-4 h-4" /> Notifications
-          </Button>
+          <MessagingNotificationBell
+            activeThreadId={selected?.id}
+            onOpenThread={openNotificationThread}
+          />
           <Button size="sm" onClick={startNew}>
             <MessageSquarePlus className="w-4 h-4" /> New Conversation
           </Button>
@@ -145,12 +164,6 @@ export default function HospitalInbox({ actor, staff = [], departments = [], ini
       </div>
 
       {error && <p className="rounded-lg border border-critical/30 bg-critical/5 px-3 py-2 text-xs text-critical">{error}</p>}
-
-      {showNotifications && (
-        <div className="flex justify-end">
-          <MessagingNotificationsPanel onClose={() => setShowNotifications(false)} onOpenThread={() => loadThreads()} />
-        </div>
-      )}
 
       <div className="flex flex-wrap items-center gap-1.5">
         <button

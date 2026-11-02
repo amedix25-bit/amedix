@@ -13,6 +13,7 @@ import HospitalLabPanelsSection from "@/components/hospital/portal/HospitalLabPa
 import HospitalRadiologySection from "@/components/hospital/portal/HospitalRadiologySection";
 import HospitalMessagingSection from "@/components/hospital/portal/HospitalMessagingSection";
 import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
+import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 import { Loader2 } from "lucide-react";
 import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone, Radiation, MessagesSquare } from "lucide-react";
 
@@ -35,6 +36,9 @@ export default function HospitalPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Unread messaging notifications, shown on the Doctor Messages navigation
+  // item so an incoming message is visible from anywhere in the portal.
+  const { unread: messagingUnread } = useMessagingNotifications({ enabled: !!user });
 
   useEffect(() => {
     if (!user) return;
@@ -71,7 +75,8 @@ export default function HospitalPortal() {
     );
   }
 
-  const visibleNav = profile.is_messaging_staff ? navItems.filter((n) => n.key === "messages") : navItems;
+  const visibleNav = (profile.is_messaging_staff ? navItems.filter((n) => n.key === "messages") : navItems)
+    .map((n) => (n.key === "messages" ? { ...n, badge: messagingUnread } : n));
 
   return (
     <DashboardLayout navItems={visibleNav} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Hospital Portal" accent="hospital">

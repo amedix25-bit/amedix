@@ -26,6 +26,7 @@ import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctor
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
 import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, Pill, MessageSquare } from "lucide-react";
 import DoctorMessages from "@/components/doctor/messaging/DoctorMessages";
+import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -57,14 +58,19 @@ export default function DoctorDashboard() {
   // current portal session, opened via the AMedix Hospital Code gate. All
   // hospital-specific information and clinical actions apply to this hospital.
   const [hospitalSession, setHospitalSession] = useState(null);
+  // Unread messaging notifications, shown on the Messages navigation item so an
+  // incoming message is visible from anywhere in the portal.
+  const { unread: messagingUnread } = useMessagingNotifications({ enabled: !!user });
   const now = new Date();
   // Specialty-driven navigation — a Surgeon's Clinical Notes section becomes
   // Surgical Records with its own record types; every other feature stays the
   // same for all doctors.
   const isSurgeon = isSurgicalSpecialty(profile?.specialization);
-  const menuItems = navItems.map((n) =>
-    n.key === "notes" && isSurgeon ? { ...n, label: "Surgical Records" } : n
-  );
+  const menuItems = navItems.map((n) => {
+    if (n.key === "notes" && isSurgeon) return { ...n, label: "Surgical Records" };
+    if (n.key === "messages") return { ...n, badge: messagingUnread };
+    return n;
+  });
 
   useEffect(() => { loadProfile(); }, []);
 
