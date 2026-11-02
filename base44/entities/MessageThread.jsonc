@@ -1,0 +1,252 @@
+{
+  "name": "MessageThread",
+  "type": "object",
+  "properties": {
+    "thread_ref": {
+      "type": "string",
+      "description": "Human-readable AMedix conversation reference, e.g. MSG-20261102-7KQ2 \u2014 generated server-side"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator account the conversation belongs to \u2014 the hospital isolation key. Set server-side only."
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id at the time the conversation was opened"
+    },
+    "hospital_name": {
+      "type": "string",
+      "description": "Hospital name at the time the conversation was opened"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 set server-side when the conversation is opened, used for Row Level Security"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor in the conversation"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Doctor name at the time the conversation was opened"
+    },
+    "doctor_specialization": {
+      "type": "string",
+      "description": "Doctor specialty / department at the affiliated hospital"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Conversation subject"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "general_administration",
+        "human_resources",
+        "scheduling_duty_rosters",
+        "finance_payments",
+        "medical_administration",
+        "it_support",
+        "equipment_supplies",
+        "complaints_suggestions",
+        "general_inquiries"
+      ],
+      "description": "Structured communication category the conversation was opened under"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "resolved"
+      ],
+      "default": "pending",
+      "description": "Conversation status \u2014 PENDING: awaiting hospital action. IN PROGRESS: being handled. RESOLVED: closed by the hospital. A new message on a resolved conversation reopens it and the change is recorded."
+    },
+    "assigned_staff_user_id": {
+      "type": "string",
+      "description": "User id of the responsible hospital staff member the conversation is assigned to"
+    },
+    "assigned_staff_name": {
+      "type": "string",
+      "description": "Name of the responsible staff member"
+    },
+    "assigned_department": {
+      "type": "string",
+      "description": "Administrative department the conversation is currently assigned to"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Every user explicitly authorized on this conversation \u2014 the doctor, the hospital administrator and assigned staff. Written server-side only; drives Row Level Security and real-time delivery."
+    },
+    "created_by_role": {
+      "type": "string",
+      "enum": [
+        "doctor",
+        "hospital"
+      ],
+      "description": "Which side opened the conversation"
+    },
+    "is_announcement": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this conversation was created by a hospital announcement"
+    },
+    "announcement_scope": {
+      "type": "string",
+      "enum": [
+        "hospital",
+        "department"
+      ],
+      "description": "Announcement targeting \u2014 every affiliated doctor of the hospital, or the doctors of one department"
+    },
+    "target_department": {
+      "type": "string",
+      "description": "Department targeted by a department announcement"
+    },
+    "message_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of messages in the conversation"
+    },
+    "last_message_preview": {
+      "type": "string",
+      "description": "Preview of the latest message for the conversation list"
+    },
+    "last_message_datetime": {
+      "type": "string",
+      "description": "Date and time of the latest message (ISO datetime)"
+    },
+    "last_activity_datetime": {
+      "type": "string",
+      "description": "Latest activity on the conversation \u2014 a message, assignment or status change (ISO datetime)"
+    },
+    "doctor_unread_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Unread messages for the doctor"
+    },
+    "hospital_unread_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Unread messages for the hospital side"
+    },
+    "doctor_last_read_datetime": {
+      "type": "string",
+      "description": "Date and time the doctor last read the conversation (ISO datetime)"
+    },
+    "hospital_last_read_datetime": {
+      "type": "string",
+      "description": "Date and time the hospital side last read the conversation (ISO datetime)"
+    },
+    "status_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "by_role": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "datetime"
+        ]
+      },
+      "description": "Append-only record of every status change"
+    },
+    "assignment_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "assigned / transferred / department_assigned / unassigned"
+          },
+          "staff_user_id": {
+            "type": "string"
+          },
+          "staff_name": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      },
+      "description": "Append-only record of administrative assignment and internal transfers"
+    },
+    "resolved_datetime": {
+      "type": "string",
+      "description": "Date and time the conversation was resolved (ISO datetime)"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "doctor_user_id",
+    "subject",
+    "category",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

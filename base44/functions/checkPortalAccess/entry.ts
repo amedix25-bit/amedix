@@ -25,13 +25,17 @@ export default async function (req) {
     }
 
     // Roles come from the database, never from the client.
-    const [patients, doctors, radiologists, laboratories, hospitals, pharmacies] = await Promise.all([
+    const [patients, doctors, radiologists, laboratories, hospitals, pharmacies, messagingStaff, messagingInvites] = await Promise.all([
       base44.asServiceRole.entities.PatientProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.DoctorProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.LaboratoryProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.HospitalProfile.filter({ user_id: user.id }),
       base44.asServiceRole.entities.PharmacyProfile.filter({ user_id: user.id }),
+      // Hospital messaging staff designated by a hospital administrator — they
+      // reach only the Doctor Communication Center, never hospital management.
+      base44.asServiceRole.entities.HospitalMessagingStaff.filter({ user_id: user.id, status: 'active' }),
+      base44.asServiceRole.entities.HospitalMessagingStaff.filter({ email: String(user.email || '').toLowerCase(), status: 'invited' }),
     ]);
 
     const roles = [];
@@ -40,7 +44,7 @@ export default async function (req) {
     if (doctors.length > 0) roles.push('doctor');
     if (radiologists.length > 0) roles.push('radiologist');
     if (laboratories.length > 0) roles.push('lab');
-    if (hospitals.length > 0) roles.push('hospital');
+    if (hospitals.length > 0 || messagingStaff.length > 0 || messagingInvites.length > 0) roles.push('hospital');
     if (pharmacies.length > 0) roles.push('pharmacy');
 
     const allowed = portal ? roles.includes(portal) : false;

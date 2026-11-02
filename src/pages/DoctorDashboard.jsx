@@ -24,7 +24,8 @@ import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, Pill } from "lucide-react";
+import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, Pill, MessageSquare } from "lucide-react";
+import DoctorMessages from "@/components/doctor/messaging/DoctorMessages";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -35,6 +36,7 @@ const navItems = [
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "notes", label: "Clinical Notes", icon: FileText },
   { key: "prescriptions", label: "Prescriptions", icon: Pill },
+  { key: "messages", label: "Messages", icon: MessageSquare },
   { key: "labs", label: "Lab Requests", icon: FlaskConical },
   { key: "imaging", label: "Imaging", icon: Image },
 ];
@@ -219,6 +221,9 @@ export default function DoctorDashboard() {
         {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
         {activeTab === "imaging" && profile && <DoctorImagingRequests doctorProfile={profile} />}
         {activeTab === "prescriptions" && <DoctorPrescriptions />}
+        {activeTab === "messages" && profile && (
+          <DoctorMessages profile={profile} hospitalSession={hospitalSession} />
+        )}
       </div>
     </DashboardLayout>
   );

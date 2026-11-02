@@ -1,0 +1,105 @@
+{
+  "name": "MessageNotification",
+  "type": "object",
+  "properties": {
+    "recipient_user_id": {
+      "type": "string",
+      "description": "User id of the notified person \u2014 written server-side only; drives Row Level Security"
+    },
+    "recipient_role": {
+      "type": "string",
+      "enum": [
+        "doctor",
+        "hospital"
+      ]
+    },
+    "thread_id": {
+      "type": "string",
+      "description": "Conversation the notification refers to"
+    },
+    "hospital_user_id": {
+      "type": "string"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "new_message",
+        "reply",
+        "announcement",
+        "assignment",
+        "status"
+      ],
+      "description": "What the notification is about"
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Short notification body \u2014 never a full copy of the conversation"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Name of the person whose action triggered the notification"
+    },
+    "category": {
+      "type": "string"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "read_datetime": {
+      "type": "string"
+    },
+    "dedupe_key": {
+      "type": "string",
+      "description": "Server-generated key used to prevent duplicate notifications for the same event and recipient"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Date and time the notification was created (ISO datetime)"
+    }
+  },
+  "required": [
+    "recipient_user_id",
+    "thread_id",
+    "kind",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.recipient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "name": "MessageEntry",
+  "type": "object",
+  "properties": {
+    "thread_id": {
+      "type": "string",
+      "description": "MessageThread id the message belongs to"
+    },
+    "thread_ref": {
+      "type": "string",
+      "description": "Conversation reference at the time the message was sent"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator account \u2014 hospital isolation key"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor in the conversation"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Every user authorized to read this message \u2014 written server-side only; drives Row Level Security and real-time delivery"
+    },
+    "sender_user_id": {
+      "type": "string",
+      "description": "User id of the person who sent the message \u2014 authorship is never editable"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Name of the sender at the time of sending"
+    },
+    "sender_role": {
+      "type": "string",
+      "enum": [
+        "doctor",
+        "hospital"
+      ],
+      "description": "Which side the sender belongs to"
+    },
+    "sender_title": {
+      "type": "string",
+      "description": "Sender's capacity, e.g. Consultant Cardiologist or HR Officer"
+    },
+    "body": {
+      "type": "string",
+      "description": "Message text. Sent messages can never be edited or deleted \u2014 a correction is appended as a new, clearly identified message."
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_uri": {
+            "type": "string",
+            "description": "Private storage URI \u2014 never a public URL"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "uploaded_datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_uri",
+          "file_name"
+        ]
+      },
+      "description": "Attachments stored privately; each download is authorized server-side and issued as a short-lived signed URL"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "message",
+        "correction",
+        "announcement",
+        "system"
+      ],
+      "default": "message",
+      "description": "MESSAGE: a normal message. CORRECTION: an appended correction that never replaces the original. ANNOUNCEMENT: the opening message of a hospital announcement. SYSTEM: an automated record line (assignment, status change)."
+    },
+    "corrects_message_id": {
+      "type": "string",
+      "description": "For a correction \u2014 the id of the message being corrected; the original stays intact"
+    },
+    "read_by_doctor": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the doctor's side has read this message"
+    },
+    "read_by_hospital": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the hospital side has read this message"
+    },
+    "doctor_read_datetime": {
+      "type": "string"
+    },
+    "hospital_read_datetime": {
+      "type": "string"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Date and time the message was sent (ISO datetime), set server-side"
+    }
+  },
+  "required": [
+    "thread_id",
+    "sender_user_id",
+    "body",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

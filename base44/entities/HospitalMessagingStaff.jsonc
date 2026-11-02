@@ -1,0 +1,97 @@
+{
+  "name": "HospitalMessagingStaff",
+  "type": "object",
+  "properties": {
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital administrator who owns this staff designation"
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User id of the designated staff member's AMedix account \u2014 granted by the hospital administrator, never self-declared"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string",
+      "description": "Administrative department the staff member handles, e.g. Human Resources"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "manager",
+        "staff"
+      ],
+      "default": "staff",
+      "description": "MANAGER: may manage staff designations and send hospital announcements. STAFF: may view, reply, assign and resolve conversations within the hospital."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended"
+      ],
+      "default": "active",
+      "description": "SUSPENDED staff immediately lose access to the hospital's conversations; their history is preserved"
+    },
+    "added_by_name": {
+      "type": "string"
+    },
+    "added_datetime": {
+      "type": "string"
+    },
+    "last_active_datetime": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "user_id",
+    "name",
+    "department",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.hospital_user_id": "{{user.id}}"
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "name": "MessageAuditEvent",
+  "type": "object",
+  "properties": {
+    "thread_id": {
+      "type": "string",
+      "description": "MessageThread the event belongs to"
+    },
+    "thread_ref": {
+      "type": "string"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "Hospital isolation key"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string"
+    },
+    "actor_user_id": {
+      "type": "string",
+      "description": "User id of the person who performed the action"
+    },
+    "actor_name": {
+      "type": "string"
+    },
+    "actor_role": {
+      "type": "string",
+      "description": "doctor / hospital / system"
+    },
+    "action": {
+      "type": "string",
+      "description": "Machine-readable action, e.g. conversation_created, message_sent, attachment_uploaded, conversation_read, conversation_assigned, conversation_transferred, status_changed, announcement_sent, access_denied"
+    },
+    "action_label": {
+      "type": "string",
+      "description": "Human-readable description of the action"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Additional context (category, department, previous and new status, file names)"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the action (ISO datetime)"
+    }
+  },
+  "required": [
+    "action",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
