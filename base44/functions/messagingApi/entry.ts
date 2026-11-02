@@ -707,7 +707,8 @@ export default async function (req) {
       const rows = await queryRows(base44, "HospitalMessagingStaff", { id: staffId, hospital_user_id: actor.hospitalUserId }, { limit: 1 });
       if (rows.length === 0) return Response.json({ error: "Staff member not found." }, { status: 404 });
       const updated = await base44.asServiceRole.entities.HospitalMessagingStaff.update(staffId, {
-        status: body.reactivate ? "active" : "suspended",
+        // Re-activating restores the invitation until the person signs in.
+        status: body.reactivate ? (rows[0].user_id ? "active" : "invited") : "suspended",
       });
       await logMessageAudit(base44, {
         thread: { hospital_user_id: actor.hospitalUserId, hospital_name: actor.hospitalName },
