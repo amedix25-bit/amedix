@@ -14,9 +14,10 @@ const METHODS = [
 ];
 
 export default function VerificationMethodSelector({
-  profileType, fullName = "", fullNameAr = "", cin = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t,
+  profileType, fullName = "", fullNameAr = "", cin = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t, initialMethod = "",
 }) {
-  const [method, setMethod] = useState("");
+  // A resumed registration reopens the method it already completed.
+  const [method, setMethod] = useState(initialMethod);
   // Identity values entered inside this section (doctor registration). For
   // patients the Birth Certificate fields come from the registration form.
   const [entered, setEntered] = useState({

@@ -2,17 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { Stethoscope, User, ArrowRight, Loader2, X } from "lucide-react";
+import { Stethoscope, User, ArrowRight, Loader2 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AboutAmedix from "@/components/home/AboutAmedix";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SPECIALTIES } from "@/lib/specialties";
 import PatientOnboardingForm from "@/components/patient/PatientOnboardingForm";
-import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
-import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
+import DoctorRegistrationForm from "@/components/doctor/registration/DoctorRegistrationForm";
+import { resumeDoctorRegistration } from "@/lib/doctorRegistration";
 import { PatientLanguageProvider } from "@/lib/patientLanguage";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -31,21 +27,10 @@ export default function Home() {
   const [showDoctorForm, setShowDoctorForm] = useState(false);
   const [showPatientForm, setShowPatientForm] = useState(false);
 
-  const [creating, setCreating] = useState(false);
-  const [doctorForm, setDoctorForm] = useState({
-    first_name: "",
-    middle_name: "",
-    last_name: "",
-    specialization: "",
-    license_number: "",
-    hospital: "",
-    phone: "",
-  });
-  // Verification Process — the backend verdict of the ONE selected identity
-  // method (Birth Certificate / Personal Card / Passport) plus the medical
-  // license verification.
-  const [doctorVerification, setDoctorVerification] = useState({ identity: null, medical_license: null });
-  const [doctorVerError, setDoctorVerError] = useState("");
+  // Saved doctor registration (details + completed verification steps) restored
+  // when a doctor returns to an unfinished registration.
+  const [doctorRegState, setDoctorRegState] = useState("incomplete");
+  const [doctorRestores, setDoctorRestores] = useState(null);
 
   useEffect(() => {
     if (user?.id) checkProfile();
@@ -75,7 +60,23 @@ export default function Home() {
       // Only accounts that still need the selected profile see onboarding.
       localStorage.removeItem("amh_selected_role");
       if (selectedRole === "patient") setShowPatientForm(true);
-      if (selectedRole === "doctor") setShowDoctorForm(true);
+      if (selectedRole === "doctor") {
+        await openDoctorRegistration();
+        setLoading(false);
+        return;
+      }
+      // A doctor who started registration earlier continues from the saved step
+      // instead of starting over.
+      const saved = await resumeDoctorRegistration().catch(() => null);
+      if (saved?.state === "incomplete" && saved.resumed) {
+        setDoctorRegState("incomplete");
+        setDoctorRestores(saved.restores || null);
+        setShowDoctorForm(true);
+      } else if (saved?.state === "rejected") {
+        setDoctorRegState("rejected");
+        setDoctorRestores({ rejection_reason: saved.rejection_reason || "" });
+        setShowDoctorForm(true);
+      }
       setLoading(false);
     } catch (err) {
       setProfileError(err.response?.data?.error || err.message || t("Unable to open your portal. Please try again."));
@@ -98,69 +99,20 @@ export default function Home() {
     setShowPatientForm(true);
   };
 
-  const handleDoctorSelect = async () => {
-    try {
-      const profiles = await base44.entities.DoctorProfile.filter({ user_id: user.id });
-      if (profiles.length > 0) {
-        navigate("/doctor");
-        return;
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  // Reads the saved registration — details and any verification already
+  // completed — and opens the form where the doctor stopped.
+  const openDoctorRegistration = async () => {
+    const saved = await resumeDoctorRegistration().catch(() => null);
+    setDoctorRegState(saved?.state || "incomplete");
+    setDoctorRestores(
+      saved?.state === "rejected"
+        ? { rejection_reason: saved.rejection_reason || "" }
+        : saved?.restores || null
+    );
     setShowDoctorForm(true);
   };
 
-  const handleDoctorSubmit = async (e) => {
-    e.preventDefault();
-    // The specialty is chosen here, once, and becomes the doctor's permanent
-    // portal — it can never be switched afterwards (see specialtyLock).
-    if (!doctorForm.specialization) {
-      setDoctorVerError(t("Please select your specialty."));
-      return;
-    }
-    // One verified identity method AND the medical license are required.
-    if (doctorVerification.identity?.status !== "verified" || doctorVerification.medical_license?.status !== "verified") {
-      setDoctorVerError(t("Verification is required before you can continue."));
-      return;
-    }
-    setCreating(true);
-    try {
-      const profile = await base44.entities.DoctorProfile.create({
-        user_id: user.id,
-        full_name: [doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" "),
-        first_name: doctorForm.first_name,
-        middle_name: doctorForm.middle_name,
-        last_name: doctorForm.last_name,
-        name_edited: true,
-        specialization: doctorForm.specialization,
-        specialties: [doctorForm.specialization],
-        license_number: doctorForm.license_number,
-        hospital: doctorForm.hospital,
-        phone: doctorForm.phone,
-        is_verified: false,
-      });
-      // Associate the verified documents with the new doctor profile.
-      try {
-        await base44.functions.invoke("attachVerificationToProfile", {
-          record_ids: [
-            doctorVerification.identity.verification_id,
-            doctorVerification.medical_license.verification_id,
-          ],
-          profile_type: "doctor",
-          doctor_id: profile.id,
-        });
-      } catch (verr) {
-        console.error(verr);
-      }
-      localStorage.removeItem("amh_selected_role");
-      navigate("/doctor");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCreating(false);
-    }
-  };
+  const handleDoctorSelect = () => openDoctorRegistration();
 
   if (loading) {
     return (
@@ -260,94 +212,15 @@ export default function Home() {
       </main>
 
       {showDoctorForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowDoctorForm(false)}>
-          <div className="bg-card rounded-2xl shadow-xl border border-border p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold">{t("Doctor Registration")}</h2>
-                <p className="text-sm text-muted-foreground mt-1">{t("Enter your professional details")}</p>
-              </div>
-              <button onClick={() => setShowDoctorForm(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleDoctorSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="doc-first-name">{t("First Name *")}</Label>
-                  <Input id="doc-first-name" placeholder={t("First name")} value={doctorForm.first_name} onChange={(e) => setDoctorForm({ ...doctorForm, first_name: e.target.value })} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="doc-middle-name">{t("Middle Name")}</Label>
-                  <Input id="doc-middle-name" placeholder={t("Middle name")} value={doctorForm.middle_name} onChange={(e) => setDoctorForm({ ...doctorForm, middle_name: e.target.value })} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="doc-last-name">{t("Last Name *")}</Label>
-                <Input id="doc-last-name" placeholder={t("Last name")} value={doctorForm.last_name} onChange={(e) => setDoctorForm({ ...doctorForm, last_name: e.target.value })} required />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("Specialty *")}</Label>
-                <Select
-                  value={doctorForm.specialization || undefined}
-                  onValueChange={(v) => setDoctorForm((f) => ({ ...f, specialization: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("Select your specialty")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SPECIALTIES.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {t("Your specialty is permanent — it determines the portal and clinical documents you work in.")}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hospital">{t("Hospital / Clinic")}</Label>
-                <Input id="hospital" placeholder={t("Hospital or clinic name")} value={doctorForm.hospital} onChange={(e) => setDoctorForm({ ...doctorForm, hospital: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">{t("Phone")}</Label>
-                <Input id="phone" placeholder={t("Contact number")} value={doctorForm.phone} onChange={(e) => setDoctorForm({ ...doctorForm, phone: e.target.value })} />
-              </div>
-              <div className="pt-2">
-                <h3 className="text-sm font-semibold text-primary">{t("Verification Process")} *</h3>
-                <p className="text-xs text-muted-foreground mt-1 mb-3">
-                  {t("Your documents are verified securely and stored with your profile.")}
-                </p>
-              </div>
-              <VerificationMethodSelector
-                profileType="doctor"
-                fullName={[doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" ")}
-                result={doctorVerification.identity}
-                onResult={(r) => setDoctorVerification((s) => ({ ...s, identity: r }))}
-                t={t}
-              />
-              <DocumentVerificationCard
-                profileType="doctor"
-                documentType="medical_license"
-                title={t("Medical / Professional License Document")}
-                description={t("Upload a clear photo or PDF")}
-                fields={[{ key: "license_number", label: t("Medical License Number"), placeholder: t("Medical license number") }]}
-                values={{ license_number: doctorForm.license_number }}
-                onValueChange={(key, value) => {
-                  setDoctorForm((f) => ({ ...f, license_number: value }));
-                  setDoctorVerification((s) => ({ ...s, medical_license: null }));
-                }}
-                result={doctorVerification.medical_license}
-                onResult={(r) => setDoctorVerification((s) => ({ ...s, medical_license: r }))}
-                t={t}
-              />
-              {doctorVerError && <p className="text-sm text-destructive">{doctorVerError}</p>}
-              <Button type="submit" className="w-full" disabled={creating}>
-                {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Doctor Account")}
-              </Button>
-            </form>
-          </div>
-        </div>
+        <DoctorRegistrationForm
+          state={doctorRegState}
+          restores={doctorRestores}
+          onClose={() => setShowDoctorForm(false)}
+          onSubmitted={() => {
+            localStorage.removeItem("amh_selected_role");
+            navigate("/doctor");
+          }}
+        />
       )}
 
       {showPatientForm && (

@@ -1,0 +1,137 @@
+{
+  "name": "DoctorRegistrationDraft",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User id of the account the registration belongs to \u2014 the only account that may read or continue it"
+    },
+    "email": {
+      "type": "string",
+      "description": "Registration email at the time the doctor started \u2014 set server-side from the signed-in account"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "incomplete",
+        "pending_verification",
+        "active",
+        "rejected"
+      ],
+      "default": "incomplete",
+      "description": "INCOMPLETE: registration started but not finished \u2014 no portal access, resumable by the same account only. PENDING_VERIFICATION: submitted with verified documents and awaiting the existing administration review \u2014 never a second account. ACTIVE: the doctor profile is verified and approved. REJECTED: reviewed and not approved \u2014 no account access; the doctor is directed to administration"
+    },
+    "step": {
+      "type": "string",
+      "enum": [
+        "details",
+        "identity_verification",
+        "license_verification",
+        "submitted"
+      ],
+      "default": "details",
+      "description": "Last completed step, so a returning doctor continues from exactly where they stopped"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "middle_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "specialization": {
+      "type": "string"
+    },
+    "hospital": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "license_number": {
+      "type": "string"
+    },
+    "identity_method": {
+      "type": "string",
+      "enum": [
+        "birth_certificate",
+        "personal_card",
+        "passport",
+        "national_id"
+      ],
+      "description": "Identity verification method the doctor completed, restored so the step is not repeated"
+    },
+    "identity_verification_id": {
+      "type": "string",
+      "description": "IdentityVerification record already verified by this account \u2014 validated server-side, never taken from the browser"
+    },
+    "identity_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "license_verification_id": {
+      "type": "string",
+      "description": "Verified medical-license IdentityVerification record, validated server-side"
+    },
+    "license_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile created from this registration \u2014 a resumed registration always reuses it instead of creating a duplicate"
+    },
+    "submitted_datetime": {
+      "type": "string",
+      "description": "Date and time the registration was submitted for verification (ISO datetime)"
+    },
+    "last_saved_datetime": {
+      "type": "string",
+      "description": "Date and time progress was last saved (ISO datetime)"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason recorded by the administrator when the registration was rejected"
+    }
+  },
+  "required": [
+    "user_id",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -4,13 +4,14 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
+import { lookupDoctorRegistration } from "@/lib/doctorRegistration";
 
 export default function Register({ embedded = false, onLogin = null }) {
   const [email, setEmail] = useState("");
@@ -20,6 +21,10 @@ export default function Register({ embedded = false, onLogin = null }) {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  // An email that already has a registration: the page offers to continue it
+  // instead of reporting that the account already exists.
+  const [existingState, setExistingState] = useState("");
+  const [continuing, setContinuing] = useState(false);
   const { t } = useAppLanguage();
 
   const handleSubmit = async (e) => {
@@ -34,7 +39,31 @@ export default function Register({ embedded = false, onLogin = null }) {
       await base44.auth.register({ email, password });
       setShowOtp(true);
     } catch (err) {
-      setError(err.message || t("Registration failed"));
+      // The account may already exist. Ask what state that registration is in:
+      // an unfinished one is offered for continuation, a finished one is sent
+      // to the login — never reported as a bare "already exists" dead end.
+      const existing = await lookupDoctorRegistration(email).catch(() => null);
+      if (existing?.state && existing.state !== "none") {
+        setExistingState(existing.state);
+      } else {
+        setError(err.message || t("Registration failed"));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Continuing a saved registration requires proving the account is theirs: a
+  // verification code goes to the registered email address.
+  const handleContinue = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await base44.auth.resendOtp(email);
+      setContinuing(true);
+      setShowOtp(true);
+    } catch (err) {
+      setError(t("We could not send a code to this email. Please log in to continue your registration."));
     } finally {
       setLoading(false);
     }
@@ -48,7 +77,9 @@ export default function Register({ embedded = false, onLogin = null }) {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      window.location.href = safeReturnTo();
+      // Continuing a registration lands on the onboarding page, where the saved
+      // steps are restored.
+      window.location.href = continuing ? "/home" : safeReturnTo();
     } catch (err) {
       setError(err.message || t("Invalid verification code"));
     } finally {
@@ -122,6 +153,67 @@ export default function Register({ embedded = false, onLogin = null }) {
           {t("Didn't receive the code?")}{" "}
           <button onClick={handleResend} className="text-primary font-medium hover:underline">
             {t("Resend")}
+          </button>
+        </p>
+      </AuthLayout>
+    );
+  }
+
+  // An email that already has a registration is offered a way forward instead
+  // of an error: continue an unfinished registration, or go to the login for a
+  // finished one. Saved registration information is never shown here — it is
+  // only restored after the email address has been verified.
+  if (existingState && !showOtp) {
+    const canContinue = existingState === "incomplete";
+    const message = {
+      incomplete: t("An unfinished doctor registration was found for this email. Verify your email address to continue from the step you stopped at."),
+      pending_verification: t("This registration was submitted and is awaiting verification. Log in to check its status."),
+      active: t("This email is already registered. Log in to continue."),
+      other_account: t("This email is already registered. Log in to continue."),
+      rejected: t("This registration was not approved. Please contact AMedix administration for help."),
+    }[existingState] || t("This email is already registered. Log in to continue.");
+
+    return (
+      <AuthLayout
+        embedded={embedded}
+        icon={canContinue ? RotateCcw : ShieldCheck}
+        title={canContinue ? t("Continue your registration") : t("Account already registered")}
+        subtitle={t("Connected Care. Better Health.")}
+      >
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground mb-6">{message}</p>
+        {canContinue ? (
+          <div className="space-y-3">
+            <Button className="w-full h-12 font-medium" onClick={handleContinue} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t("Sending code...")}
+                </>
+              ) : (
+                t("Verify email and continue")
+              )}
+            </Button>
+            <Button variant="outline" className="w-full h-12 font-medium" asChild>
+              <Link to="/login">{t("Log in to continue")}</Link>
+            </Button>
+          </div>
+        ) : existingState !== "rejected" ? (
+          <Button className="w-full h-12 font-medium" asChild>
+            <Link to="/login">{t("Go to login")}</Link>
+          </Button>
+        ) : null}
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          <button
+            type="button"
+            onClick={() => { setExistingState(""); setContinuing(false); setError(""); }}
+            className="text-primary font-medium hover:underline"
+          >
+            {t("Use a different email")}
           </button>
         </p>
       </AuthLayout>
