@@ -1,0 +1,85 @@
+{
+  "name": "RadiologySettings",
+  "type": "object",
+  "properties": {
+    "hospital_user_id": {
+      "type": "string",
+      "description": "Facility administrator owning these settings \u2014 hospital isolation key"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The facility administrator (settings are an administrative surface)"
+    },
+    "default_calling_ae_title": {
+      "type": "string",
+      "description": "Default Calling AE Title AMedix presents to this facility's PACS"
+    },
+    "critical_escalation_hours": {
+      "type": "number",
+      "default": 2,
+      "description": "Hours within which an unacknowledged critical finding is escalated to the facility's clinical lead"
+    },
+    "report_release_policy": {
+      "type": "string",
+      "enum": [
+        "manual_release_only",
+        "auto_release_finalized"
+      ],
+      "default": "manual_release_only",
+      "description": "Reports are never released before finalization and signature. MANUAL_RELEASE_ONLY: the department releases each final report explicitly (default). AUTO_RELEASE_FINALIZED: a finalized and signed report is released without a further step."
+    },
+    "audit_retention_days": {
+      "type": "integer",
+      "default": 365,
+      "description": "Retention period recorded for this facility's radiology audit trail"
+    },
+    "report_footer_note": {
+      "type": "string",
+      "description": "Text printed on the facility's radiology report footer (accreditation, contact)"
+    },
+    "updated_datetime": {
+      "type": "string"
+    },
+    "updated_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hospital_user_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

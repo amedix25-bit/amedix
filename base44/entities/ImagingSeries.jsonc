@@ -1,0 +1,110 @@
+{
+  "name": "ImagingSeries",
+  "type": "object",
+  "properties": {
+    "study_id": {
+      "type": "string",
+      "description": "ImagingStudy id this series belongs to"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "Hospital isolation key \u2014 copied from the parent study, written server-side only"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Users authorized to read this series (same set as the parent study)"
+    },
+    "series_instance_uid": {
+      "type": "string",
+      "description": "DICOM Series Instance UID"
+    },
+    "modality": {
+      "type": "string"
+    },
+    "series_number": {
+      "type": "integer"
+    },
+    "series_description": {
+      "type": "string"
+    },
+    "body_part": {
+      "type": "string"
+    },
+    "sop_instance_uids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "DICOM SOP Instance UIDs of the images in this series \u2014 used to detect duplicates and to request the study from a PACS"
+    },
+    "sop_instance_count": {
+      "type": "integer",
+      "default": 0
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_uri": {
+            "type": "string",
+            "description": "Private storage URI \u2014 never a public URL"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "sop_instance_uid": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_uri"
+        ]
+      },
+      "description": "Original DICOM files stored privately; each download is authorized server-side and issued as a short-lived signed URL"
+    },
+    "created_datetime": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "study_id",
+    "hospital_user_id",
+    "series_instance_uid"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

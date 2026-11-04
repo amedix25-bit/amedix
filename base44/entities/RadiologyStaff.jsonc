@@ -1,0 +1,106 @@
+{
+  "name": "RadiologyStaff",
+  "type": "object",
+  "properties": {
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the facility administrator who designated this staff member \u2014 hospital isolation key"
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Users who may read this staff record \u2014 the facility administrator and the staff member once the invitation is claimed. Written server-side only."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "AMedix user id \u2014 filled automatically the first time the invited person signs in with the designated email"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email the facility administrator designated; the invitation activates for the account that signs in with this exact address"
+    },
+    "staff_role": {
+      "type": "string",
+      "enum": [
+        "administrator",
+        "radiologist",
+        "technician"
+      ],
+      "default": "radiologist",
+      "description": "ADMINISTRATOR: full portal oversight including staff and PACS configuration. RADIOLOGIST: interprets studies and signs reports. TECHNICIAN: performs examinations, imports images and advances examination stages \u2014 never signs reports."
+    },
+    "license_number": {
+      "type": "string",
+      "description": "Professional registration / licence reference, recorded by the facility"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "invited",
+        "active",
+        "suspended"
+      ],
+      "default": "invited",
+      "description": "INVITED: designated, waiting for sign-in with that email. ACTIVE: linked and working. SUSPENDED: access withdrawn immediately; history preserved."
+    },
+    "added_by_name": {
+      "type": "string"
+    },
+    "added_datetime": {
+      "type": "string"
+    },
+    "last_active_datetime": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "name",
+    "staff_role",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

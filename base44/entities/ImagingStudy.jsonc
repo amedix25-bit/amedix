@@ -1,0 +1,154 @@
+{
+  "name": "ImagingStudy",
+  "type": "object",
+  "properties": {
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the facility's administrator account \u2014 the hospital isolation key. Written server-side only."
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Every user authorized to read this study (facility administrator, its active radiology staff, authorized radiologists). Written server-side only; drives Row Level Security."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id \u2014 links the study to the one existing AMedix patient record, never a duplicate identity"
+    },
+    "patient_user_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_birth_date": {
+      "type": "string",
+      "description": "Date of birth as recorded in the DICOM header, used to verify the study belongs to the matched patient"
+    },
+    "study_instance_uid": {
+      "type": "string",
+      "description": "DICOM Study Instance UID \u2014 the study's identity in the facility's archive; duplicates are detected on this value"
+    },
+    "accession_number": {
+      "type": "string"
+    },
+    "modality": {
+      "type": "string",
+      "description": "Modality of the study, e.g. X-Ray, CT, MRI, Ultrasound, Mammography"
+    },
+    "study_date": {
+      "type": "string",
+      "description": "Study date recorded by the imaging equipment (ISO date)"
+    },
+    "study_description": {
+      "type": "string"
+    },
+    "series_count": {
+      "type": "integer",
+      "default": 0
+    },
+    "image_count": {
+      "type": "integer",
+      "default": 0
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual_import",
+        "dicom_network",
+        "dicomweb",
+        "orthanc"
+      ],
+      "description": "How the study reached AMedix \u2014 an authorized manual DICOM import, DICOM networking, DICOMweb retrieval, or the Orthanc archive"
+    },
+    "imaging_request_id": {
+      "type": "string",
+      "description": "ImagingRequest the study fulfils, when it was matched to a request"
+    },
+    "request_ref": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "imported",
+        "verified",
+        "duplicate",
+        "archived"
+      ],
+      "default": "imported",
+      "description": "IMPORTED: stored and awaiting department confirmation. VERIFIED: confirmed as the correct patient's study. DUPLICATE: already present, kept as a record of the attempt. ARCHIVED: superseded and hidden from the active worklist."
+    },
+    "identity_check": {
+      "type": "string",
+      "enum": [
+        "matched_request",
+        "matched_cin",
+        "mismatch",
+        "not_checked"
+      ],
+      "description": "How the study was tied to the existing AMedix patient record \u2014 never by name alone"
+    },
+    "imported_by_user_id": {
+      "type": "string"
+    },
+    "imported_by_name": {
+      "type": "string"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the study record was created (ISO datetime)"
+    },
+    "verified_datetime": {
+      "type": "string"
+    },
+    "verified_by_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "study_instance_uid",
+    "modality"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

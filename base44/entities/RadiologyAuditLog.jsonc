@@ -1,0 +1,93 @@
+{
+  "name": "RadiologyAuditLog",
+  "type": "object",
+  "properties": {
+    "hospital_user_id": {
+      "type": "string",
+      "description": "Hospital isolation key \u2014 the facility the action belongs to"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Users who may read this entry \u2014 the facility administrator and its radiology staff. Written server-side only."
+    },
+    "actor_user_id": {
+      "type": "string"
+    },
+    "actor_name": {
+      "type": "string"
+    },
+    "actor_role": {
+      "type": "string",
+      "description": "administrator / radiologist / technician / system"
+    },
+    "action": {
+      "type": "string",
+      "description": "Machine-readable action, e.g. study_imported, import_rejected, viewer_launched, report_released, staff_designated, pacs_configuration_saved, pacs_test_run, access_denied"
+    },
+    "action_label": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "study_id": {
+      "type": "string"
+    },
+    "study_instance_uid": {
+      "type": "string"
+    },
+    "request_ref": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the action (ISO datetime)"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "action",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

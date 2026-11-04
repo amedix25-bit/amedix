@@ -1,0 +1,171 @@
+{
+  "name": "PACSConnection",
+  "type": "object",
+  "properties": {
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the facility administrator who owns this connection \u2014 hospital isolation key"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "participant_user_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Only the facility administrator may read a connection record; vendor endpoints and secret NAMES never reach radiology staff or the browser"
+    },
+    "name": {
+      "type": "string",
+      "description": "Connection name shown to the administrator, e.g. 'Main PACS \u2014 Radiology Department'"
+    },
+    "connection_type": {
+      "type": "string",
+      "enum": [
+        "dicom_network",
+        "dicomweb",
+        "orthanc",
+        "manual_import"
+      ],
+      "description": "DICOM_NETWORK: traditional DICOM (host, port, AE titles). DICOMWEB: RESTful DICOMweb endpoints. ORTHANC: the facility's Orthanc archive. MANUAL_IMPORT: files uploaded through AMedix only."
+    },
+    "host": {
+      "type": "string",
+      "description": "PACS IP address or hostname (traditional DICOM networking)"
+    },
+    "port": {
+      "type": "integer",
+      "description": "PACS DICOM port, typically 104 or 11112"
+    },
+    "called_ae_title": {
+      "type": "string",
+      "description": "Called AE Title \u2014 the PACS application entity this facility queries"
+    },
+    "calling_ae_title": {
+      "type": "string",
+      "description": "Calling AE Title \u2014 the AE title AMedix presents to the PACS"
+    },
+    "dicomweb_base_url": {
+      "type": "string",
+      "description": "DICOMweb base URL (https only). Used server-side to verify study availability before images are marked available."
+    },
+    "supports_qido": {
+      "type": "boolean",
+      "default": false,
+      "description": "Vendor confirmed QIDO-RS study search support \u2014 never assumed"
+    },
+    "supports_wado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Vendor confirmed WADO-RS image retrieval support"
+    },
+    "supports_stow": {
+      "type": "boolean",
+      "default": false,
+      "description": "Vendor confirmed STOW-RS study upload support"
+    },
+    "auth_type": {
+      "type": "string",
+      "enum": [
+        "none",
+        "bearer",
+        "basic"
+      ],
+      "default": "none",
+      "description": "Authentication the vendor requires for its DICOMweb endpoint. The credential VALUE lives only in a server-side secret."
+    },
+    "auth_secret_name": {
+      "type": "string",
+      "description": "NAME of the server-side secret holding this connection's credential \u2014 the value never appears in this record or in the browser"
+    },
+    "viewer_type": {
+      "type": "string",
+      "enum": [
+        "ohif",
+        "radiant",
+        "vendor_web",
+        "none"
+      ],
+      "description": "How studies open: OHIF embedded in AMedix, RadiAnt on a Windows workstation, or the vendor's own web viewer"
+    },
+    "viewer_url_template": {
+      "type": "string",
+      "description": "Vendor-documented launch URL template. Allowed placeholders: {study_instance_uid}, {accession_number}, {series_instance_uid}, {launch_token}. Substituted server-side only; patient identifiers are never placed in viewer URLs."
+    },
+    "radiant_launch_template": {
+      "type": "string",
+      "description": "The RadiAnt launch URL this facility confirmed with its vendor, e.g. a radiant:// scheme documented by RadiAnt or the facility's integration page. Left empty until confirmed \u2014 AMedix never guesses a protocol handler."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_configured",
+        "pending_verification",
+        "connected",
+        "failed"
+      ],
+      "default": "not_configured",
+      "description": "Set ONLY by the server-side connection test \u2014 never by hand. Connected requires a passing test against the facility's own endpoint."
+    },
+    "last_test_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Result of the last connection test: { tested_datetime, outcome, simulated, checks: [{key,label,outcome,message}], message }"
+    },
+    "last_tested_datetime": {
+      "type": "string"
+    },
+    "config_version": {
+      "type": "integer",
+      "default": 1,
+      "description": "Incremented by the server on every configuration change \u2014 a change invalidates the previous verification"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "The connection used when a study does not specify one"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Vendor contact, agreed authentication, anything the imaging team confirmed"
+    },
+    "updated_datetime": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "name",
+    "connection_type"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participant_user_ids": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
