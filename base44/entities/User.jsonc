@@ -7,9 +7,16 @@
       "enum": [
         "admin",
         "doctor",
-        "patient"
+        "patient",
+        "user"
       ],
-      "default": "patient"
+      "enumColors": [
+        "purple",
+        "blue",
+        "green",
+        "gray"
+      ],
+      "default": "user"
     }
   }
 }
