@@ -85,7 +85,9 @@ export default async function (req: Request): Promise<Response> {
     const incoming = Array.isArray(payload.files) ? payload.files.slice(0, MAX_FILES) : [];
     const usable = incoming
       .map((f: any) => ({ file_uri: String((f && f.file_uri) || ""), file_name: String((f && f.file_name) || "upload.dcm"), size: Number((f && f.size) || 0) }))
-      .filter((f: any) => f.file_uri.startsWith("private/"));
+      // Private-storage URIs only (e.g. tmp/private/...). A public http(s) URL
+      // is never read by the importer.
+      .filter((f: any) => !!f.file_uri && !/^https?:/i.test(f.file_uri) && f.file_uri.includes("private/"));
     if (usable.length === 0) {
       return Response.json({ error: "Upload at least one DICOM file or ZIP package." }, { status: 400 });
     }

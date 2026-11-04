@@ -70,6 +70,7 @@ export default function DemoEnvironmentCard({ onSeeded, onModeChange }) {
             action: "import",
             files: study.files,
             patient_cin: study.patient_cin,
+            request_id: study.request_id || "",
           });
           imported += 1;
         } catch (err) {
@@ -147,8 +148,8 @@ export default function DemoEnvironmentCard({ onSeeded, onModeChange }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           {[
             ["Fictional patients", demo.patients],
+            ["Imaging requests", demo.requests || 0],
             ["Synthetic studies", demo.studies],
-            ["Series", demo.series],
             ["Images", demo.images],
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg border border-border bg-secondary/40 px-3 py-2">
