@@ -55,19 +55,38 @@ function decodeText(bytes: Uint8Array): string {
   return out.replace(/[\u0000-\u001f]/g, "").trim().replace(/\s{2,}/g, " ");
 }
 
-// Parse one DICOM Part 10 byte array. Returns null when the bytes are not a
-// DICOM file (no "DICM" magic) so the caller can refuse it explicitly.
+function isUpperAscii(byte: number): boolean {
+  return byte >= 0x41 && byte <= 0x5a;
+}
+
+// Some archives and modality exports write the dataset without the 128-byte
+// preamble and "DICM" magic. Such a file is still a valid DICOM dataset, so it
+// is accepted only when the bytes genuinely start with a DICOM element stream:
+// group 0002 (file meta) or group 0008 (identifying attributes). Anything else
+// — a JPEG, a PDF, a text file — is still refused.
+function isPreamblelessDataset(bytes: Uint8Array, view: DataView, len: number): boolean {
+  if (len < 8) return false;
+  const group = view.getUint16(0, true);
+  if (group === 0x0002) return true;
+  if (group !== 0x0008) return false;
+  if (isUpperAscii(bytes[4]) && isUpperAscii(bytes[5])) return true;
+  const implicitLength = view.getUint32(4, true);
+  return implicitLength > 0 && implicitLength < 0x10000;
+}
+
+// Parse one DICOM file. Returns null when the bytes are not a DICOM file (no
+// "DICM" magic and no valid element stream) so the caller can refuse it.
 export function parseDicom(bytes: Uint8Array): DicomTags | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const len = bytes.length;
-  const hasMagic =
+  const part10 =
     len > 132 && bytes[128] === 0x44 && bytes[129] === 0x49 && bytes[130] === 0x43 && bytes[131] === 0x4d;
-  if (!hasMagic) return null;
+  if (!part10 && !isPreamblelessDataset(bytes, view, len)) return null;
 
   const tags: Record<string, any> = {};
-  let explicitVR = true;
+  let explicitVR = part10 || (isUpperAscii(bytes[4]) && isUpperAscii(bytes[5]));
   let little = true;
-  let pos = 132;
+  let pos = part10 ? 132 : 0;
 
   // File meta information (group 0002) is always explicit VR little endian.
   while (pos + 8 <= len) {

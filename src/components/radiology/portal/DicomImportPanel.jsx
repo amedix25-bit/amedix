@@ -19,12 +19,14 @@ export default function DicomImportPanel({ onImported, mode }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [rejected, setRejected] = useState([]);
 
   const pick = (e) => {
     const list = Array.from(e.target.files || []);
     setFiles(list);
     setResult(null);
     setError("");
+    setRejected([]);
   };
 
   const upload = async () => {
@@ -35,6 +37,7 @@ export default function DicomImportPanel({ onImported, mode }) {
     setBusy(true);
     setError("");
     setResult(null);
+    setRejected([]);
     try {
       const uploaded = [];
       for (const file of files) {
@@ -53,6 +56,7 @@ export default function DicomImportPanel({ onImported, mode }) {
       if (onImported) onImported(res.data);
     } catch (err) {
       setError(err.response?.data?.error || err.message);
+      setRejected(Array.isArray(err.response?.data?.rejected) ? err.response.data.rejected : []);
     } finally {
       setBusy(false);
     }
@@ -107,9 +111,18 @@ export default function DicomImportPanel({ onImported, mode }) {
       </Button>
 
       {error && (
-        <p className="mt-3 text-xs rounded-md border border-[hsl(var(--critical))]/30 bg-[hsl(var(--critical))]/5 text-[hsl(var(--critical))] px-3 py-2">
-          {error}
-        </p>
+        <div className="mt-3 text-xs rounded-md border border-[hsl(var(--critical))]/30 bg-[hsl(var(--critical))]/5 text-[hsl(var(--critical))] px-3 py-2 space-y-1">
+          <p>{error}</p>
+          {rejected.length > 0 && (
+            <ul className="pt-1 space-y-0.5">
+              {rejected.map((r, i) => (
+                <li key={i} className="text-[11px] opacity-90 break-words">
+                  {r.file_name}: {r.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {result && (
