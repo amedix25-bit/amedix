@@ -111,7 +111,7 @@ export default async function(req: Request): Promise<Response> {
 
     const [patientPage, conditionsPage, priorRequestsPage, priorResultsPage, versionsPage, commLogsPage] =
       await Promise.all([
-        svc.entities.PatientProfile.filter({ id: request.patient_id }),
+        svc.entities.PatientProfile.filter({ id: request.patient_id }, { limit: 1 }),
         svc.entities.MedicalCondition.filter({ patient_id: request.patient_id }, { limit: 100 }),
         svc.entities.ImagingRequest.filter({ patient_id: request.patient_id }, { sort: "-request_datetime", limit: 100 }),
         svc.entities.ImagingResult.filter({ patient_id: request.patient_id }, { sort: "-created_datetime", limit: 100 }),
