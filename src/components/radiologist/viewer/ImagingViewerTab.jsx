@@ -3,8 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import ImageViewer from "@/components/radiologist/review/ImageViewer";
-import PacsOpenButton from "@/components/radiologist/review/PacsOpenButton";
-import OhifWorkspace from "@/components/radiologist/viewer/OhifWorkspace";
+import RadiAntStudyDownload from "@/components/radiologist/imaging/RadiAntStudyDownload";
 import {
   Monitor, RefreshCw, Loader2, ShieldCheck, ImageOff, Server, ArrowLeft, Database, AlertTriangle, FlaskConical,
 } from "lucide-react";
@@ -247,10 +246,8 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {status.pacs?.enabled && status.pacs.mode !== "ohif_embedded" && (
-                        <PacsOpenButton requestId={selected.id} pacsStatus={status.pacs} />
-                      )}
+                    <div className="flex flex-wrap items-start gap-2">
+                      <RadiAntStudyDownload requestId={selected.id} compact className="flex-1 min-w-[260px]" />
                       {status.pacs?.enabled && status.pacs.dicomweb_configured && status.study_instance_uid && (
                         <Button variant="outline" size="sm" onClick={runVerify} disabled={verifying}>
                           {verifying ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-1.5" />}
@@ -282,11 +279,6 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                     )}
                   </div>
 
-                  {/* Embedded OHIF workspace for facilities running their own approved OHIF deployment */}
-                  {status.pacs?.enabled && status.pacs.mode === "ohif_embedded" && (
-                    <OhifWorkspace requestId={selected.id} status={status} />
-                  )}
-
                   {/* In-app viewer for AMedix-stored images */}
                   {status.amedix_images > 0 ? (
                     <ImageViewer images={status.image_file_urls} requestId={selected.id} />
@@ -295,9 +287,7 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                       <ImageOff className="w-9 h-9 mx-auto mb-2 text-muted-foreground/50" />
                       <p className="text-sm font-medium">No images transferred into AMedix yet</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {status.pacs?.enabled
-                          ? "Open the study in the facility imaging system above, or wait for the department to record the images."
-                          : "The radiology department records the received study images here."}
+                        Download the DICOM study above and open it in RadiAnt, or wait for the department to record images in AMedix.
                       </p>
                     </div>
                   )}

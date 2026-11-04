@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { secrets } from 'base44:runtime';
-import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
+import { authorizeRadiologyStudy } from "../../shared/radiologyStudyAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Imaging Viewer integration — secure bridge to the facility's EXISTING
@@ -79,30 +79,6 @@ function buildLaunchUrl(template: string, values: Record<string, string>): strin
     url = url.split(`{${key}}`).join(encodeURIComponent(value));
   }
   return url;
-}
-
-// Returns the authorized actor role ("radiologist" | "department") or null.
-// Same authorization as the study review screen: the assigned radiologist, a
-// radiologist the patient authorized for this request, the facility's
-// claimable pool, or the facility's radiology department.
-async function authorizeStudy(base44: any, user: any, request: any): Promise<string | null> {
-  const profiles = await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id });
-  const radiologist = profiles[0];
-  if (radiologist && radiologist.status === "active") {
-    const authorized =
-      (request.authorized_radiologist_user_ids || []).includes(user.id) ||
-      request.assigned_radiologist_user_id === user.id ||
-      isAuthorizedForFacility(
-        await authorizedFacilities(base44, radiologist),
-        request.routed_hospital_user_id,
-        request.routed_hospital
-      );
-    if (authorized) return "radiologist";
-  }
-  const hospitals = await base44.asServiceRole.entities.HospitalProfile.filter({ user_id: user.id });
-  const department = hospitals.find((h: any) => h.radiology_department_enabled);
-  if (department && request.routed_hospital_user_id === user.id) return "department";
-  return null;
 }
 
 async function loadFacilityPacs(base44: any, request: any): Promise<any | null> {
@@ -572,7 +548,7 @@ export default async function(req: Request): Promise<Response> {
     const request = found[0];
     if (!request) return json({ error: "Imaging request not found." }, 404);
 
-    const actorRole = await authorizeStudy(base44, user, request);
+    const actorRole = await authorizeRadiologyStudy(base44, user, request);
     if (!actorRole) return json({ error: "You are not authorized to access this study's images." }, 403);
 
     const pacsProfile = await loadFacilityPacs(base44, request);

@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Database, ImageOff, MonitorPlay, Server, GitCompare, X, Layers, Info } from "lucide-react";
 import ImageViewer from "@/components/radiologist/review/ImageViewer";
-import PacsOpenButton from "@/components/radiologist/review/PacsOpenButton";
-import OhifWorkspace from "@/components/radiologist/viewer/OhifWorkspace";
+import RadiAntStudyDownload from "@/components/radiologist/imaging/RadiAntStudyDownload";
 
 // Centre panel — the imaging workspace. The facility's own connected viewer
 // (embedded OHIF) opens the verified study when it is genuinely connected;
@@ -15,7 +14,6 @@ export default function CaseViewerPanel({ request, pacs, imagingStudies, compari
   const primary = studies[0] || null;
   const series = primary?.series || [];
   const pacsInfo = pacs?.pacs || null;
-  const ohifEmbedded = !!pacsInfo?.enabled && pacsInfo?.mode === "ohif_embedded";
   const amedixImages = request.image_file_urls || [];
   const comparing = !!comparison && tab === "prior";
   const images = comparing ? comparison.images || [] : amedixImages;
@@ -76,15 +74,7 @@ export default function CaseViewerPanel({ request, pacs, imagingStudies, compari
           <ImageViewer images={images} requestId={comparison.id} />
         ) : (
           <>
-            {ohifEmbedded && pacs && <OhifWorkspace requestId={request.id} status={pacs} />}
-            {pacsInfo?.enabled && pacsInfo?.mode !== "ohif_embedded" && (
-              <div className="flex flex-wrap items-center gap-2">
-                <PacsOpenButton requestId={request.id} pacsStatus={pacsInfo} />
-                <span className="text-[11px] text-muted-foreground">
-                  Opens the verified study in the facility's imaging software in a new tab — this report stays open.
-                </span>
-              </div>
-            )}
+            <RadiAntStudyDownload requestId={request.id} compact />
             {amedixImages.length > 0 ? (
               <ImageViewer images={amedixImages} requestId={request.id} />
             ) : (
@@ -92,9 +82,7 @@ export default function CaseViewerPanel({ request, pacs, imagingStudies, compari
                 <ImageOff className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
                 <p className="text-sm font-medium">No images attached to this request yet</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {pacsInfo?.enabled
-                    ? "Open the study in the facility imaging system above; images the department records in AMedix appear here."
-                    : "The radiology department records the received study images on this request."}
+                  Download the study above to review it in RadiAnt; images the department records in AMedix appear here.
                 </p>
               </div>
             )}
@@ -103,9 +91,7 @@ export default function CaseViewerPanel({ request, pacs, imagingStudies, compari
 
         <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
           <MonitorPlay className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          {ohifEmbedded || (pacsInfo?.enabled && pacsInfo?.mode === "dicomweb")
-            ? "Window/level, measurements, multi-planar reconstruction and series navigation are provided by the facility's connected viewer. The in-app AMedix viewer provides image navigation, zoom and pan only."
-            : "The in-app AMedix viewer provides image navigation, zoom and pan. Window/level, measurements, multi-planar reconstruction and diagnostic DICOM display require the facility's connected imaging system."}
+          Download the study and open it in RadiAnt for full diagnostic display — window/level, measurements, multi-planar reconstruction and series navigation. The in-app AMedix viewer below provides image navigation, zoom and pan only.
         </p>
         {request.image_notes && (
           <p className="text-xs whitespace-pre-wrap rounded-lg bg-muted/50 p-2">
