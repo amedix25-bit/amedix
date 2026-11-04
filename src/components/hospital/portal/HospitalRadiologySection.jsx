@@ -64,10 +64,16 @@ export default function HospitalRadiologySection({ profile, onUpdate }) {
         {enabled && (
           <>
             <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border">
-              <Link to="/radiology-department">
+              <Link to="/radiology-portal">
                 <Button>
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Radiology Department Portal
+                  Open Radiology Portal
+                </Button>
+              </Link>
+              <Link to="/radiology-department">
+                <Button variant="outline">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Department Worklist Portal
                 </Button>
               </Link>
               <p className="text-xs text-muted-foreground">

@@ -34,6 +34,7 @@ const WANTED: Record<string, keyof DicomTags> = {
   "00100030": "patientBirthDate",
   "0020000d": "studyInstanceUid",
   "0020000e": "seriesInstanceUid",
+  "00200011": "seriesNumber",
 };
 
 const LONG_VRS = ["OB", "OW", "OF", "SQ", "UT", "UN", "OD", "OL", "OV", "SR", "UC", "UR"];
@@ -86,18 +87,24 @@ export function parseDicom(bytes: Uint8Array): DicomTags | null {
     if (hex(group, element) === "00020010" && valueLength < 64) {
       const ts = decodeText(bytes.subarray(valueStart, valueStart + valueLength));
       if (ts) tags.transferSyntax = ts;
-      if (/1\.2\.840\.10008\.1\.2\.2$/.test(ts)) {
-        explicitVR = false;
-        little = true;
-      } else if (/1\.2\.840\.10008\.1\.2\.1$/.test(ts)) {
-        explicitVR = true;
-        little = false;
-      } else if (/1\.2\.840\.10008\.1\.2\.1\.99$/.test(ts)) {
-        explicitVR = true;
-        little = false;
-      } else if (/1\.2\.840\.10008\.1\.2\.2\.1\.99$/.test(ts)) {
-        explicitVR = false;
-        little = false;
+      // Exact transfer-syntax UIDs only — never a pattern that could match the
+      // tail of another UID and misread the byte order.
+      const syntax: Record<string, { explicit: boolean; little: boolean }> = {
+        "1.2.840.10008.1.2": { explicit: false, little: true },
+        "1.2.840.10008.1.2.1": { explicit: true, little: true },
+        "1.2.840.10008.1.2.1.99": { explicit: true, little: true },
+        "1.2.840.10008.1.2.2": { explicit: true, little: false },
+      };
+      const chosen = syntax[ts];
+      if (chosen) {
+        explicitVR = chosen.explicit;
+        little = chosen.little;
+      }
+      // A deflated dataset cannot be walked synchronously: stop here so the
+      // import refuses it explicitly instead of reading garbage.
+      if (ts === "1.2.840.10008.1.2.1.99") {
+        pos = len;
+        break;
       }
     }
     pos = valueStart + valueLength;

@@ -136,7 +136,7 @@ function actorFromStaff(user: any, staff: any): RadiologyActor {
     radiologist: null,
     isAdministrator: role === "administrator",
     canReport: role !== "technician",
-    canImport: role !== "radiologist" || true,
+    canImport: true,
   };
 }
 
