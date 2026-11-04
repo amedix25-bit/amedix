@@ -16,6 +16,33 @@
       },
       "description": "The facility administrator (settings are an administrative surface)"
     },
+    "deployment_mode": {
+      "type": "string",
+      "enum": [
+        "demonstration",
+        "verification",
+        "live"
+      ],
+      "default": "demonstration",
+      "description": "How far this facility's radiology deployment has been verified. DEMONSTRATION: fictional patients and synthetic DICOM studies only \u2014 no hospital PACS is contacted and real patient images cannot be imported. VERIFICATION: the facility's own PACS may be tested against its vendor-confirmed endpoint, real patient images still blocked. LIVE: real patients and the facility's own PACS/RadiAnt installation in clinical use. Enforced server-side on every import and PACS action."
+    },
+    "demo_seeded_datetime": {
+      "type": "string",
+      "description": "Date and time the synthetic demonstration studies were last generated (ISO datetime)"
+    },
+    "demo_study_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of synthetic demonstration studies generated for this facility"
+    },
+    "live_activated_datetime": {
+      "type": "string",
+      "description": "Date and time the facility was switched to live operation (ISO datetime)"
+    },
+    "live_activated_by_name": {
+      "type": "string",
+      "description": "Administrator who activated live operation"
+    },
     "default_calling_ae_title": {
       "type": "string",
       "description": "Default Calling AE Title AMedix presents to this facility's PACS"

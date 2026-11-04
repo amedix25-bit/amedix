@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { parseDicom, dicomDate, readZip, isZip } from "../../shared/dicomParser.ts";
 import { resolveRadiologyActor, requestScope, participantIds, auditRadiology } from "../../shared/radiologyPortal.ts";
+import { readDeploymentMode, isDemoPatient, DEMO_CIN_PREFIX } from "../../shared/radiologyDemo.ts";
 
 // Secure manual DICOM import for authorized radiology technicians.
 // Files are uploaded privately from the browser, then read here: the DICOM
@@ -115,6 +116,19 @@ export default async function (req: Request): Promise<Response> {
       return Response.json(
         { error: "Select the imaging request or enter the patient's CIN so the study is attached to the existing patient record." },
         { status: 400 }
+      );
+    }
+
+    // Demonstration gating: until the facility has been verified and switched
+    // to live operation, only the fictional demonstration patients can receive
+    // images. Real patient studies are refused here, server-side.
+    const mode = await readDeploymentMode(base44, actor.hospitalUserId);
+    if (mode !== "live" && !isDemoPatient(patient)) {
+      return Response.json(
+        {
+          error: `This facility is in ${mode} mode. Only synthetic demonstration studies (patient CIN starting ${DEMO_CIN_PREFIX}) can be imported. Real patient images stay blocked until the facility is switched to live operation.`,
+        },
+        { status: 403 }
       );
     }
 

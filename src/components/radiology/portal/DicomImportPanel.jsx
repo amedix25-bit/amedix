@@ -11,7 +11,7 @@ import { Upload, Loader2, FileArchive, AlertTriangle } from "lucide-react";
 // structure, extracts the Study / Series / SOP Instance UIDs, modality, study
 // date and accession number, rejects non-DICOM or mismatched-patient files and
 // detects duplicates before anything is attached to the patient record.
-export default function DicomImportPanel({ onImported }) {
+export default function DicomImportPanel({ onImported, mode }) {
   const { toast } = useToast();
   const [files, setFiles] = useState([]);
   const [requestRef, setRequestRef] = useState("");
@@ -68,6 +68,14 @@ export default function DicomImportPanel({ onImported }) {
         Upload files from the modality or the archive. The study is attached only to the existing patient record
         selected here, and duplicate studies are never created.
       </p>
+
+      {mode && mode !== "live" && (
+        <p className="text-[11px] text-muted-foreground rounded-md border border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/5 px-3 py-2 mb-4">
+          {mode === "demonstration"
+            ? "Demonstration mode: only synthetic studies for the fictional patients (CIN starting DEMO-) are accepted. Real patient images are refused by the server."
+            : "Verification mode: real patient images stay blocked until the facility is switched to live operation."}
+        </p>
+      )}
 
       <div className="grid sm:grid-cols-2 gap-3">
         <div>

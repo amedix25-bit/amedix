@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { secrets } from 'base44:runtime';
 import { resolveRadiologyActor, assertAdministrator, auditRadiology } from "../../shared/radiologyPortal.ts";
+import { readDeploymentMode } from "../../shared/radiologyDemo.ts";
 
 // Radiology Portal administration — staff designations, per-facility PACS
 // connections (traditional DICOM, DICOMweb, Orthanc, manual import), the
@@ -183,6 +184,12 @@ export default async function (req: Request): Promise<Response> {
     if (action === "pacs_save") {
       const denied = assertAdministrator(actor);
       if (denied) return Response.json({ error: denied }, { status: 403 });
+      if ((await readDeploymentMode(base44, actor.hospitalUserId)) === "demonstration") {
+        return Response.json(
+          { error: "PACS integration is disabled while the facility is in demonstration mode. Finish the demonstration stages, then switch the deployment to verification to configure the hospital's own PACS." },
+          { status: 403 }
+        );
+      }
       const id = clean(payload.id, 60);
       const type = ["dicom_network", "dicomweb", "orthanc", "manual_import"].includes(payload.connection_type)
         ? payload.connection_type
@@ -259,6 +266,12 @@ export default async function (req: Request): Promise<Response> {
     if (action === "pacs_test") {
       const denied = assertAdministrator(actor);
       if (denied) return Response.json({ error: denied }, { status: 403 });
+      if ((await readDeploymentMode(base44, actor.hospitalUserId)) === "demonstration") {
+        return Response.json(
+          { error: "No real PACS is contacted in demonstration mode. Switch the deployment to verification to test the facility's own endpoint." },
+          { status: 403 }
+        );
+      }
       const id = clean(payload.id, 60);
       const connection = items(await svc.entities.PACSConnection.filter({ id, hospital_user_id: actor.hospitalUserId }))[0];
       if (!connection) return Response.json({ error: "Connection not found." }, { status: 404 });
@@ -347,6 +360,7 @@ export default async function (req: Request): Promise<Response> {
       const settings = rows[0] || {
         hospital_user_id: actor.hospitalUserId,
         hospital_name: actor.hospitalName,
+        deployment_mode: "demonstration",
         critical_escalation_hours: 2,
         report_release_policy: "manual_release_only",
         audit_retention_days: 365,

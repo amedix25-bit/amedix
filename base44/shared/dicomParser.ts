@@ -148,7 +148,6 @@ export function parseDicom(bytes: Uint8Array): DicomTags | null {
 
     if (valueLength === 0xffffffff) {
       // Undefined-length sequence/item: skip to its delimiter when one exists.
-      if (key === "00200011") tags.seriesNumber = null;
       const marker = little ? [0xfe, 0xff, 0xdd, 0xe0] : [0xff, 0xfe, 0xe0, 0xdd];
       let found = -1;
       for (let i = valueStart; i + 3 < len; i += 1) {
@@ -162,8 +161,9 @@ export function parseDicom(bytes: Uint8Array): DicomTags | null {
       continue;
     }
 
+    // Elements are skipped by their declared length, so walking the whole
+    // stream is cheap even for images and later tags are still read.
     pos = valueStart + valueLength;
-    if (tags.studyInstanceUid && tags.seriesInstanceUid && tags.sopInstanceUid && tags.modality) break;
   }
 
   // Series number is read separately (it is numeric and not in WANTED map).

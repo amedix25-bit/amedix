@@ -10,9 +10,11 @@ import PatientHistoryModule from "@/components/radiology/portal/PatientHistoryMo
 import StaffModule from "@/components/radiology/portal/StaffModule";
 import PacsModule from "@/components/radiology/portal/PacsModule";
 import SettingsModule from "@/components/radiology/portal/SettingsModule";
+import DemoEnvironmentCard from "@/components/radiology/portal/DemoEnvironmentCard";
+import DeploymentModeBanner from "@/components/radiology/portal/DeploymentModeBanner";
 import {
   Loader2, LayoutDashboard, ClipboardList, ScanLine, FileText, Users, Network, Settings,
-  History, ShieldAlert, Inbox,
+  History, ShieldAlert, Inbox, FlaskConical,
 } from "lucide-react";
 
 const NAV = [
@@ -25,6 +27,7 @@ const NAV = [
   { key: "staff", label: "Radiology Staff", icon: Users, adminOnly: true },
   { key: "pacs", label: "PACS Integration", icon: Network, adminOnly: true },
   { key: "settings", label: "Settings & Audit", icon: Settings, adminOnly: true },
+  { key: "demo", label: "Demonstration & Rollout", icon: FlaskConical },
 ];
 
 // AMedix Radiology Portal — the facility radiology department's own workspace:
@@ -108,6 +111,11 @@ export default function RadiologyPortal() {
           </p>
         </div>
 
+        <DeploymentModeBanner
+          mode={context.deployment_mode}
+          onOpenDemo={() => setActive("demo")}
+        />
+
         {active === "dashboard" && (
           <PortalDashboard
             key={refreshKey}
@@ -123,13 +131,23 @@ export default function RadiologyPortal() {
           <StudiesWorklist mode="worklist" role={context.actor.role} canReport={context.actor.canReport} />
         )}
         {active === "viewer" && (
-          <ViewerModule role={context.actor.role} onImported={() => setRefreshKey((k) => k + 1)} />
+          <ViewerModule
+            role={context.actor.role}
+            mode={context.deployment_mode}
+            onImported={() => setRefreshKey((k) => k + 1)}
+          />
         )}
         {active === "reports" && <ReportsModule role={context.actor.role} />}
         {active === "patients" && <PatientHistoryModule />}
         {active === "staff" && <StaffModule />}
-        {active === "pacs" && <PacsModule />}
+        {active === "pacs" && <PacsModule mode={context.deployment_mode} />}
         {active === "settings" && <SettingsModule />}
+        {active === "demo" && (
+          <DemoEnvironmentCard
+            onSeeded={() => setRefreshKey((k) => k + 1)}
+            onModeChange={(mode) => setContext((c) => (c ? { ...c, deployment_mode: mode } : c))}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

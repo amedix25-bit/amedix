@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Network, PlugZap, Trash2, Plus, CheckCircle2, XCircle, HardDriveDownload } from "lucide-react";
+import { Loader2, Network, PlugZap, Trash2, Plus, CheckCircle2, XCircle, HardDriveDownload, Lock } from "lucide-react";
 
 const STATUS_CHIP = {
   connected: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]",
@@ -28,7 +28,7 @@ const EMPTY = {
 // only once the vendor confirmed them; a connection is "Connected" only after
 // the server-side test passes. Credential values live in server-side secrets —
 // this screen stores only the secret's name.
-export default function PacsModule() {
+export default function PacsModule({ mode }) {
   const { toast } = useToast();
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +117,27 @@ export default function PacsModule() {
   const isWeb = form.connection_type === "dicomweb" || form.connection_type === "orthanc";
 
   if (loading) return <div className="py-14 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+
+  // No real PACS is contacted, and no configuration is recorded, while the
+  // facility is still in demonstration mode — enforced again on the server.
+  if (mode === "demonstration") {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Lock className="w-4 h-4 text-muted-foreground" />
+          <h2 className="font-semibold text-sm">PACS integration is disabled in demonstration mode</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          AMedix does not contact a hospital PACS, and no connection can be saved or tested, while the facility is in
+          demonstration mode. Finish and sign off the demonstration stages, then switch the deployment to verification.
+        </p>
+        <p className="text-xs text-muted-foreground mt-3">
+          The hospital keeps its existing imaging software and equipment: RadiAnt on the workstations and the current
+          PACS stay exactly as they are — AMedix only references them.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

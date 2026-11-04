@@ -3,6 +3,7 @@ import {
   resolveRadiologyActor, requestScope, studyScope, auditRadiology, modalityOf, MODALITIES,
 } from "../../shared/radiologyPortal.ts";
 import { canonicalStage, isOverdue } from "../../shared/radiologyWorkflow.ts";
+import { deploymentModeOf } from "../../shared/radiologyDemo.ts";
 
 // Radiology Portal read API — dashboard, worklist, reports, patient history,
 // DICOM study records, viewer launch data and the audit trail. Every response
@@ -63,12 +64,16 @@ export default async function (req: Request): Promise<Response> {
 
     if (action === "context") {
       const canSeeAdmin = !!actor.hospitalUserId && actor.isAdministrator;
-      const [staff, connections] = await Promise.all([
+      const scopeUserId = actor.hospitalUserId || actor.hospitalIds[0] || "";
+      const [staff, connections, settings] = await Promise.all([
         canSeeAdmin
           ? svc.entities.RadiologyStaff.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 50 }).catch(() => ({ items: [] }))
           : Promise.resolve({ items: [] }),
         canSeeAdmin
           ? svc.entities.PACSConnection.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 20 }).catch(() => ({ items: [] }))
+          : Promise.resolve({ items: [] }),
+        scopeUserId
+          ? svc.entities.RadiologySettings.filter({ hospital_user_id: scopeUserId }, { limit: 1 }).catch(() => ({ items: [] }))
           : Promise.resolve({ items: [] }),
       ]);
       return Response.json({
@@ -86,6 +91,7 @@ export default async function (req: Request): Promise<Response> {
         staff_count: items(staff).length,
         pacs_connected: items(connections).filter((c: any) => c.status === "connected").length,
         pacs_configured: items(connections).length,
+        deployment_mode: deploymentModeOf(items(settings)[0] || null),
       });
     }
 

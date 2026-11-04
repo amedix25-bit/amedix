@@ -12,7 +12,7 @@ import { Loader2, Search, ScanLine, ExternalLink, MonitorPlay, HardDrive } from 
 // workstation). Launch URLs are built server-side from the facility's
 // configured template; when nothing is configured the portal says so instead
 // of guessing a viewer address.
-export default function ViewerModule({ role, onImported }) {
+export default function ViewerModule({ role, onImported, mode }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [studies, setStudies] = useState([]);
@@ -195,7 +195,7 @@ export default function ViewerModule({ role, onImported }) {
         </div>
       )}
 
-      {(role === "technician" || role === "administrator") && <DicomImportPanel onImported={onImported} />}
+      {(role === "technician" || role === "administrator") && <DicomImportPanel mode={mode} onImported={onImported} />}
     </div>
   );
 }
