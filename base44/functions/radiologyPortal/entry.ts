@@ -62,9 +62,14 @@ export default async function (req: Request): Promise<Response> {
     const sScope = studyScope(actor);
 
     if (action === "context") {
+      const canSeeAdmin = !!actor.hospitalUserId && actor.isAdministrator;
       const [staff, connections] = await Promise.all([
-        svc.entities.RadiologyStaff.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 50 }).catch(() => ({ items: [] })),
-        svc.entities.PACSConnection.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 20 }).catch(() => ({ items: [] })),
+        canSeeAdmin
+          ? svc.entities.RadiologyStaff.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 50 }).catch(() => ({ items: [] }))
+          : Promise.resolve({ items: [] }),
+        canSeeAdmin
+          ? svc.entities.PACSConnection.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 20 }).catch(() => ({ items: [] }))
+          : Promise.resolve({ items: [] }),
       ]);
       return Response.json({
         actor: {
@@ -100,8 +105,10 @@ export default async function (req: Request): Promise<Response> {
           svc.entities.ImagingRequest.count(and([scope, { workflow_status: { $in: expandStages(doneStages) } }])).catch(() => 0),
           svc.entities.ImagingRequest.count(and([scope, { is_critical: true }])).catch(() => 0),
           svc.entities.ImagingRequest.aggregate({ query: scope, groupBy: "scan_type" }).catch(() => ({ rows: [] })),
-          svc.entities.RadiologyAuditLog.filter({ hospital_user_id: actor.hospitalUserId }, { sort: "-datetime", limit: 8 }).catch(() => ({ items: [] })),
-          svc.entities.PACSConnection.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 20 }).catch(() => ({ items: [] })),
+          svc.entities.RadiologyAuditLog.filter({ participant_user_ids: user.id }, { sort: "-datetime", limit: 8 }).catch(() => ({ items: [] })),
+          actor.hospitalUserId
+            ? svc.entities.PACSConnection.filter({ hospital_user_id: actor.hospitalUserId }, { limit: 20 }).catch(() => ({ items: [] }))
+            : Promise.resolve({ items: [] }),
           svc.entities.ImagingStudy.count(sScope).catch(() => 0),
         ]);
 
