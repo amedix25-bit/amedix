@@ -96,6 +96,8 @@ export default async function(req: Request): Promise<Response> {
       preparation_notes: request.preparation_notes || "",
       image_file_urls: request.image_file_urls || [],
       image_notes: request.image_notes || "",
+      study_instance_uid: request.study_instance_uid || "",
+      accession_number: request.accession_number || "",
       report: request.report || "",
       report_file_url: request.report_file_url || "",
       pdf_url: request.pdf_url || "",
@@ -117,6 +119,27 @@ export default async function(req: Request): Promise<Response> {
         svc.entities.CriticalFindingLog.filter({ imaging_request_id: request.id }, { limit: 100 }),
       ]);
     const patient = patientPage.items[0] || null;
+
+    // Matched imaging studies and their series — only the studies that are
+    // actually linked to THIS request (by request id or by the verified Study
+    // Instance UID). Nothing is inferred: an unmatched request returns none.
+    const studyPage = await svc.entities.ImagingStudy.filter(
+      request.study_instance_uid
+        ? { $or: [{ imaging_request_id: request.id }, { study_instance_uid: request.study_instance_uid }] }
+        : { imaging_request_id: request.id },
+      { limit: 5 }
+    );
+    const matchedStudies = studyPage.items || [];
+    const seriesPage = matchedStudies.length
+      ? await svc.entities.ImagingSeries.filter(
+          { study_id: { $in: matchedStudies.map((s: any) => s.id) } },
+          { sort: "series_number", limit: 200 }
+        )
+      : { items: [] as any[] };
+
+    // Report lifecycle state for this study — drafts (including a preliminary
+    // report awaiting signature) across the facility's radiologists.
+    const draftsPage = await svc.entities.ReportDraft.filter({ request_id: request.id }, { limit: 50 });
 
     const prior = priorRequestsPage.items
       .filter((p: any) => p.id !== request.id && ["final_report", "released"].includes(canonicalStage(p.workflow_status)))
@@ -174,6 +197,37 @@ export default async function(req: Request): Promise<Response> {
         radiologist_name: v.radiologist_name || "",
         is_amendment: !!v.is_amendment,
         amendment_reason: v.amendment_reason || "",
+      })),
+      imaging_studies: matchedStudies.map((s: any) => ({
+        id: s.id,
+        study_instance_uid: s.study_instance_uid || "",
+        accession_number: s.accession_number || "",
+        modality: s.modality || "",
+        study_date: s.study_date || "",
+        study_description: s.study_description || "",
+        series_count: s.series_count || 0,
+        image_count: s.image_count || 0,
+        status: s.status || "",
+        identity_check: s.identity_check || "",
+        series: seriesPage.items
+          .filter((x: any) => x.study_id === s.id)
+          .map((x: any) => ({
+            series_instance_uid: x.series_instance_uid || "",
+            series_number: x.series_number ?? null,
+            modality: x.modality || "",
+            description: x.series_description || "",
+            body_part: x.body_part || "",
+            image_count: x.sop_instance_count || 0,
+          })),
+      })),
+      draft_reports: draftsPage.items.map((d: any) => ({
+        id: d.id,
+        radiologist_user_id: d.radiologist_user_id || "",
+        radiologist_name: d.radiologist_name || "",
+        status: d.status || "draft",
+        preliminary_datetime: d.preliminary_datetime || "",
+        preliminary_by_name: d.preliminary_by_name || "",
+        updated_datetime: d.updated_datetime || "",
       })),
       critical_communications: commLogsPage.items.map((l: any) => ({
         id: l.id,

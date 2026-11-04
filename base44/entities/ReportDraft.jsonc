@@ -20,7 +20,24 @@
     "sections": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Report section values keyed by section key (findings, impressions, measurements, observations, notes)"
+      "description": "Report section values keyed by section key (indication, examination_performed, technique, comparison, findings, impressions, recommendations, critical_findings)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "preliminary"
+      ],
+      "default": "draft",
+      "description": "DRAFT: work in progress, editable. PRELIMINARY: the radiologist submitted the preliminary report \u2014 it is complete enough for the case to be waiting for electronic signature, which is what creates the signed, immutable report version."
+    },
+    "preliminary_datetime": {
+      "type": "string",
+      "description": "Date and time the preliminary report was submitted for signature (ISO datetime)"
+    },
+    "preliminary_by_name": {
+      "type": "string",
+      "description": "Radiologist who submitted the preliminary report"
     },
     "updated_datetime": {
       "type": "string",

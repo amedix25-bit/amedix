@@ -62,6 +62,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   const [amendmentReason, setAmendmentReason] = useState("");
   const [suggestion, setSuggestion] = useState(null); // { section, text }
   const [savedJson, setSavedJson] = useState(JSON.stringify(EMPTY));
+  const [draftStatus, setDraftStatus] = useState("draft");
 
   const stage = study.stage;
   const assignedToMe = study.assigned_radiologist_user_id === user.id;
@@ -92,6 +93,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
         if (!cancelled && drafts.length) {
           loaded = mergeLegacyDraft(drafts[0].sections || {});
           setHasDraft(true);
+          setDraftStatus(drafts[0].status === "preliminary" ? "preliminary" : "draft");
         }
       } catch (err) {
         console.error(err);
@@ -183,10 +185,27 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
 
   const saveDraft = () =>
     run("draft", async () => {
-      await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections });
+      await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections, status: "draft" });
       setSavedJson(JSON.stringify(sections));
       setHasDraft(true);
+      setDraftStatus("draft");
     }, "Draft saved");
+
+  // Preliminary report — the interpretation is complete enough that the case
+  // waits for the radiologist's electronic signature, which creates the signed,
+  // immutable report version.
+  const submitPreliminary = () => {
+    if (!(sections.findings || "").trim() || !(sections.impressions || "").trim()) {
+      toast({ title: "Findings and impression are required for a preliminary report.", variant: "destructive" });
+      return;
+    }
+    run("preliminary", async () => {
+      await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections, status: "preliminary" });
+      setSavedJson(JSON.stringify(sections));
+      setHasDraft(true);
+      setDraftStatus("preliminary");
+    }, "Preliminary report submitted — the case is now awaiting your signature");
+  };
 
   const reopenDraft = async () => {
     setBusy("reopen");
@@ -194,6 +213,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       const drafts = await base44.entities.ReportDraft.filter({ request_id: study.id, radiologist_user_id: user.id });
       if (drafts.length) {
         setSections(mergeLegacyDraft(drafts[0].sections || {}));
+        setDraftStatus(drafts[0].status === "preliminary" ? "preliminary" : "draft");
         toast({ title: "Draft reopened" });
       }
     } finally {
@@ -327,6 +347,10 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   ) : closed && latestVersion ? (
     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700">
       {latestVersion.is_amendment ? "Amended" : "Finalized"} v{latestVersion.version}
+    </span>
+  ) : hasDraft && draftStatus === "preliminary" ? (
+    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700">
+      Preliminary — awaiting signature
     </span>
   ) : hasDraft ? (
     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">Draft</span>
@@ -521,6 +545,9 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
           </Button>
           <Button variant="ghost" onClick={reopenDraft} disabled={!!busy} title="Reopen the last saved draft">
             {spinner("reopen")} <FileEdit className="w-4 h-4 mr-1" /> Reopen Draft
+          </Button>
+          <Button variant="outline" onClick={submitPreliminary} disabled={!!busy}>
+            {spinner("preliminary")} <FileSignature className="w-4 h-4 mr-1" /> Submit Preliminary
           </Button>
           <Button variant="outline" onClick={() => setShowPreview(true)} disabled={!!busy}>
             <Eye className="w-4 h-4 mr-1" /> Preview

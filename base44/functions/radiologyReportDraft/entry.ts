@@ -55,6 +55,18 @@ export default async function(req: Request): Promise<Response> {
       updated_datetime: now,
     };
 
+    // Report lifecycle: a plain save keeps whatever state the draft is in, so
+    // autosave never silently downgrades a submitted preliminary report. The
+    // radiologist explicitly submits a preliminary report, which is what makes
+    // the case wait for electronic signature.
+    if (payload.status === "preliminary" || payload.status === "draft") {
+      draftData.status = payload.status;
+      if (payload.status === "preliminary") {
+        draftData.preliminary_datetime = now;
+        draftData.preliminary_by_name = radiologist.full_name;
+      }
+    }
+
     if (payload.action === "delete") {
       const existing = await base44.asServiceRole.entities.ReportDraft.filter({
         request_id: request.id,
