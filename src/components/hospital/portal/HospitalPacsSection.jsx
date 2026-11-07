@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +122,14 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
   const [showOnboarding, setShowOnboarding] = useState(!profile.pacs_onboarding_completed || profile.pacs_onboarding_completed.length === 0);
   const [completedSteps, setCompletedSteps] = useState(profile.pacs_onboarding_completed || []);
 
+  // Saving a configuration change invalidates a previous RadiAnt verification
+  // server-side, so the panel must always reflect the stored result — never a
+  // stale "confirmed" from before the change.
+  useEffect(() => {
+    const stored = profile.radiant_last_test_result;
+    setRadiantResult(stored && stored.outcome ? stored : null);
+  }, [profile.radiant_last_test_result]);
+
   const status = deriveStatus({ ...profile, ...form });
   const statusMeta = STATUS_META[status] || STATUS_META.pending_configuration;
   const configVersion = Number(profile.pacs_config_version) || 1;
@@ -220,15 +228,7 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
         test_study_uid: form.radiant_test_study_uid.trim(),
         test_accession_number: form.radiant_test_accession_number.trim(),
       });
-      const data = res.data || {};
-      setRadiantResult(data);
-      if (data.launch_url) {
-        try {
-          window.location.href = data.launch_url;
-        } catch {
-          // The browser may block an unrecognised protocol.
-        }
-      }
+      setRadiantResult(res.data || {});
     } catch (err) {
       const data = (err.response && err.response.data) || {};
       setRadiantResult({ outcome: "error", confirmed: false, message: data.error || data.message || err.message, checks: [] });
@@ -616,6 +616,86 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
         Saving any endpoint, route, authentication, enable-state or integration-type change invalidates the previous
         verification — the integration returns to Pending configuration until the end-to-end test passes again.
       </p>
+
+      {/* Test RadiAnt Launch — separate from the connection test */}
+      {form.pacs_integration_type === "radiant" && (
+        <div className="rounded-lg border border-border p-3 space-y-2">
+          <p className="text-sm font-semibold flex items-center gap-1.5">
+            <MonitorPlay className="w-4 h-4 text-primary" /> Test RadiAnt Launch
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Separate from the connection test: this sends a launch request for an approved test study to the browser on
+            this workstation. Save any configuration change first. Nothing is recorded as a successful launch until you
+            confirm below that the correct examination actually opened.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-2">
+            <Input
+              value={form.radiant_test_study_uid}
+              onChange={set("radiant_test_study_uid")}
+              placeholder="Test Study Instance UID"
+            />
+            <Input
+              value={form.radiant_test_accession_number}
+              onChange={set("radiant_test_accession_number")}
+              placeholder="Test accession number (if the URL uses it)"
+            />
+          </div>
+          <Button type="button" variant="outline" onClick={runRadiantTest} disabled={radiantBusy || saving}>
+            {radiantBusy ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <MonitorPlay className="w-4 h-4 mr-1.5" />}
+            Test RadiAnt Launch
+          </Button>
+
+          {radiantResult && (
+            <div className={`rounded-lg border p-3 space-y-2 ${
+              radiantResult.outcome === "launch_confirmed"
+                ? "border-emerald-200 bg-emerald-50"
+                : radiantResult.outcome === "launch_failed" || radiantResult.outcome === "error"
+                  ? "border-red-200 bg-red-50"
+                  : "border-amber-200 bg-amber-50"
+            }`}>
+              <p className="text-xs">{radiantResult.message}</p>
+              {(radiantResult.checks || []).map((c, i) => (
+                <CheckRow key={i} check={c} />
+              ))}
+              {radiantResult.outcome === "launch_requested" && (
+                <div className="space-y-1.5 pt-1">
+                  {radiantResult.launch_url && (
+                    <a
+                      href={radiantResult.launch_url}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                    >
+                      <MonitorPlay className="w-3.5 h-3.5" /> Open the test study in RadiAnt
+                    </a>
+                  )}
+                  <p className="text-xs font-semibold">Did the correct examination open in RadiAnt?</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" onClick={() => confirmRadiant(true)} disabled={radiantBusy}>
+                      Yes — the correct study opened
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => confirmRadiant(false)} disabled={radiantBusy}>
+                      No — it did not open
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    If RadiAnt is not installed on this computer, or its own PACS connection is not configured, choose
+                    “No” — the integration stays Pending configuration.
+                  </p>
+                </div>
+              )}
+              {radiantResult.outcome === "launch_confirmed" && (
+                <p className="text-xs font-semibold text-emerald-800">
+                  Recorded — the RadiAnt launch is verified for this facility.
+                </p>
+              )}
+              {radiantResult.outcome === "launch_failed" && (
+                <p className="text-xs font-semibold text-red-800">
+                  Recorded as not confirmed — the integration stays Pending configuration until a launch test succeeds.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Test result — every check reported separately */}
       {testResult && (
