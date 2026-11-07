@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   MonitorPlay, CheckCircle2, XCircle, HelpCircle, Copy, RotateCcw,
 } from "lucide-react";
@@ -137,17 +137,11 @@ export default function RadiAntLaunchOnlyTest({ profile }) {
     setResult(stored && stored.outcome ? stored : null);
   }, [profile && profile.radiant_launch_only_test_result]);
 
-  // The existing control is a real radiant:// anchor: the trusted user click
-  // launches it through native browser navigation, without a synthetic click,
-  // preventDefault, form submission, validation or backend request. Defer only
-  // the confirmation display until after the browser's default link action.
-  const handleTest = (event) => {
-    event.stopPropagation();
-    window.setTimeout(() => {
-      setResult(buildResult("launch_requested", null));
-    }, 0);
-  };
-
+  // The launch control carries NO handler: it is a plain <a href="radiant://">,
+  // so the browser performs its own default navigation exactly as it does for a
+  // hand-written HTML link. No preventDefault, no synthetic click, no timeout,
+  // no form submission, no validation and no backend call. Only the operator
+  // confirmation below changes state, and it never triggers a launch.
   const confirm = (confirmed) => {
     setResult(buildResult(confirmed ? "launch_only_confirmed" : "launch_only_failed", confirmed));
     toast({
@@ -179,12 +173,38 @@ export default function RadiAntLaunchOnlyTest({ profile }) {
         no patient images. Nothing is recorded as successful automatically.
       </p>
 
-      <Button asChild variant="outline">
-        <a href={LAUNCH_ONLY_URL} onClick={handleTest}>
-          <MonitorPlay className="w-4 h-4 mr-1.5" />
-          Test RadiAnt Application Launch
+      {/* A real HTML anchor to the registered protocol — nothing intercepts it. */}
+      <a
+        href={LAUNCH_ONLY_URL}
+        className={buttonVariants({ variant: "outline" })}
+        aria-label="Launch the installed RadiAnt DICOM Viewer application"
+      >
+        <MonitorPlay className="w-4 h-4 mr-1.5" />
+        Test RadiAnt Application Launch
+      </a>
+
+      {/* Operator confirmation — deliberately separate from the launch link. */}
+      <div className="space-y-1.5 pt-1">
+        <p className="text-xs font-semibold">Did the RadiAnt application open?</p>
+        <a
+          href={LAUNCH_ONLY_URL}
+          className="block text-[11px] font-medium text-primary underline underline-offset-4"
+        >
+          Open radiant:// again
         </a>
-      </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" size="sm" onClick={() => confirm(true)}>
+            Yes, RadiAnt Opened
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => confirm(false)}>
+            No, RadiAnt Did Not Open
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          AMedix cannot detect whether Windows started RadiAnt, so your answer is the only record — and it stays an
+          application launch result, never a PACS verification.
+        </p>
+      </div>
 
       {result && (
         <div className={`rounded-lg border p-3 space-y-2 ${
@@ -201,27 +221,6 @@ export default function RadiAntLaunchOnlyTest({ profile }) {
           {(result.checks || []).map((c, i) => (
             <CheckRow key={i} check={c} />
           ))}
-
-          {result.outcome === "launch_requested" && (
-            <div className="space-y-1.5 pt-1">
-              <p className="text-xs font-semibold">Did the RadiAnt application open?</p>
-              <a href={LAUNCH_ONLY_URL} onClick={handleTest} className="text-[11px] font-medium text-primary underline underline-offset-4">
-                Open radiant:// again
-              </a>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" onClick={() => confirm(true)}>
-                  Yes, RadiAnt Opened
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => confirm(false)}>
-                  No, RadiAnt Did Not Open
-                </Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                AMedix cannot detect whether Windows started RadiAnt, so your answer is the only record — and it stays
-                an application launch result, never a PACS verification.
-              </p>
-            </div>
-          )}
 
           {result.outcome === "launch_only_confirmed" && (
             <p className="text-xs font-semibold text-emerald-800">
@@ -252,11 +251,12 @@ export default function RadiAntLaunchOnlyTest({ profile }) {
                 <Button type="button" size="sm" variant="outline" onClick={copyLink}>
                   <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy the launch link
                 </Button>
-                <Button asChild size="sm" variant="ghost">
-                  <a href={LAUNCH_ONLY_URL} onClick={handleTest}>
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try the launch again
-                  </a>
-                </Button>
+                <a
+                  href={LAUNCH_ONLY_URL}
+                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try the launch again
+                </a>
               </div>
             </div>
           )}
