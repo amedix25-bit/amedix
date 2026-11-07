@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
   MonitorPlay, CheckCircle2, XCircle, HelpCircle, Copy, RotateCcw,
@@ -70,9 +69,8 @@ const operatorCheck = (confirmed) => ({
     : "The administrator reported that the RadiAnt application did not open.",
 });
 
-// The result shown to the administrator, built in the browser from what the
-// operator saw. It is identical in shape to the stored record so the panel
-// never depends on a server round-trip to display an outcome.
+// This launch-only test and its operator confirmation stay in browser state.
+// Neither action calls the clinical PACS service or changes integration status.
 function buildResult(outcome, confirmed) {
   const now = new Date().toISOString();
   const checks = BASE_CHECKS.map((c) => ({ ...c }));
@@ -124,14 +122,13 @@ function CheckRow({ check }) {
   );
 }
 
-export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
+export default function RadiAntLaunchOnlyTest({ profile }) {
   const { toast } = useToast();
   const [result, setResult] = useState(
     profile && profile.radiant_launch_only_test_result && profile.radiant_launch_only_test_result.outcome
       ? profile.radiant_launch_only_test_result
       : null
   );
-  const [notSaved, setNotSaved] = useState(false);
 
   // Always show what is actually stored — a launch-only result is never
   // upgraded to a success by the interface.
@@ -140,63 +137,26 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
     setResult(stored && stored.outcome ? stored : null);
   }, [profile && profile.radiant_launch_only_test_result]);
 
-  // Opens the installed RadiAnt application with the bare registered protocol,
-  // synchronously inside the user's click so the browser treats it as a direct
-  // action. It carries no study, no PACS detail and no patient data.
-  const openRadiAnt = () => {
-    const link = document.createElement("a");
-    link.href = LAUNCH_ONLY_URL;
-    link.rel = "noopener";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  };
-
-  // Storing the outcome is best effort only: the answer shown on screen comes
-  // from this workstation, so a storage problem can never replace it with an
-  // unrelated message.
-  const persist = async (payload) => {
-    try {
-      const res = await base44.functions.invoke("radiologyPacsAccess", payload);
-      const data = res.data || {};
-      if (data.outcome) {
-        setResult(data);
-        setNotSaved(false);
-        if (onUpdate && data.profile) onUpdate(data.profile);
-      }
-    } catch {
-      setNotSaved(true);
-    }
-  };
-
-  const handleTest = () => {
-    openRadiAnt();
-    setNotSaved(false);
-    setResult(buildResult("launch_requested", null));
-    persist({
-      action: "radiant_launch_only_test",
-      launch_only: true,
-      launch_step: "test",
-      hospital_profile_id: profile && profile.id,
-    });
+  // The existing control is a real radiant:// anchor: the trusted user click
+  // launches it through native browser navigation, without a synthetic click,
+  // preventDefault, form submission, validation or backend request. Defer only
+  // the confirmation display until after the browser's default link action.
+  const handleTest = (event) => {
+    event.stopPropagation();
+    window.setTimeout(() => {
+      setResult(buildResult("launch_requested", null));
+    }, 0);
   };
 
   const confirm = (confirmed) => {
     setResult(buildResult(confirmed ? "launch_only_confirmed" : "launch_only_failed", confirmed));
-    setNotSaved(false);
     toast({
       title: confirmed ? "RadiAnt application launch recorded" : "RadiAnt did not open",
       description: confirmed
         ? "An application launch result only — not a PACS connection."
         : "The application launch is recorded as not confirmed.",
     });
-    persist({
-      action: "radiant_launch_only_confirm",
-      launch_only: true,
-      launch_step: "confirm",
-      hospital_profile_id: profile && profile.id,
-      confirmed,
-    });
+
   };
 
   const copyLink = async () => {
@@ -219,9 +179,11 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
         no patient images. Nothing is recorded as successful automatically.
       </p>
 
-      <Button type="button" variant="outline" onClick={handleTest}>
-        <MonitorPlay className="w-4 h-4 mr-1.5" />
-        Test RadiAnt Application Launch
+      <Button asChild variant="outline">
+        <a href={LAUNCH_ONLY_URL} onClick={handleTest}>
+          <MonitorPlay className="w-4 h-4 mr-1.5" />
+          Test RadiAnt Application Launch
+        </a>
       </Button>
 
       {result && (
@@ -240,16 +202,10 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
             <CheckRow key={i} check={c} />
           ))}
 
-          {notSaved && (
-            <p className="text-[11px] text-muted-foreground">
-              Shown for this workstation only — the facility record could not be updated just now.
-            </p>
-          )}
-
           {result.outcome === "launch_requested" && (
             <div className="space-y-1.5 pt-1">
               <p className="text-xs font-semibold">Did the RadiAnt application open?</p>
-              <a href={LAUNCH_ONLY_URL} className="text-[11px] font-medium text-primary underline underline-offset-4">
+              <a href={LAUNCH_ONLY_URL} onClick={handleTest} className="text-[11px] font-medium text-primary underline underline-offset-4">
                 Open radiant:// again
               </a>
               <div className="flex flex-wrap gap-2">
@@ -296,8 +252,10 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
                 <Button type="button" size="sm" variant="outline" onClick={copyLink}>
                   <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy the launch link
                 </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={handleTest}>
-                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try the launch again
+                <Button asChild size="sm" variant="ghost">
+                  <a href={LAUNCH_ONLY_URL} onClick={handleTest}>
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try the launch again
+                  </a>
                 </Button>
               </div>
             </div>
