@@ -78,14 +78,29 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
     setResult(stored && stored.outcome ? stored : null);
   }, [profile.radiant_launch_only_test_result]);
 
-  // Runs inside the click on the radiant:// link: the protocol hand-off stays a
-  // direct user action, and the attempt is recorded as requested only.
+  // Opens the installed RadiAnt application with the bare registered protocol,
+  // synchronously inside the user's click so the browser treats it as a direct
+  // action. It carries no study, no PACS detail and no patient data.
+  const openRadiAnt = () => {
+    const link = document.createElement("a");
+    link.href = LAUNCH_ONLY_URL;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  // Records the attempt as REQUESTED only. This call is independent of every
+  // imaging-request field — it sends no request id, patient, study UID,
+  // accession number or PACS setting, and the server routes it on its own flag.
   const recordAttempt = async () => {
     setBusy(true);
     setError("");
     try {
       const res = await base44.functions.invoke("radiologyPacsAccess", {
         action: "radiant_launch_only_test",
+        launch_only: true,
+        launch_step: "test",
         hospital_profile_id: profile.id,
       });
       setResult(res.data || {});
@@ -97,11 +112,20 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
     }
   };
 
+  // The click itself starts RadiAnt (a permitted user action) and then records
+  // the attempt — no imaging request is selected or required for this test.
+  const handleTest = () => {
+    openRadiAnt();
+    recordAttempt();
+  };
+
   const confirm = async (confirmed) => {
     setBusy(true);
     try {
       const res = await base44.functions.invoke("radiologyPacsAccess", {
         action: "radiant_launch_only_confirm",
+        launch_only: true,
+        launch_step: "confirm",
         hospital_profile_id: profile.id,
         confirmed,
       });
@@ -144,19 +168,10 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
         no patient images. Nothing is recorded as successful automatically.
       </p>
 
-      {busy ? (
-        <Button type="button" variant="outline" disabled>
-          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Sending the launch request…
-        </Button>
-      ) : (
-        <a
-          href={LAUNCH_ONLY_URL}
-          onClick={recordAttempt}
-          className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-transparent px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <MonitorPlay className="w-4 h-4" /> Test RadiAnt Application Launch
-        </a>
-      )}
+      <Button type="button" variant="outline" onClick={handleTest} disabled={busy}>
+        {busy ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <MonitorPlay className="w-4 h-4 mr-1.5" />}
+        Test RadiAnt Application Launch
+      </Button>
 
       {error && <p className="text-xs text-red-700">{error}</p>}
 
@@ -179,6 +194,9 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
           {result.outcome === "launch_requested" && (
             <div className="space-y-1.5 pt-1">
               <p className="text-xs font-semibold">Did the RadiAnt application open?</p>
+              <a href={LAUNCH_ONLY_URL} className="text-[11px] font-medium text-primary underline underline-offset-4">
+                Open radiant:// again
+              </a>
               <div className="flex flex-wrap gap-2">
                 <Button type="button" size="sm" onClick={() => confirm(true)} disabled={busy}>
                   Yes, RadiAnt Opened
@@ -223,7 +241,7 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
                 <Button type="button" size="sm" variant="outline" onClick={copyLink}>
                   <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy the launch link
                 </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={recordAttempt} disabled={busy}>
+                <Button type="button" size="sm" variant="ghost" onClick={handleTest} disabled={busy}>
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try the launch again
                 </Button>
               </div>

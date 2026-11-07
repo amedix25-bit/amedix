@@ -298,7 +298,16 @@ export default async function(req: Request): Promise<Response> {
     if (!user) return json({ error: "Unauthorized" }, 401);
     const body = await req.json().catch(() => ({}));
     const payload = body && typeof body === "object" ? body : {};
-    const action = String(payload.action || "status");
+    // The launch-only RadiAnt test is identified by its own flag as well as by
+    // its action name, so this independent test can never fall through to any
+    // imaging-request handling (which would report "Select the imaging request").
+    const launchOnlyAction =
+      payload.launch_only === true
+        ? String(payload.launch_step || "") === "confirm"
+          ? "radiant_launch_only_confirm"
+          : "radiant_launch_only_test"
+        : "";
+    const action = String(payload.action || launchOnlyAction || "status");
     const requestId = String(payload.request_id || "").trim();
 
     // ===== CONFIGURATION SAVE — facility-administrator-only, server-validated.
