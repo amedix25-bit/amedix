@@ -39,11 +39,12 @@
     "pacs_integration_enabled": {
       "type": "boolean",
       "default": false,
-      "description": "Whether the facility's EXISTING imaging system (PACS / RIS / web viewer) is connected to AMedix. Configured by the hospital administrator after confirming the vendor's supported integration method \u2014 never assumed. When false, radiologists see images stored in AMedix only."
+      "description": "Whether the facility's EXISTING imaging system (PACS / RIS / web viewer / RadiAnt) is connected to AMedix. Configured by the hospital administrator after confirming the vendor's supported integration method \u2014 never assumed. When false, radiologists see images stored in AMedix only."
     },
     "pacs_integration_type": {
       "type": "string",
       "enum": [
+        "radiant",
         "dicomweb",
         "web_viewer",
         "desktop_app",
@@ -51,7 +52,7 @@
         "none"
       ],
       "default": "none",
-      "description": "How the facility's existing imaging software integrates: dicomweb \u2014 DICOMweb (QIDO/WADO) endpoint verified against the vendor; web_viewer \u2014 browser viewer opened through a launch URL template; desktop_app \u2014 desktop software that cannot be embedded (studies are opened manually by reference); ohif_embedded \u2014 the facility's OWN approved OHIF Viewer deployment embedded in the Imaging Viewer tab. Set only after the vendor confirms support."
+      "description": "How the facility's existing imaging software integrates: radiant \u2014 the RadiAnt DICOM Viewer installed on radiologists' Windows workstations is opened with a radiant:// launch URL and retrieves the study from the facility PACS directly (no images are stored in AMedix); dicomweb \u2014 DICOMweb (QIDO/WADO) endpoint verified against the vendor; web_viewer \u2014 browser viewer opened through a launch URL template; desktop_app \u2014 desktop software that cannot be embedded (studies are opened manually by reference); ohif_embedded \u2014 the facility's OWN approved OHIF Viewer deployment embedded in the Imaging Viewer tab. Set only after the vendor confirms support."
     },
     "pacs_vendor_name": {
       "type": "string",
@@ -61,9 +62,34 @@
       "type": "string",
       "description": "Vendor-documented viewer launch URL template with placeholders {study_instance_uid}, {accession_number}, {request_id}, {launch_token}. Substituted server-side only \u2014 the template and any vendor credentials never reach the browser. Patient identifiers (names, CINs) are never permitted in viewer URLs."
     },
+    "pacs_radiant_launch_template": {
+      "type": "string",
+      "description": "RadiAnt DICOM Viewer launch URL using the radiant:// custom URL protocol, e.g. radiant://?n=pstv&v=0020000D&v=%22{study_instance_uid}%22 or the accession variant radiant://?n=pstv&v=00080050&v=%22{accession_number}%22. Only {study_instance_uid} and {accession_number} placeholders are permitted, and the exact syntax must be verified against RadiAnt's official documentation by the PACS administrator before clinical use. Built server-side; never carries patient identifiers or credentials."
+    },
+    "pacs_host": {
+      "type": "string",
+      "description": "PACS IP address or hostname, recorded from the PACS administrator for the facility's integration record. RadiAnt on each workstation retrieves the study directly from this PACS \u2014 AMedix never contacts it with DICOM networking."
+    },
+    "pacs_port": {
+      "type": "integer",
+      "description": "PACS DICOM port, typically 104 or 11112 \u2014 confirmed by the PACS administrator"
+    },
+    "pacs_called_ae_title": {
+      "type": "string",
+      "description": "PACS AE Title (the application entity queried on the facility PACS) \u2014 confirmed by the PACS administrator"
+    },
+    "pacs_calling_ae_title": {
+      "type": "string",
+      "description": "Calling AE Title the facility expects from the viewing workstation \u2014 confirmed by the PACS administrator"
+    },
+    "radiant_last_test_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Result of the last Test RadiAnt Launch \u2014 { tested_datetime, outcome (launch_requested / launch_confirmed / launch_failed), confirmed (true only when the operator confirmed the correct examination opened in RadiAnt), test_study_uid, test_accession_number, launcher_name, checks: [{key, label, outcome (passed/failed/not_tested), message}], message }. A launch request is never recorded as a successful launch without the operator's confirmation."
+    },
     "pacs_dicomweb_base_url": {
       "type": "string",
-      "description": "DICOMweb (QIDO-RS) base URL of the facility PACS, used server-side to VERIFY study availability before images are marked as available. Credentials, when the vendor requires them, are added as server-side secrets \u2014 never stored here in browser-readable form."
+      "description": "OPTIONAL DICOMweb (QIDO-RS) base URL of the facility PACS, used server-side to VERIFY study availability before a study is opened. Not required for RadiAnt, which retrieves studies directly from the PACS. Credentials, when the vendor requires them, are added as server-side secrets \u2014 never stored here in browser-readable form."
     },
     "pacs_dicomweb_auth_type": {
       "type": "string",
@@ -109,7 +135,7 @@
     "pacs_last_test_result": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Result of the last connection test \u2014 { tested_datetime, outcome (connected/failed/pending_configuration), simulated (true when the result is a development-mode SIMULATION, never a real verification), checks: [{key, label, outcome (passed/failed/not_tested), message}], message }. Simulated results are clearly flagged and never set the integration to Connected."
+      "description": "Result of the last server-side connection test \u2014 { tested_datetime, outcome (connected/failed/pending_configuration), simulated (true when the result is a development-mode SIMULATION, never a real verification), checks: [{key, label, outcome (passed/failed/not_tested), message}], message }. Simulated results are clearly flagged and never set the integration to Connected."
     },
     "pacs_onboarding_completed": {
       "type": "array",

@@ -2,6 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { secrets } from 'base44:runtime';
 import { authorizeRadiologyStudy } from "../../shared/radiologyStudyAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import {
+  RADIANT_TEMPLATE_STUDY_UID,
+  buildRadiantLaunchUrl,
+  radiantTemplateIssue,
+  radiantTemplateNeeds,
+} from "../../shared/radiantViewer.ts";
 
 // Imaging Viewer integration — secure bridge to the facility's EXISTING
 // imaging software (PACS / RIS / web viewer / desktop application).
@@ -107,6 +113,18 @@ function derivePacsStatus(h: any): string {
     return configured ? "disabled" : "development_mode";
   }
   const type = String(h.pacs_integration_type || "none");
+  if (type === "radiant") {
+    // RadiAnt is verified in TWO independent steps: the desktop launch itself
+    // (operator-confirmed) and, only when a DICOMweb endpoint is recorded, the
+    // server-side archive checks. Both must pass before the integration counts
+    // as functional — a launch request alone never does.
+    const launch = String((h.radiant_last_test_result || {}).outcome || "");
+    if (launch === "launch_failed") return "failed";
+    if (launch !== "launch_confirmed") return "pending_configuration";
+    if (!String(h.pacs_dicomweb_base_url || "").trim()) return "connected";
+    const dicom = String((h.pacs_last_test_result || {}).outcome || "");
+    return dicom === "connected" ? "connected" : dicom === "failed" ? "failed" : "pending_configuration";
+  }
   if (type === "ohif_embedded") {
     const s = String(h.ohif_connection_status || "pending_configuration");
     return s === "connected" ? "connected" : s === "verification_failed" ? "failed" : "pending_configuration";
@@ -295,7 +313,7 @@ export default async function(req: Request): Promise<Response> {
       const config = payload.config && typeof payload.config === "object" ? payload.config : {};
       const enabled = !!config.pacs_integration_enabled;
       const type = enabled ? String(config.pacs_integration_type || "none") : "none";
-      if (enabled && !["dicomweb", "web_viewer", "desktop_app", "ohif_embedded"].includes(type)) {
+      if (enabled && !["radiant", "dicomweb", "web_viewer", "desktop_app", "ohif_embedded"].includes(type)) {
         return json({ error: "Unknown integration type." }, 400);
       }
       const vendor = String(config.pacs_vendor_name || "").trim();
@@ -307,11 +325,36 @@ export default async function(req: Request): Promise<Response> {
       const authType = String(config.pacs_dicomweb_auth_type || "none");
       const authSecret = String(config.pacs_dicomweb_auth_secret_name || "").trim().toUpperCase();
 
+      // RadiAnt DICOM Viewer — desktop launch by radiant:// protocol, with the
+      // facility PACS networking details recorded for the integration record.
+      const radiantTemplate = String(config.pacs_radiant_launch_template || "").trim() ||
+        (enabled && type === "radiant" ? RADIANT_TEMPLATE_STUDY_UID : "");
+      const pacsHost = String(config.pacs_host || "").trim();
+      const rawPort = config.pacs_port;
+      const pacsPort = rawPort === "" || rawPort === null || rawPort === undefined ? null : Number(rawPort);
+      const calledAe = String(config.pacs_called_ae_title || "").trim().toUpperCase();
+      const callingAe = String(config.pacs_calling_ae_title || "").trim().toUpperCase();
+      const aeTitleIssue = (label: string, value: string): string | null =>
+        value && !/^[A-Z0-9][A-Z0-9 _.-]{0,15}$/i.test(value)
+          ? `${label} must be a DICOM AE Title of up to 16 characters (letters, digits, space, underscore, hyphen or dot).`
+          : null;
+
       const errors: string[] = [];
       if (enabled && !vendor) errors.push("Vendor / product name is required for every integration method.");
       if (dicomwebBase && !isHttpUrl(dicomwebBase)) errors.push("The DICOMweb (QIDO) Base URL must be a valid http(s) endpoint (e.g. https://pacs.example.com/dicom-web).");
       if (enabled && type === "dicomweb" && !dicomwebBase) errors.push("The DICOMweb / PACS integration method requires the DICOMweb (QIDO) Base URL.");
       if (enabled && type === "web_viewer" && !template) errors.push("The web viewer method requires the vendor's documented viewer launch URL template.");
+      if (enabled && type === "radiant") {
+        const radiantIssue = radiantTemplateIssue(radiantTemplate);
+        if (radiantIssue) errors.push(radiantIssue);
+        if (!pacsHost) errors.push("The RadiAnt integration requires the PACS IP address or hostname confirmed by the PACS administrator.");
+        if (pacsPort === null || !Number.isFinite(pacsPort) || pacsPort < 1 || pacsPort > 65535) {
+          errors.push("The PACS DICOM port must be a number between 1 and 65535 (typically 104 or 11112).");
+        }
+        if (!calledAe) errors.push("The RadiAnt integration requires the PACS AE Title confirmed by the PACS administrator.");
+        const aeIssues = [aeTitleIssue("The PACS AE Title", calledAe), aeTitleIssue("The calling AE Title", callingAe)].filter(Boolean);
+        if (aeIssues.length) errors.push(aeIssues.join(" "));
+      }
       if (template) {
         if (!isDocumentedLaunchUrl(template)) errors.push("The viewer launch URL template must be a web or protocol URL (for example https://... or scheme://...) — a local file path cannot be launched from AMedix.");
         const bad = templatePlaceholders(template).filter((p) => !ALLOWED_LAUNCH_PLACEHOLDERS.includes(p));
@@ -346,6 +389,11 @@ export default async function(req: Request): Promise<Response> {
         ohifBase !== String(facility.ohif_base_url || "").trim() ||
         ohifRoute !== String(facility.ohif_route_template || "").trim() ||
         authType !== String(facility.pacs_dicomweb_auth_type || "none") ||
+        radiantTemplate !== String(facility.pacs_radiant_launch_template || "").trim() ||
+        pacsHost !== String(facility.pacs_host || "").trim() ||
+        (pacsPort === null ? "" : String(pacsPort)) !== (facility.pacs_port === null || facility.pacs_port === undefined ? "" : String(facility.pacs_port)) ||
+        calledAe !== String(facility.pacs_called_ae_title || "").trim().toUpperCase() ||
+        callingAe !== String(facility.pacs_calling_ae_title || "").trim().toUpperCase() ||
         authSecret !== String(facility.pacs_dicomweb_auth_secret_name || "").trim();
       const version = relevantChanged ? (Number(facility.pacs_config_version) || 1) + 1 : Number(facility.pacs_config_version) || 1;
       const update: any = {
@@ -353,6 +401,11 @@ export default async function(req: Request): Promise<Response> {
         pacs_integration_type: type,
         pacs_vendor_name: vendor,
         pacs_viewer_url_template: template,
+        pacs_radiant_launch_template: radiantTemplate,
+        pacs_host: pacsHost,
+        pacs_port: pacsPort,
+        pacs_called_ae_title: calledAe,
+        pacs_calling_ae_title: callingAe,
         pacs_dicomweb_base_url: dicomwebBase,
         pacs_vendor_notes: notes,
         ohif_base_url: ohifBase,
@@ -362,7 +415,12 @@ export default async function(req: Request): Promise<Response> {
         pacs_updated_datetime: new Date().toISOString(),
         pacs_config_version: version,
       };
-      if (relevantChanged) update.ohif_connection_status = "pending_configuration";
+      if (relevantChanged) {
+        update.ohif_connection_status = "pending_configuration";
+        // A configuration change invalidates the operator-confirmed RadiAnt
+        // launch test — the launch path must be re-tested against the new setup.
+        update.radiant_last_test_result = { outcome: "pending_configuration", confirmed: false, message: "The configuration changed — run Test RadiAnt Launch again." };
+      }
       const updated = await svc.entities.HospitalProfile.update(facility.id, update);
       await logClinicalAudit(base44, {
         actor_user_id: user.id,
@@ -424,6 +482,47 @@ export default async function(req: Request): Promise<Response> {
           checks.push({ key: "launch_template", label: "Viewer launch template", outcome: "not_tested", message: "Desktop integration — no launch template recorded, so the study is opened manually with the accession number." });
         }
         if (type === "web_viewer") requiredKeys.push("launch_template");
+      }
+
+      // RadiAnt DICOM Viewer — this server-side test covers the RECORDED
+      // configuration (PACS networking details, optional DICOMweb). Opening the
+      // desktop viewer is a different operation and is verified separately with
+      // Test RadiAnt Launch, because no server call can confirm that a Windows
+      // application opened on the radiologist's workstation.
+      if (type === "radiant") {
+        const host = String(facility.pacs_host || "").trim();
+        const port = Number(facility.pacs_port) || 0;
+        const calledAe = String(facility.pacs_called_ae_title || "").trim();
+        checks.push({
+          key: "pacs_networking",
+          label: "PACS networking record",
+          outcome: host && port && calledAe ? "passed" : "failed",
+          message: host && port && calledAe
+            ? `${host}:${port} · AE Title ${calledAe}. RadiAnt on each workstation retrieves the study from this PACS directly; AMedix never opens a DICOM connection itself.`
+            : "The PACS IP address/hostname, DICOM port and PACS AE Title confirmed by the PACS administrator are incomplete.",
+        });
+        checks.push({
+          key: "radiant_launch",
+          label: "RadiAnt desktop launch",
+          outcome: "not_tested",
+          message: "Verified separately with Test RadiAnt Launch — whether the desktop application opened cannot be confirmed from the server.",
+        });
+        requiredKeys.push("pacs_networking");
+        if (dicomwebBase) {
+          if (!isHttpUrl(dicomwebBase)) {
+            checks.push({ key: "dicomweb_reach", label: "DICOMweb endpoint reachability", outcome: "failed", message: "The optional DICOMweb (QIDO) Base URL is not a valid http(s) endpoint — correct it or leave it empty." });
+          } else {
+            requiredKeys.push("dicomweb_reach", "study_retrieval");
+            checks.push(...(await runDicomwebChecks(dicomwebBase, facility, testStudyUid)));
+          }
+        } else {
+          checks.push({
+            key: "dicomweb_reach",
+            label: "DICOMweb endpoint reachability",
+            outcome: "not_tested",
+            message: "Optional for RadiAnt — no DICOMweb endpoint is recorded, so study availability is not verified server-side before a launch.",
+          });
+        }
       }
 
       // Embedded OHIF — the deployment itself must be reachable and serving.
@@ -527,7 +626,13 @@ export default async function(req: Request): Promise<Response> {
         hospital: facility.hospital_name || "",
       });
       const summary =
-        outcome === "connected"
+        type === "radiant"
+          ? outcome === "connected"
+            ? "Every server-side check passed for the recorded configuration. Opening the desktop viewer is verified separately — run Test RadiAnt Launch and confirm that the correct examination opens."
+            : outcome === "failed"
+              ? "One or more required checks failed — see the per-check results below. The integration is not functional."
+              : "Some required checks are not complete yet — complete the configuration and run the test again."
+          : outcome === "connected"
           ? "End-to-end test passed — every required check succeeded against the configured facility environment. The integration is now Connected."
           : outcome === "failed"
             ? "One or more required checks failed — see the per-check results below. The integration is NOT Connected."
@@ -540,6 +645,163 @@ export default async function(req: Request): Promise<Response> {
         checks,
         message: summary,
       });
+    }
+
+    // ===== TEST RADIANT LAUNCH — facility-administrator-only, and deliberately
+    // SEPARATE from the DICOMweb connection test: opening a desktop viewer and
+    // verifying a server connection are different operations. This builds the
+    // radiant:// URL for an approved test study so the administrator can see
+    // whether the correct examination opens on their own workstation. The
+    // launch is recorded as REQUESTED only — it becomes a confirmed success
+    // solely when the operator records that the correct study appeared.
+    if (action === "radiant_test") {
+      const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
+      const profileId = String(payload.hospital_profile_id || "").trim();
+      const facility = (profileId ? hospitals.find((h: any) => h.id === profileId) : null) || hospitals[0] || null;
+      if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
+      if (!facility.pacs_integration_enabled || String(facility.pacs_integration_type || "none") !== "radiant") {
+        return json({ error: "Select and save the RadiAnt DICOM Viewer integration type for this facility first, then run the launch test." }, 409);
+      }
+      const template = String(facility.pacs_radiant_launch_template || "").trim() || RADIANT_TEMPLATE_STUDY_UID;
+      const templateIssue = radiantTemplateIssue(template);
+      if (templateIssue) return json({ error: templateIssue }, 409);
+      const testUid = String(payload.test_study_uid || "").trim();
+      const testAccession = String(payload.test_accession_number || "").trim();
+      const needs = radiantTemplateNeeds(template);
+      const missingIdentifier = needs.uid && !testUid
+        ? "a Study Instance UID"
+        : needs.accession && !testAccession
+          ? "an accession number"
+          : "";
+      if (missingIdentifier) {
+        return json({ error: `Record ${missingIdentifier} for the approved test study — the recorded RadiAnt launch URL needs it to open the examination.` }, 400);
+      }
+
+      const checks: Check[] = [
+        {
+          key: "launch_template",
+          label: "RadiAnt launch URL",
+          outcome: "passed",
+          message: `The recorded radiant:// launch URL is valid and opens the study by ${needs.uid ? "Study Instance UID" : "accession number"}. Confirm this exact syntax against RadiAnt's official documentation before clinical use.`,
+        },
+        {
+          key: "test_identifier",
+          label: "Approved test study",
+          outcome: "passed",
+          message: `Launch requested for${testUid ? ` Study Instance UID ${testUid}` : ""}${testAccession ? `${testUid ? " ·" : ""} accession number ${testAccession}` : ""}.`,
+        },
+      ];
+
+      // Optional: confirm server-side that the study exists in the archive.
+      const dicomwebBase = String(facility.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
+      if (dicomwebBase && testUid && isHttpUrl(dicomwebBase)) {
+        const { headers, error: credentialError } = await dicomwebHeaders(facility);
+        if (credentialError) {
+          checks.push({ key: "archive_lookup", label: "Archive study lookup", outcome: "failed", message: credentialError });
+        } else {
+          try {
+            const probe = await fetch(`${dicomwebBase}/studies?StudyInstanceUID=${encodeURIComponent(testUid)}&limit=1`, {
+              signal: AbortSignal.timeout(10000),
+              headers,
+            });
+            const rows = probe.ok ? await probe.json().catch(() => []) : [];
+            const foundOnArchive = Array.isArray(rows) && rows.length > 0;
+            checks.push({
+              key: "archive_lookup",
+              label: "Archive study lookup",
+              outcome: foundOnArchive ? "passed" : "not_tested",
+              message: foundOnArchive
+                ? "The test study was found in the facility archive through its DICOMweb endpoint."
+                : "The test study could not be confirmed through the DICOMweb endpoint — RadiAnt queries the PACS from the workstation, so the launch can still be tested.",
+            });
+          } catch {
+            checks.push({
+              key: "archive_lookup",
+              label: "Archive study lookup",
+              outcome: "not_tested",
+              message: "The DICOMweb endpoint could not be reached from the server — RadiAnt queries the PACS from the workstation, so the launch can still be tested.",
+            });
+          }
+        }
+      } else {
+        checks.push({
+          key: "archive_lookup",
+          label: "Archive study lookup",
+          outcome: "not_tested",
+          message: testUid
+            ? "Optional — no DICOMweb endpoint is recorded for this facility."
+            : "Not tested — the launch uses the accession number.",
+        });
+      }
+
+      const launchUrl = buildRadiantLaunchUrl(template, { studyUid: testUid, accession: testAccession });
+      const result = {
+        tested_datetime: new Date().toISOString(),
+        outcome: "launch_requested",
+        confirmed: false,
+        test_study_uid: testUid,
+        test_accession_number: testAccession,
+        launcher_name: user.full_name || "",
+        checks,
+        message:
+          "The launch request was sent to your browser. AMedix cannot detect whether RadiAnt opened — confirm that the correct examination is displayed, then record the result below.",
+      };
+      await svc.entities.HospitalProfile.update(facility.id, { radiant_last_test_result: result });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: "hospital",
+        action: "radiology_radiant_launch_test",
+        action_label: `ran the RadiAnt launch test for ${facility.hospital_name || "the facility"} using the approved test study${testUid ? ` ${testUid}` : ""} — the desktop launch is unconfirmed until recorded`,
+        hospital: facility.hospital_name || "",
+      });
+      return json({ ...result, launch_url: launchUrl, identifier_used: needs.uid ? "study_instance_uid" : "accession_number" });
+    }
+
+    // ===== RADIANT TEST CONFIRMATION — the operator states whether the correct
+    // examination actually opened. Only a confirmed result makes the integration
+    // functional; a launch request is never treated as a successful launch.
+    if (action === "radiant_test_confirm") {
+      const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
+      const profileId = String(payload.hospital_profile_id || "").trim();
+      const facility = (profileId ? hospitals.find((h: any) => h.id === profileId) : null) || hospitals[0] || null;
+      if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
+      const last = facility.radiant_last_test_result || {};
+      if (String(last.outcome || "") !== "launch_requested") {
+        return json({ error: "Run Test RadiAnt Launch first — there is no pending launch to confirm." }, 409);
+      }
+      const confirmed = payload.confirmed === true;
+      const checks = Array.isArray(last.checks) ? last.checks.slice() : [];
+      checks.push({
+        key: "operator_confirmation",
+        label: "Operator confirmation",
+        outcome: confirmed ? "passed" : "failed",
+        message: confirmed
+          ? "The administrator confirmed that the correct examination opened in RadiAnt DICOM Viewer."
+          : "The administrator reported that the correct examination did not open in RadiAnt.",
+      });
+      const confirmedDatetime = new Date().toISOString();
+      const result = {
+        ...last,
+        confirmed_datetime: confirmedDatetime,
+        confirmed,
+        confirmed_by_name: user.full_name || "",
+        outcome: confirmed ? "launch_confirmed" : "launch_failed",
+        checks,
+        message: confirmed
+          ? "Confirmed — the approved test study opened in RadiAnt DICOM Viewer. Radiologists can now open studies from their imaging requests."
+          : "The correct examination did not open in RadiAnt. Check that RadiAnt is installed on the workstation, that its own PACS connection is configured, and that the launch URL matches RadiAnt's documented syntax, then test again.",
+      };
+      const updated = await svc.entities.HospitalProfile.update(facility.id, { radiant_last_test_result: result });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: "hospital",
+        action: "radiology_radiant_launch_test_confirmed",
+        action_label: `recorded the RadiAnt launch test result for ${facility.hospital_name || "the facility"} — ${confirmed ? "confirmed, the correct examination opened" : "not confirmed, the examination did not open"}`,
+        hospital: facility.hospital_name || "",
+      });
+      return json({ ...result, profile: updated });
     }
 
     if (!requestId) return json({ error: "Select the imaging request." }, 400);
@@ -556,7 +818,10 @@ export default async function(req: Request): Promise<Response> {
     const pacsMode = pacsEnabled ? (pacsProfile.pacs_integration_type || "none") : "none";
     const amedixImages = (request.image_file_urls || []).filter(Boolean);
     const studyUid = String(request.study_instance_uid || "").trim();
-    const accession = String(request.accession_number || "").trim() || String(request.request_id || "");
+    // The AMedix request reference is NEVER used as a PACS accession number —
+    // the two are different identifiers. The accession is only what the
+    // department recorded from the facility PACS.
+    const accession = String(request.accession_number || "").trim();
 
     const pacsSummary = {
       enabled: pacsEnabled,
@@ -574,6 +839,25 @@ export default async function(req: Request): Promise<Response> {
         pacsEnabled &&
         pacsMode === "ohif_embedded" &&
         String(pacsProfile.ohif_connection_status || "pending_configuration") === "connected",
+      // RadiAnt desktop launch — configured means a valid radiant:// template is
+      // recorded; verified means the administrator confirmed a launch opened the
+      // correct study. The two are reported separately, never merged.
+      radiant_mode: pacsEnabled && pacsMode === "radiant",
+      radiant_configured:
+        pacsEnabled &&
+        pacsMode === "radiant" &&
+        !radiantTemplateIssue(String(pacsProfile.pacs_radiant_launch_template || "").trim() || RADIANT_TEMPLATE_STUDY_UID),
+      radiant_test_outcome: pacsProfile ? String((pacsProfile.radiant_last_test_result || {}).outcome || "") : "",
+      radiant_launch_verified: pacsProfile
+        ? String((pacsProfile.radiant_last_test_result || {}).outcome || "") === "launch_confirmed"
+        : false,
+      pacs_networking_recorded: pacsProfile
+        ? !!(
+            String(pacsProfile.pacs_host || "").trim() &&
+            Number(pacsProfile.pacs_port) &&
+            String(pacsProfile.pacs_called_ae_title || "").trim()
+          )
+        : false,
       connection_status: pacsProfile ? derivePacsStatus(pacsProfile) : "development_mode",
       config_version: pacsProfile ? Number(pacsProfile.pacs_config_version) || 1 : 0,
       last_test_result: pacsProfile ? pacsProfile.pacs_last_test_result || null : null,
@@ -589,6 +873,11 @@ export default async function(req: Request): Promise<Response> {
         image_file_urls: amedixImages,
         amedix_images: amedixImages.length,
         images_available: amedixImages.length > 0,
+        study_mapping: {
+          study_instance_uid: studyUid || null,
+          accession_number: accession || null,
+          mapped: !!(studyUid || accession),
+        },
         pacs: pacsSummary,
       });
     }
@@ -691,6 +980,11 @@ export default async function(req: Request): Promise<Response> {
       if (template.includes("{study_instance_uid}") && !studyUid) {
         return refuseLaunch(
           "The DICOM Study Instance UID is not recorded for this study, so the imaging system cannot be opened to the right examination. The department must record it on the imaging request."
+        );
+      }
+      if (template.includes("{accession_number}") && !accession) {
+        return refuseLaunch(
+          "No PACS accession number is recorded for this study, so the imaging system cannot be opened to the right examination. The department must record the accession number from the facility PACS — the AMedix request reference is not used as an accession number."
         );
       }
       let tokenValue = "";
