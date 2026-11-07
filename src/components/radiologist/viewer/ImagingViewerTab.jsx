@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import ImageViewer from "@/components/radiologist/review/ImageViewer";
 import RadiAntStudyDownload from "@/components/radiologist/imaging/RadiAntStudyDownload";
+import RadiAntRequestLink from "@/components/radiologist/imaging/RadiAntRequestLink";
 import {
   Monitor, RefreshCw, Loader2, ShieldCheck, ImageOff, Server, ArrowLeft, Database, AlertTriangle, FlaskConical,
 } from "lucide-react";
@@ -175,8 +176,9 @@ export default function ImagingViewerTab({ user, radiologistProfile, onOpenRepor
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
                     <h3 className="font-bold">{selected.scan_type} — {selected.examination}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {selected.request_id} · {selected.routed_hospital}
+                    <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-1">
+                      <RadiAntRequestLink requestId={selected.id} requestRef={selected.request_id} />
+                      <span>· {selected.routed_hospital}</span>
                     </p>
                   </div>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${STAGE_CHIP[selected.stage] || "bg-secondary"}`}>

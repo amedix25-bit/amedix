@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ClipboardList, Hand, AlertTriangle } from "lucide-react";
 import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import { formatDate, formatDateTime, reportStatus, studyMatch } from "@/lib/radiologistWorklist";
+import RadiAntRequestLink from "@/components/radiologist/imaging/RadiAntRequestLink";
 
 const OWNERSHIP = {
   mine: { label: "Yours", chip: "bg-blue-500/15 text-blue-700" },
@@ -88,7 +89,9 @@ export default function WorklistTable({ rows, loading, claiming, onOpen, onClaim
                     </div>
                   </td>
                   <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{r.patient_cin}</td>
-                  <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{r.request_id}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <RadiAntRequestLink requestId={r.id} requestRef={r.request_id} />
+                  </td>
                   <td className="px-3 py-2">
                     <p className="leading-tight">{r.examination}</p>
                     {r.body_part && <p className="text-[11px] text-muted-foreground">{r.body_part}</p>}

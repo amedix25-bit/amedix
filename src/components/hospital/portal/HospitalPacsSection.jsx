@@ -5,9 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Loader2, ShieldCheck, FlaskConical, CheckCircle2, XCircle, HelpCircle,
-  ClipboardCheck, ChevronDown, ChevronUp, RefreshCw, Lock,
+  ClipboardCheck, ChevronDown, ChevronUp, RefreshCw, Lock, MonitorPlay,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+
+// The two documented RadiAnt URL forms. AMedix ships them as defaults only —
+// the PACS administrator must verify the exact syntax in RadiAnt's official
+// documentation before clinical use.
+const RADIANT_UID_TEMPLATE = "radiant://?n=pstv&v=0020000D&v=%22{study_instance_uid}%22";
+const RADIANT_ACCESSION_TEMPLATE = "radiant://?n=pstv&v=00080050&v=%22{accession_number}%22";
 
 // Hospital Portal — Radiology Department tab. Imaging System Connection (PACS):
 // connects AMedix to the facility's EXISTING imaging software. The
@@ -42,6 +48,16 @@ function deriveStatus(p) {
     return configured ? "disabled" : "development_mode";
   }
   const type = String(p.pacs_integration_type || "none");
+  if (type === "radiant") {
+    // RadiAnt needs BOTH: the operator-confirmed desktop launch test, and (only
+    // when a DICOMweb endpoint is recorded) the server-side archive checks.
+    const launch = String((p.radiant_last_test_result || {}).outcome || "");
+    if (launch === "launch_failed") return "failed";
+    if (launch !== "launch_confirmed") return "pending_configuration";
+    if (!String(p.pacs_dicomweb_base_url || "").trim()) return "connected";
+    const dicom = String((p.pacs_last_test_result || {}).outcome || "");
+    return dicom === "connected" ? "connected" : dicom === "failed" ? "failed" : "pending_configuration";
+  }
   if (type === "ohif_embedded") {
     const s = String(p.ohif_connection_status || "pending_configuration");
     return s === "connected" ? "connected" : s === "verification_failed" ? "failed" : "pending_configuration";
@@ -84,15 +100,29 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
     ohif_route_template: profile.ohif_route_template || "",
     pacs_dicomweb_auth_type: profile.pacs_dicomweb_auth_type || "none",
     pacs_dicomweb_auth_secret_name: profile.pacs_dicomweb_auth_secret_name || "",
+    // RadiAnt DICOM Viewer — desktop launch by radiant:// protocol
+    pacs_radiant_launch_template: profile.pacs_radiant_launch_template || RADIANT_UID_TEMPLATE,
+    pacs_host: profile.pacs_host || "",
+    pacs_port: profile.pacs_port ?? "",
+    pacs_called_ae_title: profile.pacs_called_ae_title || "",
+    pacs_calling_ae_title: profile.pacs_calling_ae_title || "",
     test_study_uid: "",
+    radiant_test_study_uid: "",
+    radiant_test_accession_number: "",
   });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [radiantBusy, setRadiantBusy] = useState(false);
+  const [radiantResult, setRadiantResult] = useState(
+    profile.radiant_last_test_result && profile.radiant_last_test_result.outcome
+      ? profile.radiant_last_test_result
+      : null
+  );
   const [showOnboarding, setShowOnboarding] = useState(!profile.pacs_onboarding_completed || profile.pacs_onboarding_completed.length === 0);
   const [completedSteps, setCompletedSteps] = useState(profile.pacs_onboarding_completed || []);
 
-  const status = deriveStatus(form);
+  const status = deriveStatus({ ...profile, ...form });
   const statusMeta = STATUS_META[status] || STATUS_META.pending_configuration;
   const configVersion = Number(profile.pacs_config_version) || 1;
   const lastTest = profile.pacs_last_test_result || null;
@@ -119,7 +149,7 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
       // The save runs through the server-authorized bridge: per-method
       // validation, placeholder policy and verification invalidation are all
       // enforced server-side — the browser never carries vendor credentials.
-      const { test_study_uid, ...config } = form;
+      const { test_study_uid, radiant_test_study_uid, radiant_test_accession_number, ...config } = form;
       const res = await base44.functions.invoke("radiologyPacsAccess", {
         action: "save_config",
         hospital_profile_id: profile.id,
@@ -173,6 +203,64 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
       setTestResult({ simulated: false, connection_status: data.connection_status || "failed", message: data.error || data.message || err.message });
     } finally {
       setTesting(false);
+    }
+  };
+
+  // Test RadiAnt Launch — deliberately SEPARATE from the connection test.
+  // Opening the desktop viewer and verifying a server connection are different
+  // operations, and no server call can confirm that RadiAnt opened: the launch
+  // is recorded as requested until the operator records what they saw.
+  const runRadiantTest = async () => {
+    setRadiantBusy(true);
+    setRadiantResult(null);
+    try {
+      const res = await base44.functions.invoke("radiologyPacsAccess", {
+        action: "radiant_test",
+        hospital_profile_id: profile.id,
+        test_study_uid: form.radiant_test_study_uid.trim(),
+        test_accession_number: form.radiant_test_accession_number.trim(),
+      });
+      const data = res.data || {};
+      setRadiantResult(data);
+      if (data.launch_url) {
+        try {
+          window.location.href = data.launch_url;
+        } catch {
+          // The browser may block an unrecognised protocol.
+        }
+      }
+    } catch (err) {
+      const data = (err.response && err.response.data) || {};
+      setRadiantResult({ outcome: "error", confirmed: false, message: data.error || data.message || err.message, checks: [] });
+    } finally {
+      setRadiantBusy(false);
+    }
+  };
+
+  const confirmRadiant = async (confirmed) => {
+    setRadiantBusy(true);
+    try {
+      const res = await base44.functions.invoke("radiologyPacsAccess", {
+        action: "radiant_test_confirm",
+        hospital_profile_id: profile.id,
+        confirmed,
+      });
+      const data = res.data || {};
+      setRadiantResult(data);
+      if (onUpdate && data.profile) onUpdate(data.profile);
+      toast({
+        title: confirmed ? "RadiAnt launch confirmed" : "RadiAnt launch not confirmed",
+        description: data.message,
+        variant: confirmed ? undefined : "destructive",
+      });
+    } catch (err) {
+      toast({
+        title: "Could not record the result",
+        description: err.response?.data?.error || err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setRadiantBusy(false);
     }
   };
 
@@ -267,6 +355,7 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
                 value={form.pacs_integration_type}
                 onChange={set("pacs_integration_type")}
               >
+                <option value="radiant">RadiAnt DICOM Viewer (desktop launch)</option>
                 <option value="dicomweb">DICOMweb / PACS (browser viewer)</option>
                 <option value="web_viewer">Web viewer launch URL</option>
                 <option value="desktop_app">Desktop application (cannot be embedded)</option>
@@ -301,6 +390,15 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
                   facility-approved authentication method. The DICOMweb Base URL is required for this method.
                 </p>
               )}
+              {form.pacs_integration_type === "radiant" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  RadiAnt runs on each radiologist's Windows workstation and retrieves the study from your PACS
+                  directly — AMedix stores no images. When a radiologist clicks an imaging request number, AMedix
+                  checks their access and the study mapping, then sends a radiant:// link to the browser. Record the
+                  PACS details the PACS administrator confirmed, and verify the launch URL against RadiAnt's official
+                  documentation.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Vendor / Product Name</Label>
@@ -322,13 +420,91 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
               </p>
             </div>
           )}
+          {form.pacs_integration_type === "radiant" && (
+            <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+              <p className="text-xs font-semibold flex items-center gap-1.5">
+                <MonitorPlay className="w-3.5 h-3.5 text-primary" /> RadiAnt DICOM Viewer and PACS networking
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>PACS AE Title — requires the PACS administrator</Label>
+                  <Input
+                    value={form.pacs_called_ae_title}
+                    onChange={set("pacs_called_ae_title")}
+                    placeholder="e.g. PACS"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Calling AE Title (optional) — requires the PACS administrator</Label>
+                  <Input
+                    value={form.pacs_calling_ae_title}
+                    onChange={set("pacs_calling_ae_title")}
+                    placeholder="e.g. RADIANT"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>PACS IP address or hostname — requires the PACS administrator</Label>
+                  <Input value={form.pacs_host} onChange={set("pacs_host")} placeholder="10.0.0.25" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>DICOM port — requires the PACS administrator</Label>
+                  <Input
+                    value={form.pacs_port}
+                    onChange={set("pacs_port")}
+                    inputMode="numeric"
+                    placeholder="104"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>RadiAnt launch URL (radiant:// protocol)</Label>
+                <Input
+                  value={form.pacs_radiant_launch_template}
+                  onChange={set("pacs_radiant_launch_template")}
+                  placeholder={RADIANT_UID_TEMPLATE}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setForm((s) => ({ ...s, pacs_radiant_launch_template: RADIANT_UID_TEMPLATE }))}
+                  >
+                    By Study Instance UID
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setForm((s) => ({ ...s, pacs_radiant_launch_template: RADIANT_ACCESSION_TEMPLATE }))}
+                  >
+                    By accession number
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Only {"{study_instance_uid}"} or {"{accession_number}"} may appear. Verify the exact syntax in
+                  RadiAnt's official documentation before clinical use — AMedix never guesses a protocol and never puts
+                  patient identifiers or credentials in the link.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
-            <Label>DICOMweb (QIDO) Base URL — used to verify study availability</Label>
+            <Label>
+              DICOMweb (QIDO) Base URL
+              {form.pacs_integration_type === "radiant" ? " — optional, used only to verify study availability" : " — used to verify study availability"}
+            </Label>
             <Input
               value={form.pacs_dicomweb_base_url}
               onChange={set("pacs_dicomweb_base_url")}
               placeholder="https://pacs.example.com/dicom-web"
             />
+            {form.pacs_integration_type === "radiant" && (
+              <p className="text-xs text-muted-foreground">
+                RadiAnt retrieves studies from the PACS by DICOM networking, so this is not required. When recorded, it
+                lets AMedix confirm server-side that a study exists on the archive before opening RadiAnt.
+              </p>
+            )}
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">

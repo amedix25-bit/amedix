@@ -69,3 +69,100 @@ export function buildRadiantLaunchUrl(
   url = url.split("{accession_number}").join(encodeURIComponent(String(values.accession || "")));
   return url;
 }
+
+export function normalizePatientIdentifier(value: any): string {
+  return String(value || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+}
+
+// A study mapped to this request must belong to the same patient at the same
+// facility — otherwise it must never be opened. Returns the offending study.
+export function studyMappingMismatch(studies: any[], request: any): any | null {
+  const list = Array.isArray(studies) ? studies : [];
+  return (
+    list.find(
+      (s: any) =>
+        String(s.hospital_user_id || "") !== String(request.routed_hospital_user_id || "") ||
+        (s.patient_cin && request.patient_cin &&
+          normalizePatientIdentifier(s.patient_cin) !== normalizePatientIdentifier(request.patient_cin))
+    ) || null
+  );
+}
+
+// Manual PACS retrieval shown whenever an automatic launch cannot be used.
+export function manualRetrieval(studyUid: string, accession: string) {
+  return {
+    accession_number: accession || null,
+    study_instance_uid: studyUid || null,
+    instruction: accession
+      ? `In RadiAnt DICOM Viewer open the PACS search and query accession number ${accession}.`
+      : studyUid
+        ? `In RadiAnt DICOM Viewer open the PACS search and query Study Instance UID ${studyUid}.`
+        : "No PACS identifier is recorded for this study yet.",
+  };
+}
+
+// Optional server-side confirmation that the study exists on the facility
+// archive and belongs to the same patient. A refusal (study absent, or another
+// patient's identifier) stops the launch; an unreachable or unauthenticated
+// endpoint never does, because RadiAnt reaches the PACS from the workstation
+// over a different network path.
+export async function verifyRadiantStudyAvailability(params: {
+  dicomwebBase: string;
+  studyUid: string;
+  patientCin: string;
+  headers: Record<string, string>;
+  credentialError?: string | null;
+}): Promise<{ availability: "verified" | "unconfirmed"; message: string; refusal: string | null }> {
+  const unconfirmed = (message: string) => ({ availability: "unconfirmed" as const, message, refusal: null });
+  if (params.credentialError) {
+    return unconfirmed(
+      `Study availability could not be verified: ${params.credentialError} RadiAnt may still retrieve the study from the PACS directly.`
+    );
+  }
+  try {
+    const probe = await fetch(
+      `${params.dicomwebBase}/studies?StudyInstanceUID=${encodeURIComponent(params.studyUid)}&limit=1`,
+      { signal: AbortSignal.timeout(10000), headers: params.headers }
+    );
+    if (!probe.ok) {
+      return probe.status === 401 || probe.status === 403
+        ? unconfirmed(
+            "Study availability could not be verified — the facility archive rejected the request (its service credential is missing or refused). RadiAnt may still retrieve the study from the PACS directly."
+          )
+        : unconfirmed(`Study availability could not be verified — the facility archive answered with HTTP ${probe.status}.`);
+    }
+    const rows = await probe.json().catch(() => []);
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) {
+      return {
+        availability: "unconfirmed",
+        message: "",
+        refusal:
+          "The facility archive answered, but this Study Instance UID was not found in it — the study mapping must be corrected before RadiAnt is opened, so no unrelated study can be loaded.",
+      };
+    }
+    const archivePatientId = String(row?.["00100020"]?.Value?.[0] || "").trim();
+    if (
+      archivePatientId &&
+      params.patientCin &&
+      normalizePatientIdentifier(archivePatientId) !== normalizePatientIdentifier(params.patientCin)
+    ) {
+      return {
+        availability: "unconfirmed",
+        message: "",
+        refusal: `The study found on the facility archive belongs to a different patient identifier (${archivePatientId}) than this request (${params.patientCin}) — the launch was refused so no other patient's images can be opened.`,
+      };
+    }
+    return {
+      availability: "verified",
+      refusal: null,
+      message: archivePatientId
+        ? `The study was found on the facility archive and its patient identifier matches this request (${params.patientCin}).`
+        : "The study was found on the facility archive; the archive returned no patient identifier, so patient matching relied on the AMedix study mapping.",
+    };
+  } catch {
+    return unconfirmed(
+      "Study availability could not be verified — the archive could not be reached from the AMedix server. RadiAnt queries the PACS from your workstation, so the launch can still work."
+    );
+  }
+}

@@ -7,6 +7,7 @@ import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import CasePatientPanel from "@/components/radiologist/case/CasePatientPanel";
 import CaseViewerPanel from "@/components/radiologist/case/CaseViewerPanel";
 import CaseReportPanel from "@/components/radiologist/case/CaseReportPanel";
+import RadiAntRequestLink from "@/components/radiologist/imaging/RadiAntRequestLink";
 
 // Patient Imaging Case — one study, one screen: compact patient context on the
 // left, the imaging workspace in the centre and the structured report on the
@@ -104,8 +105,9 @@ export default function ImagingCaseScreen({ requestId, user, radiologistProfile,
             <h2 className="text-lg font-bold leading-tight truncate">
               {request.patient_name} <span className="text-muted-foreground font-normal">· CIN {request.patient_cin}</span>
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {request.request_id} · {request.scan_type} — {request.examination}
+            <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-1">
+              <RadiAntRequestLink requestId={requestId} requestRef={request.request_id} />
+              <span>· {request.scan_type} — {request.examination}</span>
               {request.routed_hospital ? ` · ${request.routed_hospital}` : ""}
             </p>
           </div>

@@ -5,8 +5,11 @@ import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import {
   RADIANT_TEMPLATE_STUDY_UID,
   buildRadiantLaunchUrl,
+  manualRetrieval,
   radiantTemplateIssue,
   radiantTemplateNeeds,
+  studyMappingMismatch,
+  verifyRadiantStudyAvailability,
 } from "../../shared/radiantViewer.ts";
 
 // Imaging Viewer integration — secure bridge to the facility's EXISTING
@@ -1018,6 +1021,123 @@ export default async function(req: Request): Promise<Response> {
         hospital: request.routed_hospital || request.doctor_hospital,
       });
       return json({ mode: pacsMode, launch_url: launchUrl, launch_token_expires_in_minutes: expiresInMinutes });
+    }
+
+    // ===== RADIANT — desktop viewer launch. AMedix authorizes the radiologist,
+    // confirms the study mapping belongs to this patient at this facility, then
+    // builds the radiant:// URL server-side and hands it to the browser.
+    // A browser cannot report whether Windows started RadiAnt, so the recorded
+    // outcome is always "requested" — never "opened" — and manual retrieval is
+    // offered alongside it.
+    if (action === "radiant_launch") {
+      const manual = manualRetrieval(studyUid, accession);
+      const refuseLaunchRequest = async (message: string): Promise<Response> => {
+        await logClinicalAudit(base44, {
+          actor_user_id: user.id,
+          actor_name: user.full_name,
+          actor_role: actorRole,
+          action: "radiology_radiant_launch_refused",
+          action_label: "attempted to open the study in RadiAnt DICOM Viewer — launch refused",
+          patient_id: request.patient_id,
+          document_id: request.request_id,
+          hospital: request.routed_hospital || request.doctor_hospital,
+        });
+        return json({ mode: "radiant", launch_url: null, launch_outcome: "refused", message, manual }, 409);
+      };
+
+      if (!pacsEnabled || pacsMode !== "radiant") {
+        return refuseLaunchRequest(
+          "RadiAnt DICOM Viewer is not configured for this facility. The hospital administrator selects the RadiAnt DICOM Viewer integration type and records the PACS details and the radiant:// launch URL in the Hospital Portal, Radiology Department tab, Imaging System Connection."
+        );
+      }
+      const radiantTemplate = String(pacsProfile.pacs_radiant_launch_template || "").trim() || RADIANT_TEMPLATE_STUDY_UID;
+      const radiantIssue = radiantTemplateIssue(radiantTemplate);
+      if (radiantIssue) return refuseLaunchRequest(radiantIssue);
+      const radiantNeeds = radiantTemplateNeeds(radiantTemplate);
+      if (radiantNeeds.uid && !studyUid) {
+        return refuseLaunchRequest(
+          "No DICOM Study Instance UID is recorded for this request, so RadiAnt cannot be told which examination to open. The department records the Study Instance UID from the facility PACS on the imaging request — the AMedix request number is never used as a PACS identifier."
+        );
+      }
+      if (radiantNeeds.accession && !accession) {
+        return refuseLaunchRequest(
+          "No PACS accession number is recorded for this request, so RadiAnt cannot be told which examination to open. The department records the accession number from the facility PACS — the AMedix request number is not an accession number."
+        );
+      }
+
+      // The study mapping must belong to THIS patient at THIS facility — checked
+      // against the AMedix records, never assumed from a UID alone.
+      let linkedStudies: any[] = [];
+      try {
+        const byRequest = await svc.entities.ImagingStudy.filter({ imaging_request_id: request.id });
+        linkedStudies = Array.isArray(byRequest) ? byRequest : [];
+        if (studyUid) {
+          const byUid = await svc.entities.ImagingStudy.filter({ study_instance_uid: studyUid });
+          for (const s of Array.isArray(byUid) ? byUid : []) {
+            if (!linkedStudies.some((l: any) => l.id === s.id)) linkedStudies.push(s);
+          }
+        }
+      } catch {
+        linkedStudies = [];
+      }
+      if (studyMappingMismatch(linkedStudies, request)) {
+        return refuseLaunchRequest(
+          "The PACS study linked to this request does not match the patient or the facility on the imaging request, so AMedix will not open it. The radiology department must correct the study mapping — a study is never opened on a UID alone."
+        );
+      }
+
+      // Optional server-side availability check. Failing to reach the archive
+      // from the AMedix server does NOT mean the PACS is unavailable to RadiAnt,
+      // so it is reported as unverified rather than blocking the launch.
+      let studyAvailability = "unconfirmed";
+      let availabilityMessage =
+        "Study availability was not verified server-side — no DICOMweb endpoint is recorded for this facility. RadiAnt retrieves the study from the PACS with its own connection; if the study is unavailable there, RadiAnt reports it.";
+      const radiantDicomweb = String(pacsProfile.pacs_dicomweb_base_url || "").trim().replace(/\/+$/, "");
+      if (radiantDicomweb && studyUid && isHttpUrl(radiantDicomweb)) {
+        const { headers, error: credentialError } = await dicomwebHeaders(pacsProfile);
+        const availabilityCheck = await verifyRadiantStudyAvailability({
+          dicomwebBase: radiantDicomweb,
+          studyUid,
+          patientCin: String(request.patient_cin || ""),
+          headers,
+          credentialError,
+        });
+        if (availabilityCheck.refusal) return refuseLaunchRequest(availabilityCheck.refusal);
+        studyAvailability = availabilityCheck.availability;
+        availabilityMessage = availabilityCheck.message;
+      }
+
+      const radiantUrl = buildRadiantLaunchUrl(radiantTemplate, { studyUid, accession });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: actorRole,
+        action: "radiology_radiant_launch_requested",
+        action_label: `requested the study in RadiAnt DICOM Viewer${
+          studyUid ? ` (Study Instance UID ${studyUid})` : accession ? ` (accession ${accession})` : ""
+        }`,
+        patient_id: request.patient_id,
+        patient_cin: request.patient_cin,
+        patient_name: request.patient_name,
+        encounter_id: request.encounter_id,
+        document_id: request.request_id,
+        hospital: request.routed_hospital || request.doctor_hospital,
+      });
+      return json({
+        mode: "radiant",
+        request_ref: request.request_id || "",
+        launch_url: radiantUrl,
+        launch_outcome: "requested",
+        study_instance_uid: studyUid,
+        accession_number: accession,
+        identifier_used: radiantNeeds.uid ? "study_instance_uid" : "accession_number",
+        study_availability: studyAvailability,
+        availability_message: availabilityMessage,
+        launch_test_confirmed: String((pacsProfile.radiant_last_test_result || {}).outcome || "") === "launch_confirmed",
+        manual,
+        message:
+          "The launch request was sent to your browser. AMedix cannot detect whether RadiAnt opened or which study it displayed — confirm that the correct examination is shown before reporting.",
+      });
     }
 
     // ===== OHIF — embedded viewer launch for facilities running their OWN
