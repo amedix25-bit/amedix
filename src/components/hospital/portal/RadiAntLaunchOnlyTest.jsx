@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
-  Loader2, MonitorPlay, CheckCircle2, XCircle, HelpCircle, Copy, RotateCcw,
+  MonitorPlay, CheckCircle2, XCircle, HelpCircle, Copy, RotateCcw,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -10,12 +10,10 @@ import { useToast } from "@/components/ui/use-toast";
 // identifier or patient information. It answers one question only: can the
 // browser on this workstation start the installed RadiAnt desktop application?
 //
-// The link is a real anchor the administrator clicks, so the browser treats the
-// protocol hand-off as a direct user action (which is what lets it ask
-// permission to open an external application). Nothing is recorded as a success
-// automatically: the attempt is recorded as requested until the administrator
-// states whether RadiAnt actually opened, and the result is stored separately
-// from the facility's PACS verification.
+// The click starts RadiAnt directly and the result is decided in the browser,
+// because only the operator can see whether a window opened. Nothing is
+// recorded as a success automatically, and the test never asks for — or
+// depends on — an imaging request.
 const LAUNCH_ONLY_URL = "radiant://";
 
 // Documented launch-only alternatives — never a URL AMedix has invented.
@@ -39,6 +37,71 @@ const FALLBACKS = [
       "Copy radiant:// and open it from the address bar — a second, still parameter-free attempt at the same registered protocol.",
   },
 ];
+
+const BASE_CHECKS = [
+  {
+    key: "launch_only_url",
+    label: "Launch-only URL",
+    outcome: "passed",
+    message:
+      "radiant:// carries no study parameter, PACS identifier or patient data — it only asks Windows to start the registered RadiAnt application.",
+  },
+  {
+    key: "no_patient_data",
+    label: "No patient information",
+    outcome: "passed",
+    message:
+      "This test uses no imaging request, Study Instance UID, accession number, PACS endpoint or patient image.",
+  },
+  {
+    key: "pacs_independent",
+    label: "PACS configuration",
+    outcome: "not_tested",
+    message: "Deliberately not required for this test — a launch-only result is not a PACS connection.",
+  },
+];
+
+const operatorCheck = (confirmed) => ({
+  key: "operator_confirmation",
+  label: "Operator confirmation",
+  outcome: confirmed ? "passed" : "failed",
+  message: confirmed
+    ? "The administrator confirmed that the RadiAnt application opened on this workstation."
+    : "The administrator reported that the RadiAnt application did not open.",
+});
+
+// The result shown to the administrator, built in the browser from what the
+// operator saw. It is identical in shape to the stored record so the panel
+// never depends on a server round-trip to display an outcome.
+function buildResult(outcome, confirmed) {
+  const now = new Date().toISOString();
+  const checks = BASE_CHECKS.map((c) => ({ ...c }));
+  checks.push(
+    confirmed === null
+      ? {
+          key: "operator_confirmation",
+          label: "Operator confirmation",
+          outcome: "not_tested",
+          message: "Pending — record whether the RadiAnt window actually opened.",
+        }
+      : operatorCheck(confirmed)
+  );
+  return {
+    tested_datetime: now,
+    outcome,
+    launch_only: true,
+    confirmed: !!confirmed,
+    launcher_name: "",
+    launch_url: LAUNCH_ONLY_URL,
+    checks,
+    message:
+      outcome === "launch_only_confirmed"
+        ? "Recorded — the RadiAnt desktop application started from the browser on this workstation. This is an APPLICATION LAUNCH result only: no PACS connection was made and no clinical imaging integration is verified."
+        : outcome === "launch_only_failed"
+          ? "Recorded — the RadiAnt application did not open. This is an application launch result only; the facility's PACS configuration and clinical launch workflow are unaffected and still require their own tests."
+          : "The launch request was sent to your browser. AMedix cannot detect whether RadiAnt opened and records nothing as successful — confirm below what you saw on this workstation.",
+  };
+}
 
 function CheckRow({ check }) {
   const isPassed = check.outcome === "passed";
@@ -64,19 +127,18 @@ function CheckRow({ check }) {
 export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
   const { toast } = useToast();
   const [result, setResult] = useState(
-    profile.radiant_launch_only_test_result && profile.radiant_launch_only_test_result.outcome
+    profile && profile.radiant_launch_only_test_result && profile.radiant_launch_only_test_result.outcome
       ? profile.radiant_launch_only_test_result
       : null
   );
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [notSaved, setNotSaved] = useState(false);
 
   // Always show what is actually stored — a launch-only result is never
   // upgraded to a success by the interface.
   useEffect(() => {
-    const stored = profile.radiant_launch_only_test_result;
+    const stored = profile && profile.radiant_launch_only_test_result;
     setResult(stored && stored.outcome ? stored : null);
-  }, [profile.radiant_launch_only_test_result]);
+  }, [profile && profile.radiant_launch_only_test_result]);
 
   // Opens the installed RadiAnt application with the bare registered protocol,
   // synchronously inside the user's click so the browser treats it as a direct
@@ -90,62 +152,51 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
     link.remove();
   };
 
-  // Records the attempt as REQUESTED only. This call is independent of every
-  // imaging-request field — it sends no request id, patient, study UID,
-  // accession number or PACS setting, and the server routes it on its own flag.
-  const recordAttempt = async () => {
-    setBusy(true);
-    setError("");
+  // Storing the outcome is best effort only: the answer shown on screen comes
+  // from this workstation, so a storage problem can never replace it with an
+  // unrelated message.
+  const persist = async (payload) => {
     try {
-      const res = await base44.functions.invoke("radiologyPacsAccess", {
-        action: "radiant_launch_only_test",
-        launch_only: true,
-        launch_step: "test",
-        hospital_profile_id: profile.id,
-      });
-      setResult(res.data || {});
-    } catch (err) {
-      const data = (err.response && err.response.data) || {};
-      setError(data.error || data.message || err.message);
-    } finally {
-      setBusy(false);
+      const res = await base44.functions.invoke("radiologyPacsAccess", payload);
+      const data = res.data || {};
+      if (data.outcome) {
+        setResult(data);
+        setNotSaved(false);
+        if (onUpdate && data.profile) onUpdate(data.profile);
+      }
+    } catch {
+      setNotSaved(true);
     }
   };
 
-  // The click itself starts RadiAnt (a permitted user action) and then records
-  // the attempt — no imaging request is selected or required for this test.
   const handleTest = () => {
     openRadiAnt();
-    recordAttempt();
+    setNotSaved(false);
+    setResult(buildResult("launch_requested", null));
+    persist({
+      action: "radiant_launch_only_test",
+      launch_only: true,
+      launch_step: "test",
+      hospital_profile_id: profile && profile.id,
+    });
   };
 
-  const confirm = async (confirmed) => {
-    setBusy(true);
-    try {
-      const res = await base44.functions.invoke("radiologyPacsAccess", {
-        action: "radiant_launch_only_confirm",
-        launch_only: true,
-        launch_step: "confirm",
-        hospital_profile_id: profile.id,
-        confirmed,
-      });
-      const data = res.data || {};
-      setResult(data);
-      if (onUpdate && data.profile) onUpdate(data.profile);
-      toast({
-        title: confirmed ? "RadiAnt application launch recorded" : "RadiAnt did not open",
-        description: data.message,
-        variant: confirmed ? undefined : "destructive",
-      });
-    } catch (err) {
-      toast({
-        title: "Could not record the result",
-        description: err.response?.data?.error || err.message,
-        variant: "destructive",
-      });
-    } finally {
-      setBusy(false);
-    }
+  const confirm = (confirmed) => {
+    setResult(buildResult(confirmed ? "launch_only_confirmed" : "launch_only_failed", confirmed));
+    setNotSaved(false);
+    toast({
+      title: confirmed ? "RadiAnt application launch recorded" : "RadiAnt did not open",
+      description: confirmed
+        ? "An application launch result only — not a PACS connection."
+        : "The application launch is recorded as not confirmed.",
+    });
+    persist({
+      action: "radiant_launch_only_confirm",
+      launch_only: true,
+      launch_step: "confirm",
+      hospital_profile_id: profile && profile.id,
+      confirmed,
+    });
   };
 
   const copyLink = async () => {
@@ -168,12 +219,10 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
         no patient images. Nothing is recorded as successful automatically.
       </p>
 
-      <Button type="button" variant="outline" onClick={handleTest} disabled={busy}>
-        {busy ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <MonitorPlay className="w-4 h-4 mr-1.5" />}
+      <Button type="button" variant="outline" onClick={handleTest}>
+        <MonitorPlay className="w-4 h-4 mr-1.5" />
         Test RadiAnt Application Launch
       </Button>
-
-      {error && <p className="text-xs text-red-700">{error}</p>}
 
       {result && (
         <div className={`rounded-lg border p-3 space-y-2 ${
@@ -191,6 +240,12 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
             <CheckRow key={i} check={c} />
           ))}
 
+          {notSaved && (
+            <p className="text-[11px] text-muted-foreground">
+              Shown for this workstation only — the facility record could not be updated just now.
+            </p>
+          )}
+
           {result.outcome === "launch_requested" && (
             <div className="space-y-1.5 pt-1">
               <p className="text-xs font-semibold">Did the RadiAnt application open?</p>
@@ -198,10 +253,10 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
                 Open radiant:// again
               </a>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" onClick={() => confirm(true)} disabled={busy}>
+                <Button type="button" size="sm" onClick={() => confirm(true)}>
                   Yes, RadiAnt Opened
                 </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => confirm(false)} disabled={busy}>
+                <Button type="button" size="sm" variant="outline" onClick={() => confirm(false)}>
                   No, RadiAnt Did Not Open
                 </Button>
               </div>
@@ -241,7 +296,7 @@ export default function RadiAntLaunchOnlyTest({ profile, onUpdate }) {
                 <Button type="button" size="sm" variant="outline" onClick={copyLink}>
                   <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy the launch link
                 </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={handleTest} disabled={busy}>
+                <Button type="button" size="sm" variant="ghost" onClick={handleTest}>
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Try the launch again
                 </Button>
               </div>
