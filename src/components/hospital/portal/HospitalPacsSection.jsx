@@ -8,6 +8,7 @@ import {
   ClipboardCheck, ChevronDown, ChevronUp, RefreshCw, Lock, MonitorPlay,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import RadiAntLaunchOnlyTest from "@/components/hospital/portal/RadiAntLaunchOnlyTest";
 
 // The two documented RadiAnt URL forms. AMedix ships them as defaults only —
 // the PACS administrator must verify the exact syntax in RadiAnt's official
@@ -696,6 +697,9 @@ export default function HospitalPacsSection({ profile, onUpdate }) {
           )}
         </div>
       )}
+
+      {/* Launch-only RadiAnt test — needs no PACS, study or patient data */}
+      <RadiAntLaunchOnlyTest profile={profile} onUpdate={onUpdate} />
 
       {/* Test result — every check reported separately */}
       {testResult && (

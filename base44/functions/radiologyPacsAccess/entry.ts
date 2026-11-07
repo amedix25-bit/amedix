@@ -4,6 +4,7 @@ import { authorizeRadiologyStudy } from "../../shared/radiologyStudyAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import {
   RADIANT_TEMPLATE_STUDY_UID,
+  RADIANT_LAUNCH_ONLY_URL,
   buildRadiantLaunchUrl,
   manualRetrieval,
   radiantTemplateIssue,
@@ -802,6 +803,122 @@ export default async function(req: Request): Promise<Response> {
         actor_role: "hospital",
         action: "radiology_radiant_launch_test_confirmed",
         action_label: `recorded the RadiAnt launch test result for ${facility.hospital_name || "the facility"} — ${confirmed ? "confirmed, the correct examination opened" : "not confirmed, the examination did not open"}`,
+        hospital: facility.hospital_name || "",
+      });
+      return json({ ...result, profile: updated });
+    }
+
+    // ===== LAUNCH-ONLY TEST — facility-administrator-only, and COMPLETELY
+    // separate from everything above: it needs no PACS configuration, no
+    // integration type, no AE Title, host or port, no DICOMweb endpoint and no
+    // Study Instance UID or accession number. It answers one question only —
+    // can a browser on this workstation start the installed RadiAnt desktop
+    // application with its bare registered protocol?
+    //
+    // It never touches patient information, is stored in its OWN field so it
+    // can never affect the facility's connection status, and is never recorded
+    // as a success automatically: the attempt is "launch_requested" until the
+    // administrator states whether the application opened.
+    if (action === "radiant_launch_only_test") {
+      const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
+      const profileId = String(payload.hospital_profile_id || "").trim();
+      const facility = (profileId ? hospitals.find((h: any) => h.id === profileId) : null) || hospitals[0] || null;
+      if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
+
+      const result = {
+        tested_datetime: new Date().toISOString(),
+        outcome: "launch_requested",
+        launch_only: true,
+        confirmed: false,
+        launcher_name: user.full_name || "",
+        launch_url: RADIANT_LAUNCH_ONLY_URL,
+        checks: [
+          {
+            key: "launch_only_url",
+            label: "Launch-only URLs",
+            outcome: "passed",
+            message: "radiant:// carries no study parameter, PACS identifier or patient data — it only asks Windows to start the registered RadiAnt application.",
+          },
+          {
+            key: "no_patient_data",
+            label: "No patient information",
+            outcome: "passed",
+            message: "This test uses no imaging request, Study Instance UID, accession number, PACS endpoint or patient image.",
+          },
+          {
+            key: "pacs_independent",
+            label: "PACS configuration",
+            outcome: "not_tested",
+            message: "Deliberately not required for this test — a launch-only result is not a PACS connection.",
+          },
+          {
+            key: "operator_confirmation",
+            label: "Operator confirmation",
+            outcome: "not_tested",
+            message: "Pending — record whether the RadiAnt window actually opened.",
+          },
+        ],
+        message:
+          "The launch request was sent to your browser. AMedix cannot detect whether RadiAnt opened and records nothing as successful — confirm below what you saw on this workstation.",
+      };
+
+      const updated = await svc.entities.HospitalProfile.update(facility.id, { radiant_launch_only_test_result: result });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: "hospital",
+        action: "radiology_radiant_launch_only_test",
+        action_label: `requested the launch-only RadiAnt application test for ${facility.hospital_name || "the facility"} — no PACS, study or patient information involved; result unconfirmed`,
+        hospital: facility.hospital_name || "",
+      });
+      return json({ ...result, profile: updated });
+    }
+
+    // ===== LAUNCH-ONLY CONFIRMATION — the administrator's own statement about
+    // whether the desktop application started. Stored in its own field, so it
+    // never marks the facility Connected, never verifies the clinical launch and
+    // never alters what radiologists can open.
+    if (action === "radiant_launch_only_confirm") {
+      const hospitals = await svc.entities.HospitalProfile.filter({ user_id: user.id });
+      const profileId = String(payload.hospital_profile_id || "").trim();
+      const facility = (profileId ? hospitals.find((h: any) => h.id === profileId) : null) || hospitals[0] || null;
+      if (!facility) return json({ error: "No facility profile is linked to this administrator account." }, 404);
+      const last = facility.radiant_launch_only_test_result || {};
+      if (String(last.outcome || "") !== "launch_requested") {
+        return json({ error: "Run Test RadiAnt Application Launch first — there is no pending launch-only test to confirm." }, 409);
+      }
+      const confirmed = payload.confirmed === true;
+      const checks = Array.isArray(last.checks) ? last.checks.slice() : [];
+      const existing = checks.findIndex((c: any) => c.key === "operator_confirmation");
+      const confirmation = {
+        key: "operator_confirmation",
+        label: "Operator confirmation",
+        outcome: confirmed ? "passed" : "failed",
+        message: confirmed
+          ? "The administrator confirmed that the RadiAnt application opened on this workstation."
+          : "The administrator reported that the RadiAnt application did not open.",
+      };
+      if (existing >= 0) checks[existing] = confirmation;
+      else checks.push(confirmation);
+
+      const result = {
+        ...last,
+        outcome: confirmed ? "launch_only_confirmed" : "launch_only_failed",
+        confirmed,
+        confirmed_datetime: new Date().toISOString(),
+        confirmed_by_name: user.full_name || "",
+        checks,
+        message: confirmed
+          ? "Recorded — the RadiAnt desktop application started from the browser on this workstation. This is an APPLICATION LAUNCH result only: no PACS connection was made and no clinical imaging integration is verified."
+          : "Recorded — the RadiAnt application did not open. This is an application launch result only; the facility's PACS configuration and clinical launch workflow are unaffected and still require their own tests.",
+      };
+      const updated = await svc.entities.HospitalProfile.update(facility.id, { radiant_launch_only_test_result: result });
+      await logClinicalAudit(base44, {
+        actor_user_id: user.id,
+        actor_name: user.full_name,
+        actor_role: "hospital",
+        action: "radiology_radiant_launch_only_test_confirmed",
+        action_label: `recorded the launch-only RadiAnt application test for ${facility.hospital_name || "the facility"} — ${confirmed ? "the application opened" : "the application did not open"}; not a PACS connection`,
         hospital: facility.hospital_name || "",
       });
       return json({ ...result, profile: updated });

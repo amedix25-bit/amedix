@@ -70,6 +70,25 @@ export function buildRadiantLaunchUrl(
   return url;
 }
 
+// ---------------------------------------------------------------------------
+// LAUNCH-ONLY TEST — a deliberately separate, parameter-free check.
+//
+// It answers ONE question: can a browser on this workstation start the installed
+// RadiAnt desktop application at all? It carries no study parameter, no
+// accession number, no imaging request, no PACS endpoint and no patient data,
+// and it is never treated as a PACS connection or a clinical integration.
+//
+// Only the bare registered protocol is ever attempted. When an installed
+// version does not register the radiant:// handler, AMedix says so and points to
+// documented launch-only methods — it never invents a launch URL.
+// ---------------------------------------------------------------------------
+export const RADIANT_LAUNCH_ONLY_URL = "radiant://";
+
+export const RADIANT_LAUNCH_ONLY_LABEL = "Test RadiAnt Application Launch";
+
+export const RADIANT_LAUNCH_ONLY_NOTE =
+  "A bare radiant:// link only asks Windows to start the registered RadiAnt application. It is not a PACS connection: no archive is contacted, no study is opened, and no patient information is involved.";
+
 export function normalizePatientIdentifier(value: any): string {
   return String(value || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
 }

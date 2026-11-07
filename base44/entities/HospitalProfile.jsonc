@@ -87,6 +87,11 @@
       "additionalProperties": true,
       "description": "Result of the last Test RadiAnt Launch \u2014 { tested_datetime, outcome (launch_requested / launch_confirmed / launch_failed), confirmed (true only when the operator confirmed the correct examination opened in RadiAnt), test_study_uid, test_accession_number, launcher_name, checks: [{key, label, outcome (passed/failed/not_tested), message}], message }. A launch request is never recorded as a successful launch without the operator's confirmation."
     },
+    "radiant_launch_only_test_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Result of the LAUNCH-ONLY RadiAnt test \u2014 { tested_datetime, outcome (launch_requested / launch_only_confirmed / launch_only_failed), launch_only: true, confirmed, confirmed_datetime, confirmed_by_name, launcher_name, launch_url, checks: [{key, label, outcome, message}], message }. Records ONLY whether the installed RadiAnt application started from a bare radiant:// link: it uses no imaging request, Study Instance UID, accession number, PACS endpoint or patient information, and it never changes the facility's imaging connection status, never verifies a clinical launch and never alters what radiologists can open."
+    },
     "pacs_dicomweb_base_url": {
       "type": "string",
       "description": "OPTIONAL DICOMweb (QIDO-RS) base URL of the facility PACS, used server-side to VERIFY study availability before a study is opened. Not required for RadiAnt, which retrieves studies directly from the PACS. Credentials, when the vendor requires them, are added as server-side secrets \u2014 never stored here in browser-readable form."
