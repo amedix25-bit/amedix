@@ -116,6 +116,29 @@ npx esbuild qa/allergy-qa.mjs --bundle --format=esm --alias:@=./src --outfile=/t
 
 ---
 
+## 3A. Addendum — 2026-11-08: guidelines, WHO ICD-11 API, treatment modules, references library
+
+Added on top of §2 without changing, reorganising or replacing any of it.
+
+| Area | What was added | Where |
+| --- | --- | --- |
+| Treatment & management documentation | Structured plan per encounter: class, agent, indication, route, **adult and paediatric dosing recorded separately**, age band, weight basis used, frequency, duration, monitoring, cautions, status, clinician rationale, review date | `src/lib/allergyTreatment.js`, `AllergyTreatmentField`, `AllergyTreatmentEntry`, field type `allergy_treatment` |
+| Treatment classes | Antihistamines, intranasal corticosteroids, inhaled therapy, adrenaline, emergency action plan, allergen immunotherapy, biologics, immunoglobulin replacement, oral food challenge plan, avoidance/nutrition plan, education & self-management (11) | same |
+| Dosing governance | `DOSING_RULE`: adult and paediatric recorded separately, the weight basis is recorded for audit, **AMedix performs no calculation and no conversion** | same |
+| Documentation gaps | `treatmentDocumentationGaps` reports a missing indication, adult/paediatric plan, age band, weight basis, monitoring, rationale, review date — advisory only, nothing blocked | same |
+| Official WHO ICD-11 verification | Server-side authenticated search and entity lookup; every returned code carries release, URI and retrieval timestamp; credential missing or service unavailable returns a stated message and **no code** | `base44/functions/icd11WhoSearch`, `Icd11WhoSearch`, `Icd11DiagnosisField` |
+| Official term beside the clinician's term | `clinician_term` stored verbatim next to the official display term — the clinician's wording is never replaced | `Icd11DiagnosisField` |
+| WHO-verified marker | A diagnosis shows WHO-verified with its verification date only when the code actually came from the WHO API; anything typed in stays `review_required` | `Icd11DiagnosisField` |
+| Clinical references library | 17 governed references (AAAAI/ACAAI, EAACI, WAO, GINA, ARIA, IUIS, WHO ICD-11 + ICD-11 API): issuing body, title, topic, version, year only when stated, source link, last-checked date, status `current` / `superseded` / `under_review`, superseding key, population, access and copyright position | `src/lib/clinicalReferences.js`, `ClinicalReference` entity, `/clinical-references` |
+| Copyright position | The library holds metadata and links only; no guideline document is copied, hosted or redistributed | `clinicalReferences.js` `copyright_note`, page notice |
+| Additional advisory prompts | Adrenaline without an emergency action plan; biologic without a monitoring/response plan; immunoglobulin replacement without a documented indication (18 prompts total) | `allergySafetyRules.js` |
+| Traceability | Every treatment class cites reference keys that must resolve in the library; QA fails if a cited key is unknown | QA §13 |
+
+**Verification (updated):** `npx esbuild qa/allergy-qa.mjs … && node /tmp/allergy-qa.mjs` →
+`Allergy QA passed — 11 notes, 157 fields.` It now also asserts: exactly one treatment module per note; no numeric dose inside any treatment class; the no-calculation statement is present; adult and paediatric indications both exist; an undocumented plan prints nothing and reports gaps; the reference set is unique, dated, status-valid, names its superseding document and every cited key resolves.
+
+---
+
 ## 4. Outstanding items for clinical sign-off
 
 | Item | Owner |
