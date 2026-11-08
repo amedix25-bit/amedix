@@ -1,0 +1,119 @@
+{
+  "name": "Icd11Release",
+  "type": "object",
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "description": "Official ICD-11 release identifier, e.g. 2026-01 \u2014 exactly as the WHO release states it"
+    },
+    "linearization": {
+      "type": "string",
+      "default": "mms"
+    },
+    "title": {
+      "type": "string",
+      "description": "How the release is described in this workspace, e.g. ICD-11 MMS 2026-01 (official export)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "superseded",
+        "rejected"
+      ],
+      "enumColors": [
+        "green",
+        "gray",
+        "red"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the release clinical search reads from \u2014 only one release is ever active. SUPERSEDED: replaced by a later release; its terms are retained so codes already recorded against it keep their provenance. REJECTED: an import that failed validation and is never used for coding"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "verified_catalogue",
+        "who_export",
+        "who_api_export"
+      ],
+      "enumColors": [
+        "green",
+        "blue",
+        "blue"
+      ],
+      "description": "VERIFIED_CATALOGUE: the bundled verified entries read from the published WHO tabulation. WHO_EXPORT: an official WHO ICD-11 release export file imported into the workspace. WHO_API_EXPORT: an export produced from the official WHO ICD-11 API under the institution's own subscription"
+    },
+    "licence_reference": {
+      "type": "string",
+      "description": "The institution's licence / subscription reference for the WHO ICD-11 release this data came from. Recorded so the provenance of the classification data is auditable"
+    },
+    "source_note": {
+      "type": "string",
+      "description": "Where the release came from and what it contains, in the institution's own words"
+    },
+    "imported_datetime": {
+      "type": "string"
+    },
+    "imported_by_name": {
+      "type": "string"
+    },
+    "term_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of entries accepted into this release"
+    },
+    "codable_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of accepted entries that carry their own code"
+    },
+    "arabic_official_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Entries whose Arabic title came from the official dataset rather than an AMedix working translation"
+    },
+    "chapters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Chapter codes present in the imported release"
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Import validation report: { accepted, rejected, duplicates, missing_code, missing_title, arabic_without_source, checks: [{ key, label, outcome, detail }] }. Rejected entries are named with the reason \u2014 nothing is silently dropped or repaired"
+    },
+    "previous_release_id": {
+      "type": "string",
+      "description": "Release this one replaced, so the chain of imports is traceable"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Update history and anything the importer must know about this release"
+    }
+  },
+  "required": [
+    "release_id",
+    "status",
+    "source_type"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
