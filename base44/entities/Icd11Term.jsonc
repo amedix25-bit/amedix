@@ -1,0 +1,233 @@
+{
+  "name": "Icd11Term",
+  "type": "object",
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "description": "ICD-11 release the entry was imported from, e.g. 2026-01 \u2014 every code is tied to the release it was read from"
+    },
+    "linearization": {
+      "type": "string",
+      "default": "mms",
+      "description": "Classification linearization this entry belongs to \u2014 mms (Mortality and Morbidity Statistics). Never a specialty linearization"
+    },
+    "code": {
+      "type": "string",
+      "description": "Official ICD-11 MMS code exactly as supplied by the official WHO dataset. A grouping entry has no code and is stored as such \u2014 AMedix never generates, completes or guesses a code"
+    },
+    "uri": {
+      "type": "string",
+      "description": "Official WHO ICD-11 entity URI the entry was imported from, so the classification entry can be resolved again"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "chapter",
+        "block",
+        "category",
+        "subcategory"
+      ],
+      "enumColors": [
+        "gray",
+        "gray",
+        "blue",
+        "green"
+      ],
+      "description": "Position of the entry in the classification: chapter, block, category (stem) or subcategory"
+    },
+    "is_codable": {
+      "type": "boolean",
+      "default": false,
+      "description": "True only when the official dataset gives the entry its own code, i.e. it can be recorded as a coded diagnosis. A grouping entry is never codable"
+    },
+    "is_leaf": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the official dataset reports no more specific descendant for the entry"
+    },
+    "chapter_code": {
+      "type": "string",
+      "description": "Chapter the entry sits in, e.g. 12"
+    },
+    "chapter_title_en": {
+      "type": "string"
+    },
+    "chapter_title_ar": {
+      "type": "string",
+      "description": "Official Arabic chapter title, present only when the imported dataset carries one"
+    },
+    "block_code": {
+      "type": "string"
+    },
+    "block_title_en": {
+      "type": "string"
+    },
+    "parent_uri": {
+      "type": "string"
+    },
+    "ancestors": {
+      "type": "array",
+      "description": "Classification path from the official dataset, nearest parent first",
+      "items": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title_en": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "title_en": {
+      "type": "string",
+      "description": "Official English title exactly as supplied by the WHO dataset"
+    },
+    "title_ar": {
+      "type": "string",
+      "description": "Arabic title shown beside the English term"
+    },
+    "title_ar_source": {
+      "type": "string",
+      "enum": [
+        "official_who",
+        "amedix_translation",
+        "none"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "gray"
+      ],
+      "default": "none",
+      "description": "Where the Arabic title comes from. OFFICIAL_WHO: the imported official dataset supplied it \u2014 it is official WHO terminology. AMEDIX_TRANSLATION: AMedix supplied a working translation for display only; it is clearly labelled as not official and never used to claim verification. NONE: no Arabic title is shown"
+    },
+    "title_ar_note": {
+      "type": "string",
+      "description": "What the Arabic title is and is not \u2014 recorded so a reader never mistakes a working translation for official terminology"
+    },
+    "synonyms_en": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Index terms / synonyms from the official dataset \u2014 search aids only, never displayed as the coded term"
+    },
+    "synonyms_ar": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "inclusions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Inclusion terms the official entry itself carries. Never composed, expanded or paraphrased by AMedix"
+    },
+    "exclusions": {
+      "type": "array",
+      "description": "Exclusion terms the official entry itself carries, with the excluded code and entity URI where the dataset supplies them",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "term"
+        ]
+      }
+    },
+    "coding_note_en": {
+      "type": "string",
+      "description": "Coding instruction / note carried by the official entry"
+    },
+    "coding_note_ar": {
+      "type": "string",
+      "description": "Arabic coding instruction, present only when the imported dataset carries one"
+    },
+    "postcoordination": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Postcoordination information as supplied by the official dataset: { supported, axes: [{ axis_key, axis_title_en, values: [{ code, title_en, title_ar? }] }], cluster_example, note }. When the imported dataset carries no postcoordination data for the entry it is recorded as supported:false with the reason \u2014 AMedix never builds a cluster itself"
+    },
+    "definition": {
+      "type": "string",
+      "description": "Official definition carried by the entry, when the imported dataset supplies one"
+    },
+    "search_text": {
+      "type": "string",
+      "description": "Normalised English + Arabic + synonym + code text used by the local search. Built at import time from the official fields only"
+    },
+    "dataset_source": {
+      "type": "string",
+      "enum": [
+        "verified_catalogue",
+        "who_export"
+      ],
+      "enumColors": [
+        "green",
+        "blue"
+      ],
+      "description": "VERIFIED_CATALOGUE: the entry comes from the AMedix verified ICD-11 catalogue, read from the published WHO tabulation with its release recorded. WHO_EXPORT: the entry comes from an official WHO ICD-11 release export imported into this workspace"
+    },
+    "source_reference": {
+      "type": "string",
+      "description": "Where the entry was read from \u2014 the official export and its licence reference, or the catalogue source"
+    },
+    "verified": {
+      "type": "boolean",
+      "default": true,
+      "description": "True only when the entry was matched against an official WHO source. A term typed by hand is never stored here as verified"
+    },
+    "verified_date": {
+      "type": "string",
+      "description": "Date the entry was verified against the official source (ISO date)"
+    },
+    "imported_datetime": {
+      "type": "string",
+      "description": "Date and time the entry was imported into this workspace (ISO datetime)"
+    },
+    "imported_by_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "release_id",
+    "code",
+    "kind",
+    "title_en",
+    "title_ar_source"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
