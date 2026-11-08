@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EMERGENCY_WORKFLOW } from "@/lib/specialtyDocuments";
+import { useAppLanguage } from "@/lib/appLanguage";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import SelectExamination from "@/components/doctor/notes/SelectExamination";
@@ -97,6 +98,9 @@ export function EmergencyWorkflowStrip() {
 }
 
 function FieldRow({ f, values, onChange, specialty, patientId }) {
+  // A field may carry its own Arabic label for display only; the stored field key,
+  // English label and value never change with the reading language.
+  const { isArabic } = useAppLanguage();
   // Numeric safeguards — a field that declares min/max/unit is warned about
   // when the entry falls outside the expected range, so a dose, weight or score
   // recorded in the wrong unit is caught before the note is signed. The value
@@ -119,7 +123,7 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
             Safety-critical
           </span>
         )}
-        {f.label}
+        {isArabic && f.labelAr ? f.labelAr : f.label}
         {f.required && <span className="text-destructive font-semibold"> · Required</span>}
       </Label>
       {f.type === "textarea" && (

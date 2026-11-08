@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, Info } from "lucide-react";
 import { PULM_INSTRUMENTS, pulmScore, pulmScoreValue, goldAbe } from "@/lib/pulmonologyScores";
+import { pulmAr } from "@/lib/pulmonologyArabic";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 const asObject = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 
@@ -11,6 +13,9 @@ const asObject = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {
 // never counted as zero, and the total never stands in for the clinician's
 // documented interpretation.
 export default function PulmonologyScoresField({ value, values, onChange, instruments = [] }) {
+  // Instrument names are shown in the clinician's reading language; the answers,
+  // the scoring and the recorded values stay unchanged.
+  const { isArabic } = useAppLanguage();
   const state = asObject(value);
   const [open, setOpen] = useState(instruments[0] || "");
   const keys = instruments.length ? instruments : Object.keys(PULM_INSTRUMENTS);
@@ -52,7 +57,7 @@ export default function PulmonologyScoresField({ value, values, onChange, instru
               aria-expanded={isOpen}
             >
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground">{spec.label}</p>
+                <p className="text-xs font-semibold text-foreground">{pulmAr(spec.label, isArabic)}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {result.complete
                     ? `Total ${result.total}${key === "act" || key === "cat" ? `/${spec.total}` : ""} · ${result.answered} of ${result.of} answered`
@@ -66,7 +71,7 @@ export default function PulmonologyScoresField({ value, values, onChange, instru
               <div className="space-y-3 border-t border-border px-3 py-2.5">
                 {spec.items.map((item) => (
                   <div key={item.key} className="space-y-1">
-                    <Label className="text-[11px] leading-snug">{item.label}</Label>
+                    <Label className="text-[11px] leading-snug">{pulmAr(item.label, isArabic)}</Label>
                     <div className="flex flex-wrap gap-1.5">
                       {item.options.map((o) => {
                         const on = answers[item.key] === o.label;
@@ -82,7 +87,7 @@ export default function PulmonologyScoresField({ value, values, onChange, instru
                                 : "bg-card text-foreground border-border hover:bg-muted"
                             }`}
                           >
-                            {o.label}
+                            {pulmAr(o.label, isArabic)}
                           </button>
                         );
                       })}

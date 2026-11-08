@@ -21,6 +21,7 @@
 //     in those workflows, and the note records the indication, result, unit,
 //     interpretation, date, attachment and the request reference.
 import { PULM_BLOCKS } from "@/lib/pulmonologyBlocks";
+import { pulmAr } from "@/lib/pulmonologyArabic";
 import { RESPIRATORY_CONDITION_GROUPS, RESPIRATORY_CONDITION_COUNT } from "@/lib/pulmonologyConditions";
 import { PULMONOLOGY_ICD11, PULM_ICD11_MMS, PULM_DIAGNOSIS_STATUSES, PULM_DIAGNOSIS_ROLES, PULM_DIAGNOSIS_CATEGORIES, PULM_POSTCOORDINATION_NOTE, PULM_CODING_DETAIL_FIELDS } from "@/lib/pulmonologyIcd11";
 
@@ -101,6 +102,7 @@ const SECTION = "Respiratory Assessment & Coding";
 const blockField = (key) => ({
   key: `pulm_block_${key}`,
   label: PULM_BLOCKS[key].title,
+  labelAr: pulmAr(PULM_BLOCKS[key].title, true),
   type: "pulm_modules",
   blockKey: key,
   section: SECTION,
@@ -109,6 +111,7 @@ const blockField = (key) => ({
 const scoresField = (noteKey) => ({
   key: "pulm_scores",
   label: "Documented Respiratory Scores",
+  labelAr: pulmAr("Documented Respiratory Scores", true),
   type: "pulm_scores",
   instruments: SCORES_BY_NOTE[noteKey] || [],
   section: SECTION,
@@ -117,6 +120,7 @@ const scoresField = (noteKey) => ({
 const safetyField = (noteKey) => ({
   key: "pulm_safety",
   label: "Advisory Documentation Prompts",
+  labelAr: pulmAr("Advisory Documentation Prompts", true),
   type: "pulm_safety",
   noteKey,
   section: SECTION,
@@ -125,6 +129,7 @@ const safetyField = (noteKey) => ({
 const guidanceField = (noteKey) => ({
   key: "pulm_guidance",
   label: "Guideline Basis of This Note",
+  labelAr: pulmAr("Guideline Basis of This Note", true),
   type: "pulm_guidance",
   noteKey,
   section: SECTION,
@@ -135,6 +140,7 @@ const guidanceField = (noteKey) => ({
 const investigationsField = () => ({
   key: "pulm_investigations",
   label: "Structured Investigations",
+  labelAr: pulmAr("Structured Investigations", true),
   type: "pulm_investigations",
   section: SECTION,
 });

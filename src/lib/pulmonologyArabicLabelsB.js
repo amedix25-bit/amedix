@@ -268,4 +268,51 @@ export const PULM_AR_LABELS_B = {
   "Onward Referral Documented": "الإحالة التالية (موثّقة)",
   "Escalation or Admission Criteria Documented": "معايير التصعيد أو الدخول (موثّقة)",
   "mMRC Grade Documented": "درجة mMRC (موثّقة)",
+
+  // ── Validated instruments: item wording ──────────────────────────────────
+  "1. In the past 4 weeks, how often did asthma keep you from getting as much done at work, school or home?":
+    "1. خلال الأسابيع الأربعة الماضية، كم مرة منعك الربو من إنجاز ما تريد في العمل أو المدرسة أو المنزل؟",
+  "2. In the past 4 weeks, how often have you had shortness of breath?":
+    "2. خلال الأسابيع الأربعة الماضية، كم مرة أصبت بضيق في النفس؟",
+  "3. In the past 4 weeks, how often did asthma symptoms wake you at night or earlier than usual?":
+    "3. خلال الأسابيع الأربعة الماضية، كم مرة أيقظتك أعراض الربو ليلاً أو أبكر من المعتاد؟",
+  "4. In the past 4 weeks, how often have you used your reliever inhaler?":
+    "4. خلال الأسابيع الأربعة الماضية، كم مرة استخدمت بخاخ التخفيف؟",
+  "5. In the past 4 weeks, how would you rate your asthma control?":
+    "5. خلال الأسابيع الأربعة الماضية، كيف تقيّم سيطرتك على الربو؟",
+  "1. Cough": "1. السعال",
+  "2. Phlegm": "2. البلغم",
+  "3. Chest tightness": "3. ضيق في الصدر",
+  "4. Breathlessness walking up stairs or a hill": "4. ضيق نفس عند صعود الدرج أو المرتفع",
+  "5. Activity limitation at home": "5. محدودية النشاط في المنزل",
+  "6. Confidence leaving home despite lung disease": "6. الثقة في مغادرة المنزل رغم مرض الرئة",
+  "7. Sleep": "7. النوم",
+  "8. Energy": "8. الطاقة",
+  Grade: "الدرجة",
+  "New confusion": "تشوّش جديد",
+  "Urea above 7 mmol/L": "يوريا أعلى من 7 ملي مول/لتر",
+  "Respiratory rate 30/min or more": "معدل التنفس 30/دقيقة أو أكثر",
+  "Systolic below 90 mmHg or diastolic 60 mmHg or below": "الانقباضي أقل من 90 ملم زئبق أو الانبساطي 60 أو أقل",
+  "Age 65 or older": "العمر 65 سنة أو أكثر",
+  "Clinical signs of deep vein thrombosis": "علامات سريرية لخثار وريد عميق",
+  "PE is the most likely diagnosis (or equally likely)": "الانصمام الرئوي هو التشخيص الأرجح (أو مساوٍ في الاحتمال)",
+  "Heart rate above 100/min": "معدل النبض أعلى من 100/دقيقة",
+  "Immobilisation for 3 days or surgery in the previous 4 weeks":
+    "عدم الحركة 3 أيام أو جراحة في الأسابيع الأربعة الماضية",
+  "Previous DVT or pulmonary embolism": "خثار وريد عميق أو انصمام رئوي سابق",
+  "Age 50 or older": "العمر 50 سنة أو أكثر",
+  "Heart rate 100/min or more": "معدل النبض 100/دقيقة أو أكثر",
+  "Oxygen saturation below 95%": "تشبّع الأكسجين أقل من 95٪",
+  "Oestrogen use": "استخدام الإستروجين",
+  "Unilateral leg swelling": "تورم ساق واحدة",
+  "Surgery or trauma needing hospitalisation in the previous 4 weeks":
+    "جراحة أو رضح استدعى دخول المستشفى في الأسابيع الأربعة الماضية",
+  "Snoring loudly enough to be heard through a closed door": "شخير عالٍ يُسمع خلف باب مغلق",
+  "Tiredness or sleepiness during the day": "تعب أو نعاس أثناء النهار",
+  "Observed stopping of breathing or choking during sleep": "ملاحظة توقف التنفس أو الشرقة أثناء النوم",
+  "High blood pressure, treated or untreated": "ارتفاع ضغط الدم، معالجاً كان أو غير معالج",
+  "Body mass index above 35 kg/m²": "مؤشر كتلة الجسم أعلى من 35 كغم/م²",
+  "Age above 50": "العمر أعلى من 50",
+  "Neck circumference above 40 cm": "محيط الرقبة أعلى من 40 سم",
+  "Male gender": "الجنس ذكر",
 };

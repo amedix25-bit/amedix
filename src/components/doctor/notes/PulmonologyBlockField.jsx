@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { pulmBlock, pulmBlockValue } from "@/lib/pulmonologyBlocks";
+import { pulmAr } from "@/lib/pulmonologyArabic";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 const asObject = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 
@@ -20,6 +22,7 @@ const isVisible = (field, values) => {
 // context makes them relevant, and nothing is preselected — an unanswered
 // question stays unanswered rather than defaulting to "normal" or "absent".
 export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
+  const { isArabic } = useAppLanguage();
   const spec = pulmBlock(fieldKey);
   if (!spec) return null;
 
@@ -39,7 +42,7 @@ export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
         return (
           <div key={f.key} className="space-y-1.5">
             <Label htmlFor={`${fieldKey}-${f.key}`} className="text-xs font-medium">
-              {f.label}
+              {pulmAr(f.label, isArabic)}
             </Label>
 
             {f.type === "textarea" && (
@@ -68,12 +71,12 @@ export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
                   return (
                     <p className="text-xs">
                       {calculated === null || calculated === undefined || calculated === "" ? (
-                        <span className="text-muted-foreground">Not calculable yet — enter the values it needs above.</span>
+                        <span className="text-muted-foreground">{pulmAr("Not calculable yet — enter the values it needs above.", isArabic)}</span>
                       ) : (
                         <>
                           <span className="font-semibold">{calculated}</span>
                           {f.unit ? ` ${f.unit}` : ""}
-                          <span className="ml-1 text-[10px] text-muted-foreground">calculated, not entered</span>
+                          <span className="ml-1 text-[10px] text-muted-foreground">{pulmAr("calculated, not entered", isArabic)}</span>
                         </>
                       )}
                     </p>
@@ -85,12 +88,12 @@ export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
             {f.type === "select" && (
               <Select value={v || undefined} onValueChange={(next) => set(f.key, next)}>
                 <SelectTrigger id={`${fieldKey}-${f.key}`} className="w-full">
-                  <SelectValue placeholder="Select…" />
+                  <SelectValue placeholder={pulmAr("Select…", isArabic)} />
                 </SelectTrigger>
                 <SelectContent>
                   {f.options.map((o) => (
                     <SelectItem key={o} value={o}>
-                      {o}
+                      {pulmAr(o, isArabic)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -113,14 +116,14 @@ export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
                           : "bg-card text-foreground border-border hover:bg-muted"
                       }`}
                     >
-                      {o}
+                      {pulmAr(o, isArabic)}
                     </button>
                   );
                 })}
               </div>
             )}
 
-            {f.hint && <p className="text-[10px] text-muted-foreground">{f.hint}</p>}
+            {f.hint && <p className="text-[10px] text-muted-foreground">{pulmAr(f.hint, isArabic)}</p>}
           </div>
         );
       })}
