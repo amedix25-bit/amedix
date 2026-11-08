@@ -36,6 +36,9 @@ import {
 import { PULM_COPD_BLOCKS } from "@/lib/pulmCopdModule";
 import { PULM_ASTHMA_BLOCKS } from "@/lib/pulmAsthmaModule";
 import { PULM_ACUTE_BLOCKS } from "@/lib/pulmAcuteModule";
+import { PULM_EMERGENCY_BLOCKS } from "@/lib/pulmEmergencyModule";
+import { PULM_FOLLOWUP_BLOCKS } from "@/lib/pulmFollowupModule";
+import { PULM_REFERRAL_BLOCKS } from "@/lib/pulmReferralModule";
 
 const CORE_BLOCKS = {
   // ---- Presentation, exposure and history ---------------------------------
@@ -864,6 +867,9 @@ export const PULM_BLOCKS = {
   ...PULM_COPD_BLOCKS,
   ...PULM_ASTHMA_BLOCKS,
   ...PULM_ACUTE_BLOCKS,
+  ...PULM_EMERGENCY_BLOCKS,
+  ...PULM_FOLLOWUP_BLOCKS,
+  ...PULM_REFERRAL_BLOCKS,
 };
 
 export const PULM_BLOCK_KEYS = Object.keys(PULM_BLOCKS);

@@ -67,6 +67,15 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
   const acute = block(values, "pulm_acute_assessment");
   const acuteResponse = block(values, "pulm_acute_response");
 
+  // Emergency and critical care, longitudinal follow-up and referral modules.
+  const emergency = block(values, "pulm_emergency_recognition");
+  const critical = block(values, "pulm_time_critical_conditions");
+  const ventilation = block(values, "pulm_ventilatory_support");
+  const trend = block(values, "pulm_longitudinal_trend");
+  const longCare = block(values, "pulm_longitudinal_care");
+  const prevention = block(values, "pulm_longitudinal_prevention");
+  const referral = block(values, "pulm_mdt_referral");
+
   // The cough/sputum block and the structured presenting complaints are the note's
   // primary entry for respiratory symptoms, so the prompts read them too.
   const coughPresent = ["Dry cough", "Productive cough"].includes(str(cough.cough));
@@ -521,6 +530,206 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
         "A documented poor response is the trigger for the next level of support, and the plan that followed it is what lets the receiving team continue the same decision.",
         "Record the escalation plan — repeat treatment, ventilatory support, critical-care referral — or record the ceiling of treatment agreed with the patient.",
         "gold",
+      ),
+    );
+  }
+
+  // ---- Respiratory emergencies and critical care ---------------------------
+
+  // 31. An emergency documented with no disposition recorded.
+  if (str(emergency.emergency_presentation) && /^\s*$|not documented/i.test(str(emergency.disposition))) {
+    prompts.push(
+      rule(
+        "emergency_without_disposition",
+        "same_day",
+        "Respiratory emergency documented — disposition not recorded",
+        "The record of an emergency has to show where the patient went next and on what basis, because the receiving team and any later review depend on that decision being documented.",
+        "Record the disposition and the basis for it, or record why the decision was deferred.",
+        "chest",
+      ),
+    );
+  }
+
+  // 32. A tension pneumothorax documented with no decompression recorded.
+  if (list(critical.conditions).includes("Tension pneumothorax") && !/decompression|drain/i.test(list(critical.condition_actions).join(" "))) {
+    prompts.push(
+      rule(
+        "tension_pneumothorax_without_decompression",
+        "same_day",
+        "Tension pneumothorax documented — decompression or drainage not recorded",
+        "A tension pneumothorax is treated as a time-critical emergency: the record must show the decompression performed and the response to it, or document why that step was not taken.",
+        "Record the needle decompression and intercostal drain performed, with the response, or record why the finding was not treated as a tension.",
+        "bts_pleural",
+      ),
+    );
+  }
+
+  // 33. A pulmonary embolism documented with no anticoagulation recorded.
+  if (list(critical.conditions).includes("Pulmonary embolism") && !/anticoagulation|thrombolysis/i.test(list(critical.condition_actions).join(" "))) {
+    prompts.push(
+      rule(
+        "pe_without_anticoagulation_documented",
+        "same_day",
+        "Pulmonary embolism documented — anticoagulation or thrombolysis not recorded",
+        "ESC guidance makes anticoagulation the immediate consequence of a confirmed pulmonary embolism, with thrombolysis for haemodynamic instability. Neither can be reviewed later unless it is in the record.",
+        "Record the anticoagulant started with dose and timing, the thrombolysis performed, or the documented reason treatment was withheld.",
+        "esc_pe",
+      ),
+    );
+  }
+
+  // 34. Massive haemoptysis documented with no definitive management recorded.
+  if (list(critical.conditions).includes("Massive haemoptysis") && !/bronchoscopy|airway intervention|specialist opinion|surgical/i.test(list(critical.condition_actions).join(" "))) {
+    prompts.push(
+      rule(
+        "massive_haemoptysis_without_definitive_management",
+        "same_day",
+        "Massive haemoptysis documented — definitive management not recorded",
+        "Massive haemoptysis is managed on airway protection and control of the bleeding source; a record that stops at the observation cannot show that either was addressed.",
+        "Record the airway measures, the bronchoscopy or specialist input arranged, or record the documented reason no definitive step was taken.",
+        "bts",
+      ),
+    );
+  }
+
+  // 35. Severe pneumonia with sepsis documented without the sepsis pathway recorded.
+  if (list(critical.conditions).includes("Severe pneumonia with sepsis") && !/sepsis pathway|vasopressor/i.test(list(critical.condition_actions).join(" "))) {
+    prompts.push(
+      rule(
+        "severe_pneumonia_without_sepsis_management",
+        "advisory",
+        "Severe pneumonia with sepsis documented — sepsis management not recorded",
+        "ATS/IDSA treat severe pneumonia as sepsis until proven otherwise, so the record is expected to show the sepsis pathway and the resuscitation documented alongside the antimicrobial decision.",
+        "Record the sepsis pathway activated and the resuscitation given, or record why it did not apply.",
+        "idsa",
+      ),
+    );
+  }
+
+  // 36. Ventilatory support documented with no blood gas on support.
+  if (/NIV|invasive ventilation/i.test(str(ventilation.support_level)) && /not performed|not documented|^$/i.test(str(ventilation.blood_gas_on_support) || "")) {
+    prompts.push(
+      rule(
+        "ventilatory_support_without_blood_gas",
+        "same_day",
+        "Ventilatory support documented — blood gas on support not recorded",
+        "Ventilatory support is judged on gas exchange and acid–base response, not on saturation alone; the blood gas on support is what documents that the support is working or that it is failing.",
+        "Record the arterial blood gas on support, or record why it was not performed.",
+        "ats",
+      ),
+    );
+  }
+
+  // 37. Invasive ventilation without lung-protective ventilation recorded.
+  if (str(ventilation.support_level) === "Invasive ventilation" && /not documented/i.test(str(ventilation.lung_protective))) {
+    prompts.push(
+      rule(
+        "invasive_ventilation_without_lung_protection",
+        "advisory",
+        "Invasive ventilation documented — lung-protective ventilation not recorded",
+        "ATS/ERS base invasive ventilation in acute hypoxaemic respiratory failure on a documented tidal volume and pressure limit; without them the settings cannot be reviewed against the patient's course.",
+        "Record the tidal volume and pressure limits used, or record why a different strategy was chosen.",
+        "ats",
+      ),
+    );
+  }
+
+  // 38. An emergency with no oxygen target documented.
+  if (str(emergency.emergency_presentation) && blank(emergency.target_range)) {
+    prompts.push(
+      rule(
+        "emergency_without_oxygen_target",
+        "advisory",
+        "Respiratory emergency documented — oxygen target range not recorded",
+        "GOLD and BTS both require a documented target range in an acute respiratory episode, because a patient at risk of hypercapnia is harmed by the same oxygen dose that helps another patient.",
+        "Record the prescribed target range (94–98%, 88–92% where hypercapnia risk is documented, or an individualised range).",
+        "gold",
+      ),
+    );
+  }
+
+  // ---- Longitudinal follow-up ----------------------------------------------
+
+  // 39. Exacerbations or admissions recorded with no vaccination status.
+  if ((Number(trend.admissions_since_review) > 0 || Number(trend.exacerbations_since_review) > 0) && list(prevention.vaccinations).length === 0) {
+    prompts.push(
+      rule(
+        "exacerbations_without_vaccination_status",
+        "advisory",
+        "Exacerbations or admissions recorded — vaccination status not documented",
+        "GOLD and GINA both place vaccination among the interventions reviewed at every exacerbation-prone review, because it is the prevention step that the exacerbation history calls for.",
+        "Record the influenza, pneumococcal and COVID-19 status, or record why vaccination was not reviewed.",
+        "gold",
+      ),
+    );
+  }
+
+  // 40. A declining spirometry trend with no therapy change documented.
+  if (/declined/i.test(str(trend.spirometry_trend)) && /no change/i.test(str(longCare.therapy_change))) {
+    prompts.push(
+      rule(
+        "declining_lung_function_without_review",
+        "advisory",
+        "Declining lung function documented — no therapy or review change recorded",
+        "A documented decline is the point at which GOLD and GINA ask for the treatment, adherence, technique, exposure and comorbidity to be reviewed and the decision recorded, even when the decision is to continue unchanged.",
+        "Record the basis on which treatment continues unchanged, or record the change made.",
+        "gold",
+      ),
+    );
+  }
+
+  // 41. Poor adherence documented with inhaler technique not checked.
+  if (/poor/i.test(str(longCare.adherence)) && /not checked/i.test(str(longCare.inhaler_technique))) {
+    prompts.push(
+      rule(
+        "poor_adherence_without_technique_check",
+        "advisory",
+        "Poor adherence documented — inhaler technique not checked",
+        "GINA and GOLD treat technique and adherence as one assessment: an inhaled regimen cannot be judged, stepped up or stepped down until both have been looked at.",
+        "Record the inhaler technique observation, or record why it could not be checked.",
+        "gina",
+      ),
+    );
+  }
+
+  // ---- Referral and multidisciplinary communication ------------------------
+
+  // 42. A referral with no urgency and no clinical question.
+  if (list(referral.specialties).length && blank(referral.urgency)) {
+    prompts.push(
+      rule(
+        "referral_without_urgency",
+        "advisory",
+        "Referral documented — urgency not recorded",
+        "A referral carries its urgency with it: the receiving team triages on that statement, and without it the referral cannot be prioritised against the others in the same queue.",
+        "Record the urgency and the basis for it.",
+        "chest",
+      ),
+    );
+  }
+
+  if (list(referral.specialties).length && blank(referral.clinical_question)) {
+    prompts.push(
+      rule(
+        "referral_without_clinical_question",
+        "advisory",
+        "Referral documented — the clinical question is not recorded",
+        "A referral is answered against the question it asked. Without the question in the record, the reply cannot be matched to the reason the patient was sent.",
+        "Record the specific question asked of the receiving team.",
+        "chest",
+      ),
+    );
+  }
+
+  if (/urgent|emergency/i.test(str(referral.urgency)) && /not recorded/i.test(str(referral.letter_recorded))) {
+    prompts.push(
+      rule(
+        "urgent_referral_without_recorded_letter",
+        "advisory",
+        "Urgent referral documented — referral letter not recorded",
+        "An urgent referral is the one most likely to be acted on out of hours by a team that has only the written record, so the letter itself has to be in AMedix rather than only in a conversation.",
+        "Save the referral letter in AMedix, or record who received the referral and when.",
+        "chest",
       ),
     );
   }
