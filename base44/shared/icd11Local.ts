@@ -110,13 +110,13 @@ export function scoreTerm(term, rawQuery) {
   if (synonyms.some((s) => s === q)) return { score: 540, matched_on: "synonym" };
   if (synonyms.some((s) => s && (s.includes(q) || hasWord(s, q)))) return { score: 480, matched_on: "synonym" };
 
+  // A partial match is offered only when EVERY meaningful word of the query is
+  // present in the entry. A query that matches on one word of three is not the
+  // condition that was asked for, and offering it would invite a wrong code.
   const search = term.search_text || searchTextOf(term);
-  if (search && search.includes(q)) return { score: 400, matched_on: "partial" };
-
   const tokens = q.split(" ").filter((t) => t.length > 2);
-  if (tokens.length) {
-    const overlap = tokens.filter((t) => search.includes(t)).length;
-    if (overlap) return { score: Math.round(200 * (overlap / tokens.length)), matched_on: "partial" };
+  if (tokens.length && search && tokens.every((t) => search.includes(t))) {
+    return { score: 400, matched_on: "partial" };
   }
   return { score: 0, matched_on: "" };
 }
@@ -437,11 +437,16 @@ export const RESPIRATORY_COVERAGE_TARGETS = [
 ];
 
 // Resolves one coverage target against stored terms. A match must be a codable,
-// verified entry; otherwise the target is reported absent.
+// verified entry that names the target condition — a partial text overlap is not
+// a match, because reporting it as covered would hide a real dataset gap.
+const COVERAGE_MATCHES = ["code", "official_term", "synonym", "arabic_term"];
+
 export function coverageForTarget(terms, target) {
   for (const query of target.queries || []) {
-    const hits = searchTerms(terms, query, { limit: 3, codableOnly: true });
-    const hit = hits.find((h) => h.term?.verified === true && h.term?.code);
+    const hits = searchTerms(terms, query, { limit: 5, codableOnly: true });
+    const hit = hits.find(
+      (h) => h.term?.verified === true && h.term?.code && COVERAGE_MATCHES.includes(h.matched_on),
+    );
     if (hit) {
       return {
         key: target.key,

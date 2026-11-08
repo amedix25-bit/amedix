@@ -201,7 +201,7 @@ export default function Icd11LocalSearch({ onSelect }) {
                     </span>
                   )}
                 </div>
-                {lang === "ar" && r.display_ar && (
+                {r.display_ar && (
                   <p className="mt-0.5 text-[12px]" dir="rtl">
                     {r.display_ar}{" "}
                     <span className="text-[10px] text-muted-foreground">— {arabicSourceLabel(r.display_ar_source)}</span>
@@ -210,6 +210,7 @@ export default function Icd11LocalSearch({ onSelect }) {
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {r.chapter}
                   {r.matched_on ? ` · matched on ${r.matched_on.replace("_", " ")}` : ""}
+                  {r.matched_on === "partial" ? " — partial text match, confirm the term" : ""}
                 </p>
               </button>
             );
