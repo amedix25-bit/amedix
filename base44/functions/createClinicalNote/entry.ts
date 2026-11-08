@@ -15,6 +15,9 @@ import { generateClinicalRef, logClinicalAudit } from "../../shared/clinicalAudi
 // reference and the doctor's electronic signature. The doctor never
 // re-enters any of it manually; only the specialty-specific clinical content
 // comes from the form.
+const asStringArray = (v: any) =>
+  Array.isArray(v) ? v.map((x: any) => String(x ?? "").trim()).filter(Boolean) : [];
+
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -117,6 +120,39 @@ export default async function(req) {
             : "unresolved",
         basis: String(d.basis || ""),
         follow_up: String(d.follow_up || ""),
+        // WHO provenance, the official record detail and the append-only coding
+        // history are stored with the code so a later coding review can see what
+        // the code was verified against and what it replaced. Nothing here is
+        // derived or completed server-side.
+        who_uri: String(d.who_uri || ""),
+        who_browser_url: String(d.who_browser_url || ""),
+        definition: String(d.definition || ""),
+        inclusions: asStringArray(d.inclusions).slice(0, 40),
+        exclusions: asStringArray(d.exclusions).slice(0, 40),
+        index_terms: asStringArray(d.index_terms).slice(0, 40),
+        ancestors: Array.isArray(d.ancestors)
+          ? d.ancestors.slice(0, 12).map((a: any) => ({
+              uri: String(a?.uri || ""),
+              code: String(a?.code || ""),
+              display: String(a?.display || ""),
+            }))
+          : [],
+        cluster: String(d.cluster || ""),
+        language: String(d.language || ""),
+        retrieved_at: String(d.retrieved_at || ""),
+        detail_status: String(d.detail_status || ""),
+        coding_history: Array.isArray(d.coding_history)
+          ? d.coding_history.slice(-25).map((h: any) => ({
+              datetime: String(h?.datetime || ""),
+              from_code: String(h?.from_code || ""),
+              from_display: String(h?.from_display || ""),
+              from_cluster: String(h?.from_cluster || ""),
+              to_code: String(h?.to_code || ""),
+              to_display: String(h?.to_display || ""),
+              to_cluster: String(h?.to_cluster || ""),
+              note: String(h?.note || ""),
+            }))
+          : [],
       }));
     notePayload.icd11_coded_diagnoses = coded;
 

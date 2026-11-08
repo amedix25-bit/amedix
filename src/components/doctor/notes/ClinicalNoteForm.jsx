@@ -503,6 +503,21 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
               mapping_state: d.mapping_state || (d.manual ? "review_required" : "verified"),
               basis: d.basis || "",
               follow_up: d.follow_up || "",
+              // WHO provenance and the official record detail travel with the
+              // code, together with the append-only coding history, so a coded
+              // diagnosis stays auditable after it is modified.
+              who_uri: d.who_uri || "",
+              who_browser_url: d.who_browser_url || "",
+              definition: d.definition || "",
+              inclusions: Array.isArray(d.inclusions) ? d.inclusions : [],
+              exclusions: Array.isArray(d.exclusions) ? d.exclusions : [],
+              index_terms: Array.isArray(d.index_terms) ? d.index_terms : [],
+              ancestors: Array.isArray(d.ancestors) ? d.ancestors : [],
+              cluster: d.cluster || "",
+              language: d.language || "",
+              retrieved_at: d.retrieved_at || "",
+              detail_status: d.detail_status || "",
+              coding_history: Array.isArray(d.coding_history) ? d.coding_history : [],
             });
           });
         });

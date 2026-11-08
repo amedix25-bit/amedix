@@ -59,11 +59,17 @@ const SCORES_BY_NOTE = {
   pulm_care_plan: ["act", "cat", "mmrc", "stopbang"],
 };
 
+// The added modules sit together in one section of the note, so the existing
+// fields stay exactly where they were and the respiratory strengthening reads as
+// its own collapsible part of the form.
+const SECTION = "Respiratory Assessment & Coding";
+
 const blockField = (key) => ({
   key: `pulm_block_${key}`,
   label: PULM_BLOCKS[key].title,
   type: "pulm_modules",
   blockKey: key,
+  section: SECTION,
 });
 
 const scoresField = (noteKey) => ({
@@ -71,6 +77,7 @@ const scoresField = (noteKey) => ({
   label: "Documented Respiratory Scores",
   type: "pulm_scores",
   instruments: SCORES_BY_NOTE[noteKey] || [],
+  section: SECTION,
 });
 
 const safetyField = (noteKey) => ({
@@ -78,6 +85,7 @@ const safetyField = (noteKey) => ({
   label: "Advisory Documentation Prompts",
   type: "pulm_safety",
   noteKey,
+  section: SECTION,
 });
 
 const guidanceField = (noteKey) => ({
@@ -85,6 +93,7 @@ const guidanceField = (noteKey) => ({
   label: "Guideline Basis of This Note",
   type: "pulm_guidance",
   noteKey,
+  section: SECTION,
 });
 
 const icd11Field = () => ({
@@ -104,6 +113,7 @@ const icd11Field = () => ({
   requireConfirmation: true,
   unspecifiedJustification: true,
   extraFields: PULM_CODING_DETAIL_FIELDS,
+  section: SECTION,
 });
 
 // Strengthening appended to each existing pulmonary note.

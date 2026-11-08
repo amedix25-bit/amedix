@@ -4,6 +4,8 @@
 // same ones every AMedix specialty module uses, so a respiratory note reads and
 // prints exactly like the rest of the record. Nothing here is preselected: a
 // blank field is read as NOT DOCUMENTED, never as normal and never as absent.
+import { NOT_DOCUMENTED } from "@/lib/allergyFieldKit";
+
 export {
   T,
   I,
