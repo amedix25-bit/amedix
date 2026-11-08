@@ -58,6 +58,15 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
   const investigations = asObject(asObject(values?.pulm_investigations).items);
   const scores = asObject(values?.pulm_scores);
 
+  // The dedicated GOLD COPD and GINA asthma modules, and the acute exacerbation module.
+  const copdDx = block(values, "pulm_copd_diagnosis");
+  const copdAssess = block(values, "pulm_copd_assessment");
+  const copdTx = block(values, "pulm_copd_treatment");
+  const asthmaControl = block(values, "pulm_asthma_control");
+  const asthmaTx = block(values, "pulm_asthma_treatment");
+  const acute = block(values, "pulm_acute_assessment");
+  const acuteResponse = block(values, "pulm_acute_response");
+
   // The cough/sputum block and the structured presenting complaints are the note's
   // primary entry for respiratory symptoms, so the prompts read them too.
   const coughPresent = ["Dry cough", "Productive cough"].includes(str(cough.cough));
@@ -384,6 +393,134 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
         "A result without the clinician's documented interpretation cannot be told apart from a result nobody reviewed, and the plan that followed cannot be reconstructed from the record.",
         "Record the interpretation for each documented result, or remove the result if it belongs in the Laboratory or Radiology record only.",
         "ats_ers_pft",
+      ),
+    );
+  }
+
+  // 23. A GOLD airflow grade recorded without the post-bronchodilator FEV1 behind it.
+  if (str(copdDx.airflow_grade) && !/not documented/i.test(str(copdDx.airflow_grade)) && blank(copdDx.fev1_postbd_pct)) {
+    prompts.push(
+      rule(
+        "gold_grade_without_fev1",
+        "documented",
+        "GOLD airflow grade documented — post-bronchodilator FEV1 % predicted not recorded",
+        "The GOLD grade is defined by the post-bronchodilator FEV1 as a percentage of predicted in a patient whose FEV1/FVC is below 0.70. A grade recorded without that figure cannot be reproduced or followed over time.",
+        "Record the post-bronchodilator FEV1 and its percentage of predicted, or record the grade as taken from a report saved in the record.",
+        "gold",
+      ),
+    );
+  }
+
+  // 24. A confirmed COPD diagnosis with no post-bronchodilator confirmation.
+  if (/^confirmed/i.test(str(copdDx.diagnosis)) && !/confirmed after bronchodilator/i.test(str(copdDx.post_bd_confirmation))) {
+    prompts.push(
+      rule(
+        "copd_confirmed_without_post_bronchodilator",
+        "documented",
+        "COPD recorded as confirmed — post-bronchodilator confirmation not documented",
+        "GOLD requires the diagnosis to rest on persistent airflow obstruction demonstrated after bronchodilator, because pre-bronchodilator obstruction alone cannot separate COPD from reversible disease.",
+        "Record the post-bronchodilator spirometry result, or record the diagnosis as probable pending it.",
+        "gold",
+      ),
+    );
+  }
+
+  // 25. ICS or triple therapy documented with no eosinophil count behind it.
+  const icsDocumented =
+    /started|continuing|considered/i.test(str(copdTx.ics)) ||
+    /started|continuing|considered/i.test(str(copdTx.triple));
+  if (
+    icsDocumented &&
+    blank(copdAssess.eosinophils) &&
+    /^$|not available|not documented/i.test(str(copdAssess.eosinophil_band) || "")
+  ) {
+    prompts.push(
+      rule(
+        "ics_without_eosinophil_count",
+        "advisory",
+        "Inhaled corticosteroid documented — blood eosinophil count not recorded",
+        "GOLD weighs the exacerbation benefit of an inhaled corticosteroid against its pneumonia risk using the blood eosinophil count, so the count is part of what makes the decision reviewable.",
+        "Record the blood eosinophil count and its date, or record the clinical basis on which the corticosteroid was started.",
+        "gold",
+      ),
+    );
+  }
+
+  // 26. An asthma control level recorded without all four GINA criteria.
+  const criteriaRecorded = list(asthmaControl.control_criteria);
+  if (
+    str(asthmaControl.control) &&
+    !criteriaRecorded.includes("None of the four criteria present") &&
+    criteriaRecorded.length < 4
+  ) {
+    prompts.push(
+      rule(
+        "asthma_control_without_all_criteria",
+        "advisory",
+        "Asthma control level documented — not all four GINA criteria recorded",
+        "GINA defines the control level from the four criteria actually present in the last four weeks. A level recorded without all four recorded cannot be distinguished from a criterion that was present but not asked about.",
+        "Record each of the four criteria, or record that none of them was present.",
+        "gina",
+      ),
+    );
+  }
+
+  // 27. A step-up with technique and adherence not reviewed.
+  if (
+    /step-up/i.test(str(asthmaTx.step_assessment)) &&
+    !(list(asthmaTx.reviewed_before_stepup).includes("Adherence") &&
+      list(asthmaTx.reviewed_before_stepup).includes("Inhaler technique"))
+  ) {
+    prompts.push(
+      rule(
+        "asthma_stepup_without_adherence_or_technique",
+        "documented",
+        "Asthma step-up documented — adherence and inhaler technique not both recorded",
+        "GINA requires adherence, inhaler technique, diagnosis and comorbidities to be checked before treatment is escalated, because escalation without that check treats a delivery problem with more drug.",
+        "Record the adherence assessment and the inhaler technique observation, or record why the step-up does not depend on them.",
+        "gina",
+      ),
+    );
+  }
+
+  // 28. Severe asthma documented with no specialist referral recorded.
+  if (/step 4 or 5|not assessable/i.test(str(asthmaControl.severity)) && !/referred/i.test(str(asthmaTx.specialist_referral))) {
+    prompts.push(
+      rule(
+        "severe_asthma_without_specialist_referral",
+        "advisory",
+        "Severe or difficult-to-treat asthma documented — specialist referral not recorded",
+        "GINA treats severe asthma as a specialist assessment, because the diagnosis, adherence, technique, comorbidities and phenotype all have to be confirmed before step 4–5 therapy, including a biologic, is continued.",
+        "Record the referral made, or record why specialist input is not being sought.",
+        "gina",
+      ),
+    );
+  }
+
+  // 29. Severe or life-threatening exacerbation with no blood gas documented.
+  if (/^severe$|life-threatening/i.test(str(acute.severity)) && /not indicated|not documented|not yet performed|^$/i.test(str(acute.abg) || "")) {
+    prompts.push(
+      rule(
+        "severe_exacerbation_without_blood_gas",
+        "same_day",
+        "Severe or life-threatening exacerbation documented — arterial blood gas not recorded",
+        "Both GINA and GOLD assess a severe exacerbation on gas exchange as well as on the clinical picture: the carbon dioxide level is what identifies a patient who is tiring and needs ventilatory support rather than more bronchodilator.",
+        "Record the arterial blood gas, or record why it was not indicated for this patient.",
+        "gold",
+      ),
+    );
+  }
+
+  // 30. A poor response to treatment with no escalation documented.
+  if (/poor response/i.test(str(acuteResponse.response)) && blank(acuteResponse.escalation_plan)) {
+    prompts.push(
+      rule(
+        "poor_response_without_escalation",
+        "same_day",
+        "Poor response to exacerbation treatment documented — escalation plan not documented",
+        "A documented poor response is the trigger for the next level of support, and the plan that followed it is what lets the receiving team continue the same decision.",
+        "Record the escalation plan — repeat treatment, ventilatory support, critical-care referral — or record the ceiling of treatment agreed with the patient.",
+        "gold",
       ),
     );
   }

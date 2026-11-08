@@ -33,6 +33,9 @@ import {
   SMOKING_STATUS,
   EXACERBATION_FREQUENCY,
 } from "@/lib/pulmonologyFieldKit";
+import { PULM_COPD_BLOCKS } from "@/lib/pulmCopdModule";
+import { PULM_ASTHMA_BLOCKS } from "@/lib/pulmAsthmaModule";
+import { PULM_ACUTE_BLOCKS } from "@/lib/pulmAcuteModule";
 
 const CORE_BLOCKS = {
   // ---- Presentation, exposure and history ---------------------------------
@@ -856,7 +859,12 @@ const CORE_BLOCKS = {
   },
 };
 
-export const PULM_BLOCKS = { ...CORE_BLOCKS };
+export const PULM_BLOCKS = {
+  ...CORE_BLOCKS,
+  ...PULM_COPD_BLOCKS,
+  ...PULM_ASTHMA_BLOCKS,
+  ...PULM_ACUTE_BLOCKS,
+};
 
 export const PULM_BLOCK_KEYS = Object.keys(PULM_BLOCKS);
 

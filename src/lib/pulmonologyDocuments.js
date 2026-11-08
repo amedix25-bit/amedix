@@ -33,23 +33,35 @@ const BLOCKS_BY_NOTE = {
     "pulm_vitals", "pulm_inhaler_device", "pulm_exacerbation",
     "pulm_lung_function", "pulm_asthma", "pulm_copd", "pulm_ild", "pulm_bronchiectasis",
     "pulm_sleep", "pulm_pe", "pulm_management",
+    // Dedicated GOLD COPD and GINA asthma modules.
+    "pulm_copd_diagnosis", "pulm_copd_assessment", "pulm_copd_treatment",
+    "pulm_asthma_diagnosis", "pulm_asthma_control", "pulm_asthma_treatment",
   ],
   pulm_followup: [
     "pulm_dyspnoea", "pulm_symptoms", "pulm_exam", "pulm_inhaler_device", "pulm_exacerbation", "pulm_asthma",
     "pulm_copd", "pulm_lung_function", "pulm_management",
+    "pulm_copd_assessment", "pulm_copd_treatment", "pulm_asthma_control", "pulm_asthma_treatment",
   ],
   pulm_admission_note: [
     "pulm_presenting", "pulm_cough_sputum", "pulm_dyspnoea", "pulm_history",
     "pulm_past_respiratory", "pulm_symptoms", "pulm_vitals", "pulm_exam",
     "pulm_oxygen", "pulm_exacerbation", "pulm_pe", "pulm_pleural", "pulm_copd",
+    "pulm_acute_assessment", "pulm_acute_response", "pulm_copd_assessment", "pulm_asthma_control",
   ],
-  pulm_progress_note: ["pulm_symptoms", "pulm_vitals", "pulm_exam", "pulm_oxygen", "pulm_exacerbation", "pulm_pleural"],
-  pulm_discharge_summary: ["pulm_oxygen", "pulm_exacerbation", "pulm_management"],
+  pulm_progress_note: [
+    "pulm_symptoms", "pulm_vitals", "pulm_exam", "pulm_oxygen", "pulm_exacerbation", "pulm_pleural",
+    "pulm_acute_assessment", "pulm_acute_response",
+  ],
+  pulm_discharge_summary: [
+    "pulm_oxygen", "pulm_exacerbation", "pulm_management",
+    "pulm_acute_response", "pulm_copd_treatment", "pulm_asthma_treatment",
+  ],
   pulm_procedure_note: ["pulm_pleural", "pulm_oxygen"],
-  pulm_pft_report: ["pulm_lung_function"],
+  pulm_pft_report: ["pulm_lung_function", "pulm_copd_diagnosis", "pulm_asthma_diagnosis"],
   pulm_bronchoscopy_report: ["pulm_bronchiectasis", "pulm_tb", "pulm_oxygen"],
   pulm_care_plan: [
     "pulm_asthma", "pulm_copd", "pulm_ild", "pulm_bronchiectasis", "pulm_sleep", "pulm_oxygen", "pulm_management",
+    "pulm_copd_treatment", "pulm_asthma_treatment",
   ],
 };
 
