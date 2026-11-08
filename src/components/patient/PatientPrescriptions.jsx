@@ -11,6 +11,7 @@ import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBad
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
+import { inhalerSummary } from "@/lib/inhalerDevice";
 import QrCodeCard from "@/components/QrCodeCard";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
@@ -184,6 +185,12 @@ export default function PatientPrescriptions() {
               </div>
               {p.special_instructions && (
                 <p className="text-xs text-muted-foreground mt-2">{t("Instructions")}: {ar(p.special_instructions)}</p>
+              )}
+              {inhalerSummary(p) && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {t("Inhaler Device")}: {t(inhalerSummary(p))}
+                  {p.inhaler_device_instructions ? ` — ${ar(p.inhaler_device_instructions)}` : ""}
+                </p>
               )}
               <p className="text-xs text-muted-foreground mt-2">
                 {t("Refills")}: {p.refills_used || 0}/{p.refills_authorized || 0} {t("used")}

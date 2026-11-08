@@ -6,6 +6,7 @@ import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBad
 import PrescriptionActions from "@/components/pharmacy/PrescriptionActions";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
+import { inhalerSummary } from "@/lib/inhalerDevice";
 
 export function PrescriptionRow({ prescription, onChanged, session }) {
   const remaining = prescriptionRemaining(prescription);
@@ -44,6 +45,12 @@ export function PrescriptionRow({ prescription, onChanged, session }) {
       </div>
       {prescription.special_instructions && (
         <p className="text-xs text-muted-foreground mt-2">Instructions: {prescription.special_instructions}</p>
+      )}
+      {inhalerSummary(prescription) && (
+        <p className="text-xs text-muted-foreground mt-2">
+          Device: {inhalerSummary(prescription)}
+          {prescription.inhaler_device_instructions ? ` — ${prescription.inhaler_device_instructions}` : ""}
+        </p>
       )}
       <p className="text-xs text-muted-foreground mt-2">
         Prescribed by {prescription.doctor_name || "—"}

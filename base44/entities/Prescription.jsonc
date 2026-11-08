@@ -109,6 +109,48 @@
       "type": "string",
       "description": "Special instructions from the prescribing doctor, e.g. take with food"
     },
+    "inhaler_device": {
+      "type": "string",
+      "enum": [
+        "mdi",
+        "dpi",
+        "soft_mist",
+        "nebulizer",
+        "other",
+        "not_applicable"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "pink",
+        "yellow",
+        "gray",
+        "gray"
+      ],
+      "description": "Structured inhaler device selected by the prescriber for an inhaled medication: MDI (metered-dose inhaler), DPI (dry-powder inhaler), SOFT_MIST (soft-mist inhaler), NEBULIZER, OTHER, or NOT_APPLICABLE. Optional \u2014 recorded only when the prescriber selects one and never inferred from the medication name"
+    },
+    "inhaler_device_detail": {
+      "type": "string",
+      "description": "The device specified by the prescriber, e.g. the brand, a spacer / valved holding chamber for an MDI, or the device chosen under OTHER"
+    },
+    "inhaler_device_instructions": {
+      "type": "string",
+      "description": "Device-specific instructions recorded by the prescriber \u2014 priming, rinsing the mouth after use, use with a spacer, cartridge replacement, cleaning"
+    },
+    "technique_counselling": {
+      "type": "string",
+      "enum": [
+        "counselled",
+        "declined",
+        "not_applicable"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "gray"
+      ],
+      "description": "Whether inhaler technique counselling was given during the encounter: COUNSELLED, DECLINED by the patient, or NOT_APPLICABLE. Recorded by the prescriber and never assumed"
+    },
     "safety_check": {
       "type": "object",
       "additionalProperties": true,

@@ -6,6 +6,7 @@ import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import CancelPrescriptionButton from "@/components/doctor/pharmacy/CancelPrescriptionButton";
 import SubstitutionReview from "@/components/doctor/pharmacy/SubstitutionReview";
 import { prescriptionRemaining } from "@/components/pharmacy/PrescriptionActions";
+import { inhalerSummary } from "@/lib/inhalerDevice";
 
 // One prescription card — shared by the patient's record view and the
 // Prescriptions tab of the Doctor Portal. Collapsed it shows only the
@@ -61,6 +62,12 @@ export default function PrescriptionCard({ prescription, onIssued, showPatient }
             <div><span className="text-muted-foreground">Quantity:</span> {prescription.quantity || "—"}</div>
             <div><span className="text-muted-foreground">Refills:</span> {prescription.refills_used || 0}/{prescription.refills_authorized || 0} used</div>
             <div className="col-span-2"><span className="text-muted-foreground">Instructions:</span> {prescription.special_instructions || "—"}</div>
+            {inhalerSummary(prescription) && (
+              <div className="col-span-2 sm:col-span-4">
+                <span className="text-muted-foreground">Device:</span> {inhalerSummary(prescription)}
+                {prescription.inhaler_device_instructions ? ` — ${prescription.inhaler_device_instructions}` : ""}
+              </div>
+            )}
           </div>
           {prescription.authorized_pharmacy_name && (
             <p className="text-xs text-muted-foreground mt-2">

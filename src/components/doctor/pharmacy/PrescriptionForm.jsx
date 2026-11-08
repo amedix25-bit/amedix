@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { LOCKED_MESSAGE } from "@/lib/checkInGate";
 import MedicationSafetyAlerts from "@/components/doctor/pharmacy/MedicationSafetyAlerts";
 import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
+import InhalerDeviceField from "@/components/doctor/pharmacy/InhalerDeviceField";
 
 const ROUTES = [
   { value: "oral", label: "Oral" },
@@ -39,6 +40,10 @@ const EMPTY = {
   quantity: "",
   refills_authorized: 0,
   special_instructions: "",
+  inhaler_device: "",
+  inhaler_device_detail: "",
+  inhaler_device_instructions: "",
+  technique_counselling: "",
 };
 
 // Electronic prescription issue form — part of the patient's medical record.
@@ -147,6 +152,16 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
         quantity: form.quantity.trim(),
         refills_authorized: Number(form.refills_authorized) || 0,
         special_instructions: form.special_instructions.trim(),
+        // The inhaler device is recorded only when the prescriber selected one
+        // for an inhaled medication — never inferred from the drug name.
+        ...(form.route === "inhalation" && form.inhaler_device
+          ? {
+              inhaler_device: form.inhaler_device,
+              inhaler_device_detail: form.inhaler_device_detail.trim(),
+              inhaler_device_instructions: form.inhaler_device_instructions.trim(),
+              technique_counselling: form.technique_counselling,
+            }
+          : {}),
         safety_check,
       });
       toast({ title: "Prescription issued", description: "Checking availability across affiliated pharmacies..." });
@@ -258,6 +273,17 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
         <Label className="text-xs">Special Instructions</Label>
         <Textarea placeholder="e.g. take with food, avoid alcohol..." value={form.special_instructions} onChange={set("special_instructions")} />
       </div>
+      {form.route === "inhalation" && (
+        <InhalerDeviceField
+          value={{
+            inhaler_device: form.inhaler_device,
+            inhaler_device_detail: form.inhaler_device_detail,
+            inhaler_device_instructions: form.inhaler_device_instructions,
+            technique_counselling: form.technique_counselling,
+          }}
+          onChange={(v) => setForm((f) => ({ ...f, ...v }))}
+        />
+      )}
       {blocked && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2">
           <Lock className="w-4 h-4 shrink-0" />
