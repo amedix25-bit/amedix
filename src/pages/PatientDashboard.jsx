@@ -22,24 +22,11 @@ import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
 import NotificationsBar from "@/components/patient/NotificationsBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
-import PatientLanguageSwitch from "@/components/patient/PatientLanguageSwitch";
+import PatientSidebar, { patientNavLabel } from "@/components/patient/PatientSidebar";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
-import { Home as HomeIcon, HeartPulse, Calendar, FlaskConical, ClipboardList, Image as ImageIcon, FileText, Pill, Shield, User, Stethoscope, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import DrugsEntry from "@/components/patient/DrugsEntry";
 import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
-
-const NAV_ITEMS = [
-  { key: "overview", label: "Home", icon: HomeIcon },
-  { key: "health", label: "My Health", icon: HeartPulse },
-  { key: "appointments", label: "Appointments", icon: Calendar },
-  { key: "doctorvisits", label: "Doctor Visits", icon: Stethoscope },
-  { key: "labs", label: "Labs", icon: FlaskConical },
-  { key: "imaging", label: "Imaging", icon: ImageIcon },
-  { key: "documents", label: "Documents", icon: FileText },
-  { key: "drugs", label: "Drugs", icon: Pill },
-  { key: "access", label: "Access & Privacy", icon: Shield },
-  { key: "profile", label: "Profile", icon: User },
-];
 
 export default function PatientDashboard() {
   return (
@@ -76,8 +63,6 @@ function PatientPortal() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ appointments: 0, labs: 0, imaging: 0, documents: 0, medications: 0 });
-
-  const navItems = NAV_ITEMS.map((item) => ({ ...item, label: t(item.label) }));
 
   useEffect(() => {
     loadProfile();
@@ -137,12 +122,17 @@ function PatientPortal() {
   return (
     <>
       <DashboardLayout
-        navItems={navItems}
         activeKey={activeTab}
-        onNavClick={setActiveTab}
-        roleLabel={t("Patient")}
-        logoutLabel={t("Log out")}
-        sidebarAction={user ? <ProfessionalPortalSwitch user={user} /> : null}
+        sidebarWidth="w-72"
+        renderSidebar={({ close, onLogout }) => (
+          <PatientSidebar
+            activeKey={activeTab}
+            onNavClick={setActiveTab}
+            onLogout={onLogout}
+            close={close}
+            sidebarAction={user ? <ProfessionalPortalSwitch user={user} /> : null}
+          />
+        )}
       >
         <div className="p-4 lg:p-6 max-w-5xl mx-auto">
           <div className="mb-6 flex items-start justify-between gap-3">
@@ -150,7 +140,7 @@ function PatientPortal() {
               <h1 className="text-2xl font-bold">
                 {activeTab === "overview"
                   ? `${t("Welcome,")} ${profile?.full_name?.split(" ")[0] || ""}`
-                  : t(navItems.find((n) => n.key === activeTab)?.label)}
+                  : t(patientNavLabel(activeTab))}
               </h1>
               <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
             </div>
@@ -206,7 +196,6 @@ function PatientPortal() {
           )}
         </div>
       </DashboardLayout>
-      <PatientLanguageSwitch />
     </>
   );
 }

@@ -8,7 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { getPortalAccent } from "@/lib/portalAccent";
 
-export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", children }) {
+export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", renderSidebar, sidebarWidth = "w-64", children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -16,20 +16,42 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
     base44.auth.logout(window.location.origin);
   };
 
+  // A portal may supply its own sidebar; it is used on desktop and in the
+  // mobile drawer alike, so both always show the same navigation.
+  const renderSidebarContent = (close) => {
+    if (renderSidebar) return renderSidebar({ close, onLogout: handleLogout });
+    return (
+      <SidebarContent
+        navItems={navItems}
+        activeKey={activeKey}
+        onNavClick={(key) => {
+          onNavClick(key);
+          if (close) close();
+        }}
+        roleLabel={roleLabel}
+        logoutLabel={logoutLabel}
+        onLogout={handleLogout}
+        logo={Logo}
+        sidebarAction={sidebarAction}
+        accent={accent}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="hidden lg:flex w-64 flex-col border-r rtl:border-l rtl:border-r-0 border-border bg-sidebar">
-        <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={onNavClick} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} accent={accent} />
+      <aside className={`hidden lg:flex ${sidebarWidth} flex-col border-r rtl:border-l rtl:border-r-0 border-border bg-sidebar`}>
+        {renderSidebarContent()}
       </aside>
 
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative w-64 flex flex-col bg-sidebar">
-            <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-muted-foreground z-10">
+          <aside className={`relative ${sidebarWidth} flex flex-col bg-sidebar`}>
+            <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 z-10 text-muted-foreground">
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent navItems={navItems} activeKey={activeKey} onNavClick={(key) => { onNavClick(key); setSidebarOpen(false); }} roleLabel={roleLabel} logoutLabel={logoutLabel} onLogout={handleLogout} logo={Logo} sidebarAction={sidebarAction} accent={accent} />
+            {renderSidebarContent(() => setSidebarOpen(false))}
           </aside>
         </div>
       )}
