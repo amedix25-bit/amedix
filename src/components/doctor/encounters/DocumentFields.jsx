@@ -60,6 +60,7 @@ import PulmonologyBlockField from "@/components/doctor/notes/PulmonologyBlockFie
 import PulmonologyScoresField from "@/components/doctor/notes/PulmonologyScoresField";
 import PulmonologySafetyPromptsField from "@/components/doctor/notes/PulmonologySafetyPromptsField";
 import PulmonologyGuidanceField from "@/components/doctor/notes/PulmonologyGuidanceField";
+import PulmonologyInvestigationsField from "@/components/doctor/notes/PulmonologyInvestigationsField";
 import OrthopedicsSafetyPromptsField from "@/components/doctor/notes/OrthopedicsSafetyPromptsField";
 import OrthopedicsTraumaField from "@/components/doctor/notes/OrthopedicsTraumaField";
 import OrthopedicsHealingField from "@/components/doctor/notes/OrthopedicsHealingField";
@@ -196,6 +197,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
           requireConfirmation={f.requireConfirmation}
           extraFields={f.extraFields}
           unspecifiedJustification={f.unspecifiedJustification}
+          conditionGroups={f.conditionGroups}
+          conditionIndexTitle={f.conditionIndexTitle}
+          conditionIndexHint={f.conditionIndexHint}
         />
       )}
       {f.type === "gcs_score" && (
@@ -372,6 +376,9 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "pulm_guidance" && (
         <PulmonologyGuidanceField value={values[f.key]} noteKey={f.noteKey} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "pulm_investigations" && (
+        <PulmonologyInvestigationsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "allergy_tests" && (
         <AllergyTestsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

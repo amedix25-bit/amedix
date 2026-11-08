@@ -14,6 +14,7 @@ import {
 } from "@/lib/rheumIcd11";
 import { AlertTriangle, ExternalLink, Plus, Search, ShieldCheck, X } from "lucide-react";
 import Icd11WhoSearch from "@/components/doctor/notes/Icd11WhoSearch";
+import Icd11ConditionIndex from "@/components/doctor/notes/Icd11ConditionIndex";
 import Icd11OfficialDetail from "@/components/doctor/notes/Icd11OfficialDetail";
 
 const EMPTY_MANUAL = { code: "", display: "", specificity: SPECIFICITY.SUB, source: "" };
@@ -141,6 +142,12 @@ export default function Icd11DiagnosisField({
   // unspecified category has to be justified before it is saved as Confirmed.
   extraFields = [],
   unspecifiedJustification = false,
+  // A specialty may offer its own condition index, which retrieves the official
+  // WHO concept for the condition the clinician selected. Absent by default, so
+  // every other specialty's field behaves exactly as before.
+  conditionGroups = null,
+  conditionIndexTitle = "Condition index",
+  conditionIndexHint = "",
 }) {
   const entries = Array.isArray(value) ? value : [];
   const [query, setQuery] = useState("");
@@ -239,6 +246,10 @@ export default function Icd11DiagnosisField({
             `Catalogue release ${catalogRelease} · WHO ICD-11 MMS. No live WHO API is called — the bundled verified subset is used, and any code outside it is entered by the clinician.`}
         </p>
       </div>
+
+      {Array.isArray(conditionGroups) && conditionGroups.length > 0 && (
+        <Icd11ConditionIndex groups={conditionGroups} onSelect={add} title={conditionIndexTitle} hint={conditionIndexHint} />
+      )}
 
       <div className="relative">
         <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />

@@ -6,33 +6,44 @@
 // modules below are appended, a key that already exists is never added twice, and
 // the note's own key and label are untouched.
 //
-// What is deliberately NOT added, because AMedix already provides it:
-//   · the physical examination — the shared structured "Select Examination"
-//     surface for the specialty;
-//   · vital signs — the shared Vital Signs field;
-//   · medications, allergies and the patient's history — the unified Patient
-//     Record attached to every note;
-//   · laboratory and imaging result entry — those live in their own tabs, and
-//     the note records only what the clinician documented about them.
+// The respiratory consultation carries its own structured presentation, cough and
+// sputum assessment, dyspnoea assessment (mMRC and Borg), exposure and pack-year
+// documentation, previous illness and ventilation history, medication/allergy and
+// comorbidity review, a respiratory examination documented for each lung field
+// separately, and vital signs with the oxygen device, flow rate and FiO2.
+//
+// What is deliberately NOT duplicated, because AMedix already provides it:
+//   · the shared structured "Select Examination" surface stays available — the
+//     respiratory exam block records the clinician's chest findings in the note;
+//   · the unified Patient Record (allergies, medication list, past history) — the
+//     note records the respiratory reading of it, never a second copy;
+//   · ordering, performing and resulting laboratory and imaging work — that stays
+//     in those workflows, and the note records the indication, result, unit,
+//     interpretation, date, attachment and the request reference.
 import { PULM_BLOCKS } from "@/lib/pulmonologyBlocks";
+import { RESPIRATORY_CONDITION_GROUPS, RESPIRATORY_CONDITION_COUNT } from "@/lib/pulmonologyConditions";
 import { PULMONOLOGY_ICD11, PULM_ICD11_MMS, PULM_DIAGNOSIS_STATUSES, PULM_DIAGNOSIS_ROLES, PULM_DIAGNOSIS_CATEGORIES, PULM_POSTCOORDINATION_NOTE, PULM_CODING_DETAIL_FIELDS } from "@/lib/pulmonologyIcd11";
 
 // Which blocks each EXISTING note receives. Keys are the existing AMedix note
 // keys from specialtyDocuments.js — no note type is added here.
 const BLOCKS_BY_NOTE = {
   pulm_consultation: [
-    "pulm_history", "pulm_symptoms", "pulm_inhaler_device", "pulm_exacerbation",
+    "pulm_presenting", "pulm_cough_sputum", "pulm_dyspnoea", "pulm_history",
+    "pulm_past_respiratory", "pulm_meds_allergies", "pulm_symptoms", "pulm_exam",
+    "pulm_vitals", "pulm_inhaler_device", "pulm_exacerbation",
     "pulm_lung_function", "pulm_asthma", "pulm_copd", "pulm_ild", "pulm_bronchiectasis",
     "pulm_sleep", "pulm_pe", "pulm_management",
   ],
   pulm_followup: [
-    "pulm_symptoms", "pulm_inhaler_device", "pulm_exacerbation", "pulm_asthma",
+    "pulm_dyspnoea", "pulm_symptoms", "pulm_exam", "pulm_inhaler_device", "pulm_exacerbation", "pulm_asthma",
     "pulm_copd", "pulm_lung_function", "pulm_management",
   ],
   pulm_admission_note: [
-    "pulm_history", "pulm_symptoms", "pulm_oxygen", "pulm_exacerbation", "pulm_pe", "pulm_pleural", "pulm_copd",
+    "pulm_presenting", "pulm_cough_sputum", "pulm_dyspnoea", "pulm_history",
+    "pulm_past_respiratory", "pulm_symptoms", "pulm_vitals", "pulm_exam",
+    "pulm_oxygen", "pulm_exacerbation", "pulm_pe", "pulm_pleural", "pulm_copd",
   ],
-  pulm_progress_note: ["pulm_symptoms", "pulm_oxygen", "pulm_exacerbation", "pulm_pleural"],
+  pulm_progress_note: ["pulm_symptoms", "pulm_vitals", "pulm_exam", "pulm_oxygen", "pulm_exacerbation", "pulm_pleural"],
   pulm_discharge_summary: ["pulm_oxygen", "pulm_exacerbation", "pulm_management"],
   pulm_procedure_note: ["pulm_pleural", "pulm_oxygen"],
   pulm_pft_report: ["pulm_lung_function"],
@@ -96,10 +107,30 @@ const guidanceField = (noteKey) => ({
   section: SECTION,
 });
 
+// Structured investigations — the same six captures for every test, plus the
+// AMedix request the result arrived through.
+const investigationsField = () => ({
+  key: "pulm_investigations",
+  label: "Structured Investigations",
+  type: "pulm_investigations",
+  section: SECTION,
+});
+
+// Notes that document investigations in the encounter itself.
+const INVESTIGATION_NOTES = new Set([
+  "pulm_consultation", "pulm_admission_note", "pulm_progress_note", "pulm_followup",
+]);
+
 const icd11Field = () => ({
   key: "icd11_diagnoses",
   label: "ICD-11 Coded Diagnoses",
   type: "icd11_diagnoses",
+  // The condition index is a shortcut into the official WHO service: the concept
+  // is retrieved at selection time and no code is held in the app.
+  conditionGroups: RESPIRATORY_CONDITION_GROUPS,
+  conditionIndexTitle: `Respiratory condition index (${RESPIRATORY_CONDITION_COUNT} conditions — retrieves the official ICD-11 concept)`,
+  conditionIndexHint:
+    "Select the condition: AMedix asks the WHO ICD-11 service for the official concept and stores the code, the official term, the release and the retrieval time. A condition the service cannot resolve is recorded without a code and flagged for coding review.",
   catalog: PULMONOLOGY_ICD11,
   catalogRelease: PULM_ICD11_MMS.release,
   catalogNote: PULM_ICD11_MMS.verification_note,
@@ -133,6 +164,11 @@ export const withPulmonologyStandards = (docs) =>
     if ((SCORES_BY_NOTE[doc.key] || []).length && !existing.has("pulm_scores")) {
       existing.add("pulm_scores");
       additions.push(scoresField(doc.key));
+    }
+
+    if (INVESTIGATION_NOTES.has(doc.key) && !existing.has("pulm_investigations")) {
+      existing.add("pulm_investigations");
+      additions.push(investigationsField());
     }
 
     if (ICD11_NOTES.has(doc.key) && !existing.has("icd11_diagnoses")) {

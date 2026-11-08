@@ -55,7 +55,7 @@ export default function ClinicalReferences() {
     return records.filter((r) => {
       if (status !== "all" && r.status !== status) return false;
       if (!q) return true;
-      return [r.issuing_organization, r.title, r.clinical_topic, r.version]
+      return [r.issuing_organization, r.title, r.clinical_topic, r.version, r.jurisdiction]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
@@ -142,8 +142,17 @@ export default function ClinicalReferences() {
             <div key={r.id || r.key} className="rounded-lg border border-border bg-card p-3 sm:p-4 space-y-2">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <p className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
                     {r.issuing_organization}
+                    <span
+                      className={`rounded border px-1.5 py-0.5 text-[9px] font-semibold normal-case tracking-normal ${
+                        r.jurisdiction === "local"
+                          ? "border-purple-300 text-purple-700 dark:border-purple-700 dark:text-purple-300"
+                          : "border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300"
+                      }`}
+                    >
+                      {r.jurisdiction === "local" ? "Locally approved protocol" : "International recommendation"}
+                    </span>
                   </p>
                   <p className="text-sm font-semibold leading-snug">{r.title}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -190,6 +199,20 @@ export default function ClinicalReferences() {
                 <p className="text-[11px]">
                   <span className="text-muted-foreground">Supports in AMedix: </span>
                   {r.what_it_supports}
+                </p>
+              )}
+              {r.jurisdiction === "local" && (
+                <p className="text-[11px]">
+                  <span className="text-muted-foreground">Local approval: </span>
+                  {[r.approving_body, r.approval_reference, r.adoption_date && `adopted ${r.adoption_date}`, r.review_date && `review ${r.review_date}`]
+                    .filter(Boolean)
+                    .join(" · ") || "Not recorded"}
+                </p>
+              )}
+              {r.scope_note && (
+                <p className="text-[11px]">
+                  <span className="text-muted-foreground">Scope: </span>
+                  {r.scope_note}
                 </p>
               )}
               {r.status_note && (

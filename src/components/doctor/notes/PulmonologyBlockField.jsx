@@ -61,6 +61,27 @@ export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
               />
             )}
 
+            {f.type === "computed" && (
+              <div className="rounded-md border border-border bg-muted/40 px-2 py-1.5">
+                {(() => {
+                  const calculated = typeof f.compute === "function" ? f.compute(values) : null;
+                  return (
+                    <p className="text-xs">
+                      {calculated === null || calculated === undefined || calculated === "" ? (
+                        <span className="text-muted-foreground">Not calculable yet — enter the values it needs above.</span>
+                      ) : (
+                        <>
+                          <span className="font-semibold">{calculated}</span>
+                          {f.unit ? ` ${f.unit}` : ""}
+                          <span className="ml-1 text-[10px] text-muted-foreground">calculated, not entered</span>
+                        </>
+                      )}
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+
             {f.type === "select" && (
               <Select value={v || undefined} onValueChange={(next) => set(f.key, next)}>
                 <SelectTrigger id={`${fieldKey}-${f.key}`} className="w-full">
@@ -98,6 +119,8 @@ export default function PulmonologyBlockField({ fieldKey, value, onChange }) {
                 })}
               </div>
             )}
+
+            {f.hint && <p className="text-[10px] text-muted-foreground">{f.hint}</p>}
           </div>
         );
       })}

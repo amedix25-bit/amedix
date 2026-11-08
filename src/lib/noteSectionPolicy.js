@@ -203,7 +203,10 @@ const isHaemodynamicStatusField = (field) => {
 
 // Structured examination modules record their own structured findings — they are
 // never the single free-text examination field this rule retires.
-const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci", "peds_modules"];
+// `pulm_modules` is the respiratory documentation module: its examination block
+// records the chest findings by lung field, so it is a structured examination
+// record and never the single free-text examination field this rule retires.
+const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci", "peds_modules", "pulm_modules"];
 
 const isExaminationField = (field) => {
   if (STRUCTURED_EXAM_TYPES.includes(field.type)) return false;
@@ -251,8 +254,18 @@ const applyClinicalFieldRules = (doc) => {
 // "Escalation Criteria" section this rule retires.
 const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation", "peds_modules", "peds_safety", "peds_guidance"];
 
+// The respiratory documentation module for investigations, added explicitly for
+// the pulmonology templates. It is not result entry: ordering, performing and
+// resulting stay in the Laboratory and Radiology workflows, and the block records
+// only what the clinician documented — indication, the result as reported, unit,
+// the clinician's interpretation, the date, the attachment, and the AMedix request
+// reference the result belongs to. It therefore does not reinstate the retired
+// free-text "Investigations" section in any other specialty.
+const RESPIRATORY_DOCUMENTATION_TYPES = ["pulm_investigations"];
+
 const isRetiredField = (field, specialty) => {
   if (STRUCTURED_RECORD_TYPES.includes(field.type)) return false;
+  if (RESPIRATORY_DOCUMENTATION_TYPES.includes(field.type)) return false;
   if (RETIRED_FIELD_TYPES.includes(field.type)) return true;
   const label = field.label || "";
   if (isGloballyRetiredField(field)) return true;

@@ -45,9 +45,19 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
   const pleural = block(values, "pulm_pleural");
   const pe = block(values, "pulm_pe");
   const history = block(values, "pulm_history");
+  const cough = block(values, "pulm_cough_sputum");
+  const presenting = block(values, "pulm_presenting");
+  const vitals = block(values, "pulm_vitals");
+  const investigations = asObject(asObject(values?.pulm_investigations).items);
   const scores = asObject(values?.pulm_scores);
 
-  const symptomsPresent = list(symptoms.symptoms).some((s) => !/none documented|not documented/i.test(s));
+  // The cough/sputum block and the structured presenting complaints are the note's
+  // primary entry for respiratory symptoms, so the prompts read them too.
+  const coughPresent = ["Dry cough", "Productive cough"].includes(str(cough.cough));
+  const symptomsPresent =
+    list(symptoms.symptoms).some((s) => !/none documented|not documented/i.test(s)) ||
+    coughPresent ||
+    list(presenting.complaints).some((s) => /cough|breathless|wheeze|haemoptysis|sputum/i.test(s));
 
   // 1. Respiratory symptoms documented, no respiratory examination documented.
   if (symptomsPresent && Object.values(exam).every((v) => blank(v))) {
@@ -302,7 +312,10 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
   }
 
   // 19. Haemoptysis documented with no pathway documented.
-  if (list(symptoms.symptoms).includes("Haemoptysis") && blank(symptoms.haemoptysis_volume)) {
+  const haemoptysisDocumented =
+    list(symptoms.symptoms).includes("Haemoptysis") ||
+    /streaking|frank haemoptysis|massive haemoptysis/i.test(str(cough.haemoptysis));
+  if (haemoptysisDocumented && blank(symptoms.haemoptysis_volume)) {
     prompts.push(
       rule(
         "haemoptysis_without_volume",
@@ -326,6 +339,44 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
         "Smoking cessation is the single most effective intervention in both asthma and COPD management, and every guideline cited here requires it to be offered and recorded.",
         "Record the cessation advice and support offered, or that it was declined.",
         "gold",
+      ),
+    );
+  }
+
+  // 21. Hypoxaemia recorded with no oxygen documentation and no target range.
+  const roomAirSaturation = Number(vitals.spo2_air);
+  const hypoxaemic =
+    String(vitals.spo2_air ?? "").trim() !== "" &&
+    !Number.isNaN(roomAirSaturation) &&
+    roomAirSaturation > 0 &&
+    roomAirSaturation < 92;
+  if (hypoxaemic && blank(vitals.o2_device) && blank(vitals.target_range) && blank(oxygen.current_support)) {
+    prompts.push(
+      rule(
+        "hypoxaemia_without_oxygen_plan",
+        "same_day",
+        "Room-air saturation below 92% documented — no oxygen delivery or target range recorded",
+        "A recorded saturation below 92% is the finding that starts an oxygen assessment. Without the delivery device, the target range and the response, the next clinician cannot tell whether the hypoxaemia was addressed or is still present.",
+        "Record the oxygen device and flow rate used, the saturation achieved, and the prescribed target range.",
+        "gold",
+      ),
+    );
+  }
+
+  // 22. An investigation recorded without the clinician's interpretation.
+  const uninterpreted = Object.values(investigations).filter((entry) => {
+    const item = asObject(entry);
+    return String(item.result ?? "").trim() !== "" && String(item.interpretation ?? "").trim() === "";
+  });
+  if (uninterpreted.length > 0) {
+    prompts.push(
+      rule(
+        "investigation_without_interpretation",
+        "advisory",
+        `${uninterpreted.length} investigation${uninterpreted.length === 1 ? "" : "s"} recorded without an interpretation`,
+        "A result without the clinician's documented interpretation cannot be told apart from a result nobody reviewed, and the plan that followed cannot be reconstructed from the record.",
+        "Record the interpretation for each documented result, or remove the result if it belongs in the Laboratory or Radiology record only.",
+        "ats_ers_pft",
       ),
     );
   }

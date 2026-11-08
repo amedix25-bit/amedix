@@ -65,6 +65,51 @@ const CORE_BLOCKS = {
         "Tuberculosis contact", "Endemic-area travel", "Injecting drug use", "None documented", NOT_DOCUMENTED,
       ]),
       S("tb_contact", "Documented Tuberculosis Contact or Endemic Exposure", ["No", "Yes — contact tracing recorded", "Yes — detail not documented", NOT_DOCUMENTED]),
+
+      // Smoking is quantified, not only categorised: both the documented figure
+      // and the pack-years calculated from the two entries below are kept, so the
+      // arithmetic is visible and can be checked.
+      N("cigarettes_per_day", "Cigarettes per Day (current, or before stopping)"),
+      N("years_smoked", "Years Smoked"),
+      {
+        key: "pack_years_calculated",
+        label: "Pack-Years — calculated from the two entries above",
+        type: "computed",
+        unit: "pack-years",
+        hint: "Cigarettes per day ÷ 20 × years smoked. Shown for review; the documented pack-year figure above is never overwritten by it.",
+        compute: (v) => {
+          const perDay = Number(v.cigarettes_per_day);
+          const years = Number(v.years_smoked);
+          if (!perDay || !years) return null;
+          return Math.round((perDay / 20) * years * 10) / 10;
+        },
+      },
+
+      // Shisha / water-pipe exposure is documented in its own right: it is not
+      // converted into cigarette equivalents, because no conversion is applied by
+      // the app — the sessions and years are recorded as the patient reports them.
+      S("shisha_status", "Shisha / Water-Pipe Use", [
+        "Never", "Current — occasional", "Current — daily", "Ex-shisha user", NOT_DOCUMENTED,
+      ]),
+      N("shisha_sessions_per_week", "Shisha Sessions per Week as Documented"),
+      N("shisha_years", "Years of Shisha Use"),
+      T("shisha_detail", "Shisha Exposure Detail (sessions, years, sharing, venue) — no cigarette-equivalent is calculated"),
+
+      I("occupation", "Current or Previous Occupation(s)"),
+      I("occupational_years", "Years in the Documented Occupation"),
+      S("respiratory_protection", "Respiratory Protection Used at Work", YES_NO_DOC),
+      M("environmental_exposures", "Environmental Exposures Documented at Home or Locally", [
+        "Urban air pollution", "Traffic-related pollution", "Industrial emissions nearby",
+        "Indoor biomass or charcoal smoke", "Damp or mould at home", "Overcrowding",
+        "Pets or animal antigens", "Dust mite", "Pollen", "Passive smoking", "None documented", NOT_DOCUMENTED,
+      ]),
+      S("home_environment", "Home Environment Documented", [
+        "No damp or mould documented", "Damp or mould documented", "Overcrowding documented",
+        "Indoor biomass fuel use documented", "Not documented", NOT_APPLICABLE,
+      ]),
+      S("endemic_travel", "Travel or Residence in a Tuberculosis-Endemic Area", [
+        "None documented", "Yes — documented", NOT_DOCUMENTED,
+      ]),
     ],
   },
 
@@ -125,6 +170,55 @@ const CORE_BLOCKS = {
         "Lymphadenopathy", "Joint findings", "Skin findings", "Neurological findings", NOT_DOCUMENTED,
       ]),
       T("exam_detail", "Examination Detail — site-by-site findings and anything not covered above"),
+
+      // The findings the note records explicitly, then the SAME examination
+      // documented for the right and the left lung field separately, so a focal
+      // finding is never flattened into a single chest-wide statement.
+      S("distress", "Respiratory Distress", [
+        "No distress at rest", "On exertion only", "At rest — mild", "At rest — moderate",
+        "At rest — severe", "Unable to speak in sentences", NOT_DOCUMENTED,
+      ]),
+      S("accessory_muscles", "Accessory Muscle Use", [
+        "None", "Mild", "Moderate", "Marked — with sternal recession", NOT_DOCUMENTED,
+      ]),
+      S("cyanosis", "Cyanosis", ["None", "Central", "Peripheral", "Central and peripheral", NOT_DOCUMENTED]),
+      S("clubbing", "Finger Clubbing", [
+        "Absent", "Present — grade documented", "Present — with tar staining", "Present — with signs of chronic suppuration", NOT_DOCUMENTED,
+      ]),
+      T("clubbing_detail", "Clubbing and Peripheral Signs Detail (grade, tar staining, flap, purpura)"),
+      S("inspection_right", "Inspection — Right Hemithorax", [
+        "Symmetrical movement", "Reduced movement", "Intercostal recession", "Bulging", "Surgical scar or drain site", NOT_DOCUMENTED,
+      ]),
+      S("inspection_left", "Inspection — Left Hemithorax", [
+        "Symmetrical movement", "Reduced movement", "Intercostal recession", "Bulging", "Surgical scar or drain site", NOT_DOCUMENTED,
+      ]),
+      S("expansion_right", "Chest Expansion — Right", ["Normal", "Reduced", "Increased", NOT_DOCUMENTED]),
+      S("expansion_left", "Chest Expansion — Left", ["Normal", "Reduced", "Increased", NOT_DOCUMENTED]),
+      S("fremitus_right", "Tactile Vocal Fremitus — Right", ["Normal", "Increased", "Reduced", NOT_DOCUMENTED]),
+      S("fremitus_left", "Tactile Vocal Fremitus — Left", ["Normal", "Increased", "Reduced", NOT_DOCUMENTED]),
+      S("percussion_right", "Percussion — Right Lung Field", [
+        "Resonant", "Dull", "Stony dull", "Hyper-resonant", "Tympanic", NOT_DOCUMENTED,
+      ]),
+      S("percussion_left", "Percussion — Left Lung Field", [
+        "Resonant", "Dull", "Stony dull", "Hyper-resonant", "Tympanic", NOT_DOCUMENTED,
+      ]),
+      S("breath_sounds_right", "Breath Sounds — Right Lung Field", [
+        "Vesicular", "Bronchial", "Reduced", "Absent", NOT_DOCUMENTED,
+      ]),
+      S("breath_sounds_left", "Breath Sounds — Left Lung Field", [
+        "Vesicular", "Bronchial", "Reduced", "Absent", NOT_DOCUMENTED,
+      ]),
+      M("added_sounds_right", "Added Sounds — Right Lung Field", [
+        "None", "Widespread wheeze", "Focal wheeze", "Coarse crackles", "Fine inspiratory crackles",
+        "Pleural rub", "Stridor", NOT_DOCUMENTED,
+      ]),
+      M("added_sounds_left", "Added Sounds — Left Lung Field", [
+        "None", "Widespread wheeze", "Focal wheeze", "Coarse crackles", "Fine inspiratory crackles",
+        "Pleural rub", "Stridor", NOT_DOCUMENTED,
+      ]),
+      S("vocal_resonance_right", "Vocal Resonance — Right", ["Normal", "Increased", "Reduced", NOT_DOCUMENTED]),
+      S("vocal_resonance_left", "Vocal Resonance — Left", ["Normal", "Increased", "Reduced", NOT_DOCUMENTED]),
+      T("auscultation_detail", "Auscultation Detail — zone-by-zone findings, and how the patient was breathing during the examination"),
     ],
   },
 
@@ -526,6 +620,201 @@ const CORE_BLOCKS = {
     ],
   },
 
+  // ---- Structured presentation -------------------------------------------
+  pulm_presenting: {
+    title: "Structured Presenting Complaints & History of Present Illness",
+    fields: [
+      M("complaints", "Presenting Complaints Recorded at This Visit", [
+        "Cough", "Sputum production", "Breathlessness", "Wheeze", "Chest tightness",
+        "Haemoptysis", "Fever", "Chest pain", "Snoring / witnessed apnoea",
+        "Weight loss", "Night sweats", "Recurrent infection", "Incidental imaging finding",
+        "Occupational assessment", "Other", NOT_DOCUMENTED,
+      ]),
+      I("duration_value", "Duration (number)"),
+      S("duration_unit", "Duration Unit", ["Hours", "Days", "Weeks", "Months", "Years", NOT_DOCUMENTED]),
+      S("onset", "Onset", ["Sudden", "Gradual", "Progressive", "Episodic / intermittent", NOT_DOCUMENTED]),
+      S("course", "Course Since Onset", [
+        "Improving", "Stable", "Worsening", "Fluctuating", "Resolved and recurred", NOT_DOCUMENTED,
+      ]),
+      M("associations", "Associated Symptoms Documented", [
+        "Fever", "Night sweats", "Weight loss", "Ankle swelling", "Palpitations",
+        "Chest pain", "Hoarseness", "Dysphagia", "Rash", "Joint symptoms",
+        "None documented", NOT_DOCUMENTED,
+      ]),
+      T("hpi_narrative", "History of Present Illness — Narrative"),
+      T("prior_treatment", "Treatment Already Taken for This Episode and the Response"),
+      S("previous_episodes", "Previous Similar Episodes", [
+        "First episode", "Recurrent — documented", "Seasonal pattern documented",
+        "Related to a known trigger", "Not documented",
+      ]),
+    ],
+  },
+
+  // ---- Cough and sputum ---------------------------------------------------
+  pulm_cough_sputum: {
+    title: "Cough and Sputum Assessment",
+    fields: [
+      S("cough", "Cough as Documented", ["No cough", "Dry cough", "Productive cough", NOT_DOCUMENTED]),
+      S("cough_duration", "Cough Duration", [
+        "Less than 3 weeks (acute)", "3–8 weeks (subacute)", "More than 8 weeks (chronic)", NOT_DOCUMENTED,
+      ], WHEN_IN("cough", ["Dry cough", "Productive cough"])),
+      S("cough_timing", "Cough Timing", [
+        "Mainly daytime", "Mainly nocturnal", "On waking", "Throughout the day and night", NOT_DOCUMENTED,
+      ], WHEN_IN("cough", ["Dry cough", "Productive cough"])),
+      M("cough_features", "Cough Features Documented", [
+        "Paroxysmal", "Associated with wheeze", "Associated with breathlessness",
+        "Associated with chest pain", "Post-prandial", "With vomiting", "None documented", NOT_DOCUMENTED,
+      ], WHEN_IN("cough", ["Dry cough", "Productive cough"])),
+      S("sputum_volume", "Sputum Volume as Documented", [
+        "No sputum", "Less than a teaspoon daily", "Teaspoon to tablespoon daily",
+        "More than a tablespoon daily", "Large volume — measured", NOT_DOCUMENTED,
+      ], WHEN("cough", "Productive cough")),
+      S("sputum_colour", "Sputum Colour", [
+        "Clear / mucoid", "White", "Yellow", "Green", "Rust-coloured", "Blood-stained", "Frothy pink", NOT_DOCUMENTED,
+      ], WHEN("cough", "Productive cough")),
+      S("sputum_consistency", "Sputum Consistency", [
+        "Thin", "Thick", "Frothy", "Plug-like", "Foul-smelling", NOT_DOCUMENTED,
+      ], WHEN("cough", "Productive cough")),
+      S("sputum_change", "Change From the Patient's Baseline", [
+        "No change documented", "Increased volume", "Increased purulence", "Increased breathlessness with sputum change",
+        "Not applicable — first episode", NOT_DOCUMENTED,
+      ], WHEN("cough", "Productive cough")),
+      S("haemoptysis", "Haemoptysis as Documented", [
+        "None", "Blood streaking only", "Frank haemoptysis", "Massive haemoptysis", NOT_DOCUMENTED,
+      ]),
+    ],
+  },
+
+  // ---- Dyspnoea -----------------------------------------------------------
+  pulm_dyspnoea: {
+    title: "Dyspnoea Assessment (mMRC and Borg)",
+    fields: [
+      S("dyspnoea_presence", "Breathlessness as Documented", [
+        "None", "On exertion only", "At rest and on exertion", "Orthopnoea only", NOT_DOCUMENTED,
+      ]),
+      S("mmrc_grade", "mMRC Grade Documented at This Visit", [
+        "0 — Breathless only with strenuous exercise",
+        "1 — Short of breath hurrying on level ground or walking up a slight hill",
+        "2 — Walks slower than peers, or stops for breath at own pace on level ground",
+        "3 — Stops for breath after about 100 metres or a few minutes on level ground",
+        "4 — Too breathless to leave the house, or breathless when dressing",
+        NOT_DOCUMENTED,
+      ]),
+      S("borg_rest", "Borg Breathlessness Rating at Rest", [
+        "0 — Nothing at all", "0.5 — Very, very slight", "1 — Very slight", "2 — Slight", "3 — Moderate",
+        "4 — Somewhat severe", "5 — Severe", "6", "7 — Very severe", "8", "9 — Very, very severe",
+        "10 — Maximal", NOT_DOCUMENTED,
+      ]),
+      S("borg_exertion", "Borg Breathlessness Rating After the Documented Exertion", [
+        "0 — Nothing at all", "0.5 — Very, very slight", "1 — Very slight", "2 — Slight", "3 — Moderate",
+        "4 — Somewhat severe", "5 — Severe", "6", "7 — Very severe", "8", "9 — Very, very severe",
+        "10 — Maximal", "Not assessed", NOT_DOCUMENTED,
+      ]),
+      I("borg_exertion_task", "Exertion the Rating Was Taken After (e.g. 20-metre walk, one flight of stairs)"),
+      S("orthopnoea", "Orthopnoea", [
+        "None", "Present — number of pillows documented", "Present — sleeps upright", NOT_DOCUMENTED,
+      ]),
+      S("pnd", "Paroxysmal Nocturnal Dyspnoea", ["None", "Present — documented", NOT_DOCUMENTED]),
+      M("dyspnoea_features", "Dyspnoea Features Documented", [
+        "Wheeze-associated", "Pleuritic", "Positional", "With cough", "With haemoptysis",
+        "Progressive over weeks", "Sudden onset", "None documented", NOT_DOCUMENTED,
+      ]),
+      I("exertional_threshold", "Exertional Threshold as Documented (distance, stairs, activities)"),
+      T("dyspnoea_impact", "Functional Impact of Breathlessness (work, self-care, mobility, sleep)"),
+    ],
+  },
+
+  // ---- Previous respiratory history --------------------------------------
+  pulm_past_respiratory: {
+    title: "Previous Respiratory Illness, Admissions and Ventilation History",
+    fields: [
+      M("previous_illnesses", "Previous Respiratory Conditions Documented", [
+        "Childhood asthma or wheeze", "Asthma", "Tuberculosis", "Pneumonia",
+        "Pleural effusion or empyema", "Pneumothorax", "Bronchiectasis",
+        "Interstitial lung disease", "Obstructive sleep apnoea", "Lung cancer",
+        "Previous thoracic surgery", "None documented", NOT_DOCUMENTED,
+      ]),
+      N("admissions_12m", "Respiratory Hospital Admissions in the Last 12 Months"),
+      N("admissions_lifetime", "Respiratory Hospital Admissions Documented Before That"),
+      I("last_admission_date", "Date of the Most Recent Respiratory Admission"),
+      S("icu_history", "Intensive Care Admission Documented", [
+        "Never admitted to intensive care", "Previously admitted — detail documented",
+        "Currently in intensive care", NOT_DOCUMENTED,
+      ]),
+      S("intubation_history", "Intubation History", [
+        "Never intubated", "Previously intubated — detail documented",
+        "Currently ventilated", "Not documented",
+      ]),
+      S("niv_history", "Non-Invasive Ventilation History", [
+        "None documented", "Previous acute NIV", "Long-term nocturnal NIV", NOT_DOCUMENTED,
+      ]),
+      T("ventilation_detail", "Ventilation Detail (indication, date, duration, weaning, complications)", WHEN_IN("intubation_history", ["Previously intubated — detail documented", "Currently ventilated"])),
+      T("known_microbiology", "Known Microbiology or Colonisation Documented (e.g. Pseudomonas, MRSA, non-tuberculous mycobacteria)"),
+      I("last_chest_imaging", "Last Chest Imaging Documented and Its Date"),
+    ],
+  },
+
+  // ---- Medication, allergy and comorbidity -------------------------------
+  pulm_meds_allergies: {
+    title: "Respiratory Medication, Allergy and Comorbidity Review",
+    fields: [
+      T("respiratory_medications", "Respiratory Medication as Documented (drug, dose, frequency, duration — the prescription itself lives in the medication record)"),
+      M("therapy_classes", "Therapy Classes Documented", [
+        "Short-acting bronchodilator", "Long-acting beta-agonist", "Long-acting muscarinic antagonist",
+        "Inhaled corticosteroid", "Triple therapy", "Leukotriene receptor antagonist",
+        "Theophylline", "Roflumilast", "Maintenance oral corticosteroid", "Steroid course",
+        "Biologic therapy", "Long-term antibiotic", "Home oxygen", "CPAP or NIV",
+        "Nebulised therapy", "None documented", NOT_DOCUMENTED,
+      ]),
+      M("relevant_other_medications", "Other Medications Relevant to Respiratory Care Documented", [
+        "Beta-blocker", "NSAID", "ACE inhibitor", "Amiodarone", "Methotrexate",
+        "Anticoagulant", "Opioid", "Sedative or benzodiazepine", "None documented", NOT_DOCUMENTED,
+      ]),
+      S("allergy_status", "Allergy Status as Documented", [
+        "No known drug allergy documented",
+        "Drug allergy documented — detail in the patient record",
+        "Drug allergy documented — detail recorded below",
+        "Not documented",
+      ]),
+      T("allergy_detail", "Allergy Detail Documented Here (drug, reaction, severity, when)"),
+      M("comorbidities", "Comorbidities Documented at This Visit", [
+        "Ischaemic heart disease", "Heart failure", "Atrial fibrillation", "Hypertension",
+        "Diabetes", "Chronic kidney disease", "Obesity", "Anxiety or depression",
+        "Osteoporosis", "Gastro-oesophageal reflux", "Obstructive sleep apnoea",
+        "Active malignancy", "Immunosuppression", "None documented", NOT_DOCUMENTED,
+      ]),
+      T("comorbidity_impact", "How the Comorbidities Affect the Respiratory Plan"),
+    ],
+  },
+
+  // ---- Vital signs and oxygen delivery -----------------------------------
+  pulm_vitals: {
+    title: "Vital Signs, Oxygen Saturation and Oxygen Delivery",
+    fields: [
+      S("measurement_context", "Measurement Context", [
+        "Room air", "On supplemental oxygen", "On high-flow therapy", "On NIV",
+        "On invasive ventilation", NOT_DOCUMENTED,
+      ]),
+      N("respiratory_rate", "Respiratory Rate"),
+      N("heart_rate", "Heart Rate"),
+      N("systolic_bp", "Systolic Blood Pressure"),
+      N("diastolic_bp", "Diastolic Blood Pressure"),
+      N("temperature", "Temperature"),
+      N("spo2_air", "Oxygen Saturation on Room Air"),
+      N("spo2_on_o2", "Oxygen Saturation on Supplemental Oxygen"),
+      S("o2_device", "Oxygen Delivery Device", OXYGEN_SUPPORT),
+      N("o2_flow", "Oxygen Flow Rate"),
+      N("fio2", "FiO2"),
+      S("target_range", "Prescribed Oxygen Target Range", [
+        "94–98%", "88–92% (hypercapnia risk)", "Individualised range documented", NOT_DOCUMENTED,
+      ]),
+      I("peak_flow", "Peak Expiratory Flow as Documented"),
+      S("consciousness", "Consciousness Level", [
+        "Alert", "Responds to voice", "Responds to pain", "Unresponsive", NOT_DOCUMENTED,
+      ]),
+    ],
+  },
+
   // ---- Education, vaccination and follow-up ------------------------------
   pulm_management: {
     title: "Education, Prevention and Follow-Up",
@@ -589,6 +878,13 @@ export const formatPulmBlock = (value) => {
   if (!spec) return "";
   return spec.fields
     .map((f) => {
+      // A calculated value is printed as calculated, together with the entries it
+      // came from, so the arithmetic in an exported note can be checked by hand.
+      if (f.type === "computed") {
+        const calculated = typeof f.compute === "function" ? f.compute(v) : null;
+        if (calculated === null || calculated === undefined || calculated === "") return "";
+        return `${f.label}: ${calculated}${f.unit ? ` ${f.unit}` : ""} (calculated)`;
+      }
       const raw = v[f.key];
       const text = Array.isArray(raw) ? raw.filter(Boolean).join("; ") : String(raw ?? "").trim();
       return text ? `${f.label}: ${text}` : "";

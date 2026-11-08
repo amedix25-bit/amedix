@@ -18,6 +18,19 @@
       "type": "string",
       "description": "Clinical topic the reference covers, e.g. Anaphylaxis, Asthma, Urticaria, Primary immunodeficiency, ICD-11 coding"
     },
+    "jurisdiction": {
+      "type": "string",
+      "enum": [
+        "international",
+        "local"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "default": "international",
+      "description": "INTERNATIONAL: a recommendation published by a professional or global body \u2014 documentation support, never a local approval. LOCAL: the institution's own approved protocol, which must carry its approving body, approval reference, adoption date and review date"
+    },
     "specialty_keys": {
       "type": "array",
       "items": {
@@ -81,6 +94,26 @@
     "copyright_note": {
       "type": "string",
       "description": "Copyright and permission position recorded for the reference"
+    },
+    "approving_body": {
+      "type": "string",
+      "description": "For a LOCALLY approved protocol: the committee or department that approved it, e.g. Infection Control Committee. Empty for an international recommendation"
+    },
+    "approval_reference": {
+      "type": "string",
+      "description": "For a LOCALLY approved protocol: the institution's own approval reference or minute number, so an approval can be traced to its record"
+    },
+    "adoption_date": {
+      "type": "string",
+      "description": "For a LOCALLY approved protocol: the date the institution adopted it (ISO date)"
+    },
+    "review_date": {
+      "type": "string",
+      "description": "For a LOCALLY approved protocol: the date it falls due for local review (ISO date). After that date it is no longer presented as locally approved until it is re-approved"
+    },
+    "scope_note": {
+      "type": "string",
+      "description": "For a LOCALLY approved protocol: which note types, units or patient groups it governs, and any documented local departure from the international recommendation it derives from"
     }
   },
   "required": [
