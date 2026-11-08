@@ -21,6 +21,15 @@ export const GENERAL_DOCUMENT_TYPES = [
 ];
 
 export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
+  // Allergy & Immunology — the specialty's own note types. Previously these
+  // doctors used the internal-medicine set; those keys stay exactly as they are
+  // and remain valid, so every existing note keeps resolving.
+  allergy: [
+    "allergy_consultation", "allergy_followup", "allergy_anaphylaxis_note",
+    "allergy_food_note", "allergy_drug_note", "allergy_skin_note",
+    "allergy_immunology_note", "allergy_immunotherapy_visit",
+    "allergy_procedure_note", "allergy_child_consultation", "allergy_care_plan",
+  ],
   internal_medicine: [
     "im_consultation", "im_new_patient_assessment", "im_followup",
     "im_chronic_followup", "im_admission_note", "im_daily_progress",

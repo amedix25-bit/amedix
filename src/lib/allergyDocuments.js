@@ -99,7 +99,6 @@ export const ALLERGY_DOCS = [
     label: "Allergy & Immunology Consultation",
     specialty: "allergy",
     fields: [
-      I("referral_source", "Referral Source", HISTORY),
       T("chief_complaint", "Presenting Complaint", HISTORY),
       T("hpi", "History of Present Illness — Detailed Chronology", HISTORY),
       T("exposure_history", "Allergy Exposure, Occupation and Environment", HISTORY),

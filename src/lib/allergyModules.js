@@ -31,7 +31,7 @@
 // No block orders anything, and no block records a result that was not reported.
 
 import {
-  T, I, N, S, M, WHEN, WHEN_IN, NOT_ASSESSED, NOT_DOCUMENTED, UNKNOWN, YES_NO_DOC,
+  T, I, N, S, M, WHEN, WHEN_IN, NOT_ASSESSED, NOT_DOCUMENTED, NOT_APPLICABLE, UNKNOWN, YES_NO_DOC,
 } from "@/lib/allergyFieldKit";
 
 const CORE_BLOCKS = {

@@ -27,6 +27,7 @@ import { NEUROSURGERY_DOCS } from "@/lib/neurosurgeryDocuments";
 import { withGastroenterologyStandards } from "@/lib/gastroenterologyDocuments";
 import { withOphthalmologyStandards } from "@/lib/ophthalmologyDocuments";
 import { withHematologyStandards } from "@/lib/hematologyDocuments";
+import { ALLERGY_DOCS, withAllergyStandards } from "@/lib/allergyDocuments";
 import { withOrthopedicsStandards } from "@/lib/orthopedicsDocuments";
 import { withNeurologyStandards } from "@/lib/neurologyDocuments";
 import { withPediatricsStandards } from "@/lib/pedsDocuments";
@@ -89,7 +90,7 @@ export const SPECIALTY_KEYS = {
   "Trauma Surgery": "surgery",
   "Critical Care / ICU": "internal_medicine",
   "Pain Medicine": "anesthesiology",
-  "Allergy & Immunology": "internal_medicine",
+  "Allergy & Immunology": "allergy",
   "Geriatrics": "internal_medicine",
   "Palliative Care": "family_medicine",
   "Sports Medicine": "orthopedics",
@@ -97,6 +98,7 @@ export const SPECIALTY_KEYS = {
 
 export const SPECIALTY_LABELS = {
   internal_medicine: "Internal Medicine",
+  allergy: "Allergy & Immunology",
   surgery: "Surgery",
   emergency_medicine: "Emergency Medicine",
   pediatrics: "Pediatrics",
@@ -859,7 +861,7 @@ export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...withGastroenterologyStandards(GASTROENTEROLOGY_DOCS),
   ...withNephrologySafety([...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS]),
   ...withEndocrineStandards(ENDOCRINOLOGY_DOCS),
-  ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS,   ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS, ...withHematologyStandards(HEMATOLOGY_DOCS),
+  ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS,   ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS,   ...withHematologyStandards(HEMATOLOGY_DOCS), ...withAllergyStandards(ALLERGY_DOCS),
   ...FAMILY_MEDICINE_DOCS, ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
   ...RADIOLOGY_DOCS, ...LABORATORY_DOCS, ...PATHOLOGY_DOCS,
 ]);

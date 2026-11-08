@@ -51,6 +51,10 @@ import HematologyBlockField from "@/components/doctor/notes/HematologyBlockField
 import HematologyLabsField from "@/components/doctor/notes/HematologyLabsField";
 import HematologyScoresField from "@/components/doctor/notes/HematologyScoresField";
 import HematologySafetyPromptsField from "@/components/doctor/notes/HematologySafetyPromptsField";
+import AllergyBlockField from "@/components/doctor/notes/AllergyBlockField";
+import AllergyTestsField from "@/components/doctor/notes/AllergyTestsField";
+import AllergySafetyPromptsField from "@/components/doctor/notes/AllergySafetyPromptsField";
+import AllergyGuidanceField from "@/components/doctor/notes/AllergyGuidanceField";
 import OrthopedicsSafetyPromptsField from "@/components/doctor/notes/OrthopedicsSafetyPromptsField";
 import OrthopedicsTraumaField from "@/components/doctor/notes/OrthopedicsTraumaField";
 import OrthopedicsHealingField from "@/components/doctor/notes/OrthopedicsHealingField";
@@ -338,6 +342,18 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
           value={values[f.key]}
           onChange={(v) => onChange(f.key, v)}
         />
+      )}
+      {f.type === "allergy_modules" && (
+        <AllergyBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "allergy_tests" && (
+        <AllergyTestsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "allergy_safety" && (
+        <AllergySafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "allergy_guidance" && (
+        <AllergyGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "hema_modules" && (
         <HematologyBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

@@ -37,6 +37,8 @@ import { formatHemaBlock } from "@/lib/hematologyBlocks";
 import { formatHemaLabs } from "@/lib/hematologyLabCatalogue";
 import { formatHemaScores } from "@/lib/hematologyScores";
 import { formatHemaSafety } from "@/lib/hematologySafetyRules";
+import { formatAllergyBlock } from "@/lib/allergyModules";
+import { formatAllergyTests } from "@/lib/allergyTests";
 import { formatOrthoSafety } from "@/lib/orthopedicsSafetyRules";
 import { formatOrthoTrauma } from "@/lib/orthopedicsTrauma";
 import { formatOrthoHealing } from "@/lib/orthopedicsManagement";
@@ -235,6 +237,9 @@ export function formatFieldValue(type, value) {
   if (type === "ophth_scores") return formatOphthScores(value);
   if (type === "ophth_safety") return formatOphthSafety(value);
   if (type === "ophth_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
+  if (type === "allergy_modules") return formatAllergyBlock(value);
+  if (type === "allergy_tests") return formatAllergyTests(value);
+  if (type === "allergy_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
   if (type === "hema_modules") return formatHemaBlock(value);
   if (type === "hema_labs") return formatHemaLabs(value);
   if (type === "hema_scores") return formatHemaScores(value);
