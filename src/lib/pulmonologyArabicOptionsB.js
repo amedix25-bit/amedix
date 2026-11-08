@@ -458,4 +458,22 @@ export const PULM_AR_OPTIONS_B = {
   "Repeat testing": "إعادة الفحص",
   "Clinic review": "مراجعة في العيادة",
   "Completed — documented": "أُكمل — موثّق",
+
+  // ── Validated instrument response options ────────────────────────────────
+  "1 — All of the time": "1 — طوال الوقت",
+  "2 — Most of the time": "2 — معظم الوقت",
+  "3 — Some of the time": "3 — بعض الوقت",
+  "4 — A little of the time": "4 — قليلاً من الوقت",
+  "5 — None of the time": "5 — لا وقت على الإطلاق",
+  "1 — Not controlled at all": "1 — غير مسيطر عليه إطلاقاً",
+  "2 — Poorly controlled": "2 — سيطرة ضعيفة",
+  "3 — Somewhat controlled": "3 — سيطرة جزئية",
+  "4 — Well controlled": "4 — سيطرة جيدة",
+  "5 — Completely controlled": "5 — سيطرة تامة",
+  "0 — No problem at all": "0 — لا مشكلة على الإطلاق",
+  "5 — Worst possible": "5 — الأسوأ ممكناً",
+  "1 — Short of breath when hurrying on level ground or walking up a slight hill":
+    "1 — ضيق نفس عند الإسراع في أرض مستوية أو صعود منحدر خفيف",
+  "2 — Walks slower than people of the same age, or stops for breath walking level at own pace":
+    "2 — يمشي أبطأ من أقرانه في العمر، أو يتوقف لالتقاط أنفاسه وهو يمشي في أرض مستوية بوتيرته",
 };
