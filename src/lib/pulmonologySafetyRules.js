@@ -336,15 +336,13 @@ export const buildPulmonologySafetyPrompts = ({ values, noteKey }) => {
 // Printed record: the prompts raised and whether the action was documented.
 export const formatPulmSafety = (value) => {
   const state = asObject(value);
-  const rows = Array.isArray(state.rows) ? state.rows : [];
   const acknowledged = Array.isArray(state.acknowledged) ? state.acknowledged : [];
-  if (!rows.length) return "";
-  return rows
-    .map((r) => {
-      const done = acknowledged.includes(r.key);
-      return `${r.title} — ${done ? "action documented" : "action not documented in this note"}${
-        str(r.note) ? `: ${str(r.note)}` : ""
-      }`;
+  const notes = asObject(state.notes);
+  if (!acknowledged.length) return "";
+  return acknowledged
+    .map((key) => {
+      const text = str(notes[key]);
+      return text ? `${key} — ${text}` : `${key} — action documented`;
     })
     .join("\n");
 };

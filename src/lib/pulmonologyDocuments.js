@@ -73,10 +73,11 @@ const scoresField = (noteKey) => ({
   instruments: SCORES_BY_NOTE[noteKey] || [],
 });
 
-const safetyField = () => ({
+const safetyField = (noteKey) => ({
   key: "pulm_safety",
   label: "Advisory Documentation Prompts",
   type: "pulm_safety",
+  noteKey,
 });
 
 const guidanceField = (noteKey) => ({
@@ -133,7 +134,7 @@ export const withPulmonologyStandards = (docs) =>
     // the advisory prompts and the guideline basis it cites.
     if (!existing.has("pulm_safety")) {
       existing.add("pulm_safety");
-      additions.push(safetyField());
+      additions.push(safetyField(doc.key));
     }
 
     if (!existing.has("pulm_guidance")) {

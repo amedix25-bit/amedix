@@ -56,6 +56,10 @@ import AllergyTestsField from "@/components/doctor/notes/AllergyTestsField";
 import AllergySafetyPromptsField from "@/components/doctor/notes/AllergySafetyPromptsField";
 import AllergyGuidanceField from "@/components/doctor/notes/AllergyGuidanceField";
 import AllergyTreatmentField from "@/components/doctor/notes/AllergyTreatmentField";
+import PulmonologyBlockField from "@/components/doctor/notes/PulmonologyBlockField";
+import PulmonologyScoresField from "@/components/doctor/notes/PulmonologyScoresField";
+import PulmonologySafetyPromptsField from "@/components/doctor/notes/PulmonologySafetyPromptsField";
+import PulmonologyGuidanceField from "@/components/doctor/notes/PulmonologyGuidanceField";
 import OrthopedicsSafetyPromptsField from "@/components/doctor/notes/OrthopedicsSafetyPromptsField";
 import OrthopedicsTraumaField from "@/components/doctor/notes/OrthopedicsTraumaField";
 import OrthopedicsHealingField from "@/components/doctor/notes/OrthopedicsHealingField";
@@ -346,6 +350,28 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "allergy_modules" && (
         <AllergyBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "pulm_modules" && (
+        <PulmonologyBlockField fieldKey={f.blockKey || f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "pulm_scores" && (
+        <PulmonologyScoresField
+          value={values[f.key]}
+          values={values}
+          instruments={f.instruments}
+          onChange={(v) => onChange(f.key, v)}
+        />
+      )}
+      {f.type === "pulm_safety" && (
+        <PulmonologySafetyPromptsField
+          value={values[f.key]}
+          values={values}
+          noteKey={f.noteKey}
+          onChange={(v) => onChange(f.key, v)}
+        />
+      )}
+      {f.type === "pulm_guidance" && (
+        <PulmonologyGuidanceField value={values[f.key]} noteKey={f.noteKey} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "allergy_tests" && (
         <AllergyTestsField value={values[f.key]} onChange={(v) => onChange(f.key, v)} />

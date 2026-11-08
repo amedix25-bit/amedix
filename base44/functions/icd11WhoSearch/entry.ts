@@ -63,14 +63,96 @@ async function accessToken(clientId, clientSecret) {
   return token;
 }
 
-const apiHeaders = (token) => ({
+// Terminology is requested in the language the clinician is working in: the WHO
+// API returns the official term for that language where the release carries one,
+// and its own default elsewhere. AMedix never translates a classification term
+// itself.
+const apiHeaders = (token, lang = "en") => ({
   Authorization: `Bearer ${token}`,
   Accept: "application/json",
-  "Accept-Language": "en",
+  "Accept-Language": lang === "ar" ? "ar" : "en",
   "API-Version": "v2",
 });
 
 const asArray = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+// A short-lived read cache. Classification content is stable within a release, so
+// repeating the same lookup — while a clinician types, expands a parent chain or
+// reopens the same entry — returns the same WHO answer instead of calling the
+// service again. Only successful payloads are cached, and nothing is cached past
+// its release's relevance window.
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const cache = new Map();
+const cacheGet = (key) => {
+  const hit = cache.get(key);
+  if (!hit) return null;
+  if (Date.now() > hit.expires) {
+    cache.delete(key);
+    return null;
+  }
+  return hit.value;
+};
+const cacheSet = (key, value) => {
+  if (cache.size > 400) cache.clear();
+  cache.set(key, { value, expires: Date.now() + CACHE_TTL_MS });
+  return value;
+};
+
+const text = (node) => {
+  if (!node) return "";
+  if (typeof node === "string") return node.trim();
+  if (typeof node === "object") {
+    const value = node["@value"] ?? node.label?.["@value"] ?? node.label ?? node.title?.["@value"] ?? "";
+    return typeof value === "string" ? value.trim() : "";
+  }
+  return "";
+};
+
+// Inclusions and exclusions the WHO record itself carries. Only what the service
+// returned is passed on — nothing is inferred from the title.
+const termList = (node) => asArray(node).map(text).filter(Boolean);
+
+const entitySummary = (uri, e, lang) => ({
+  uri,
+  code: e?.code || "",
+  display: e?.title?.["@value"] || "",
+  definition: e?.definition?.["@value"] || "",
+  inclusions: termList(e?.inclusion),
+  exclusions: termList(e?.exclusion),
+  index_terms: termList(e?.indexTerm),
+  coding_note: text(e?.codingNote) || text(e?.note) || "",
+  long_definition: e?.longDefinition?.["@value"] || "",
+  parent_uris: asArray(e?.parent),
+  child_uris: asArray(e?.child),
+  ancestor_uris: asArray(e?.ancestor),
+  chapter: e?.chapter || "",
+  browser_url: e?.browserUrl || "",
+  language: lang,
+});
+
+async function fetchEntity(uri, headers, lang) {
+  const key = `entity|${lang}|${uri}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+  const res = await fetch(uri, { headers, signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) throw Object.assign(new Error(`WHO ICD-11 entity lookup failed (${res.status}).`), { status: 502 });
+  const payload = await res.json();
+  return cacheSet(key, entitySummary(uri, payload, lang));
+}
+
+// The classification path, nearest parent first. Bounded and cached, because it
+// is the clinician's context for a code and never a reason to hang the form.
+async function fetchAncestors(uris, headers, lang) {
+  const list = asArray(uris).slice(0, 8);
+  const settled = await Promise.all(
+    list.map((uri) =>
+      fetchEntity(uri, headers, lang)
+        .then((entry) => ({ uri, code: entry.code, display: entry.display }))
+        .catch(() => null),
+    ),
+  );
+  return settled.filter(Boolean);
+}
 
 // The release list endpoint's exact shape is not contractual, so it is read
 // defensively: strings and release-id-bearing objects are both accepted. If the
@@ -114,7 +196,8 @@ export default async function (req) {
     }
 
     const token = await accessToken(clientId, clientSecret);
-    const headers = apiHeaders(token);
+    const lang = body.lang === "ar" ? "ar" : "en";
+    const headers = apiHeaders(token, lang);
 
     let release = readSecret("WHO_ICD11_RELEASE");
     if (!release) {
@@ -137,6 +220,7 @@ export default async function (req) {
       source: "WHO ICD-11 API",
       endpoint: "id.who.int",
       release,
+      language: lang,
       retrieved_at: retrievedAt,
     };
 
@@ -152,21 +236,15 @@ export default async function (req) {
       if (!/^https:\/\/id\.who\.int\//.test(uri)) {
         return Response.json({ error: "uri must be an id.who.int entity URI" }, { status: 400 });
       }
-      const res = await fetch(uri, { headers, signal: AbortSignal.timeout(15_000) });
-      if (!res.ok) throw Object.assign(new Error(`WHO ICD-11 entity lookup failed (${res.status}).`), { status: 502 });
-      const e = await res.json();
+      const entry = await fetchEntity(uri, headers, lang);
+      // The classification path is context for the code, so it is returned with
+      // the entry. A failure to read the path never fails the entry itself: the
+      // clinician still gets exactly what the service returned for the code.
+      const ancestors = body.withAncestors === false ? [] : await fetchAncestors(entry.ancestor_uris, headers, lang);
       return Response.json({
         configured: true,
         release,
-        entry: {
-          uri,
-          code: e.code || "",
-          display: e.title?.["@value"] || "",
-          definition: e.definition?.["@value"] || "",
-          parent_uris: asArray(e.parent),
-          child_uris: asArray(e.child),
-          browser_url: e.browserUrl || "",
-        },
+        entry: { ...entry, ancestors },
         ...verification,
       });
     }
@@ -179,15 +257,19 @@ export default async function (req) {
     const url =
       `${API_ROOT}/${release}/mms/search?q=${encodeURIComponent(query)}` +
       `&flatResults=true&useFlexibleSearch=true&includeKeywordResult=false`;
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(20_000) });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      throw Object.assign(
-        new Error(`WHO ICD-11 search failed (${res.status}). ${detail.slice(0, 200)}`),
-        { status: 502 },
-      );
+    const searchKey = `search|${lang}|${release}|${query.toLowerCase()}`;
+    let data = cacheGet(searchKey);
+    if (!data) {
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        throw Object.assign(
+          new Error(`WHO ICD-11 search failed (${res.status}). ${detail.slice(0, 200)}`),
+          { status: 502 },
+        );
+      }
+      data = cacheSet(searchKey, await res.json());
     }
-    const data = await res.json();
 
     const results = asArray(data.destinationEntities)
       .map((e) => ({

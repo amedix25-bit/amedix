@@ -14,6 +14,7 @@ import {
 } from "@/lib/rheumIcd11";
 import { AlertTriangle, ExternalLink, Plus, Search, ShieldCheck, X } from "lucide-react";
 import Icd11WhoSearch from "@/components/doctor/notes/Icd11WhoSearch";
+import Icd11OfficialDetail from "@/components/doctor/notes/Icd11OfficialDetail";
 
 const EMPTY_MANUAL = { code: "", display: "", specificity: SPECIFICITY.SUB, source: "" };
 
@@ -59,6 +60,24 @@ const newEntry = (item, entries, catalog, extraFields = []) => ({
   parent_display: item.parent_display || "",
   hierarchy: item.hierarchy || null,
   definition: item.definition || "",
+  // What the WHO record itself said about the code, when the clinician selected
+  // it from the live API: the official definition, the inclusion and exclusion
+  // terms, the index synonyms, the classification path and the provenance. Each
+  // is empty when the service did not return it — never completed locally.
+  long_definition: item.long_definition || "",
+  inclusions: item.inclusions || [],
+  exclusions: item.exclusions || [],
+  index_terms: item.index_terms || [],
+  ancestors: item.ancestors || [],
+  who_uri: item.who_uri || "",
+  who_browser_url: item.who_browser_url || "",
+  detail_status: item.detail_status || "",
+  detail_error: item.detail_error || "",
+  language: item.language || "",
+  retrieved_at: item.retrieved_at || "",
+  // Append-only record of every change to the code, the official term or the
+  // cluster, so a modified diagnosis keeps the coding it replaced.
+  coding_history: item.coding_history || [],
   specificity: item.specificity || SPECIFICITY.SUB,
   version: `${ICD11_MMS.label} (${item.release || ICD11_MMS.release})`,
   system: ICD11_MMS.system,
@@ -174,7 +193,32 @@ export default function Icd11DiagnosisField({
           // Only one primary diagnosis is retained.
           return patch.role === "Primary" && e.role === "Primary" ? { ...e, role: "Secondary" } : e;
         }
-        return { ...e, ...patch };
+        const next = { ...e, ...patch };
+        // Changing the code, the official term or the documented cluster of an
+        // entry that already carried one appends to its coding history. The
+        // previous coding is never overwritten, so a modified diagnosis stays
+        // auditable.
+        const codingChanged =
+          ("code" in patch && String(patch.code ?? "") !== String(e.code ?? "")) ||
+          ("display" in patch && String(patch.display ?? "") !== String(e.display ?? "")) ||
+          ("cluster" in patch && String(patch.cluster ?? "") !== String(e.cluster ?? ""));
+        if (codingChanged && (String(e.code || "").trim() || String(e.cluster || "").trim())) {
+          const history = Array.isArray(e.coding_history) ? e.coding_history : [];
+          next.coding_history = [
+            ...history,
+            {
+              datetime: new Date().toISOString(),
+              from_code: String(e.code || ""),
+              from_display: String(e.display || ""),
+              from_cluster: String(e.cluster || ""),
+              to_code: String(next.code || ""),
+              to_display: String(next.display || ""),
+              to_cluster: String(next.cluster || ""),
+              note: "Coding changed in the note form",
+            },
+          ];
+        }
+        return next;
       })
     );
 
@@ -394,6 +438,8 @@ export default function Icd11DiagnosisField({
               <span className="font-medium">Coding instruction:</span> {e.coding_note}
             </p>
           )}
+
+          <Icd11OfficialDetail entry={e} />
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">

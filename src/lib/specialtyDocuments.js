@@ -28,6 +28,7 @@ import { withGastroenterologyStandards } from "@/lib/gastroenterologyDocuments";
 import { withOphthalmologyStandards } from "@/lib/ophthalmologyDocuments";
 import { withHematologyStandards } from "@/lib/hematologyDocuments";
 import { ALLERGY_DOCS, withAllergyStandards } from "@/lib/allergyDocuments";
+import { withPulmonologyStandards } from "@/lib/pulmonologyDocuments";
 import { withOrthopedicsStandards } from "@/lib/orthopedicsDocuments";
 import { withNeurologyStandards } from "@/lib/neurologyDocuments";
 import { withPediatricsStandards } from "@/lib/pedsDocuments";
@@ -857,7 +858,7 @@ const ENDOCRINOLOGY_DOCS = [
 export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...IM_DOCS, ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...withEmergencyStandards(EM_DOCS), ...withPediatricsStandards(PEDIATRICS_DOCS), ...withObgynStandards(OBGYN_DOCS), ...ANESTHESIA_DOCS,
   ...withCardiologyStandards(CARDIOLOGY_DOCS), ...NEUROSURGERY_DOCS, ...withNeurologyStandards(NEUROLOGY_DOCS), ...PSYCHIATRY_DOCS, ...withOphthalmologyStandards(OPHTHALMOLOGY_DOCS), ...DERMATOLOGY_DOCS,
-  ...withOrthopedicsStandards(ORTHOPEDICS_DOCS), ...UROLOGY_DOCS, ...withEntSafety(ENT_DOCS), ...PULMONOLOGY_DOCS,
+  ...withOrthopedicsStandards(ORTHOPEDICS_DOCS),   ...UROLOGY_DOCS, ...withEntSafety(ENT_DOCS), ...withPulmonologyStandards(PULMONOLOGY_DOCS),
   ...withGastroenterologyStandards(GASTROENTEROLOGY_DOCS),
   ...withNephrologySafety([...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS]),
   ...withEndocrineStandards(ENDOCRINOLOGY_DOCS),
