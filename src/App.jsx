@@ -33,6 +33,7 @@ import Pharmacist from '@/pages/Pharmacist';
 import RadiologistDashboard from '@/pages/RadiologistDashboard';
 import RadiologyDepartmentPortal from '@/pages/RadiologyDepartmentPortal';
 import RadiologyPortal from '@/pages/RadiologyPortal';
+import ClinicalReferences from '@/pages/ClinicalReferences';
 import { AppLanguageProvider } from '@/lib/appLanguage';
 
 const AuthenticatedApp = () => {
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/lab-portal" element={<LabPortal />} />
         <Route path="/pharmacy-portal" element={<PharmacyPortal />} />
         <Route path="/hospital-portal" element={<HospitalPortal />} />
+        <Route path="/clinical-references" element={<ClinicalReferences />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

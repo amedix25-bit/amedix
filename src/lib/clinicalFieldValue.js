@@ -39,6 +39,7 @@ import { formatHemaScores } from "@/lib/hematologyScores";
 import { formatHemaSafety } from "@/lib/hematologySafetyRules";
 import { formatAllergyBlock } from "@/lib/allergyModules";
 import { formatAllergyTests } from "@/lib/allergyTests";
+import { formatAllergyTreatment } from "@/lib/allergyTreatment";
 import { formatOrthoSafety } from "@/lib/orthopedicsSafetyRules";
 import { formatOrthoTrauma } from "@/lib/orthopedicsTrauma";
 import { formatOrthoHealing } from "@/lib/orthopedicsManagement";
@@ -240,6 +241,7 @@ export function formatFieldValue(type, value) {
   if (type === "allergy_modules") return formatAllergyBlock(value);
   if (type === "allergy_tests") return formatAllergyTests(value);
   if (type === "allergy_guidance") return value && typeof value === "object" ? String(value.text || "") : String(value || "");
+  if (type === "allergy_treatment") return formatAllergyTreatment(value);
   if (type === "hema_modules") return formatHemaBlock(value);
   if (type === "hema_labs") return formatHemaLabs(value);
   if (type === "hema_scores") return formatHemaScores(value);

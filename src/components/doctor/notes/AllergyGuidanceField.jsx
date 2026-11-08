@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { BookOpen, AlertTriangle } from "lucide-react";
 import { allergyNoteBasis } from "@/lib/allergyReferences";
 
@@ -41,6 +42,9 @@ export default function AllergyGuidanceField({ noteKey, value, onChange }) {
           {entry.note} — guideline basis
         </p>
         <p className="text-[11px] text-muted-foreground mt-1">{entry.states}</p>
+        <Link to="/clinical-references" className="text-[11px] text-primary font-medium inline-block mt-1">
+          Open the Clinical References Library
+        </Link>
       </div>
 
       <ul className="space-y-2">

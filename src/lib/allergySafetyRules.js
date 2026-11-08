@@ -303,5 +303,52 @@ export const buildAllergySafetyPrompts = ({ values }) => {
     );
   }
 
+  // ---- Treatment documentation (16+) -------------------------------------
+  const treatment = Array.isArray(values?.allergy_treatment) ? values.allergy_treatment : [];
+  const hasClass = (key) => treatment.some((t) => t && t.treatment_class === key);
+  const classEntry = (key) => treatment.find((t) => t && t.treatment_class === key) || {};
+
+  // 16. Adrenaline documented as treatment without an emergency action plan.
+  if (hasClass("adrenaline") && !hasClass("emergency_action_plan")) {
+    prompts.push(
+      rule(
+        "adrenaline_without_action_plan",
+        "documented",
+        "Adrenaline documented without an emergency action plan",
+        "The WAO guidance treats adrenaline provision and a written emergency plan as one package: a device the patient or carer cannot use correctly at the moment of a reaction does not treat the reaction.",
+        "Add the emergency action plan (recognition signs, when to use adrenaline, when to call emergency services) and record who received it.",
+        "wao_anaphylaxis",
+      ),
+    );
+  }
+
+  // 17. Biologic documented without a monitoring plan.
+  if (hasClass("biologics") && blank(classEntry("biologics").monitoring)) {
+    prompts.push(
+      rule(
+        "biologic_without_monitoring",
+        "documented",
+        "Biologic therapy documented without a monitoring or response plan",
+        "Severe-disease guidance requires the response measure, the review interval and the stopping rule to be recorded before a biologic is started, so that continuing therapy is a documented decision.",
+        "Record the response measure, the review interval and the stopping rule.",
+        "gina",
+      ),
+    );
+  }
+
+  // 18. Immunoglobulin replacement without a documented indication.
+  if (hasClass("immunoglobulin_replacement") && blank(classEntry("immunoglobulin_replacement").indication)) {
+    prompts.push(
+      rule(
+        "ig_replacement_without_indication",
+        "same_day",
+        "Immunoglobulin replacement documented without an indication",
+        "Immunoglobulin is indicated in defined antibody deficiencies and selected immunodeficiencies, with baseline immunology recorded. Replacement without a documented indication cannot be reviewed or justified later.",
+        "Record the indication, the baseline immunoglobulin results and the review date for continuing therapy.",
+        "aaaai_iei",
+      ),
+    );
+  }
+
   return prompts;
 };

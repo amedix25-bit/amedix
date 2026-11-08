@@ -73,6 +73,13 @@ const testsField = () => ({
   section: MODULES,
 });
 
+const treatmentField = () => ({
+  key: "allergy_treatment",
+  label: "Treatment & Management Plan (documented — never auto-prescribed)",
+  type: "allergy_treatment",
+  section: MANAGEMENT,
+});
+
 const safetyField = () => ({
   key: "allergy_safety",
   label: "Safety Concerns & Documented Action",
@@ -328,6 +335,14 @@ export const withAllergyStandards = (docs) =>
     if (TESTS_BY_NOTE.has(doc.key) && !existing.has("allergy_tests")) {
       existing.add("allergy_tests");
       additions.push(testsField());
+    }
+
+    // Every allergy encounter documents its management. The module records the
+    // plan and never orders: prescribing stays in the existing AMedix flow with
+    // its medication safety, allergy and contraindication checks.
+    if (!existing.has("allergy_treatment")) {
+      existing.add("allergy_treatment");
+      additions.push(treatmentField());
     }
 
     icdBlock(DOMAINS[doc.key] || ALL_DOMAINS).forEach((field) => {

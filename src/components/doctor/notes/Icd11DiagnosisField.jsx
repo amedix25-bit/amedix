@@ -13,6 +13,7 @@ import {
   matchesIcd11,
 } from "@/lib/rheumIcd11";
 import { AlertTriangle, ExternalLink, Plus, Search, ShieldCheck, X } from "lucide-react";
+import Icd11WhoSearch from "@/components/doctor/notes/Icd11WhoSearch";
 
 const EMPTY_MANUAL = { code: "", display: "", specificity: SPECIFICITY.SUB, source: "" };
 
@@ -50,6 +51,9 @@ const moreSpecificExists = (item, catalog) =>
 const newEntry = (item, entries, catalog, extraFields = []) => ({
   code: item.code || "",
   display: item.display,
+  // The clinician's own wording is kept verbatim beside the official term, so
+  // the record never forces their clinical language into the classification's.
+  clinician_term: item.clinician_term || "",
   synonyms: item.synonyms || [],
   parent_code: item.parent_code || "",
   parent_display: item.parent_display || "",
@@ -240,6 +244,8 @@ export default function Icd11DiagnosisField({
         </div>
       )}
 
+      <Icd11WhoSearch onSelect={add} />
+
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -333,6 +339,11 @@ export default function Icd11DiagnosisField({
                 <span className="text-[10px] uppercase tracking-wide border border-border rounded px-1.5 py-0.5 text-muted-foreground">
                   {ICD11_MMS.system} {e.release || ICD11_MMS.release}
                 </span>
+                {/WHO ICD-11 API/i.test(String(e.source || "")) && (
+                  <span className="text-[10px] border border-emerald-300/70 dark:border-emerald-800 rounded px-1.5 py-0.5 text-emerald-800 dark:text-emerald-300 inline-flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> WHO-verified · {e.verified_date || "date not recorded"}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {e.specificity?.split(" — ")[0]} · {e.version}
@@ -480,6 +491,15 @@ export default function Icd11DiagnosisField({
           {e.criteria_reference && (
             <p className="text-[11px] text-muted-foreground">Reference criteria: {e.criteria_reference}</p>
           )}
+
+          <div className="space-y-1">
+            <Label className="text-xs">Clinician's own term, kept exactly as documented</Label>
+            <Input
+              value={e.clinician_term ?? ""}
+              placeholder="The patient's diagnosis as you would write it — the official term above is never replaced"
+              onChange={(ev) => update(i, { clinician_term: ev.target.value })}
+            />
+          </div>
 
           <div className="space-y-1">
             <Label className="text-xs">

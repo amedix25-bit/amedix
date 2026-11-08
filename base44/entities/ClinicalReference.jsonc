@@ -1,0 +1,110 @@
+{
+  "name": "ClinicalReference",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Stable reference key used by the clinical modules to cite this source, e.g. gina, wao_anaphylaxis, who_icd11"
+    },
+    "issuing_organization": {
+      "type": "string",
+      "description": "The body that issued the guidance, e.g. WHO, GINA, EAACI, AAAAI/ACAAI Joint Task Force"
+    },
+    "title": {
+      "type": "string",
+      "description": "Official title of the guideline, classification or standard"
+    },
+    "clinical_topic": {
+      "type": "string",
+      "description": "Clinical topic the reference covers, e.g. Anaphylaxis, Asthma, Urticaria, Primary immunodeficiency, ICD-11 coding"
+    },
+    "specialty_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specialties whose documentation cites this reference, e.g. allergy, cardiology"
+    },
+    "publication_year": {
+      "type": "integer",
+      "description": "Year of publication stated by the issuing body. Left empty when the year could not be confirmed rather than estimated"
+    },
+    "version": {
+      "type": "string",
+      "description": "Document version or edition exactly as the issuing body states it"
+    },
+    "publication_date": {
+      "type": "string",
+      "description": "Publication date (ISO date) when the issuing body states one"
+    },
+    "update_date": {
+      "type": "string",
+      "description": "Date of the latest update stated by the issuing body (ISO date), when one is stated"
+    },
+    "source_url": {
+      "type": "string",
+      "description": "Official source URL at the issuing organization. A link only \u2014 the document itself is never copied into or redistributed by AMedix"
+    },
+    "last_verified_date": {
+      "type": "string",
+      "description": "Date the reference was last checked against the issuing body's own publication (ISO date)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "current",
+        "superseded",
+        "under_review"
+      ],
+      "description": "CURRENT: the issuing body still publishes this version. SUPERSEDED: a newer version exists \u2014 the superseding reference is named. UNDER REVIEW: the current status could not be confirmed and the reference must not be presented as current"
+    },
+    "superseded_by_key": {
+      "type": "string",
+      "description": "Reference key of the document that supersedes this one, when status is superseded"
+    },
+    "status_note": {
+      "type": "string",
+      "description": "What was checked and what remains uncertain, in the issuing body's own terms"
+    },
+    "population": {
+      "type": "string",
+      "description": "Population the guidance applies to, e.g. adults and children, adults only, paediatric"
+    },
+    "what_it_supports": {
+      "type": "string",
+      "description": "Which AMedix fields, prompts or treatment modules cite this reference"
+    },
+    "access_note": {
+      "type": "string",
+      "description": "How the document is made available - open access, free registration, subscription. AMedix links to the official source and does not redistribute the document"
+    },
+    "copyright_note": {
+      "type": "string",
+      "description": "Copyright and permission position recorded for the reference"
+    }
+  },
+  "required": [
+    "key",
+    "issuing_organization",
+    "title",
+    "status"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
