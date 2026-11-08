@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ChevronDown, Loader2, ShieldCheck } from "lucide-react";
-import { buildWhoItem } from "@/lib/icd11WhoItem";
+import { localEntryToDiagnosis } from "@/lib/icd11Local";
 
-// A condition index that retrieves the OFFICIAL ICD-11 concept for the condition
-// the clinician selected. It is a shortcut into the WHO service, not a code list:
-// nothing is coded until the WHO API returns the concept, and a condition that
-// cannot be resolved is recorded without a code and flagged for coding review.
+// A condition index that resolves the condition the clinician selected against the
+// workspace's own ICD-11 database — no WHO API subscription or credentials are used.
+// It is a shortcut into the local classification, not a code list: nothing is coded
+// until the dataset returns the entry, and a condition the dataset does not hold is
+// recorded without a code and flagged for coding review.
 export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Condition index", hint = "" }) {
   const [open, setOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState("");
@@ -21,10 +22,10 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
     setBusy(condition.key);
     reset();
     try {
-      const res = await base44.functions.invoke("icd11WhoSearch", { mode: "search", query: condition.whoQuery, limit: 8, lang });
+      const res = await base44.functions.invoke("icd11LocalSearch", { mode: "search", query: condition.whoQuery, limit: 8, lang });
       const data = res.data || {};
-      if (data.configured === false) {
-        setState((s) => ({ ...s, condition, notConfigured: data.message || "The WHO ICD-11 API is not configured." }));
+      if (data.dataset_ready === false) {
+        setState((s) => ({ ...s, condition, notConfigured: data.message || "No ICD-11 release is loaded in this workspace." }));
       } else if (data.error) {
         setState((s) => ({ ...s, condition, error: data.error }));
       } else {
@@ -38,7 +39,7 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
         });
       }
     } catch (e) {
-      setState((s) => ({ ...s, condition, error: e?.response?.data?.error || e.message || "The WHO lookup failed." }));
+      setState((s) => ({ ...s, condition, error: e?.response?.data?.error || e.message || "The local ICD-11 lookup failed." }));
     }
     setBusy("");
   };
@@ -46,20 +47,27 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
   const pick = async (result) => {
     const condition = state.condition;
     if (!condition || !result.codable) return;
-    setBusy(`${condition.key}:${result.uri}`);
-    let detail = null;
+    setBusy(`${condition.key}:${result.uri || result.code}`);
+    let entry = null;
     let detailError = "";
     try {
-      const res = await base44.functions.invoke("icd11WhoSearch", { mode: "entity", uri: result.uri, lang });
+      const res = await base44.functions.invoke(
+        "icd11LocalSearch",
+        result.uri ? { mode: "entity", uri: result.uri, lang } : { mode: "entity", code: result.code, lang },
+      );
       const data = res.data || {};
-      if (data.entry) detail = data.entry;
-      else detailError = data.error || "The WHO service did not return the entry detail.";
+      if (data.entry) entry = data.entry;
+      else detailError = data.error || "The local dataset did not return the entry detail.";
     } catch (e) {
-      detailError = e?.response?.data?.error || e.message || "The WHO entry detail could not be read.";
+      detailError = e?.response?.data?.error || e.message || "The entry could not be read from the local dataset.";
     }
     setBusy("");
+    if (!entry) {
+      setState((s) => ({ ...s, error: detailError, results: [] }));
+      return;
+    }
     onSelect({
-      ...buildWhoItem({ result, detail, detailError, release: state.release, language: lang, retrievedAt: state.retrievedAt }),
+      ...localEntryToDiagnosis(entry, { language: lang, release: state.release }),
       clinician_term: condition.label,
     });
     reset();
@@ -89,7 +97,7 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
         <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "" : "-rotate-90"}`} /> {title}
         </span>
-        <span className="text-[10px] text-muted-foreground">retrieves the official WHO concept</span>
+        <span className="text-[10px] text-muted-foreground">resolves the condition in the local ICD-11 database</span>
       </button>
 
       {open && (
@@ -145,7 +153,7 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
           {state.condition && (
             <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-2.5">
               <p className="text-[11px] font-medium text-primary">
-                {state.condition.label} · WHO search “{state.condition.whoQuery}”
+                {state.condition.label} · local ICD-11 search “{state.condition.whoQuery}”
               </p>
               {state.condition.note && <p className="text-[11px] text-muted-foreground">{state.condition.note}</p>}
 
@@ -154,7 +162,7 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
                   <p className="flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-300">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {state.notConfigured}
                   </p>
-                  <Button type="button" size="sm" variant="outline" onClick={() => withoutCode("WHO ICD-11 API not available")}>
+                  <Button type="button" size="sm" variant="outline" onClick={() => withoutCode("no ICD-11 release loaded in this workspace")}>
                     Record without a code — coding review required
                   </Button>
                 </div>
@@ -165,7 +173,7 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
                   <p className="flex items-start gap-1.5 text-[11px] text-destructive">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {state.error}
                   </p>
-                  <Button type="button" size="sm" variant="outline" onClick={() => withoutCode("WHO lookup failed")}>
+                  <Button type="button" size="sm" variant="outline" onClick={() => withoutCode("the local ICD-11 lookup failed")}>
                     Record without a code — coding review required
                   </Button>
                 </div>
@@ -174,10 +182,10 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
               {!state.notConfigured && !state.error && state.results.length === 0 && (
                 <div className="space-y-2">
                   <p className="text-[11px] text-muted-foreground">
-                    The WHO service returned no concept for this term. Refine it in the search box, or record the condition
+                    No entry in the imported ICD-11 dataset matches this term. Refine it in the search box, or record the condition
                     without a code.
                   </p>
-                  <Button type="button" size="sm" variant="outline" onClick={() => withoutCode("no WHO concept returned for the term")}>
+                  <Button type="button" size="sm" variant="outline" onClick={() => withoutCode("the term is not in the imported ICD-11 dataset")}>
                     Record without a code — coding review required
                   </Button>
                 </div>
@@ -186,7 +194,7 @@ export default function Icd11ConditionIndex({ groups = [], onSelect, title = "Co
               {state.results.length > 0 && (
                 <div className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card">
                   <p className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] text-muted-foreground">
-                    <ShieldCheck className="h-3 w-3" /> WHO ICD-11 MMS {state.release} · retrieved{" "}
+                    <ShieldCheck className="h-3 w-3" /> ICD-11 MMS {state.release} (local database) · retrieved{" "}
                     {state.retrievedAt ? new Date(state.retrievedAt).toLocaleString() : "just now"}
                   </p>
                   {state.results.map((r) => (

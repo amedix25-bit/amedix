@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, BookOpen, CheckCircle2, ExternalLink, Loader2, Search, ShieldCheck } from "lucide-react";
+import Icd11DatasetPanel from "@/components/admin/icd11/Icd11DatasetPanel";
 import {
   REFERENCE_STATUS,
   REFERENCE_STATUS_LABEL,
@@ -82,6 +83,8 @@ export default function ClinicalReferences() {
           presented as current guidance.
         </p>
       </div>
+
+      <Icd11DatasetPanel />
 
       <div className="rounded-lg border border-border bg-muted/40 p-3">
         <p className="text-xs font-medium flex items-center gap-1.5">

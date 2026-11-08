@@ -13,7 +13,7 @@ import {
   matchesIcd11,
 } from "@/lib/rheumIcd11";
 import { AlertTriangle, ExternalLink, Plus, Search, ShieldCheck, X } from "lucide-react";
-import Icd11WhoSearch from "@/components/doctor/notes/Icd11WhoSearch";
+import Icd11LocalSearch from "@/components/doctor/notes/Icd11LocalSearch";
 import Icd11ConditionIndex from "@/components/doctor/notes/Icd11ConditionIndex";
 import Icd11OfficialDetail from "@/components/doctor/notes/Icd11OfficialDetail";
 
@@ -53,6 +53,10 @@ const moreSpecificExists = (item, catalog) =>
 const newEntry = (item, entries, catalog, extraFields = []) => ({
   code: item.code || "",
   display: item.display,
+  // The Arabic term travels with the code, always with its source: an official WHO
+  // Arabic term is never confused with an AMedix working translation.
+  display_ar: item.display_ar || "",
+  display_ar_source: item.display_ar_source || "none",
   // The clinician's own wording is kept verbatim beside the official term, so
   // the record never forces their clinical language into the classification's.
   clinician_term: item.clinician_term || "",
@@ -299,7 +303,7 @@ export default function Icd11DiagnosisField({
         </div>
       )}
 
-      <Icd11WhoSearch onSelect={add} />
+      <Icd11LocalSearch onSelect={add} />
 
       <div className="flex flex-wrap items-center gap-3">
         <button

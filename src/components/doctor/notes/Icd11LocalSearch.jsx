@@ -65,7 +65,10 @@ export default function Icd11LocalSearch({ onSelect }) {
     if (!r.codable) return;
     setBusy(r.uri || r.code);
     try {
-      const res = await base44.functions.invoke("icd11LocalSearch", { mode: "entity", uri: r.uri, lang });
+      const res = await base44.functions.invoke(
+        "icd11LocalSearch",
+        r.uri ? { mode: "entity", uri: r.uri, lang } : { mode: "entity", code: r.code, lang },
+      );
       const data = res.data || {};
       if (data.entry) {
         onSelect(localEntryToDiagnosis(data.entry, { language: lang, release: data.release || state.release }));
