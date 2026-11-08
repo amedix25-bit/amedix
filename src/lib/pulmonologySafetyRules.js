@@ -17,7 +17,14 @@ const asObject = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {
 const str = (v) => String(v ?? "").trim();
 const list = (v) => (Array.isArray(v) ? v.filter((x) => str(x)) : str(v) ? [str(v)] : []);
 const blank = (v) => !str(v) && !(Array.isArray(v) && v.length);
-const block = (values, key) => asObject(values?.[key]);
+// Block values are stored on the note under the field key the template registers
+// (pulm_block_<key>); older notes may hold them under the bare block key, so both
+// are read and a prompt never depends on which shape the note was saved in.
+const block = (values, key) => {
+  const direct = asObject(values?.[key]);
+  if (Object.keys(direct).length) return direct;
+  return asObject(values?.[`pulm_block_${key}`]);
+};
 
 const rule = (key, level, title, basis, action, refKey) => ({
   key,
