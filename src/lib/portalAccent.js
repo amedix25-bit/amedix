@@ -8,8 +8,8 @@ export const PORTAL_ACCENTS = {
     icon: "text-portal-patient",
   },
   doctor: {
-    activeNav: "bg-portal-doctor text-white shadow-sm",
-    heading: "text-portal-doctor",
+    activeNav: "bg-doctor-blue text-white shadow-sm",
+    heading: "text-doctor-blue",
     icon: "text-portal-doctor",
   },
   lab: {

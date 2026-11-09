@@ -65,6 +65,12 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
+  			doctor: {
+  				navy: 'hsl(var(--doctor-navy))',
+  				blue: 'hsl(var(--doctor-blue))',
+  				surface: 'hsl(var(--doctor-surface))',
+  				danger: 'hsl(var(--doctor-danger))'
+  			},
   			portal: {
   				patient: 'hsl(var(--accent-patient))',
   				doctor: 'hsl(var(--accent-doctor))',
