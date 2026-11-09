@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Bell, Calendar, RefreshCw, FlaskConical, Microscope, Info, Pill } from "lucide-react";
+import { Bell, Calendar, RefreshCw, FlaskConical, Microscope, Info, Pill, MessageSquare } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const TYPE_ICONS = {
@@ -10,6 +10,7 @@ const TYPE_ICONS = {
   lab_request: FlaskConical,
   lab_results: Microscope,
   medication_update: Pill,
+  doctor_message: MessageSquare,
   other: Info,
 };
 
@@ -19,6 +20,7 @@ const TYPE_COLORS = {
   lab_request: "text-primary",
   lab_results: "text-emerald-600",
   medication_update: "text-primary",
+  doctor_message: "text-primary",
   other: "text-muted-foreground",
 };
 

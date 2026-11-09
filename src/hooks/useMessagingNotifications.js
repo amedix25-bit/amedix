@@ -18,7 +18,14 @@ export default function useMessagingNotifications({ enabled = true, onNew } = {}
       const res = await base44.functions.invoke("messagingApi", { action: "notifications" });
       const list = res.data.notifications || [];
       setItems(list);
-      setUnread(list.filter((n) => !n.is_read).length);
+      // The server counts unread messages across every channel (doctors,
+      // hospitals, patients), so the sidebar badge reflects all messaging.
+      const summary = res.data.unread || {};
+      setUnread(
+        typeof summary.messages_unread === "number"
+          ? Math.max(summary.messages_unread, summary.notifications_unread || 0)
+          : list.filter((n) => !n.is_read).length
+      );
       const previous = known.current;
       known.current = new Set(list.map((n) => n.id));
       if (previous) {

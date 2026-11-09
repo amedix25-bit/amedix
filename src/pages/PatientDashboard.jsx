@@ -171,6 +171,7 @@ function PatientPortal() {
           )}
           {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
           {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
+          {activeTab === "messages" && profile && <PatientDoctorMessages profile={profile} />}
           {activeTab === "doctorvisits" && <DoctorVisits patientId={profile?.id} />}
           {activeTab === "labs" && (
             labsView === "choose" ? (

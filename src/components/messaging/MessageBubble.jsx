@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Paperclip, Download, AlertTriangle } from "lucide-react";
 import { formatMessageTime, initials } from "@/lib/messaging";
