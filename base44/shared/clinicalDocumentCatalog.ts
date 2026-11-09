@@ -36,6 +36,15 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "im_problem_oriented_progress", "im_consultation_request",
     "im_consultation_response", "im_medication_reconciliation",
     "im_discharge_summary", "im_medical_followup", "im_chronic_care_plan",
+    // Discipline and acute-presentation templates added by the internal medicine
+    // upgrade. The original thirteen keys above are unchanged and stay valid.
+    "im_comprehensive_assessment", "im_cardiology_review", "im_respiratory_review",
+    "im_gastro_review", "im_nephrology_review", "im_diabetes_review",
+    "im_hematology_review", "im_infectious_disease_review",
+    "im_rheumatology_review", "im_neurology_review", "im_oncology_review",
+    "im_geriatric_review", "im_sepsis_assessment",
+    "im_venous_thromboembolism", "im_anticoagulation_review",
+    "im_electrolyte_disorder",
   ],
   surgery: [
     "surg_consultation", "surg_preop_assessment", "surg_operative_note",
@@ -163,6 +172,9 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "fm_general_consultation", "fm_preventive_visit", "fm_chronic_followup",
     "fm_acute_visit", "fm_followup", "fm_referral", "fm_procedure_note",
     "fm_medication_review", "fm_health_maintenance",
+    "fm_well_child", "fm_geriatric_assessment", "fm_womens_health",
+    "fm_maternal_health", "fm_vaccination", "fm_mental_health",
+    "fm_lifestyle_counseling", "fm_chronic_annual_review",
   ],
   dentistry: [
     "dental_consultation", "dental_history", "dental_treatment_plan",

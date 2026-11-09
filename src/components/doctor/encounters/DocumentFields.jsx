@@ -80,6 +80,10 @@ import FmScoresField from "@/components/doctor/notes/FmScoresField";
 import FmSafetyPromptsField from "@/components/doctor/notes/FmSafetyPromptsField";
 import FmScreeningField from "@/components/doctor/notes/FmScreeningField";
 import FmGuidanceField from "@/components/doctor/notes/FmGuidanceField";
+import ImBlockField from "@/components/doctor/notes/ImBlockField";
+import ImScoresField from "@/components/doctor/notes/ImScoresField";
+import ImSafetyPromptsField from "@/components/doctor/notes/ImSafetyPromptsField";
+import ImGuidanceField from "@/components/doctor/notes/ImGuidanceField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -471,6 +475,18 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "fm_guidance" && (
         <FmGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "im_modules" && (
+        <ImBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "im_scores" && (
+        <ImScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "im_safety" && (
+        <ImSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "im_guidance" && (
+        <ImGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>

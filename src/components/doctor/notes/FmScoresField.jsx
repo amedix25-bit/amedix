@@ -9,10 +9,10 @@ import { asObject } from "@/lib/fmFieldKit";
 // Family medicine calculations. Each panel computes only from values documented in
 // this note: a missing item leaves the score uncalculated and names what is missing.
 // Every result is shown with its source, and nothing here writes a diagnosis.
-export default function FmScoresField({ value, onChange, scores }) {
+export default function FmScoresField({ value, onChange, scores, registry = FM_SCORES, calculate = calculateFmScore }) {
   const inputs = asObject(value);
   const [open, setOpen] = useState({});
-  const offered = Array.isArray(scores) && scores.length ? FM_SCORES.filter((s) => scores.includes(s.key)) : FM_SCORES;
+  const offered = Array.isArray(scores) && scores.length ? registry.filter((s) => scores.includes(s.key)) : registry;
 
   const set = (scoreKey, varKey, next) =>
     onChange({ ...inputs, [scoreKey]: { ...asObject(inputs[scoreKey]), [varKey]: next } });
@@ -21,7 +21,7 @@ export default function FmScoresField({ value, onChange, scores }) {
     <div className="space-y-2">
       {offered.map((score) => {
         const scoreInputs = asObject(inputs[score.key]);
-        const result = calculateFmScore(score.key, scoreInputs);
+        const result = calculate(score.key, scoreInputs);
         const isOpen = Boolean(open[score.key]);
         const state = result?.missing?.length ? "not calculated" : result?.value !== null && result ? `${result.value}` : "—";
 

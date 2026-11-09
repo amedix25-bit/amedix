@@ -19,11 +19,11 @@ const visible = (field, values) => {
   return true;
 };
 
-export default function FmBlockField({ fieldKey, value, onChange }) {
-  const spec = fmBlock(fieldKey);
+export default function FmBlockField({ fieldKey, value, onChange, resolve = fmBlock, wrap = fmBlockValue }) {
+  const spec = resolve(fieldKey);
   if (!spec) return null;
   const values = asObject(value);
-  const set = (key, next) => onChange(fmBlockValue(fieldKey, { ...values, [key]: next }));
+  const set = (key, next) => onChange(wrap(fieldKey, { ...values, [key]: next }));
 
   return (
     <div className="space-y-3">
