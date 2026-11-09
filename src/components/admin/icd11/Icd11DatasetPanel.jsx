@@ -30,6 +30,7 @@ export default function Icd11DatasetPanel() {
   const [result, setResult] = useState(null);
   const [releaseId, setReleaseId] = useState("");
   const [licence, setLicence] = useState("");
+  const [progress, setProgress] = useState("");
 
   const loadStatus = async () => {
     setError("");
@@ -73,36 +74,82 @@ export default function Icd11DatasetPanel() {
     }
   };
 
-  const importExport = async (file) => {
-    if (!file) return;
+  // A full WHO MMS export runs to many thousands of entries, far more than one call
+  // can carry, so the file is sent in parts: the first part creates the release and
+  // the rest are appended to it. Re-sending a file is harmless — entries already
+  // stored are skipped.
+  const ENTRIES_PER_PART = 3000;
+
+  const entriesOf = (payload) =>
+    Array.isArray(payload)
+      ? payload
+      : payload?.entries ||
+        payload?.concepts ||
+        payload?.terms ||
+        payload?.items ||
+        payload?.destinationEntities ||
+        payload?.["@graph"] ||
+        null;
+
+  const importExport = async (fileList) => {
+    const files = Array.from(fileList || []).filter(Boolean);
+    if (!files.length) return;
     setError("");
     setResult(null);
     if (!/^\d{4}-\d{2}$/.test(releaseId.trim()) || !licence.trim()) {
       setError("Enter the WHO release identifier (e.g. 2026-01) and the institution's licence reference before choosing the export file.");
       return;
     }
+
     setBusy("import");
+    const release = releaseId.trim();
+    const continuesExisting = status?.release?.release_id === release && status.release.source_type !== "verified_catalogue";
+    let firstPart = !continuesExisting;
+    let imported = 0;
+    let rejected = 0;
+    let skipped = 0;
+
     try {
-      const text = await file.text();
-      let entries;
-      try {
-        entries = JSON.parse(text);
-      } catch {
-        setError("That file is not valid JSON. Import the official WHO export as JSON.");
-        return;
+      for (const file of files) {
+        const text = await file.text();
+        let payload;
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          setError(`${file.name} is not valid JSON. Import the official WHO export as JSON.`);
+          break;
+        }
+        const entries = entriesOf(payload);
+        if (!Array.isArray(entries)) {
+          setError(`${file.name} does not contain a JSON array of entries.`);
+          break;
+        }
+
+        const parts = [];
+        for (let i = 0; i < entries.length; i += ENTRIES_PER_PART) parts.push(entries.slice(i, i + ENTRIES_PER_PART));
+
+        for (let p = 0; p < parts.length; p += 1) {
+          setProgress(`${file.name} — part ${p + 1} of ${parts.length}`);
+          const res = await base44.functions.invoke("icd11LocalImport", {
+            mode: firstPart ? "import" : "append",
+            release_id: release,
+            licence_reference: licence.trim(),
+            entries: parts[p],
+          });
+          const data = res.data || {};
+          imported += data.imported ?? data.appended ?? 0;
+          rejected += (data.rejected || []).length;
+          skipped += data.skipped_already_present || 0;
+          firstPart = false;
+        }
       }
-      record(
-        await base44.functions.invoke("icd11LocalImport", {
-          mode: "import",
-          release_id: releaseId.trim(),
-          licence_reference: licence.trim(),
-          entries,
-        }),
-      );
+      setResult({ release, accepted: imported, rejected, duplicates: skipped });
     } catch (e) {
       setError(e?.response?.data?.error || e.message || "The release could not be imported.");
     } finally {
+      setProgress("");
       setBusy("");
+      loadStatus();
     }
   };
 
@@ -246,15 +293,27 @@ export default function Icd11DatasetPanel() {
             ) : (
               <Upload className="w-3.5 h-3.5" />
             )}
-            Import an official release export (JSON, up to 3,000 entries per file)
+            Import an official release export (JSON — a large export is sent in parts automatically)
             <input
               type="file"
               accept="application/json,.json"
+              multiple
               className="hidden"
               disabled={busy !== ""}
-              onChange={(e) => importExport(e.target.files?.[0])}
+              onChange={(e) => {
+                importExport(e.target.files);
+                e.target.value = "";
+              }}
             />
           </label>
+          {progress && (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" /> Importing {progress}…
+            </p>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            Uploading the same export again is safe: entries already stored are skipped, never duplicated.
+          </p>
           <p className="text-[10px] text-muted-foreground">
             A release is never overwritten. Every import is validated and its rejected entries are named with the
             reason; a later release supersedes the current one while the codes already recorded keep their provenance.

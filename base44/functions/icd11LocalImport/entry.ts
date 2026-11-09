@@ -3,8 +3,11 @@ import {
   validateImport,
   seedRecords,
   coverageReport,
+  coverageForTarget,
+  RESPIRATORY_COVERAGE_TARGETS,
+  normalise,
+  escapeRegex,
   ICD11_LOCAL,
-  VERIFIED_RESPIRATORY_SEED,
 } from "../../shared/icd11Local.ts";
 
 // icd11LocalImport — puts an official ICD-11 release into the workspace's own
@@ -27,6 +30,51 @@ const MAX_ENTRIES_PER_IMPORT = 3000;
 const CHUNK = 100;
 
 const rowsOf = (v) => (Array.isArray(v) ? v : v?.items || []);
+
+// Codes already stored for a release. A full WHO export is imported in parts, so a
+// part is checked against what is already there instead of creating a duplicate.
+async function existingCodes(db, releaseId) {
+  const codes = new Set();
+  let cursor;
+  for (let page = 0; page < 100; page += 1) {
+    const result = await db.entities.Icd11Term.filter({ release_id: releaseId }, { limit: 500, cursor });
+    for (const row of rowsOf(result)) if (row.code) codes.add(String(row.code).trim().toUpperCase());
+    if (!result?.has_more || !result?.next_cursor) break;
+    cursor = result.next_cursor;
+  }
+  return codes;
+}
+
+// Respiratory coverage of the release as it now stands. Recomputed after each part
+// so the coverage shown to administrators never describes a smaller dataset than the
+// one actually loaded. Each target is resolved by searching the stored entries —
+// never by assigning a code here.
+async function coverageOfRelease(db, releaseId) {
+  const rows = [];
+  for (const target of RESPIRATORY_COVERAGE_TARGETS) {
+    let hit = null;
+    for (const query of target.queries || []) {
+      const first = normalise(query).split(" ")[0] || "";
+      if (first.length < 3) continue;
+      const found = rowsOf(
+        await db.entities.Icd11Term.filter(
+          { release_id: releaseId, search_text: { $regex: escapeRegex(first) } },
+          { limit: 200 },
+        ),
+      );
+      const mapped = coverageForTarget(found, target);
+      if (mapped.status === "mapped") {
+        hit = mapped;
+        break;
+      }
+    }
+    rows.push(
+      hit || { key: target.key, label: target.label, status: "not_in_dataset", query: "", code: "", title_en: "", uri: "", matched_on: "" },
+    );
+  }
+  const missing = rows.filter((r) => r.status !== "mapped").map((r) => r.label);
+  return { rows, mapped: rows.length - missing.length, total: rows.length, missing };
+}
 
 async function readEntries(body) {
   if (Array.isArray(body.entries)) return body.entries;
@@ -65,7 +113,9 @@ export default async function (req) {
 
     const body = await req.json().catch(() => ({}));
     const mode = String(body.mode || "import");
-    if (!["seed", "import"].includes(mode)) return Response.json({ error: "mode must be seed or import" }, { status: 400 });
+    if (!["seed", "import", "append"].includes(mode)) {
+      return Response.json({ error: "mode must be seed, import or append" }, { status: 400 });
+    }
 
     const now = new Date().toISOString();
 
@@ -136,11 +186,118 @@ export default async function (req) {
       );
     }
 
+    // ── Further parts of the same release ───────────────────────────────────
+    // A full WHO MMS export holds far more than one call can carry, so the release
+    // is created by the first part and the remaining parts are added to it. Codes
+    // already stored are skipped rather than duplicated, and re-sending a part is
+    // therefore harmless.
+    if (mode === "append") {
+      const target = rowsOf(await base44.entities.Icd11Release.filter({ release_id: releaseId }, { limit: 1 }))[0];
+      if (!target) {
+        return Response.json(
+          { error: `Release ${releaseId} is not in the database yet. Import the first part with mode "import".` },
+          { status: 404 },
+        );
+      }
+      if (target.source_type === "verified_catalogue") {
+        return Response.json(
+          {
+            error:
+              "The bundled catalogue release cannot be extended. Import the official export under its own WHO release identifier.",
+          },
+          { status: 409 },
+        );
+      }
+      if (target.status !== "active") {
+        return Response.json(
+          { error: `Release ${releaseId} is ${target.status}; only the active release accepts further parts.` },
+          { status: 409 },
+        );
+      }
+
+      const partEntries = await readEntries(body);
+      if (!partEntries?.length) return Response.json({ error: "No entries were supplied in this part." }, { status: 400 });
+      if (partEntries.length > MAX_ENTRIES_PER_IMPORT) {
+        return Response.json(
+          {
+            error: `This part holds more than ${MAX_ENTRIES_PER_IMPORT} entries. Send it in smaller parts with mode "append".`,
+            supplied: partEntries.length,
+          },
+          { status: 413 },
+        );
+      }
+
+      const known = await existingCodes(base44, releaseId);
+      const skipped = [];
+      const fresh = partEntries.filter((entry) => {
+        const code = String(entry?.code || entry?.theCode || "").trim().toUpperCase();
+        if (!code) return true;
+        if (known.has(code)) {
+          skipped.push(code);
+          return false;
+        }
+        return true;
+      });
+
+      const { accepted, rejected, report } = validateImport(fresh, {
+        releaseId,
+        sourceType: target.source_type,
+        sourceReference: String(body.source_reference || `Official WHO ICD-11 release ${releaseId}`).trim(),
+        verifiedDate: String(body.verified_date || now.slice(0, 10)),
+        importedDatetime: now,
+        importedByName: user.full_name || user.email || "",
+      });
+
+      for (let i = 0; i < accepted.length; i += CHUNK) {
+        await base44.entities.Icd11Term.bulkCreate(accepted.slice(i, i + CHUNK));
+      }
+
+      const coverage = await coverageOfRelease(base44, releaseId);
+      const termCount = (target.term_count || 0) + accepted.length;
+      const codableCount = (target.codable_count || 0) + report.codable;
+      const chapters = [
+        ...new Set([...(target.chapters || []), ...accepted.map((t) => t.chapter_code).filter(Boolean)]),
+      ].sort();
+
+      await base44.entities.Icd11Release.update(target.id, {
+        term_count: termCount,
+        codable_count: codableCount,
+        arabic_official_count: (target.arabic_official_count || 0) + report.arabic_official,
+        chapters,
+        validation: {
+          ...(target.validation || {}),
+          accepted: ((target.validation || {}).accepted || 0) + report.accepted,
+          rejected: ((target.validation || {}).rejected || 0) + report.rejected,
+          duplicates: ((target.validation || {}).duplicates || 0) + skipped.length + report.duplicates,
+          codable: codableCount,
+          checks: report.checks,
+          coverage,
+        },
+        notes: `${target.notes || ""}\nPart added ${now.slice(0, 16).replace("T", " ")}: +${accepted.length} entries, ${skipped.length} already present.`
+          .trim()
+          .slice(0, 2000),
+      });
+
+      return Response.json({
+        appended: accepted.length,
+        skipped_already_present: skipped.length,
+        release: releaseId,
+        term_count: termCount,
+        codable_count: codableCount,
+        rejected,
+        report,
+        coverage,
+      });
+    }
+
     const duplicate = rowsOf(await base44.entities.Icd11Release.filter({ release_id: releaseId }, { limit: 1 }))[0];
-    if (duplicate) {
+    // The bundled catalogue sits under the same release identifier as a placeholder
+    // subset of it. The institution's official export for that release supersedes it
+    // and takes over the identifier, so an import is not blocked by the placeholder.
+    if (duplicate && duplicate.source_type !== "verified_catalogue") {
       return Response.json(
         {
-          error: `Release ${releaseId} is already in the database (${duplicate.status}). A release is never overwritten — import the newer WHO release when it is published.`,
+          error: `Release ${releaseId} is already in the database (${duplicate.status}). A release is never overwritten — import the newer WHO release when it is published, or add further parts of this one with mode "append".`,
         },
         { status: 409 },
       );
@@ -151,14 +308,27 @@ export default async function (req) {
     if (entries.length > MAX_ENTRIES_PER_IMPORT) {
       return Response.json(
         {
-          error: `This import accepts up to ${MAX_ENTRIES_PER_IMPORT} entries per call. Split the official export into chapter or block files and import them in turn — for the respiratory scope, chapter 12 and its blocks.`,
+          error: `This import accepts up to ${MAX_ENTRIES_PER_IMPORT} entries per part. The ICD-11 dataset panel splits a larger export automatically; when calling the function directly, send the remaining entries with mode "append" and the same release identifier.`,
           supplied: entries.length,
         },
         { status: 413 },
       );
     }
 
-    const { accepted, rejected, report } = validateImport(entries, {
+    // Entries the bundled catalogue already holds are skipped, so the official data
+    // replaces it without storing the same code twice.
+    let retained = 0;
+    let importEntries = entries;
+    if (duplicate) {
+      const known = await existingCodes(base44, releaseId);
+      retained = known.size;
+      importEntries = entries.filter((entry) => {
+        const code = String(entry?.code || entry?.theCode || "").trim().toUpperCase();
+        return !(code && known.has(code));
+      });
+    }
+
+    const { accepted, rejected, report } = validateImport(importEntries, {
       releaseId,
       sourceType,
       sourceReference: String(body.source_reference || `Official WHO ICD-11 release ${releaseId}`).trim(),
@@ -195,7 +365,7 @@ export default async function (req) {
       await base44.entities.Icd11Term.bulkCreate(accepted.slice(i, i + CHUNK));
     }
 
-    const coverage = coverageReport(accepted);
+    const coverage = await coverageOfRelease(base44, releaseId);
     const release = await base44.entities.Icd11Release.create({
       release_id: releaseId,
       linearization: ICD11_LOCAL.linearization,
@@ -206,13 +376,17 @@ export default async function (req) {
       source_note: String(body.notes || "").slice(0, 2000),
       imported_datetime: now,
       imported_by_name: user.full_name || user.email || "",
-      term_count: accepted.length,
-      codable_count: report.codable,
+      term_count: accepted.length + retained,
+      codable_count: report.codable + retained,
       arabic_official_count: report.arabic_official,
-      chapters: [...new Set(accepted.map((t) => t.chapter_code).filter(Boolean))],
+      chapters: [
+        ...new Set([...(duplicate?.chapters || []), ...accepted.map((t) => t.chapter_code).filter(Boolean)]),
+      ].sort(),
       validation: { ...report, coverage, rejected_entries: rejected.slice(0, 50) },
-      previous_release_id: previous[0]?.release_id || "",
-      notes: "Official WHO ICD-11 release export imported into the workspace database.",
+      previous_release_id: duplicate ? "" : previous[0]?.release_id || "",
+      notes: `Official WHO ICD-11 release export imported into the workspace database.${
+        retained ? ` ${retained} entries already held by the bundled catalogue were kept, not duplicated.` : ""
+      }`,
     });
 
     return Response.json({
