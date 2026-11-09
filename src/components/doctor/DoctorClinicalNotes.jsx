@@ -12,10 +12,10 @@ import DoctorMedicationForm from "@/components/doctor/medications/DoctorMedicati
 import { useToast } from "@/components/ui/use-toast";
 import { Plus, FileText, ArrowLeft, Search, Loader2, Pill, Stethoscope } from "lucide-react";
 
-export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab, returnPatient }) {
+export default function DoctorClinicalNotes({ doctorProfile, onNavigateTab, returnPatient, initialMode }) {
   const { toast } = useToast();
   const [myPatients, setMyPatients] = useState([]);
-  const [mode, setMode] = useState(returnPatient ? "create" : null);
+  const [mode, setMode] = useState(returnPatient ? "create" : initialMode || null);
   const [selectedPatient, setSelectedPatient] = useState(returnPatient || null);
   const [createView, setCreateView] = useState(returnPatient ? "note" : "summary");
 

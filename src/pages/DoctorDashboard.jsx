@@ -24,24 +24,59 @@ import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users, Mail, Building2, Pill, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Search, Calendar, Building2, Pill, MessageSquare, Link2, Scale, CornerUpRight, BedDouble, BookOpen, Settings, HelpCircle } from "lucide-react";
+import EncountersSection from "@/components/doctor/encounters/EncountersSection";
+import DoctorSettingsSection from "@/components/doctor/settings/DoctorSettingsSection";
+import DoctorHelpSection from "@/components/doctor/help/DoctorHelpSection";
 import DoctorMessages from "@/components/doctor/messaging/DoctorMessages";
 import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 
-// Section order follows the Doctor Portal sidebar design: consultation work
-// first, then the orders it produces, then the day's schedule and resources.
+// The Doctor Portal navigation — every entry opens a screen that already
+// exists in the portal; grouped sections expand to the exact workflow the
+// doctor needs rather than repeating a link.
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
-  { key: "notes", label: "Clinical Notes", icon: FileText },
-  { key: "labs", label: "Lab Requests", icon: FlaskConical },
-  { key: "imaging", label: "Imaging", icon: Image },
+  {
+    key: "consultations",
+    label: "Consultations",
+    icon: Link2,
+    items: [
+      { key: "notes", label: "New Consultation", view: "create" },
+      { key: "notes", label: "My Consultations" },
+      { key: "notes", label: "Consultation History", view: "previous" },
+      { key: "appointments", label: "Follow-up Consultations" },
+    ],
+  },
+  {
+    key: "orders",
+    label: "Orders & Results",
+    icon: Scale,
+    items: [
+      { key: "labs", label: "Create Lab Request", view: "create" },
+      { key: "labs", label: "Lab Requests & Results" },
+      { key: "labs", label: "Order History", view: "history" },
+      { key: "imaging", label: "Create Imaging Request", view: "form" },
+      { key: "imaging", label: "Imaging Requests & Reports", view: "list" },
+    ],
+  },
   { key: "prescriptions", label: "Prescriptions", icon: Pill },
-  { key: "referrals", label: "Referral Letters", icon: Mail },
+  { key: "referrals", label: "Referrals", icon: CornerUpRight },
+  { key: "encounters", label: "Inpatient & ED", icon: BedDouble },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "messages", label: "Messages", icon: MessageSquare },
-  { key: "colleagues", label: "My Colleagues", icon: Users },
   { key: "hospitals", label: "My Hospitals", icon: Building2 },
+  {
+    key: "resources",
+    label: "Resources",
+    icon: BookOpen,
+    items: [
+      { label: "Clinical Guidelines", route: "/clinical-references" },
+      { key: "colleagues", label: "My Colleagues" },
+    ],
+  },
+  { key: "settings", label: "Settings", icon: Settings },
+  { key: "help", label: "Help & Support", icon: HelpCircle },
 ];
 
 export default function DoctorDashboard() {
@@ -49,6 +84,9 @@ export default function DoctorDashboard() {
   const { t } = useAppLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  // Sub-view of the active section (e.g. labs → history), so a sidebar entry
+  // opens the exact screen the doctor chose.
+  const [tabView, setTabView] = useState(null);
   const [labsDraftContext, setLabsDraftContext] = useState(null);
   const [notesReturnPatient, setNotesReturnPatient] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -69,11 +107,22 @@ export default function DoctorDashboard() {
   // Surgical Records with its own record types; every other feature stays the
   // same for all doctors.
   const isSurgeon = isSurgicalSpecialty(profile?.specialization);
-  const menuItems = navItems.map((n) => {
-    if (n.key === "notes" && isSurgeon) return { ...n, label: "Surgical Records" };
+  const doctorNav = navItems.map((n) => {
     if (n.key === "messages") return { ...n, badge: messagingUnread };
+    if (n.key === "consultations" && isSurgeon) {
+      return {
+        ...n,
+        items: n.items.map((c) =>
+          c.key === "notes" ? { ...c, label: c.view === "previous" ? "Surgical Record History" : "Surgical Records" } : c
+        ),
+      };
+    }
     return n;
   });
+  const flatItems = doctorNav.flatMap((n) => (n.items ? n.items.filter((c) => c.key) : [n]));
+  const activeItem =
+    flatItems.find((n) => n.key === activeTab && (n.view || null) === (tabView || null)) ||
+    flatItems.find((n) => n.key === activeTab);
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -87,8 +136,19 @@ export default function DoctorDashboard() {
 
   const handleNavigateTab = (tab, context) => {
     setActiveTab(tab);
+    setTabView(context?.view || null);
     setLabsDraftContext(tab === "labs" && context?.patient ? context : null);
     setNotesReturnPatient(tab === "notes" && context?.patient ? context.patient : null);
+  };
+
+  // A sidebar entry either opens a page of its own or a section sub-view.
+  const handleNav = (item) => {
+    if (!item) return;
+    if (item.route) {
+      navigate(item.route);
+      return;
+    }
+    handleNavigateTab(item.key, { view: item.view || null });
   };
 
   // Opening a shared-result notification jumps to Find Patient with the
@@ -189,15 +249,16 @@ export default function DoctorDashboard() {
 
   return (
     <DashboardLayout
-      navItems={menuItems}
+      navItems={doctorNav}
       activeKey={activeTab}
-      onNavClick={handleNavigateTab}
+      onNavClick={handleNav}
       sidebarTheme="navy"
       renderSidebar={({ close, onLogout }) => (
         <DoctorSidebar
-          navItems={menuItems}
+          navItems={doctorNav}
           activeKey={activeTab}
-          onNavClick={handleNavigateTab}
+          activeView={tabView}
+          onNavClick={handleNav}
           onLogout={onLogout}
           close={close}
           sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}
@@ -232,7 +293,7 @@ export default function DoctorDashboard() {
               </>
             ) : (
               <>
-                <h1 className="text-2xl font-bold">{t(menuItems.find((n) => n.key === activeTab)?.label)}</h1>
+                <h1 className="text-2xl font-bold">{t(activeItem?.label)}</h1>
                 <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
                   {profile?.full_name}
                   {profile ? <DoctorSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
@@ -260,7 +321,7 @@ export default function DoctorDashboard() {
             todayAppointments={todayAppointments}
             loading={loading}
             recentActivity={recentActivity}
-            onNavigateTab={setActiveTab}
+            onNavigateTab={handleNavigateTab}
             notesLabel={isSurgeon ? "Surgical Records" : "Clinical Notes"}
           />
         )}
@@ -272,16 +333,43 @@ export default function DoctorDashboard() {
         )}
         {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && (isSurgeon ? (
-          <SurgicalRecords doctorProfile={profile} />
+          <SurgicalRecords key={`notes:${tabView || ""}`} doctorProfile={profile} />
         ) : (
-          <DoctorClinicalNotes doctorProfile={profile} onNavigateTab={handleNavigateTab} returnPatient={notesReturnPatient} />
+          <DoctorClinicalNotes
+            key={`notes:${tabView || ""}`}
+            doctorProfile={profile}
+            onNavigateTab={handleNavigateTab}
+            returnPatient={notesReturnPatient}
+            initialMode={tabView === "create" || tabView === "previous" ? tabView : null}
+          />
         ))}
-        {activeTab === "labs" && profile && <DoctorLabRequests doctorProfile={profile} draftContext={labsDraftContext} onNavigateTab={handleNavigateTab} />}
-        {activeTab === "imaging" && profile && <DoctorImagingRequests doctorProfile={profile} />}
+        {activeTab === "labs" && profile && (
+          <DoctorLabRequests
+            key={`labs:${tabView || ""}`}
+            doctorProfile={profile}
+            draftContext={labsDraftContext}
+            onNavigateTab={handleNavigateTab}
+            initialView={tabView === "history" ? "history" : tabView === "create" ? "create" : null}
+          />
+        )}
+        {activeTab === "imaging" && profile && (
+          <DoctorImagingRequests key={`imaging:${tabView || ""}`} doctorProfile={profile} initialView={tabView} />
+        )}
         {activeTab === "prescriptions" && <DoctorPrescriptions />}
+        {activeTab === "encounters" && profile && <EncountersSection doctorProfile={profile} />}
         {activeTab === "messages" && profile && (
           <DoctorMessages profile={profile} hospitalSession={hospitalSession} />
         )}
+        {activeTab === "settings" && (
+          <DoctorSettingsSection
+            profile={profile}
+            onProfileUpdated={setProfile}
+            user={user}
+            hospitalSession={hospitalSession}
+            onNavigate={handleNav}
+          />
+        )}
+        {activeTab === "help" && <DoctorHelpSection onNavigate={handleNav} />}
       </div>
     </DashboardLayout>
   );

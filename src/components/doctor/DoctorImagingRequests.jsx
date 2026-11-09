@@ -9,11 +9,11 @@ import DoctorSharedImagingResults from "./DoctorSharedImagingResults";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import { CONTRAST_APPLICABLE } from "@/lib/imagingCatalog";
 
-export default function DoctorImagingRequests({ doctorProfile, initialCin }) {
+export default function DoctorImagingRequests({ doctorProfile, initialCin, initialView }) {
   const [items, setItems] = useState([]);
   const [sharedByRequest, setSharedByRequest] = useState({});
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState(null); // "form" | "list"
+  const [view, setView] = useState(initialView || null); // "form" | "list"
 
   useEffect(() => { load(); }, [doctorProfile]);
 

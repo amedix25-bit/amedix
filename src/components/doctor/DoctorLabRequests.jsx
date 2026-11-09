@@ -14,18 +14,18 @@ import DoctorLabHistory from "@/components/doctor/lab/DoctorLabHistory";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
-import { FlaskConical, Plus, X, CheckCircle2, Loader2, ArrowLeft, ArrowRight, Search, ClipboardList, History } from "lucide-react";
+import { FlaskConical, Plus, X, CheckCircle2, ArrowLeft, ArrowRight, Search, ClipboardList, History } from "lucide-react";
 
 // In-progress test selection survives leaving and returning to this page during
 // the same order workflow — it is cleared once the request is submitted.
 const SELECTION_KEY = "amedix_lab_request_selection";
 
-export default function DoctorLabRequests({ doctorProfile, draftContext, onNavigateTab }) {
+export default function DoctorLabRequests({ doctorProfile, draftContext, onNavigateTab, initialView }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [query, setQuery] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initialView === "create");
   const [selected, setSelected] = useState(() => {
     try {
       const raw = sessionStorage.getItem(SELECTION_KEY);
@@ -46,7 +46,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
   const [step, setStep] = useState("edit");
   const [resolvedPatient, setResolvedPatient] = useState(null);
   const [priority, setPriority] = useState("Routine");
-  const [view, setView] = useState("patients");
+  const [view, setView] = useState(initialView === "history" ? "history" : "patients");
   const submitGuard = React.useRef(false);
 
   useEffect(() => {
