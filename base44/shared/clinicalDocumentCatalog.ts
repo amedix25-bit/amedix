@@ -157,6 +157,11 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "onc_chemo_record", "onc_infusion_record", "onc_radiation_record",
     "onc_staging_record", "onc_tumor_board_record", "onc_discharge_summary",
     "onc_treatment_summary", "onc_surveillance_record",
+    "onc_breast_cancer", "onc_lung_cancer", "onc_colorectal_cancer",
+    "onc_upper_gi_cancer", "onc_hepatobiliary_pancreatic", "onc_prostate_cancer",
+    "onc_urologic_cancer", "onc_gynaecologic_cancer", "onc_head_neck_cancer",
+    "onc_thyroid_cancer", "onc_melanoma_skin_cancer", "onc_cns_tumour",
+    "onc_sarcoma", "onc_haematological_malignancy", "onc_unknown_primary_rare",
   ],
   infectious_disease: [
     "id_consultation", "id_followup", "id_infection_assessment",

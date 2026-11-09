@@ -14,6 +14,7 @@ import { SURGERY_CONDITION_DOCS } from "@/lib/surgeryConditionDocuments";
 import { applyNoteSectionPolicy } from "@/lib/noteSectionPolicy";
 import { RHEUMATOLOGY_DISEASE_DOCS } from "@/lib/rheumDiseaseNotes";
 import { ANESTHESIA_DOCS } from "@/lib/anesthesiologyDocuments";
+import { ONC_WORKFLOW_DOCS, withOncologyStandards } from "@/lib/oncDocuments";
 import { NEPHROLOGY_DOCS } from "@/lib/nephrologyDocuments";
 import { NEPHROLOGY_KIDNEY_DOCS } from "@/lib/nephrologyKidneyDocs";
 import { NEPHROLOGY_CONDITION_DOCS } from "@/lib/nephrologyConditionDocs";
@@ -865,7 +866,7 @@ export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...withGastroenterologyStandards(GASTROENTEROLOGY_DOCS),
   ...withNephrologySafety([...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS]),
   ...withEndocrineStandards(ENDOCRINOLOGY_DOCS),
-  ...ONCOLOGY_DOCS, ...INFECTIOUS_DISEASE_DOCS,   ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS,   ...withHematologyStandards(HEMATOLOGY_DOCS), ...withAllergyStandards(ALLERGY_DOCS),
+  ...withOncologyStandards([...ONCOLOGY_DOCS, ...ONC_WORKFLOW_DOCS]), ...INFECTIOUS_DISEASE_DOCS,   ...RHEUMATOLOGY_DOCS, ...RHEUMATOLOGY_DISEASE_DOCS,   ...withHematologyStandards(HEMATOLOGY_DOCS), ...withAllergyStandards(ALLERGY_DOCS),
   ...withFamilyMedicineStandards([...FAMILY_MEDICINE_DOCS, ...FM_WORKFLOW_DOCS]), ...DENTAL_DOCS, ...PHYSIO_DOCS, ...NUTRITION_DOCS, ...CERTIFICATE_DEFS,
   ...RADIOLOGY_DOCS, ...LABORATORY_DOCS, ...PATHOLOGY_DOCS,
 ]);
