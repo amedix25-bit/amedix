@@ -13,6 +13,30 @@ export const MESSAGING_CATEGORIES = [
 export const categoryLabel = (key) =>
   MESSAGING_CATEGORIES.find((c) => c.key === key)?.label || "General Inquiries";
 
+// Doctor → patient message types. The patient sees what the message is for.
+export const PATIENT_MESSAGE_TYPES = [
+  { key: "follow_up", label: "Follow-up instructions" },
+  { key: "appointment_reminder", label: "Appointment reminder" },
+  { key: "medication_instructions", label: "Medication instructions" },
+  { key: "preparation_instructions", label: "Test / imaging preparation" },
+  { key: "post_consultation_care", label: "Post-consultation care" },
+  { key: "educational_material", label: "Approved educational material" },
+  { key: "general", label: "General message" },
+];
+
+export const patientMessageTypeLabel = (key) =>
+  PATIENT_MESSAGE_TYPES.find((t) => t.key === key)?.label || "Message";
+
+export const CHANNEL_META = {
+  doctors: { key: "doctor", label: "Doctors" },
+  hospitals: { key: "hospital", label: "Hospitals" },
+  patients: { key: "patient", label: "Patients" },
+};
+
+// Unread count for the signed-in side of a conversation, as normalized by the
+// messaging server (never derived from the browser).
+export const threadUnread = (thread) => thread?.viewer_unread || 0;
+
 export const THREAD_STATUS_META = {
   pending: { label: "Pending", className: "bg-warning/10 text-warning border-warning/30" },
   in_progress: { label: "In Progress", className: "bg-info/10 text-info border-info/30" },

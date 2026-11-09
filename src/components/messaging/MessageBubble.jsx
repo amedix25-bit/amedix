@@ -44,9 +44,13 @@ function AttachmentRow({ attachment, threadId }) {
   );
 }
 
-export default function MessageBubble({ message, own, side, threadId }) {
+export default function MessageBubble({ message, own, side, threadId, readByOther }) {
   const isSystem = message.kind === "system";
-  const readByOther = side === "doctor" ? message.read_by_hospital : message.read_by_doctor;
+  // The server computes whose read flag means "the other side read it" for each
+  // channel; fall back to the hospital-channel rule when it is not supplied.
+  const readByCounterpart = readByOther !== undefined
+    ? readByOther
+    : (side === "doctor" ? message.read_by_hospital : message.read_by_doctor);
 
   if (isSystem) {
     return (
@@ -94,7 +98,7 @@ export default function MessageBubble({ message, own, side, threadId }) {
         </div>
         <p className="mt-1 text-[10px] text-muted-foreground">
           {formatMessageTime(message.datetime)}
-          {own ? (readByOther ? " · Read" : " · Delivered") : ""}
+          {own ? (readByCounterpart ? " · Read" : " · Delivered") : ""}
         </p>
       </div>
     </div>

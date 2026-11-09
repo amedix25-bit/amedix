@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import PatientOverview from "@/components/patient/PatientOverview";
 import PatientAppointments from "@/components/patient/PatientAppointments";
+import PatientDoctorMessages from "@/components/patient/PatientDoctorMessages";
 import DoctorVisits from "@/components/patient/DoctorVisits";
 import PatientLabs from "@/components/patient/PatientLabs";
 import PatientLabResults from "@/components/patient/PatientLabResults";

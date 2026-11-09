@@ -1,13 +1,37 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Info, ShieldCheck } from "lucide-react";
 import MessageBubble from "@/components/messaging/MessageBubble";
 import MessageComposer from "@/components/messaging/MessageComposer";
-import { categoryLabel, displayDoctor, THREAD_STATUS_META } from "@/lib/messaging";
+import { categoryLabel, displayDoctor, patientMessageTypeLabel, THREAD_STATUS_META } from "@/lib/messaging";
 
-export default function ConversationThread({ thread, messages, audit = [], side, onSend, onBack, controls, sending }) {
+// The conversation window. `oneWay` renders the doctor → patient channel: the
+// composer is replaced by a notice, because a patient can never reply and the
+// doctor writes from the patient screen. `counterpart` carries the resolved
+// name / subtitle the server authorized for this viewer.
+export default function ConversationThread({
+  thread,
+  messages,
+  audit = [],
+  side,
+  onSend,
+  onBack,
+  controls,
+  sending,
+  oneWay = false,
+  readOnly = false,
+  counterpart,
+  hospitalContact,
+  composerPlaceholder,
+  viewerUserId,
+}) {
   const endRef = useRef(null);
   const [showAudit, setShowAudit] = useState(false);
   const status = THREAD_STATUS_META[thread.status] || THREAD_STATUS_META.pending;
+
+  const title = counterpart?.name || (side === "doctor" ? thread.hospital_name : displayDoctor(thread.doctor_name));
+  const subtitle = counterpart
+    ? [counterpart.subtitle, counterpart.hospital].filter(Boolean).join(" · ")
+    : [thread.doctor_specialization].filter(Boolean).join(" · ");
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -21,15 +45,18 @@ export default function ConversationThread({ thread, messages, audit = [], side,
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate font-heading text-sm font-semibold">{thread.subject}</h3>
+            <h3 className="truncate font-heading text-sm font-semibold">{title}</h3>
             <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-              {side === "doctor" ? thread.hospital_name : displayDoctor(thread.doctor_name)}
-              {thread.doctor_specialization ? ` · ${thread.doctor_specialization}` : ""}
-              {" · "}{categoryLabel(thread.category)}
+              {thread.channel === "doctor" || thread.channel === "patient" ? thread.subject : (thread.subject || title)}
+              {subtitle ? ` · ${subtitle}` : ""}
+              {thread.channel === "hospital" ? ` · ${categoryLabel(thread.category)}` : ""}
+              {thread.patient_cin && thread.channel === "patient" ? ` · CIN ${thread.patient_cin}` : ""}
               {thread.thread_ref ? ` · ${thread.thread_ref}` : ""}
             </p>
           </div>
-          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${status.className}`}>{status.label}</span>
+          {thread.channel !== "patient" && (
+            <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${status.className}`}>{status.label}</span>
+          )}
         </div>
         {controls}
       </div>
@@ -40,13 +67,23 @@ export default function ConversationThread({ thread, messages, audit = [], side,
             Hospital announcement{thread.target_department ? ` — ${thread.target_department}` : " — all doctors"}.
           </div>
         )}
+        {oneWay && (
+          <div className="flex items-start gap-2 rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-[11px] text-success">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              One-way message: the patient can read these instructions and cannot reply here.
+              {thread.patient_message_type ? ` ${patientMessageTypeLabel(thread.patient_message_type)}.` : ""}
+            </span>
+          </div>
+        )}
         {messages.map((m) => (
           <MessageBubble
             key={m.id}
             message={m}
             threadId={thread.id}
             side={side}
-            own={m.sender_role === side}
+            own={thread.channel === "doctor" ? m.sender_user_id === viewerUserId : m.sender_role === side}
+            readByOther={m.read_by_counterpart}
           />
         ))}
         <div ref={endRef} />
@@ -75,7 +112,22 @@ export default function ConversationThread({ thread, messages, audit = [], side,
         </div>
       )}
 
-      <MessageComposer onSend={onSend} sending={sending} placeholder={`Reply to ${side === "doctor" ? thread.hospital_name : displayDoctor(thread.doctor_name)}…`} />
+      {readOnly ? (
+        <div className="border-t border-border bg-card p-3">
+          <p className="text-[11px] text-muted-foreground">
+            This is a one-way message from your doctor. Replies are not available.
+            {hospitalContact?.name
+              ? ` For assistance, contact ${hospitalContact.name}${hospitalContact.phone ? ` on ${hospitalContact.phone}` : ""}.`
+              : ""}
+          </p>
+        </div>
+      ) : (
+        <MessageComposer
+          onSend={onSend}
+          sending={sending}
+          placeholder={composerPlaceholder || (oneWay ? `Send another message to ${title}…` : `Reply to ${title}…`)}
+        />
+      )}
     </div>
   );
 }

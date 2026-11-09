@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   LogOut,
   Languages,
+  MessageSquare,
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 export const NAV_SECTIONS = [
   { type: "item", key: "overview", label: "Home", icon: HomeIcon, block: true },
   { type: "item", key: "appointments", label: "Appointments", icon: Calendar },
+  { type: "item", key: "messages", label: "Messages from Doctors", icon: MessageSquare },
   {
     type: "group",
     key: "record",
