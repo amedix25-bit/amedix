@@ -92,6 +92,12 @@ import OncScoresField from "@/components/doctor/notes/OncScoresField";
 import OncSafetyPromptsField from "@/components/doctor/notes/OncSafetyPromptsField";
 import OncGuidanceField from "@/components/doctor/notes/OncGuidanceField";
 import ImGuidanceField from "@/components/doctor/notes/ImGuidanceField";
+import UroBlockField from "@/components/doctor/notes/UroBlockField";
+import UroExamField from "@/components/doctor/notes/UroExamField";
+import UroScoresField from "@/components/doctor/notes/UroScoresField";
+import UroSafetyPromptsField from "@/components/doctor/notes/UroSafetyPromptsField";
+import UroStagingField from "@/components/doctor/notes/UroStagingField";
+import UroGuidanceField from "@/components/doctor/notes/UroGuidanceField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -519,6 +525,24 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "onc_guidance" && (
         <OncGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "uro_modules" && (
+        <UroBlockField value={values[f.key]} blocks={f.blocks} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "uro_exam" && (
+        <UroExamField value={values[f.key]} groups={f.groups} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "uro_staging" && (
+        <UroStagingField value={values[f.key]} cancerKey={f.cancerKey} fields={f.fields} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "uro_scores" && (
+        <UroScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "uro_safety" && (
+        <UroSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "uro_guidance" && (
+        <UroGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>

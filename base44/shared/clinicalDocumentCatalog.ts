@@ -126,6 +126,24 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "uro_consultation", "uro_followup", "uro_procedure_note",
     "uro_operative_note", "uro_preop_assessment", "uro_postop_note",
     "uro_catheter_device_record", "uro_discharge_summary", "uro_referral",
+    // Added by the urology upgrade. The nine keys above are unchanged and stay
+    // valid, so every existing note keeps resolving.
+    "uro_oncology_prostate", "uro_oncology_bladder_nmibc",
+    "uro_oncology_bladder_mibc", "uro_oncology_renal",
+    "uro_oncology_utuc", "uro_oncology_testis", "uro_oncology_penile",
+    "uro_oncology_urethral", "uro_oncology_mdt", "uro_oncology_surveillance",
+    "uro_stone_clinic", "uro_stone_metabolic", "uro_stone_emergency",
+    "uro_luts_bph", "uro_incontinence_female", "uro_neuro_urology",
+    "uro_urodynamics", "uro_recurrent_uti", "uro_bladder_pain",
+    "uro_andrology_ed", "uro_andrology_infertility",
+    "uro_andrology_peyronie", "uro_andrology_hypogonadism",
+    "uro_andrology_priapism",
+    "uro_reconstructive_stricture", "uro_reconstructive_plan",
+    "uro_paediatric_consultation", "uro_paediatric_urology_workup",
+    "uro_transplant_urology",
+    "uro_emergency_retention", "uro_emergency_trauma",
+    "uro_emergency_infection", "uro_emergency_torsion",
+    "uro_second_opinion", "uro_followup_plan",
   ],
   ent: [
     "ent_consultation", "ent_followup", "ent_procedure_note",
@@ -229,6 +247,11 @@ export const CONFIDENTIAL_DOCUMENT_TYPES: string[] = [
   "psy_consultation", "psy_assessment", "psy_followup", "psy_progress_note",
   "psy_treatment_plan", "psy_medication_followup", "psy_risk_assessment",
   "psy_crisis_assessment", "psy_discharge_summary", "psy_referral",
+  // Sexual and reproductive medicine: the urology andrology notes are
+  // confidential clinical information and follow the same access rule as the
+  // psychiatric notes — the authoring doctor, the patient and administrators only.
+  "uro_andrology_ed", "uro_andrology_infertility", "uro_andrology_peyronie",
+  "uro_andrology_hypogonadism", "uro_andrology_priapism",
 ];
 
 export function isConfidentialDocumentType(key: string): boolean {
