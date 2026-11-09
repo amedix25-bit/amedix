@@ -10,6 +10,21 @@
       "type": "string",
       "description": "Conversation reference at the time the message was sent"
     },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "hospital",
+        "doctor",
+        "patient"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green"
+      ],
+      "default": "hospital",
+      "description": "Channel the message belongs to, copied from its conversation \u2014 hospital (doctor \u2194 hospital), doctor (doctor \u2194 doctor) or patient (doctor \u2192 patient, one-way)"
+    },
     "hospital_user_id": {
       "type": "string",
       "description": "User id of the hospital administrator account \u2014 hospital isolation key"
@@ -43,9 +58,10 @@
       "type": "string",
       "enum": [
         "doctor",
-        "hospital"
+        "hospital",
+        "patient"
       ],
-      "description": "Which side the sender belongs to"
+      "description": "Which side the sender belongs to. A patient can never be the sender of a doctor \u2192 patient message"
     },
     "sender_title": {
       "type": "string",
@@ -102,18 +118,27 @@
     "read_by_doctor": {
       "type": "boolean",
       "default": false,
-      "description": "Whether the doctor's side has read this message"
+      "description": "Whether the doctor's side has read this message. In a doctor \u2194 doctor conversation this is the doctor who opened it."
     },
     "read_by_hospital": {
       "type": "boolean",
       "default": false,
-      "description": "Whether the hospital side has read this message"
+      "description": "Whether the hospital side has read this message. In a doctor \u2194 doctor conversation this is the second doctor."
+    },
+    "read_by_patient": {
+      "type": "boolean",
+      "default": false,
+      "description": "Doctor \u2192 patient conversations only: whether the patient has read the message \u2014 the delivery/read indicator the doctor sees"
     },
     "doctor_read_datetime": {
       "type": "string"
     },
     "hospital_read_datetime": {
       "type": "string"
+    },
+    "patient_read_datetime": {
+      "type": "string",
+      "description": "Date and time the patient read the message (ISO datetime)"
     },
     "datetime": {
       "type": "string",

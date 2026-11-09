@@ -19,10 +19,11 @@
         "medication_update",
         "medication_reminder",
         "recall",
+        "doctor_message",
         "other"
       ],
       "default": "other",
-      "description": "Category of the notification. MEDICATION_REMINDER: an optional adherence reminder for a scheduled dose."
+      "description": "Category of the notification. MEDICATION_REMINDER: an optional adherence reminder for a scheduled dose. DOCTOR_MESSAGE: the patient received a new message from one of their treating doctors \u2014 the notification never carries the clinical content of the message."
     },
     "title": {
       "type": "string",
@@ -39,11 +40,11 @@
     },
     "target": {
       "type": "string",
-      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications / prescriptions / reminders)"
+      "description": "Patient Portal tab the notification opens (appointments / labs / mylabresults / medications / prescriptions / reminders / messages)"
     },
     "related_id": {
       "type": "string",
-      "description": "Related appointment / lab request id"
+      "description": "Related appointment / lab request / message thread id"
     },
     "event_date": {
       "type": "string",

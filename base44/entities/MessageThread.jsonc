@@ -6,6 +6,26 @@
       "type": "string",
       "description": "Human-readable AMedix conversation reference, e.g. MSG-20261102-7KQ2 \u2014 generated server-side"
     },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "hospital",
+        "doctor",
+        "patient"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green"
+      ],
+      "default": "hospital",
+      "description": "Which communication channel this conversation belongs to. HOSPITAL: doctor \u2194 hospital administration (two-way). DOCTOR: doctor \u2194 doctor (two-way). PATIENT: doctor \u2192 patient (strictly one-way, the patient can never reply). Existing conversations are hospital channel."
+    },
+    "one_way": {
+      "type": "boolean",
+      "default": false,
+      "description": "True only for the doctor \u2192 patient channel. Enforced server-side: a patient can read the conversation but can never send into it."
+    },
     "hospital_user_id": {
       "type": "string",
       "description": "User id of the hospital administrator account the conversation belongs to \u2014 the hospital isolation key. Set server-side only."
@@ -20,7 +40,7 @@
     },
     "doctor_user_id": {
       "type": "string",
-      "description": "User id of the doctor account \u2014 set server-side when the conversation is opened, used for Row Level Security"
+      "description": "User id of the doctor account. For a doctor \u2194 doctor conversation this is the doctor who opened it. For a doctor \u2192 patient conversation this is the treating doctor. Set server-side, used for Row Level Security."
     },
     "doctor_id": {
       "type": "string",
@@ -33,6 +53,42 @@
     "doctor_specialization": {
       "type": "string",
       "description": "Doctor specialty / department at the affiliated hospital"
+    },
+    "peer_doctor_user_id": {
+      "type": "string",
+      "description": "Doctor \u2194 doctor conversations only: user id of the second verified doctor \u2014 set server-side when the conversation is opened by the first doctor"
+    },
+    "peer_doctor_id": {
+      "type": "string",
+      "description": "Doctor \u2194 doctor conversations only: DoctorProfile id of the second doctor"
+    },
+    "peer_doctor_name": {
+      "type": "string",
+      "description": "Doctor \u2194 doctor conversations only: name of the second doctor"
+    },
+    "peer_doctor_specialization": {
+      "type": "string",
+      "description": "Doctor \u2194 doctor conversations only: specialty of the second doctor"
+    },
+    "peer_doctor_hospital": {
+      "type": "string",
+      "description": "Doctor \u2194 doctor conversations only: hospital the second doctor works at, shown so cross-hospital colleagues are identifiable"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "Doctor \u2192 patient conversations only: user id of the patient account \u2014 written server-side, drives Row Level Security and lets the patient read only their own messages"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Doctor \u2192 patient conversations only: PatientProfile id of the patient under the doctor's authorized care"
+    },
+    "patient_cin": {
+      "type": "string",
+      "description": "Doctor \u2192 patient conversations only: patient's Clinical Identification Number"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Doctor \u2192 patient conversations only: patient full name"
     },
     "subject": {
       "type": "string",
@@ -51,7 +107,29 @@
         "complaints_suggestions",
         "general_inquiries"
       ],
-      "description": "Structured communication category the conversation was opened under"
+      "description": "Structured communication category the conversation was opened under (hospital channel). Doctor and patient channels carry their own context and use medical_administration."
+    },
+    "patient_message_type": {
+      "type": "string",
+      "enum": [
+        "follow_up",
+        "appointment_reminder",
+        "medication_instructions",
+        "preparation_instructions",
+        "post_consultation_care",
+        "educational_material",
+        "general"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "yellow",
+        "pink",
+        "green",
+        "gray",
+        "gray"
+      ],
+      "description": "Doctor \u2192 patient conversations only: the kind of clinical instruction the first message carried, so the patient can see what the message is for"
     },
     "status": {
       "type": "string",
@@ -60,8 +138,13 @@
         "in_progress",
         "resolved"
       ],
+      "enumColors": [
+        "yellow",
+        "blue",
+        "green"
+      ],
       "default": "pending",
-      "description": "Conversation status \u2014 PENDING: awaiting hospital action. IN PROGRESS: being handled. RESOLVED: closed by the hospital. A new message on a resolved conversation reopens it and the change is recorded."
+      "description": "Conversation status \u2014 PENDING: awaiting hospital action. IN PROGRESS: being handled. RESOLVED: closed by the hospital (or an announcement / one-way patient message). A new message on a resolved hospital conversation reopens it and the change is recorded."
     },
     "assigned_staff_user_id": {
       "type": "string",
@@ -80,15 +163,16 @@
       "items": {
         "type": "string"
       },
-      "description": "Every user explicitly authorized on this conversation \u2014 the doctor, the hospital administrator and assigned staff. Written server-side only; drives Row Level Security and real-time delivery."
+      "description": "Every user explicitly authorized on this conversation \u2014 for a hospital conversation the doctor, the hospital administrator and assigned staff; for a doctor conversation both doctors; for a patient conversation the doctor and the patient. Written server-side only; drives Row Level Security and real-time delivery."
     },
     "created_by_role": {
       "type": "string",
       "enum": [
         "doctor",
-        "hospital"
+        "hospital",
+        "patient"
       ],
-      "description": "Which side opened the conversation"
+      "description": "Which side opened the conversation \u2014 a patient never opens one"
     },
     "is_announcement": {
       "type": "boolean",
@@ -127,12 +211,17 @@
     "doctor_unread_count": {
       "type": "integer",
       "default": 0,
-      "description": "Unread messages for the doctor"
+      "description": "Unread messages for the starting doctor (doctor \u2194 hospital) or for the doctor who opened a doctor \u2194 doctor conversation"
     },
     "hospital_unread_count": {
       "type": "integer",
       "default": 0,
-      "description": "Unread messages for the hospital side"
+      "description": "Unread messages for the hospital side, or for the second doctor in a doctor \u2194 doctor conversation"
+    },
+    "patient_unread_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Unread messages for the patient in a doctor \u2192 patient conversation"
     },
     "doctor_last_read_datetime": {
       "type": "string",
@@ -141,6 +230,10 @@
     "hospital_last_read_datetime": {
       "type": "string",
       "description": "Date and time the hospital side last read the conversation (ISO datetime)"
+    },
+    "patient_last_read_datetime": {
+      "type": "string",
+      "description": "Date and time the patient last read the doctor's message (ISO datetime)"
     },
     "status_history": {
       "type": "array",
