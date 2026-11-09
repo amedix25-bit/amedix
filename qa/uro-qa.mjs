@@ -193,7 +193,7 @@ check(Boolean(URO_ICD11_MMS.release && URO_ICD11_MMS.system_uri), "the MMS relea
 
 // ---- 5. Safety prompts: fire on the finding, silent without it -------------
 const POSITIVE = {
-  obstructed_infected_kidney: { uro_stone_documentation: { stone_obstruction: "Severe", hydronephrosis: "Moderate", stone_infection: "Yes" }, note: "fever 38.6" },
+  obstructed_infected_kidney: { uro_stone_documentation: { stone_obstruction: "Severe", stone_infection: "Yes" } },
   urosepsis: { note: "urosepsis suspected, systolic BP 85" },
   acute_retention: { uro_luts: { post_void_residual: "420" } },
   testicular_torsion: { note: "acute scrotal pain with high-riding testis and nausea" },
@@ -215,8 +215,18 @@ const POSITIVE = {
 for (const rule of URO_SAFETY_RULES) {
   const fired = evaluateUroSafety(POSITIVE[rule.key] || {}).map((a) => a.key);
   check(fired.includes(rule.key), `safety rule ${rule.key} fires on its documented finding`);
-  check(!/prescribe|increase the dose|give \d|stop the medication/i.test(`${rule.trigger.toString()}`), `safety rule ${rule.key} issues no order`);
   check(Boolean(rule.source?.organization), `safety rule ${rule.key} cites a source`);
+  // What the clinician actually reads must carry no dose figure and no order.
+  const firedText = evaluateUroSafety(POSITIVE[rule.key] || {})
+    .map((a) => `${a.title} ${a.detail} ${a.action}`)
+    .join(" ");
+  // A post-void residual in mL is a measurement, not a dose: only mass/unit
+  // dose forms are barred here.
+  check(!/\b\d+(\.\d+)?\s?(mg|mcg|µg|microgram|milligram|grams?|units?)\b/i.test(firedText), `safety rule ${rule.key} raises no dose figure`);
+  check(
+    !/\b(prescribe|administer|start|stop|discontinue|withhold|give)\b\s+(the\s+)?(antibiotic|antibiotics|drug|medication|dose|therapy|agent|tamsulosin|finasteride)/i.test(firedText),
+    `safety rule ${rule.key} issues no medication order`,
+  );
 }
 const emptyNote = evaluateUroSafety({});
 check(emptyNote.length === 0, "an empty note raises no prompt — silence is not a normal finding");
