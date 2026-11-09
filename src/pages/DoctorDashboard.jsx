@@ -6,7 +6,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
 import DoctorOverview from "@/components/doctor/DoctorOverview";
 import DoctorPatientSearch from "@/components/doctor/DoctorPatientSearch";
-import DoctorAppointments from "@/components/doctor/DoctorAppointments";
 import DoctorClinicalNotes from "@/components/doctor/DoctorClinicalNotes";
 import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
 import DoctorPrescriptions from "@/components/doctor/DoctorPrescriptions";
@@ -14,8 +13,7 @@ import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorTopBar from "@/components/doctor/shell/DoctorTopBar";
 import DoctorSidebar from "@/components/doctor/shell/DoctorSidebar";
-import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
-import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
+import DoctorCommunication from "@/components/doctor/communication/DoctorCommunication";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
 import { ensureRadiologistProfile, isRadiologySpecialty } from "@/lib/radiologyAccess";
@@ -24,11 +22,10 @@ import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Calendar, Building2, Pill, MessageSquare, Link2, Scale, CornerUpRight, BedDouble, BookOpen, Settings, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Search, Building2, Pill, MessageSquare, Link2, Scale, BedDouble, BookOpen, Settings, HelpCircle } from "lucide-react";
 import EncountersSection from "@/components/doctor/encounters/EncountersSection";
 import DoctorSettingsSection from "@/components/doctor/settings/DoctorSettingsSection";
 import DoctorHelpSection from "@/components/doctor/help/DoctorHelpSection";
-import DoctorMessages from "@/components/doctor/messaging/DoctorMessages";
 import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 
 // The Doctor Portal navigation — every entry opens a screen that already
@@ -45,7 +42,6 @@ const navItems = [
       { key: "notes", label: "New Consultation", view: "create" },
       { key: "notes", label: "My Consultations" },
       { key: "notes", label: "Consultation History", view: "previous" },
-      { key: "appointments", label: "Follow-up Consultations" },
     ],
   },
   {
@@ -61,10 +57,8 @@ const navItems = [
     ],
   },
   { key: "prescriptions", label: "Prescriptions", icon: Pill },
-  { key: "referrals", label: "Referrals", icon: CornerUpRight },
+  { key: "communication", label: "Communication", icon: MessageSquare },
   { key: "encounters", label: "Inpatient & ED", icon: BedDouble },
-  { key: "appointments", label: "Appointments", icon: Calendar },
-  { key: "messages", label: "Messages", icon: MessageSquare },
   { key: "hospitals", label: "My Hospitals", icon: Building2 },
   {
     key: "resources",
@@ -72,12 +66,15 @@ const navItems = [
     icon: BookOpen,
     items: [
       { label: "Clinical Guidelines", route: "/clinical-references" },
-      { key: "colleagues", label: "My Colleagues" },
     ],
   },
   { key: "settings", label: "Settings", icon: Settings },
   { key: "help", label: "Help & Support", icon: HelpCircle },
 ];
+
+// The four things the Communication screen holds — every shortcut elsewhere in
+// the portal that pointed at one of them now opens Communication on that tab.
+const COMMUNICATION_KEYS = ["colleagues", "messages", "appointments", "referrals"];
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -87,6 +84,8 @@ export default function DoctorDashboard() {
   // Sub-view of the active section (e.g. labs → history), so a sidebar entry
   // opens the exact screen the doctor chose.
   const [tabView, setTabView] = useState(null);
+  // Open tab of the Communication screen.
+  const [communicationTab, setCommunicationTab] = useState("messages");
   const [labsDraftContext, setLabsDraftContext] = useState(null);
   const [notesReturnPatient, setNotesReturnPatient] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -108,7 +107,7 @@ export default function DoctorDashboard() {
   // same for all doctors.
   const isSurgeon = isSurgicalSpecialty(profile?.specialization);
   const doctorNav = navItems.map((n) => {
-    if (n.key === "messages") return { ...n, badge: messagingUnread };
+    if (n.key === "communication") return { ...n, badge: messagingUnread };
     if (n.key === "consultations" && isSurgeon) {
       return {
         ...n,
@@ -134,7 +133,19 @@ export default function DoctorDashboard() {
     return () => clearInterval(interval);
   }, [profile]);
 
+  const openCommunication = (tab) => {
+    setCommunicationTab(COMMUNICATION_KEYS.includes(tab) ? tab : "messages");
+    setActiveTab("communication");
+    setTabView(null);
+    setLabsDraftContext(null);
+    setNotesReturnPatient(null);
+  };
+
   const handleNavigateTab = (tab, context) => {
+    if (COMMUNICATION_KEYS.includes(tab)) {
+      openCommunication(tab);
+      return;
+    }
     setActiveTab(tab);
     setTabView(context?.view || null);
     setLabsDraftContext(tab === "labs" && context?.patient ? context : null);
@@ -275,7 +286,7 @@ export default function DoctorDashboard() {
         onNavigate={handleNavigateTab}
         onSearchPatient={openPatientSearch}
         onOpenNotification={openFromNotification}
-        onOpenReferrals={() => setActiveTab("referrals")}
+        onOpenReferrals={() => openCommunication("referrals")}
       />
 
       <div className="p-4 lg:p-6 max-w-7xl mx-auto">
@@ -326,12 +337,18 @@ export default function DoctorDashboard() {
           />
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
-        {activeTab === "colleagues" && profile && <DoctorColleagues doctorProfile={profile} />}
-        {activeTab === "referrals" && profile && <DoctorReferralLetters doctorProfile={profile} />}
+        {activeTab === "communication" && profile && (
+          <DoctorCommunication
+            profile={profile}
+            hospitalSession={hospitalSession}
+            tab={communicationTab}
+            onTabChange={setCommunicationTab}
+            unreadMessages={messagingUnread}
+          />
+        )}
         {activeTab === "hospitals" && profile && user && (
           <DoctorHospitalsSection profile={profile} user={user} onProfileUpdated={setProfile} />
         )}
-        {activeTab === "appointments" && profile && <DoctorAppointments doctorProfile={profile} />}
         {activeTab === "notes" && profile && (isSurgeon ? (
           <SurgicalRecords key={`notes:${tabView || ""}`} doctorProfile={profile} />
         ) : (
@@ -357,9 +374,6 @@ export default function DoctorDashboard() {
         )}
         {activeTab === "prescriptions" && <DoctorPrescriptions />}
         {activeTab === "encounters" && profile && <EncountersSection doctorProfile={profile} />}
-        {activeTab === "messages" && profile && (
-          <DoctorMessages profile={profile} hospitalSession={hospitalSession} />
-        )}
         {activeTab === "settings" && (
           <DoctorSettingsSection
             profile={profile}
