@@ -18,6 +18,7 @@ import { Loader2, Search, ShieldCheck, UserPlus, UserMinus, Building2, MessageSq
 export default function FindDoctors({ profile }) {
   const { toast } = useToast();
   const [doctors, setDoctors] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -33,6 +34,7 @@ export default function FindDoctors({ profile }) {
     try {
       const res = await base44.functions.invoke("doctorNetwork", { action: "list", search: query });
       setDoctors(res.data.doctors || []);
+      setTotal(res.data.total_verified_doctors || 0);
       setError("");
     } catch (e) {
       setError(e?.response?.data?.error || "The verified doctor network is unavailable.");
@@ -45,8 +47,13 @@ export default function FindDoctors({ profile }) {
     load("");
   }, [profile?.id]);
 
+  // Predictive search: from the second letter on, every keystroke searches the
+  // network (debounced). A single letter keeps the full list on screen instead
+  // of querying with a term too short to be meaningful.
   useEffect(() => {
-    const timer = setTimeout(() => load(search), 300);
+    const query = search.trim();
+    if (query.length === 1) return;
+    const timer = setTimeout(() => load(query), 250);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -106,7 +113,11 @@ export default function FindDoctors({ profile }) {
           <div>
             <h2 className="font-heading text-base font-semibold">Find Doctors</h2>
             <p className="text-xs text-muted-foreground">
-              {loading ? "Loading the verified doctor network…" : `${doctors.length} verified, active doctors across AMedix`}
+              {loading
+                ? "Loading the verified doctor network…"
+                : search.trim().length > 1
+                  ? `${doctors.length} of ${total} verified, active doctors match “${search.trim()}”`
+                  : `${total} verified, active doctors across AMedix`}
             </p>
           </div>
           <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 text-xs">
@@ -137,6 +148,10 @@ export default function FindDoctors({ profile }) {
           />
         </div>
 
+        {search.trim().length === 1 && (
+          <p className="mt-2 text-[11px] text-muted-foreground">Type one more letter to search the network.</p>
+        )}
+
         <p className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
           Colleagues are professional contacts only. Adding a colleague never grants access to their patients,
           medical records, clinical notes or hospital information.
@@ -153,7 +168,11 @@ export default function FindDoctors({ profile }) {
         </div>
       ) : visible.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center text-sm text-muted-foreground">
-          {filter === "colleagues" ? "You have not added any colleagues yet." : "No verified doctor matches your search."}
+          {filter === "colleagues"
+            ? "You have not added any colleagues yet."
+            : search.trim().length > 1
+              ? `No approved doctor matches “${search.trim()}”. Doctors appear in the network once AMedix administration approves their verification.`
+              : "No other doctor is verified and active on AMedix yet. Doctors appear here once AMedix administration approves their verification."}
         </div>
       ) : (
         <div className="grid gap-2">

@@ -15,6 +15,18 @@ import {
 // Everything here is authorized server-side from the database. A doctor who is
 // suspended, deactivated or no longer verified disappears from the network and
 // can no longer be added, listed or messaged.
+// Predictive directory search: as soon as the doctor types two letters, every
+// word of the name, specialty or hospital is matched by PREFIX, so "niza"
+// finds NIZAR FATHI AGILA and "med" finds Internal Medicine. The full-text
+// substring check stays as a fallback so any part of a word also matches.
+function matchesSearch(haystack: string, query: string) {
+  const text = String(haystack || "").toLowerCase();
+  const words = text.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const tokens = String(query || "").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => words.some((w) => w.startsWith(token)) || text.includes(token));
+}
+
 export default async function (req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
@@ -60,7 +72,7 @@ export default async function (req: Request): Promise<Response> {
           if (!search) return true;
           const d = e.doctor || {};
           const specialties = Array.isArray(d.specialties) ? d.specialties.join(' ') : '';
-          return [d.full_name, d.specialization, specialties, d.hospital].join(' ').toLowerCase().includes(search);
+          return matchesSearch([d.full_name, d.specialization, specialties, d.hospital].join(' '), search);
         })
         .map((e) => ({
           doctor_id: e.profiles.doctor_id,
