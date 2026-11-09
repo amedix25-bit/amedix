@@ -206,7 +206,7 @@ const isHaemodynamicStatusField = (field) => {
 // `pulm_modules` is the respiratory documentation module: its examination block
 // records the chest findings by lung field, so it is a structured examination
 // record and never the single free-text examination field this rule retires.
-const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci", "peds_modules", "pulm_modules"];
+const STRUCTURED_EXAM_TYPES = ["nsg_exam", "nsg_isncsci", "peds_modules", "pulm_modules", "uro_exam"];
 
 const isExaminationField = (field) => {
   if (STRUCTURED_EXAM_TYPES.includes(field.type)) return false;
@@ -252,7 +252,7 @@ const applyClinicalFieldRules = (doc) => {
 // Structured decision-support records carry their own typed events (medication
 // safety events, deterioration escalations) — they are never the free-text
 // "Escalation Criteria" section this rule retires.
-const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation", "peds_modules", "peds_safety", "peds_guidance"];
+const STRUCTURED_RECORD_TYPES = ["neuro_medications", "neuro_escalation", "peds_modules", "peds_safety", "peds_guidance", "uro_modules", "uro_staging"];
 
 // The respiratory documentation module for investigations, added explicitly for
 // the pulmonology templates. It is not result entry: ordering, performing and
