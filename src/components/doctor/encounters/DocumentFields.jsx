@@ -75,6 +75,11 @@ import PedsGuidanceField from "@/components/doctor/notes/PedsGuidanceField";
 import NeurologyGuidanceField from "@/components/doctor/notes/NeurologyGuidanceField";
 import NeurologyMedicationField from "@/components/doctor/notes/NeurologyMedicationField";
 import NeurologyEscalationField from "@/components/doctor/notes/NeurologyEscalationField";
+import FmBlockField from "@/components/doctor/notes/FmBlockField";
+import FmScoresField from "@/components/doctor/notes/FmScoresField";
+import FmSafetyPromptsField from "@/components/doctor/notes/FmSafetyPromptsField";
+import FmScreeningField from "@/components/doctor/notes/FmScreeningField";
+import FmGuidanceField from "@/components/doctor/notes/FmGuidanceField";
 
 // Renders the structured fields of a specialty clinical document type
 // (single-line inputs, numbers, multi-line notes and fixed-option selects),
@@ -446,6 +451,26 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "peds_guidance" && (
         <PedsGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "fm_modules" && (
+        <FmBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "fm_scores" && (
+        <FmScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "fm_safety" && (
+        <FmSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "fm_screening" && (
+        <FmScreeningField
+          value={values[f.key]}
+          values={values}
+          patientId={patientId}
+          onChange={(v) => onChange(f.key, v)}
+        />
+      )}
+      {f.type === "fm_guidance" && (
+        <FmGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>
