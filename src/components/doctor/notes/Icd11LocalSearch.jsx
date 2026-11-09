@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,22 @@ export default function Icd11LocalSearch({ onSelect }) {
   const [query, setQuery] = useState("");
   const [lang, setLang] = useState("en");
   const [busy, setBusy] = useState("");
+  // The dataset's own size, read once on mount. An empty result is only
+  // meaningful when the clinician can see how much the dataset actually holds —
+  // otherwise "no codes" reads like a broken search rather than a gap.
+  const [dataset, setDataset] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await base44.functions.invoke("icd11LocalSearch", { mode: "status" });
+        const data = res.data || {};
+        setDataset(data.dataset_ready ? data.release : null);
+      } catch {
+        setDataset(null);
+      }
+    })();
+  }, []);
   const [state, setState] = useState({
     loading: false,
     error: "",
@@ -137,6 +153,14 @@ export default function Icd11LocalSearch({ onSelect }) {
         </Button>
       </div>
 
+      {dataset && (
+        <p className="text-[11px] text-muted-foreground">
+          Dataset: release {dataset.release_id} · <span className="font-medium">{dataset.term_count || 0}</span>{" "}
+          verified entries. Only terms the dataset holds can be coded — anything outside it is recorded as documented and
+          flagged for coding review.
+        </p>
+      )}
+
       <p className="text-[11px] text-muted-foreground">
         Searched in the workspace's own ICD-11 classification database — no API subscription or credentials are used.
         Arabic is shown only where the dataset carries it: an official WHO Arabic term is marked as official, and an
@@ -160,7 +184,11 @@ export default function Icd11LocalSearch({ onSelect }) {
 
       {state.datasetReady && state.message && !state.results.length && (
         <p className="flex items-start gap-1.5 text-[11px] text-amber-800 dark:text-amber-300">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {state.message}
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            {state.message}
+            {dataset ? ` The loaded release holds ${dataset.term_count || 0} entries; an official WHO ICD-11 release import extends it.` : ""}
+          </span>
         </p>
       )}
 
