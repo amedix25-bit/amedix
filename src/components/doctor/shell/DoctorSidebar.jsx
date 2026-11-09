@@ -1,5 +1,6 @@
 import React from "react";
-import { Activity, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
 
@@ -12,10 +13,8 @@ export default function DoctorSidebar({ navItems = [], activeKey, onNavClick, on
 
   return (
     <div className="flex h-full flex-col bg-doctor-navy">
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-doctor-blue">
-          <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
-        </span>
+      <div className="flex items-center gap-3 px-5 py-5">
+        <BrandLogo fittingType="fill" className="h-11 w-11 shrink-0 rounded-full" />
         <div className="min-w-0">
           <p className="truncate text-xl font-bold leading-none tracking-tight text-white">AMedix</p>
           <p className="mt-1 truncate text-[11px] font-medium leading-none text-white/60">{t("Doctor Portal")}</p>

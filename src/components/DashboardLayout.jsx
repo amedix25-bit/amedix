@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Activity, LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -65,19 +65,8 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            {navy ? (
-              <>
-                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-doctor-blue">
-                  <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
-                </span>
-                <span className="font-bold text-sm text-white">AMedix</span>
-              </>
-            ) : (
-              <>
-                <Logo fittingType="fill" className="w-9 h-9 rounded-full" />
-                <span className="font-bold text-sm">AMedix</span>
-              </>
-            )}
+            <Logo fittingType="fill" className={navy ? "w-8 h-8 rounded-full" : "w-9 h-9 rounded-full"} />
+            <span className={`font-bold text-sm ${navy ? "text-white" : ""}`}>AMedix</span>
           </div>
           <AppLanguageSwitcher />
         </header>
