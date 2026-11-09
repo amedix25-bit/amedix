@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
-import HospitalDashboardSection from "@/components/hospital/portal/HospitalDashboardSection";
+import HospitalCommandCenter from "@/components/hospital/command/HospitalCommandCenter";
 import HospitalManagePatientsSection from "@/components/hospital/portal/HospitalManagePatientsSection";
 import HospitalDoctorsSection from "@/components/hospital/portal/HospitalDoctorsSection";
 import HospitalReceptionistsSection from "@/components/hospital/portal/HospitalReceptionistsSection";
@@ -17,8 +17,10 @@ import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 import { Loader2 } from "lucide-react";
 import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone, Radiation, MessagesSquare } from "lucide-react";
 
+const COMMAND_CENTER = { key: "dashboard", label: "Command Center", icon: LayoutDashboard };
+
 const navItems = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  COMMAND_CENTER,
   { key: "messages", label: "Doctor Messages", icon: MessagesSquare },
   { key: "patients", label: "Manage Patients", icon: ClipboardList },
   { key: "doctors", label: "Manage Doctors", icon: Stethoscope },
@@ -27,6 +29,13 @@ const navItems = [
   { key: "staff", label: "Receptionists", icon: UserCog },
   { key: "partnership", label: "Partnership", icon: Megaphone },
   { key: "profile", label: "Profile", icon: Building2 },
+];
+
+// Grouped navigation, the same workspaces organised by operational area.
+const NAV_GROUPS = [
+  { title: "Overview", items: [COMMAND_CENTER, navItems[1]] },
+  { title: "Clinical Operations", items: [navItems[2], navItems[3], navItems[4], navItems[5]] },
+  { title: "Administration", items: [navItems[6], navItems[7], navItems[8]] },
 ];
 
 export default function HospitalPortal() {
@@ -75,19 +84,31 @@ export default function HospitalPortal() {
     );
   }
 
-  const visibleNav = (profile.is_messaging_staff ? navItems.filter((n) => n.key === "messages") : navItems)
-    .map((n) => (n.key === "messages" ? { ...n, badge: messagingUnread } : n));
+  const withBadge = (list) =>
+    list.map((n) => (n.key === "messages" ? { ...n, badge: messagingUnread } : n));
+  const visibleNav = withBadge(profile.is_messaging_staff ? navItems.filter((n) => n.key === "messages") : navItems);
+  const visibleGroups = profile.is_messaging_staff
+    ? [{ title: "Overview", items: withBadge([navItems[1]]) }]
+    : NAV_GROUPS.map((g) => ({ ...g, items: withBadge(g.items) }));
 
   return (
-    <DashboardLayout navItems={visibleNav} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Hospital Portal" accent="hospital">
-      <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">{t(visibleNav.find((n) => n.key === activeTab)?.label)}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{profile.hospital_name}</p>
-        </div>
+    <DashboardLayout navGroups={visibleGroups} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Hospital OS" accent="hospital">
+      <div className="p-4 lg:p-6 max-w-6xl mx-auto">
+        {activeTab !== "dashboard" && (
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">{t(visibleNav.find((n) => n.key === activeTab)?.label)}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{profile.hospital_name}</p>
+          </div>
+        )}
 
         {activeTab === "messages" && <HospitalMessagingSection profile={profile} />}
-        {activeTab === "dashboard" && <HospitalDashboardSection profile={profile} />}
+        {activeTab === "dashboard" && (
+          <HospitalCommandCenter
+            profile={profile}
+            userName={user?.full_name}
+            onNavigate={setActiveTab}
+          />
+        )}
         {activeTab === "patients" && <HospitalManagePatientsSection profile={profile} />}
         {activeTab === "doctors" && <HospitalDoctorsSection profile={profile} />}
         {activeTab === "panels" && <HospitalLabPanelsSection profile={profile} />}

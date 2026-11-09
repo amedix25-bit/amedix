@@ -8,7 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { getPortalAccent } from "@/lib/portalAccent";
 
-export default function DashboardLayout({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", renderSidebar, sidebarWidth = "w-64", children }) {
+export default function DashboardLayout({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", renderSidebar, sidebarWidth = "w-64", children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -23,6 +23,7 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
     return (
       <SidebarContent
         navItems={navItems}
+        navGroups={navGroups}
         activeKey={activeKey}
         onNavClick={(key) => {
           onNavClick(key);
@@ -76,9 +77,33 @@ export default function DashboardLayout({ navItems, activeKey, onNavClick, roleL
   );
 }
 
-function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo, sidebarAction, accent = "patient" }) {
+function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, onLogout, logo: Logo = BrandLogo, sidebarAction, accent = "patient" }) {
   const { t } = useAppLanguage();
   const accentCfg = getPortalAccent(accent);
+
+  const renderItem = (item) => {
+    const Icon = item.icon;
+    const isActive = item.key === activeKey;
+    return (
+      <button
+        key={item.key}
+        onClick={() => onNavClick(item.key)}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left leading-snug transition-colors ${
+          isActive ? accentCfg.activeNav : "text-sidebar-foreground hover:bg-sidebar-accent"
+        }`}
+      >
+        <Icon className="w-5 h-5 shrink-0" />
+        <span className="truncate">{t(item.label)}</span>
+        {item.badge > 0 ? (
+          <span className="ml-auto rtl:mr-auto rtl:ml-0 shrink-0 rounded-full border border-critical/30 bg-critical/10 px-1.5 text-[10px] font-semibold text-critical">
+            {item.badge > 99 ? "99+" : item.badge}
+          </span>
+        ) : isActive ? (
+          <span className="ml-auto rtl:mr-auto rtl:ml-0 w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />
+        ) : null}
+      </button>
+    );
+  };
   return (
     <>
       <div className="p-6 border-b border-sidebar-border">
@@ -95,32 +120,17 @@ function SidebarContent({ navItems, activeKey, onNavClick, roleLabel, logoutLabe
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.key === activeKey;
-          return (
-            <button
-              key={item.key}
-              onClick={() => onNavClick(item.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left leading-snug transition-colors ${
-                isActive
-                  ? accentCfg.activeNav
-                  : "text-sidebar-foreground hover:bg-sidebar-accent"
-              }`}
-            >
-              <Icon className="w-5 h-5 shrink-0" />
-              <span className="truncate">{t(item.label)}</span>
-              {item.badge > 0 ? (
-                <span className="ml-auto shrink-0 rounded-full border border-critical/30 bg-critical/10 px-1.5 text-[10px] font-semibold text-critical">
-                  {item.badge > 99 ? "99+" : item.badge}
-                </span>
-              ) : isActive ? (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current shrink-0" aria-hidden="true" />
-              ) : null}
-            </button>
-          );
-        })}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {navGroups
+          ? navGroups.map((group) => (
+              <div key={group.title} className="pb-2">
+                <p className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {t(group.title)}
+                </p>
+                <div className="space-y-1">{group.items.map(renderItem)}</div>
+              </div>
+            ))
+          : (navItems || []).map(renderItem)}
       </nav>
 
       <div className="p-4 border-t border-sidebar-border space-y-3">
