@@ -34,6 +34,7 @@ import { withNeurologyStandards } from "@/lib/neurologyDocuments";
 import { withPediatricsStandards } from "@/lib/pedsDocuments";
 import { withFamilyMedicineStandards, FM_WORKFLOW_DOCS } from "@/lib/fmDocuments";
 import { withInternalMedicineStandards, IM_WORKFLOW_DOCS } from "@/lib/imDocuments";
+import { withDermatologyStandards, DM_WORKFLOW_DOCS } from "@/lib/dmDocuments";
 
 // Every Nephrology note carries the same safety-prompt block. The core notes
 // declare it in their own assessment/monitoring section; the condition notes
@@ -859,7 +860,7 @@ const ENDOCRINOLOGY_DOCS = [
 
 export const SPECIALTY_DOCUMENTS = applyNoteSectionPolicy([
   ...withInternalMedicineStandards([...IM_DOCS, ...IM_WORKFLOW_DOCS]), ...SURGERY_DOCS, ...SURGERY_CONDITION_DOCS, ...withEmergencyStandards(EM_DOCS), ...withPediatricsStandards(PEDIATRICS_DOCS), ...withObgynStandards(OBGYN_DOCS), ...ANESTHESIA_DOCS,
-  ...withCardiologyStandards(CARDIOLOGY_DOCS), ...NEUROSURGERY_DOCS, ...withNeurologyStandards(NEUROLOGY_DOCS), ...PSYCHIATRY_DOCS, ...withOphthalmologyStandards(OPHTHALMOLOGY_DOCS), ...DERMATOLOGY_DOCS,
+  ...withCardiologyStandards(CARDIOLOGY_DOCS), ...NEUROSURGERY_DOCS, ...withNeurologyStandards(NEUROLOGY_DOCS), ...PSYCHIATRY_DOCS, ...withOphthalmologyStandards(OPHTHALMOLOGY_DOCS), ...withDermatologyStandards([...DERMATOLOGY_DOCS, ...DM_WORKFLOW_DOCS]),
   ...withOrthopedicsStandards(ORTHOPEDICS_DOCS),   ...UROLOGY_DOCS, ...withEntSafety(ENT_DOCS), ...withPulmonologyStandards(PULMONOLOGY_DOCS),
   ...withGastroenterologyStandards(GASTROENTEROLOGY_DOCS),
   ...withNephrologySafety([...NEPHROLOGY_DOCS, ...NEPHROLOGY_KIDNEY_DOCS, ...NEPHROLOGY_CONDITION_DOCS]),

@@ -83,6 +83,10 @@ import FmGuidanceField from "@/components/doctor/notes/FmGuidanceField";
 import ImBlockField from "@/components/doctor/notes/ImBlockField";
 import ImScoresField from "@/components/doctor/notes/ImScoresField";
 import ImSafetyPromptsField from "@/components/doctor/notes/ImSafetyPromptsField";
+import DmBlockField from "@/components/doctor/notes/DmBlockField";
+import DmScoresField from "@/components/doctor/notes/DmScoresField";
+import DmSafetyPromptsField from "@/components/doctor/notes/DmSafetyPromptsField";
+import DmGuidanceField from "@/components/doctor/notes/DmGuidanceField";
 import ImGuidanceField from "@/components/doctor/notes/ImGuidanceField";
 
 // Renders the structured fields of a specialty clinical document type
@@ -487,6 +491,18 @@ function FieldRow({ f, values, onChange, specialty, patientId }) {
       )}
       {f.type === "im_guidance" && (
         <ImGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "dm_modules" && (
+        <DmBlockField fieldKey={f.key} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "dm_scores" && (
+        <DmScoresField value={values[f.key]} scores={f.scores} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "dm_safety" && (
+        <DmSafetyPromptsField value={values[f.key]} values={values} onChange={(v) => onChange(f.key, v)} />
+      )}
+      {f.type === "dm_guidance" && (
+        <DmGuidanceField noteKey={f.noteKey} value={values[f.key]} onChange={(v) => onChange(f.key, v)} />
       )}
       {f.type === "select" && (
         <Select value={values[f.key] || undefined} onValueChange={(v) => onChange(f.key, v)}>

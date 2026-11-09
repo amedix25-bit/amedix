@@ -109,6 +109,12 @@ export const SPECIALTY_DOCUMENT_KEYS: Record<string, string[]> = {
     "derm_consultation", "derm_followup", "derm_lesion_assessment",
     "derm_skin_procedure_note", "derm_biopsy_note", "derm_operative_note",
     "derm_pathology_request", "derm_discharge_followup", "derm_referral",
+    "dm_comprehensive_assessment", "dm_acne_review", "dm_eczema_review",
+    "dm_psoriasis_review", "dm_infection_review", "dm_skin_cancer_review",
+    "dm_hair_nail_review", "dm_pigmentary_review", "dm_pediatric_review",
+    "dm_autoimmune_review", "dm_other_conditions_review",
+    "dm_severe_reaction_assessment", "dm_biologic_review",
+    "dm_phototherapy_review",
   ],
   orthopedics: [
     "ortho_consultation", "ortho_followup", "ortho_fracture_assessment",
