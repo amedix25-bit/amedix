@@ -2,25 +2,35 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import {
   CATEGORY_KEYS,
   THREAD_STATUSES,
+  PATIENT_MESSAGE_TYPES,
+  PATIENT_MESSAGE_TYPE_KEYS,
   cleanText,
   queryRows,
   makeThreadRef,
   resolveMessagingActor,
   findActiveAffiliation,
+  findCareLink,
+  findDoctorPairThread,
+  findPatientThread,
+  isVerifiedDoctor,
   participantsFor,
   logMessageAudit,
   notifyRecipient,
   hospitalNotificationRecipients,
   previewOf,
   sanitizeAttachments,
+  threadChannel,
 } from "../../shared/messaging.ts";
+import { createPatientNotification } from "../../shared/patientNotifications.ts";
 
-// Secure doctor–hospital messaging. Every read, write, attachment download,
-// assignment and status change is authorized HERE on the server — the browser's
-// visibility is never the security boundary. A doctor sees only conversations
-// they are a participant in; hospital personnel act only inside their own
-// hospital. All writes go through the service role after verification, and
-// every event is recorded in an append-only audit trail.
+// Secure AMedix messaging. Three channels, one authorization core:
+//   hospital — doctor ↔ hospital administration (two-way)
+//   doctor   — doctor ↔ doctor, verified accounts only (two-way)
+//   patient  — doctor → patient (STRICTLY one-way; a patient can read, never send)
+// Every read, write, attachment download, assignment and status change is
+// authorized HERE on the server. The browser's visibility is never the security
+// boundary. All writes go through the service role after verification, and every
+// event is recorded in the append-only audit trail.
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -31,10 +41,15 @@ export default async function (req) {
     const action = String(body.action || "");
     const actor = await resolveMessagingActor(base44, user);
     if (!actor) {
-      return Response.json({ error: "This account has no doctor or hospital messaging access." }, { status: 403 });
+      return Response.json({ error: "This account has no messaging access." }, { status: 403 });
     }
 
     const now = () => new Date().toISOString();
+    const isPatientActor = actor.role === "patient";
+    const doctorLabel = (name) => {
+      const value = String(name || "Doctor").trim();
+      return /^dr\.?\s/i.test(value) ? value : `Dr. ${value}`;
+    };
 
     const publicActor = () => ({
       role: actor.role,
@@ -46,17 +61,46 @@ export default async function (req) {
       department: actor.department || "",
       doctor_id: actor.doctorId || "",
       specialty: actor.specialty || "",
+      verified: actor.verified === true,
+      patient_id: actor.patientId || "",
+      patient_cin: actor.patientCin || "",
     });
 
-    // Authorizes a thread for the current actor. Doctors match on their own
-    // user id, hospital personnel on their hospital's key.
+    // Which side of the conversation the signed-in account holds. "peer" is the
+    // second doctor of a doctor ↔ doctor conversation.
+    const viewerSide = (thread) => {
+      const channel = threadChannel(thread);
+      if (channel === "patient") return actor.role === "patient" ? "patient" : "doctor";
+      if (channel === "doctor") return thread.doctor_user_id === user.id ? "doctor" : "peer";
+      return actor.role === "doctor" ? "doctor" : "hospital";
+    };
+
+    const ownUnread = (thread) => {
+      const side = viewerSide(thread);
+      if (side === "doctor") return thread.doctor_unread_count || 0;
+      if (side === "hospital" || side === "peer") return thread.hospital_unread_count || 0;
+      return thread.patient_unread_count || 0;
+    };
+
+    // A conversation is loaded only when this account is one of its parties.
+    // Nothing is ever trusted from the browser — the id alone grants nothing.
     const loadThread = async (threadId) => {
       if (!threadId) return null;
       const rows = await queryRows(base44, "MessageThread", { id: String(threadId) }, { limit: 1 });
       const thread = rows[0];
       if (!thread) return null;
+      const channel = threadChannel(thread);
+      if (channel === "doctor") {
+        if (actor.role !== "doctor") return null;
+        return [thread.doctor_user_id, thread.peer_doctor_user_id].includes(user.id) ? thread : null;
+      }
+      if (channel === "patient") {
+        if (actor.role === "patient") return thread.patient_user_id === user.id ? thread : null;
+        return thread.doctor_user_id === user.id ? thread : null;
+      }
       if (actor.role === "doctor" && thread.doctor_user_id !== user.id) return null;
       if (actor.role === "hospital" && thread.hospital_user_id !== actor.hospitalUserId) return null;
+      if (actor.role === "patient") return null;
       return thread;
     };
 
@@ -73,21 +117,79 @@ export default async function (req) {
       return Response.json({ error: "You are not authorized to access this conversation." }, { status: 403 });
     };
 
+    const counterpartFor = (thread) => {
+      const channel = threadChannel(thread);
+      const side = viewerSide(thread);
+      if (channel === "doctor") {
+        const name = side === "doctor" ? thread.peer_doctor_name : thread.doctor_name;
+        const subtitle = (side === "doctor" ? thread.peer_doctor_specialization : thread.doctor_specialization) || "";
+        const hospital = side === "doctor" ? thread.peer_doctor_hospital : "";
+        return { name: doctorLabel(name), subtitle, hospital: hospital || "" };
+      }
+      if (channel === "patient") {
+        if (actor.role === "patient") {
+          return { name: doctorLabel(thread.doctor_name), subtitle: thread.doctor_specialization || "", hospital: thread.hospital_name || "" };
+        }
+        return { name: thread.patient_name || "Patient", subtitle: thread.patient_cin ? `CIN ${thread.patient_cin}` : "", hospital: "" };
+      }
+      return {
+        name: actor.role === "doctor" ? thread.hospital_name || "Hospital" : doctorLabel(thread.doctor_name),
+        subtitle: actor.role === "doctor" ? "" : thread.doctor_specialization || "",
+        hospital: "",
+      };
+    };
+
+    const decorate = (thread) => ({
+      ...thread,
+      channel: threadChannel(thread),
+      viewer_side: viewerSide(thread),
+      viewer_unread: ownUnread(thread),
+      counterpart_name: counterpartFor(thread).name,
+      counterpart_subtitle: counterpartFor(thread).subtitle,
+    });
+
     const unreadSummary = async () => {
-      const query = actor.role === "doctor" ? { doctor_user_id: user.id } : { hospital_user_id: actor.hospitalUserId };
-      const threads = await queryRows(base44, "MessageThread", query, { limit: 500 });
+      let threads = [];
+      if (actor.role === "doctor") {
+        const own = await queryRows(base44, "MessageThread", { doctor_user_id: user.id }, { limit: 500 });
+        const peer = await queryRows(base44, "MessageThread", { peer_doctor_user_id: user.id }, { limit: 500 });
+        threads = [...own, ...peer];
+      } else if (actor.role === "hospital") {
+        threads = await queryRows(base44, "MessageThread", { hospital_user_id: actor.hospitalUserId }, { limit: 500 });
+      } else {
+        threads = await queryRows(base44, "MessageThread", { patient_user_id: user.id }, { limit: 300 });
+      }
+      const unique = new Map(threads.map((t) => [t.id, t]));
+      const by_channel = { hospital: 0, doctor: 0, patient: 0 };
       let threadsUnread = 0;
       let messagesUnread = 0;
-      threads.forEach((t) => {
-        const n = actor.role === "doctor" ? t.doctor_unread_count || 0 : t.hospital_unread_count || 0;
+      unique.forEach((t) => {
+        const n = ownUnread(t);
         if (n > 0) {
           threadsUnread += 1;
           messagesUnread += n;
+          by_channel[threadChannel(t)] += n;
         }
       });
       const notifs = await queryRows(base44, "MessageNotification", { recipient_user_id: user.id, is_read: false }, { limit: 200 });
-      return { threads_unread: threadsUnread, messages_unread: messagesUnread, notifications_unread: notifs.length };
+      return { threads_unread: threadsUnread, messages_unread: messagesUnread, notifications_unread: notifs.length, by_channel };
     };
+
+    // Actions a patient account may ever reach. Everything else is refused
+    // before any handler runs — a patient cannot compose, reply or manage.
+    const PATIENT_ACTIONS = ["context", "listThreads", "thread", "attachmentUrl", "notifications", "markNotificationsRead"];
+    if (isPatientActor && !PATIENT_ACTIONS.includes(action)) {
+      await logMessageAudit(base44, {
+        thread: {},
+        actorUserId: user.id,
+        actorName: actor.displayName,
+        actorRole: "patient",
+        action: "send_blocked",
+        actionLabel: "attempted an action outside the one-way patient channel",
+        detail: action,
+      });
+      return Response.json({ error: "Patients can read messages from their doctors but cannot reply or start a conversation." }, { status: 403 });
+    }
 
     if (action === "context") {
       const unread = await unreadSummary();
@@ -115,7 +217,24 @@ export default async function (req) {
             specialization: actor.doctor.specialization || "",
           });
         }
-        return Response.json({ actor: publicActor(), hospitals, unread, staff: [], departments: [] });
+        return Response.json({
+          actor: publicActor(),
+          hospitals,
+          unread,
+          staff: [],
+          departments: [],
+          patient_message_types: PATIENT_MESSAGE_TYPES,
+        });
+      }
+      if (actor.role === "patient") {
+        return Response.json({
+          actor: publicActor(),
+          hospitals: [],
+          departments: [],
+          staff: [],
+          unread,
+          patient_message_types: [],
+        });
       }
       const doctors = await queryRows(
         base44,
@@ -143,72 +262,127 @@ export default async function (req) {
         departments,
         staff,
         unread,
+        patient_message_types: [],
       });
     }
 
     if (action === "listThreads") {
-      const query = actor.role === "doctor" ? { doctor_user_id: user.id } : { hospital_user_id: actor.hospitalUserId };
-      if (actor.role === "doctor" && body.hospital_user_id) query.hospital_user_id = String(body.hospital_user_id);
-      if (actor.role === "doctor" && body.hospital_name) query.hospital_name = String(body.hospital_name);
-      if (body.status && THREAD_STATUSES.includes(body.status)) query.status = body.status;
-      if (body.category) query.category = String(body.category);
-      let threads = await queryRows(base44, "MessageThread", query, { sort: "-last_activity_datetime", limit: 200 });
-      if (body.announcement_only) threads = threads.filter((t) => t.is_announcement);
-      else if (!body.include_announcements) threads = threads.filter((t) => !t.is_announcement);
-      if (body.unread_only) {
-        threads = threads.filter((t) => (actor.role === "doctor" ? (t.doctor_unread_count || 0) : (t.hospital_unread_count || 0)) > 0);
+      const channel = isPatientActor
+        ? "patient"
+        : ["hospital", "doctor", "patient"].includes(String(body.channel || ""))
+          ? String(body.channel)
+          : "hospital";
+
+      let rows = [];
+      if (actor.role === "hospital") {
+        rows = await queryRows(base44, "MessageThread", { hospital_user_id: actor.hospitalUserId }, { limit: 300 });
+      } else if (actor.role === "patient") {
+        rows = await queryRows(base44, "MessageThread", { patient_user_id: user.id }, { limit: 300 });
+      } else if (channel === "doctor") {
+        const own = await queryRows(base44, "MessageThread", { doctor_user_id: user.id }, { limit: 300 });
+        const peer = await queryRows(base44, "MessageThread", { peer_doctor_user_id: user.id }, { limit: 300 });
+        rows = [...own, ...peer];
+      } else {
+        rows = await queryRows(base44, "MessageThread", { doctor_user_id: user.id }, { limit: 300 });
       }
+
+      const unique = new Map(rows.map((t) => [t.id, t]));
+      let threads = [...unique.values()].filter((t) => threadChannel(t) === channel);
+
+      if (actor.role === "hospital") {
+        threads = threads.filter((t) => t.hospital_user_id === actor.hospitalUserId);
+      }
+      if (actor.role === "doctor" && channel === "hospital") {
+        if (body.hospital_user_id) threads = threads.filter((t) => t.hospital_user_id === String(body.hospital_user_id));
+        if (body.hospital_name) threads = threads.filter((t) => t.hospital_name === String(body.hospital_name));
+      }
+      if (body.status && THREAD_STATUSES.includes(body.status)) threads = threads.filter((t) => t.status === body.status);
+      if (body.category) threads = threads.filter((t) => t.category === String(body.category));
+      if (channel === "hospital") {
+        if (body.announcement_only) threads = threads.filter((t) => t.is_announcement);
+        else if (!body.include_announcements) threads = threads.filter((t) => !t.is_announcement);
+      }
+      if (body.unread_only) threads = threads.filter((t) => ownUnread(t) > 0);
       if (body.search) {
         const s = String(body.search).toLowerCase();
         threads = threads.filter((t) =>
-          [t.subject, t.last_message_preview, t.doctor_name, t.assigned_staff_name, t.thread_ref, t.category, t.assigned_department]
+          [
+            t.subject,
+            t.last_message_preview,
+            t.doctor_name,
+            t.hospital_name,
+            t.peer_doctor_name,
+            t.peer_doctor_hospital,
+            t.patient_name,
+            t.patient_cin,
+            t.assigned_staff_name,
+            t.thread_ref,
+            t.category,
+            t.assigned_department,
+          ]
             .join(" ")
             .toLowerCase()
             .includes(s)
         );
       }
-      return Response.json({ threads, unread: await unreadSummary() });
+
+      threads.sort((a, b) => String(b.last_activity_datetime || "").localeCompare(String(a.last_activity_datetime || "")));
+      return Response.json({ threads: threads.map(decorate), channel, unread: await unreadSummary() });
     }
 
     if (action === "thread") {
       const thread = await loadThread(body.thread_id);
       if (!thread) return denyThread(body.thread_id, "thread lookup");
+
+      const channel = threadChannel(thread);
+      const side = viewerSide(thread);
       let messages = await queryRows(base44, "MessageEntry", { thread_id: thread.id }, { sort: "created_date", limit: 500 });
       const audit = await queryRows(base44, "MessageAuditEvent", { thread_id: thread.id }, { sort: "-created_date", limit: 200 });
 
-      const isDoctor = actor.role === "doctor";
-      const previousUnread = isDoctor ? thread.doctor_unread_count || 0 : thread.hospital_unread_count || 0;
+      const previousUnread = ownUnread(thread);
       let fresh = thread;
       if (body.mark_read !== false && previousUnread > 0) {
         const stamp = now();
+        const messageQuery = { thread_id: thread.id };
+        const messageSet = {};
+        const threadSet = {};
+        if (side === "doctor") {
+          messageQuery.read_by_doctor = false;
+          messageSet.read_by_doctor = true;
+          messageSet.doctor_read_datetime = stamp;
+          threadSet.doctor_unread_count = 0;
+          threadSet.doctor_last_read_datetime = stamp;
+        } else if (side === "patient") {
+          messageQuery.read_by_patient = false;
+          messageSet.read_by_patient = true;
+          messageSet.patient_read_datetime = stamp;
+          threadSet.patient_unread_count = 0;
+          threadSet.patient_last_read_datetime = stamp;
+        } else {
+          messageQuery.read_by_hospital = false;
+          messageSet.read_by_hospital = true;
+          messageSet.hospital_read_datetime = stamp;
+          threadSet.hospital_unread_count = 0;
+          threadSet.hospital_last_read_datetime = stamp;
+        }
         try {
-          await base44.asServiceRole.entities.MessageEntry.updateMany(
-            isDoctor ? { thread_id: thread.id, read_by_doctor: false } : { thread_id: thread.id, read_by_hospital: false },
-            { $set: isDoctor ? { read_by_doctor: true, doctor_read_datetime: stamp } : { read_by_hospital: true, hospital_read_datetime: stamp } }
-          );
+          await base44.asServiceRole.entities.MessageEntry.updateMany(messageQuery, { $set: messageSet });
         } catch (err) {
           // message-level read flags are best-effort; the conversation counter below is authoritative
         }
-        fresh = await base44.asServiceRole.entities.MessageThread.update(thread.id, {
-          ...(isDoctor
-            ? { doctor_unread_count: 0, doctor_last_read_datetime: stamp }
-            : { hospital_unread_count: 0, hospital_last_read_datetime: stamp }),
-        });
-        messages = messages.map((m) =>
-          isDoctor ? { ...m, read_by_doctor: true } : { ...m, read_by_hospital: true }
-        );
+        fresh = await base44.asServiceRole.entities.MessageThread.update(thread.id, threadSet);
+        messages = messages.map((m) => ({ ...m, ...messageSet }));
         await logMessageAudit(base44, {
           thread,
           actorUserId: user.id,
           actorName: actor.displayName,
           actorRole: actor.role,
-          action: "conversation_read",
-          actionLabel: "read the conversation",
+          action: channel === "patient" ? "message_read" : "conversation_read",
+          actionLabel: channel === "patient" ? "read the doctor's message" : "read the conversation",
           detail: `${previousUnread} unread message(s) read`,
         });
       }
-      // Opening a conversation clears its notifications too, so the bell count
-      // always matches what the recipient has actually read.
+
       if (body.mark_read !== false) {
         try {
           await base44.asServiceRole.entities.MessageNotification.updateMany(
@@ -218,27 +392,276 @@ export default async function (req) {
         } catch (err) {
           // the notification list refresh reflects the stored state either way
         }
+        if (side === "patient") {
+          try {
+            await base44.asServiceRole.entities.PatientNotification.updateMany(
+              { patient_user_id: user.id, related_id: thread.id, is_read: false },
+              { $set: { is_read: true } }
+            );
+          } catch (err) {
+            // best-effort — the patient's bell reconciles on its next load
+          }
+        }
       }
-      return Response.json({ thread: fresh, messages, audit, actor: publicActor() });
+
+      // Delivery / read indicator for the viewing side, computed server-side so
+      // the browser never has to guess whose flag means what.
+      const readByCounterpart = (m) => {
+        if (channel === "patient") return side === "patient" ? true : m.read_by_patient === true;
+        if (channel === "doctor") return side === "doctor" ? m.read_by_hospital === true : m.read_by_doctor === true;
+        return side === "doctor" ? m.read_by_hospital === true : m.read_by_doctor === true;
+      };
+      const decorated = messages.map((m) => ({ ...m, read_by_counterpart: readByCounterpart(m) }));
+
+      // A patient always gets an approved contact route for anything that needs
+      // a person — the one-way channel is never an emergency service.
+      let hospital_contact = null;
+      if (channel === "patient") {
+        try {
+          const rows = thread.hospital_user_id
+            ? await queryRows(base44, "HospitalProfile", { user_id: thread.hospital_user_id }, { limit: 1 })
+            : await queryRows(base44, "HospitalProfile", { hospital_name: thread.hospital_name }, { limit: 1 });
+          if (rows[0]) hospital_contact = { name: rows[0].hospital_name, phone: rows[0].phone || "", location: rows[0].location || "" };
+        } catch (err) {
+          hospital_contact = thread.hospital_name ? { name: thread.hospital_name, phone: "", location: "" } : null;
+        }
+      }
+
+      return Response.json({
+        thread: decorate(fresh),
+        messages: decorated,
+        audit,
+        actor: publicActor(),
+        one_way: channel === "patient",
+        counterpart: counterpartFor(fresh),
+        hospital_contact,
+      });
+    }
+
+    // ---- Verified doctor directory (doctor ↔ doctor) ----
+    if (action === "doctorDirectory") {
+      if (actor.role !== "doctor") return Response.json({ error: "Doctor access required." }, { status: 403 });
+      if (!isVerifiedDoctor(actor.doctor)) {
+        return Response.json({ error: "Only verified doctors can use doctor-to-doctor messaging." }, { status: 403 });
+      }
+      const search = cleanText(body.search, 80).toLowerCase();
+      const rows = await queryRows(base44, "DoctorProfile", { is_verified: true }, { limit: 500 });
+      const doctors = rows
+        .filter((d) => d.user_id && d.user_id !== user.id)
+        .filter((d) => !search || [d.full_name, d.specialization, d.hospital].join(" ").toLowerCase().includes(search))
+        .slice(0, 40)
+        .map((d) => ({
+          doctor_id: d.id,
+          doctor_user_id: d.user_id,
+          full_name: d.full_name,
+          specialization: d.specialization || "",
+          hospital: d.hospital || "",
+          photo_url: d.photo_url || "",
+          verified: d.is_verified === true,
+        }));
+      return Response.json({ doctors });
+    }
+
+    // ---- Authorized patients (doctor → patient) ----
+    if (action === "patientDirectory") {
+      if (actor.role !== "doctor") return Response.json({ error: "Doctor access required." }, { status: 403 });
+      const links = await queryRows(base44, "AccessRequest", { doctor_id: actor.doctorId, status: "approved" }, { limit: 500 });
+      const ids = [...new Set(links.map((l) => l.patient_id).filter(Boolean))].slice(0, 200);
+      let profiles = [];
+      if (ids.length > 0) {
+        try {
+          profiles = await queryRows(base44, "PatientProfile", { id: { $in: ids } }, { limit: 200 });
+        } catch (err) {
+          const batches = [];
+          for (let i = 0; i < ids.length; i += 10) {
+            batches.push(await Promise.all(ids.slice(i, i + 10).map((id) => queryRows(base44, "PatientProfile", { id }, { limit: 1 }))));
+          }
+          profiles = batches.flat().map((r) => r[0]).filter(Boolean);
+        }
+      }
+      const search = cleanText(body.search, 80).toLowerCase();
+      const patients = profiles
+        .filter((p) => p.user_id)
+        .filter((p) => !search || [p.full_name, p.cin].join(" ").toLowerCase().includes(search))
+        .sort((a, b) => String(a.full_name || "").localeCompare(String(b.full_name || "")))
+        .slice(0, 200)
+        .map((p) => ({
+          patient_id: p.id,
+          patient_user_id: p.user_id,
+          full_name: p.full_name,
+          cin: p.cin || "",
+          gender: p.gender || "",
+          date_of_birth: p.date_of_birth || "",
+        }));
+      return Response.json({ patients });
     }
 
     if (action === "send") {
+      if (actor.role === "patient") {
+        return Response.json({ error: "This is a one-way message channel — patients cannot reply." }, { status: 403 });
+      }
       const attachments = sanitizeAttachments(body.attachments);
       const text = cleanText(body.body, 5000);
       if (!text && attachments.length === 0) {
         return Response.json({ error: "Write a message or attach a file." }, { status: 400 });
       }
 
+      // Anti-spam / rate limiting: a burst of messages from one account is
+      // refused rather than delivered.
+      const recent = await queryRows(base44, "MessageEntry", { sender_user_id: user.id }, { sort: "-created_date", limit: 8 });
+      const cutoff = Date.now() - 60 * 1000;
+      if (recent.length >= 8 && recent.every((m) => new Date(m.created_date || m.datetime || 0).getTime() > cutoff)) {
+        return Response.json({ error: "You are sending messages too quickly. Please wait a moment." }, { status: 429 });
+      }
+
       let thread = null;
-      let affiliation = null;
+      const requestedChannel = ["hospital", "doctor", "patient"].includes(String(body.channel || ""))
+        ? String(body.channel)
+        : "hospital";
 
       if (body.thread_id) {
         thread = await loadThread(body.thread_id);
         if (!thread) return denyThread(body.thread_id, "send to thread");
-        if (thread.status === "resolved" && body.kind !== "announcement") {
-          // handled below by reopening
+        const existingChannel = threadChannel(thread);
+        if (existingChannel === "patient" && actor.role !== "doctor") {
+          return Response.json({ error: "Only the treating doctor can write in this conversation." }, { status: 403 });
+        }
+        if (existingChannel === "doctor" && actor.role !== "doctor") {
+          return Response.json({ error: "Only doctors can write in this conversation." }, { status: 403 });
+        }
+      } else if (requestedChannel === "doctor") {
+        // ---- doctor ↔ doctor: both accounts must be verified ----
+        if (actor.role !== "doctor") return Response.json({ error: "Doctor access required." }, { status: 403 });
+        if (!isVerifiedDoctor(actor.doctor)) {
+          return Response.json({ error: "Only verified doctors can start a doctor-to-doctor conversation." }, { status: 403 });
+        }
+        const peerUserId = String(body.peer_user_id || "");
+        if (!peerUserId) return Response.json({ error: "Select the doctor you are writing to." }, { status: 400 });
+        if (peerUserId === user.id) return Response.json({ error: "You cannot start a conversation with yourself." }, { status: 400 });
+        const peerRows = await queryRows(base44, "DoctorProfile", { user_id: peerUserId }, { limit: 1 });
+        const peer = peerRows[0];
+        if (!peer || !isVerifiedDoctor(peer)) {
+          return Response.json({ error: "That doctor's account is not verified." }, { status: 403 });
+        }
+        const subject = cleanText(body.subject, 200);
+        if (!subject) return Response.json({ error: "A conversation subject is required." }, { status: 400 });
+
+        thread = await findDoctorPairThread(base44, user.id, peerUserId);
+        if (!thread) {
+          const affiliations = await queryRows(base44, "HospitalDoctor", { doctor_id: actor.doctorId, status: "active" }, { limit: 1 });
+          thread = await base44.asServiceRole.entities.MessageThread.create({
+            thread_ref: makeThreadRef(),
+            channel: "doctor",
+            one_way: false,
+            hospital_user_id: affiliations[0] ? affiliations[0].hospital_user_id : "",
+            hospital_name: affiliations[0] ? affiliations[0].hospital_name : "",
+            doctor_user_id: user.id,
+            doctor_id: actor.doctorId,
+            doctor_name: actor.doctor.full_name,
+            doctor_specialization: actor.specialty || "",
+            peer_doctor_user_id: peerUserId,
+            peer_doctor_id: peer.id,
+            peer_doctor_name: peer.full_name,
+            peer_doctor_specialization: peer.specialization || "",
+            peer_doctor_hospital: peer.hospital || "",
+            subject,
+            category: "medical_administration",
+            status: "in_progress",
+            participant_user_ids: [user.id, peerUserId],
+            created_by_role: "doctor",
+            is_announcement: false,
+            message_count: 0,
+            last_message_preview: "",
+            last_message_datetime: now(),
+            last_activity_datetime: now(),
+            doctor_unread_count: 0,
+            hospital_unread_count: 0,
+            status_history: [{ to: "in_progress", by_name: actor.displayName, by_role: "doctor", datetime: now() }],
+            assignment_history: [],
+          });
+          await logMessageAudit(base44, {
+            thread,
+            actorUserId: user.id,
+            actorName: actor.displayName,
+            actorRole: "doctor",
+            action: "conversation_created",
+            actionLabel: `opened a doctor-to-doctor conversation with ${doctorLabel(peer.full_name)}`,
+            detail: subject,
+          });
+        }
+      } else if (requestedChannel === "patient") {
+        // ---- doctor → patient: requires an explicit, approved care relationship ----
+        if (actor.role !== "doctor") return Response.json({ error: "Doctor access required." }, { status: 403 });
+        const patientId = String(body.patient_id || "");
+        if (!patientId) return Response.json({ error: "Select the patient you are writing to." }, { status: 400 });
+        const patientRows = await queryRows(base44, "PatientProfile", { id: patientId }, { limit: 1 });
+        const patient = patientRows[0];
+        if (!patient || !patient.user_id) return Response.json({ error: "Patient record not found." }, { status: 404 });
+        const link = await findCareLink(base44, actor.doctorId, patientId);
+        if (!link) {
+          await logMessageAudit(base44, {
+            thread: { id: "" },
+            actorUserId: user.id,
+            actorName: actor.displayName,
+            actorRole: "doctor",
+            action: "access_denied",
+            actionLabel: "attempted to message a patient without an approved care relationship",
+            detail: patient.cin || patientId,
+          });
+          return Response.json({ error: "This patient has not granted you access to their record, so you cannot message them." }, { status: 403 });
+        }
+        const messageType = PATIENT_MESSAGE_TYPE_KEYS.includes(String(body.patient_message_type || ""))
+          ? String(body.patient_message_type)
+          : "general";
+        const subject = cleanText(body.subject, 200) || `Message from ${doctorLabel(actor.doctor.full_name)}`;
+        const affiliations = await queryRows(base44, "HospitalDoctor", { doctor_id: actor.doctorId, status: "active" }, { limit: 1 });
+
+        thread = await findPatientThread(base44, user.id, patientId);
+        if (!thread) {
+          thread = await base44.asServiceRole.entities.MessageThread.create({
+            thread_ref: makeThreadRef(),
+            channel: "patient",
+            one_way: true,
+            hospital_user_id: affiliations[0] ? affiliations[0].hospital_user_id : "",
+            hospital_id: affiliations[0] ? affiliations[0].hospital_id || "" : "",
+            hospital_name: affiliations[0] ? affiliations[0].hospital_name : actor.doctor.hospital || "",
+            doctor_user_id: user.id,
+            doctor_id: actor.doctorId,
+            doctor_name: actor.doctor.full_name,
+            doctor_specialization: actor.specialty || "",
+            patient_user_id: patient.user_id,
+            patient_id: patient.id,
+            patient_cin: patient.cin || "",
+            patient_name: patient.full_name,
+            patient_message_type: messageType,
+            subject,
+            category: "medical_administration",
+            status: "in_progress",
+            participant_user_ids: [user.id, patient.user_id],
+            created_by_role: "doctor",
+            is_announcement: false,
+            message_count: 0,
+            last_message_preview: "",
+            last_message_datetime: now(),
+            last_activity_datetime: now(),
+            doctor_unread_count: 0,
+            hospital_unread_count: 0,
+            patient_unread_count: 0,
+            status_history: [{ to: "in_progress", by_name: actor.displayName, by_role: "doctor", datetime: now() }],
+            assignment_history: [],
+          });
+          await logMessageAudit(base44, {
+            thread,
+            actorUserId: user.id,
+            actorName: actor.displayName,
+            actorRole: "doctor",
+            action: "conversation_created",
+            actionLabel: "opened a one-way message to a patient under their care",
+            detail: `${patient.cin || patientId} (${messageType})`,
+          });
         }
       } else {
+        // ---- doctor ↔ hospital (unchanged behaviour) ----
         const category = String(body.category || "");
         if (!CATEGORY_KEYS.includes(category)) {
           return Response.json({ error: "Select a valid communication category." }, { status: 400 });
@@ -246,6 +669,7 @@ export default async function (req) {
         const subject = cleanText(body.subject, 200);
         if (!subject) return Response.json({ error: "A conversation subject is required." }, { status: 400 });
 
+        let affiliation = null;
         if (actor.role === "doctor") {
           const hospitalUserId = String(body.hospital_user_id || "");
           if (!hospitalUserId) return Response.json({ error: "Select the hospital you are writing to." }, { status: 403 });
@@ -265,6 +689,8 @@ export default async function (req) {
         const participants = participantsFor(affiliation.doctor_user_id, affiliation.hospital_user_id, null);
         thread = await base44.asServiceRole.entities.MessageThread.create({
           thread_ref: makeThreadRef(),
+          channel: "hospital",
+          one_way: false,
           hospital_user_id: affiliation.hospital_user_id,
           hospital_id: affiliation.hospital_id || "",
           hospital_name: affiliation.hospital_name,
@@ -298,28 +724,58 @@ export default async function (req) {
         });
       }
 
-      const isDoctor = actor.role === "doctor";
+      const channel = threadChannel(thread);
+      const side = viewerSide(thread);
       const stamp = now();
+
+      let readFlags;
+      if (channel === "patient") {
+        readFlags = {
+          read_by_doctor: true,
+          read_by_hospital: true,
+          read_by_patient: false,
+          doctor_read_datetime: stamp,
+          hospital_read_datetime: stamp,
+          patient_read_datetime: "",
+        };
+      } else if (channel === "doctor") {
+        readFlags =
+          side === "doctor"
+            ? { read_by_doctor: true, read_by_hospital: false, doctor_read_datetime: stamp, hospital_read_datetime: "" }
+            : { read_by_doctor: false, read_by_hospital: true, hospital_read_datetime: stamp, doctor_read_datetime: "" };
+      } else {
+        const isDoctor = actor.role === "doctor";
+        readFlags = {
+          read_by_doctor: isDoctor,
+          read_by_hospital: !isDoctor,
+          doctor_read_datetime: isDoctor ? stamp : "",
+          hospital_read_datetime: !isDoctor ? stamp : "",
+        };
+      }
+
       const message = await base44.asServiceRole.entities.MessageEntry.create({
         thread_id: thread.id,
         thread_ref: thread.thread_ref,
+        channel,
         hospital_user_id: thread.hospital_user_id,
         hospital_name: thread.hospital_name,
         doctor_user_id: thread.doctor_user_id,
         doctor_id: thread.doctor_id,
-        participant_user_ids: thread.participant_user_ids || participantsFor(thread.doctor_user_id, thread.hospital_user_id, thread.assigned_staff_user_id),
+        participant_user_ids:
+          thread.participant_user_ids ||
+          participantsFor(thread.doctor_user_id, thread.hospital_user_id, thread.assigned_staff_user_id),
         sender_user_id: user.id,
         sender_name: actor.displayName,
         sender_role: actor.role,
-        sender_title: actor.role === "doctor" ? actor.specialty : actor.department || (actor.isAdmin ? "Hospital Administration" : "Hospital Staff"),
+        sender_title:
+          actor.role === "doctor"
+            ? actor.specialty
+            : actor.department || (actor.isAdmin ? "Hospital Administration" : "Hospital Staff"),
         body: text,
         attachments,
         kind: body.correction_of ? "correction" : "message",
         corrects_message_id: body.correction_of ? String(body.correction_of) : "",
-        read_by_doctor: isDoctor,
-        read_by_hospital: !isDoctor,
-        doctor_read_datetime: isDoctor ? stamp : "",
-        hospital_read_datetime: !isDoctor ? stamp : "",
+        ...readFlags,
         datetime: stamp,
       });
 
@@ -329,7 +785,15 @@ export default async function (req) {
         last_message_datetime: stamp,
         last_activity_datetime: stamp,
       };
-      if (isDoctor) {
+      if (channel === "patient") {
+        updates.patient_unread_count = (thread.patient_unread_count || 0) + 1;
+        updates.doctor_unread_count = 0;
+        updates.hospital_unread_count = 0;
+        updates.doctor_last_read_datetime = stamp;
+        if (body.patient_message_type && PATIENT_MESSAGE_TYPE_KEYS.includes(String(body.patient_message_type))) {
+          updates.patient_message_type = String(body.patient_message_type);
+        }
+      } else if (side === "doctor") {
         updates.hospital_unread_count = (thread.hospital_unread_count || 0) + 1;
         updates.doctor_unread_count = 0;
         updates.doctor_last_read_datetime = stamp;
@@ -338,20 +802,28 @@ export default async function (req) {
         updates.hospital_unread_count = 0;
         updates.hospital_last_read_datetime = stamp;
       }
-      if (thread.status === "resolved") {
+      if (channel === "hospital" && thread.status === "resolved") {
         updates.status = "in_progress";
         updates.status_history = [
           ...(thread.status_history || []),
           { from: "resolved", to: "in_progress", by_name: actor.displayName, by_role: actor.role, note: "Reopened by a new message", datetime: stamp },
         ];
       }
-      if (!isDoctor && !thread.assigned_staff_user_id && !actor.isAdmin) {
+      if (channel === "hospital" && actor.role === "hospital" && !thread.assigned_staff_user_id && !actor.isAdmin) {
         updates.assigned_staff_user_id = actor.userId;
         updates.assigned_staff_name = actor.displayName;
         if (!thread.assigned_department && actor.department) updates.assigned_department = actor.department;
         updates.assignment_history = [
           ...(thread.assignment_history || []),
-          { action: "assigned", staff_user_id: actor.userId, staff_name: actor.displayName, department: updates.assigned_department || "", by_name: actor.displayName, note: "Auto-assigned on first reply", datetime: stamp },
+          {
+            action: "assigned",
+            staff_user_id: actor.userId,
+            staff_name: actor.displayName,
+            department: updates.assigned_department || "",
+            by_name: actor.displayName,
+            note: "Auto-assigned on first reply",
+            datetime: stamp,
+          },
         ];
         updates.participant_user_ids = participantsFor(thread.doctor_user_id, thread.hospital_user_id, actor.userId);
       }
@@ -363,7 +835,7 @@ export default async function (req) {
         actorName: actor.displayName,
         actorRole: actor.role,
         action: "message_sent",
-        actionLabel: "sent a message",
+        actionLabel: channel === "patient" ? "sent a one-way message to a patient" : "sent a message",
         detail: text.slice(0, 200),
       });
       if (attachments.length > 0) {
@@ -381,7 +853,40 @@ export default async function (req) {
       const isFirstMessage = (thread.message_count || 0) === 0;
       const kind = isFirstMessage ? "new_message" : "reply";
       const notificationMessage = previewOf(text, attachments);
-      if (isDoctor) {
+
+      if (channel === "doctor") {
+        const peerUserId = side === "doctor" ? thread.peer_doctor_user_id : thread.doctor_user_id;
+        await notifyRecipient(base44, {
+          recipientUserId: peerUserId,
+          recipientRole: "doctor",
+          threadId: thread.id,
+          hospitalUserId: thread.hospital_user_id,
+          hospitalName: thread.hospital_name,
+          doctorUserId: thread.doctor_user_id,
+          kind: isFirstMessage ? "new_message" : "reply",
+          title: `${doctorLabel(actor.displayName)} sent you a message`,
+          message: notificationMessage,
+          actorName: actor.displayName,
+          actorUserId: user.id,
+          category: thread.category,
+          dedupeKey: `msg:${message.id}`,
+        });
+      } else if (channel === "patient") {
+        // The patient is told a message arrived — never what it contains.
+        try {
+          await createPatientNotification(base44.asServiceRole, {
+            patient_id: thread.patient_id,
+            patient_user_id: thread.patient_user_id,
+            type: "doctor_message",
+            title: `New message from ${doctorLabel(thread.doctor_name)}`,
+            message: `${doctorLabel(thread.doctor_name)}${thread.doctor_specialization ? ` (${thread.doctor_specialization})` : ""} sent you a message in your AMedix record.`,
+            target: "messages",
+            related_id: thread.id,
+          });
+        } catch (err) {
+          // the message itself is stored; the notification is best-effort
+        }
+      } else if (actor.role === "doctor") {
         const recipients = await hospitalNotificationRecipients(base44, thread.hospital_user_id);
         for (const r of recipients) {
           await notifyRecipient(base44, {
@@ -392,7 +897,7 @@ export default async function (req) {
             hospitalName: thread.hospital_name,
             doctorUserId: thread.doctor_user_id,
             kind,
-            title: `New message from Dr. ${thread.doctor_name}`,
+            title: `New message from ${doctorLabel(thread.doctor_name)}`,
             message: notificationMessage,
             actorName: actor.displayName,
             actorUserId: user.id,
@@ -418,13 +923,16 @@ export default async function (req) {
         });
       }
 
-      return Response.json({ thread: updatedThread, message });
+      return Response.json({ thread: decorate(updatedThread), message });
     }
 
     if (action === "updateThread") {
       if (actor.role !== "hospital") return Response.json({ error: "Only hospital personnel can manage conversations." }, { status: 403 });
       const thread = await loadThread(body.thread_id);
       if (!thread) return denyThread(body.thread_id, "manage thread");
+      if (threadChannel(thread) !== "hospital") {
+        return Response.json({ error: "This conversation cannot be managed here." }, { status: 403 });
+      }
 
       const stamp = now();
       const updates = {};
@@ -492,6 +1000,7 @@ export default async function (req) {
         await base44.asServiceRole.entities.MessageEntry.create({
           thread_id: thread.id,
           thread_ref: thread.thread_ref,
+          channel: "hospital",
           hospital_user_id: thread.hospital_user_id,
           hospital_name: thread.hospital_name,
           doctor_user_id: thread.doctor_user_id,
@@ -538,8 +1047,6 @@ export default async function (req) {
         });
       }
 
-      // Whoever the conversation was just assigned to is told directly, so an
-      // assigned staff member never learns about it by accident.
       if (newlyAssignedStaff && newlyAssignedStaff.userId !== user.id) {
         await notifyRecipient(base44, {
           recipientUserId: newlyAssignedStaff.userId,
@@ -558,7 +1065,7 @@ export default async function (req) {
         });
       }
 
-      return Response.json({ thread: updated });
+      return Response.json({ thread: decorate(updated) });
     }
 
     if (action === "announcement") {
@@ -587,6 +1094,8 @@ export default async function (req) {
           batch.map(async (affiliation) => {
             const thread = await base44.asServiceRole.entities.MessageThread.create({
               thread_ref: makeThreadRef(),
+              channel: "hospital",
+              one_way: false,
               hospital_user_id: affiliation.hospital_user_id,
               hospital_id: affiliation.hospital_id || "",
               hospital_name: affiliation.hospital_name,
@@ -616,6 +1125,7 @@ export default async function (req) {
             await base44.asServiceRole.entities.MessageEntry.create({
               thread_id: thread.id,
               thread_ref: thread.thread_ref,
+              channel: "hospital",
               hospital_user_id: thread.hospital_user_id,
               hospital_name: thread.hospital_name,
               doctor_user_id: thread.doctor_user_id,
@@ -758,7 +1268,9 @@ export default async function (req) {
     }
 
     if (action === "notifications") {
-      const rows = await queryRows(base44, "MessageNotification", { recipient_user_id: user.id }, { sort: "-created_date", limit: 50 });
+      const rows = isPatientActor
+        ? []
+        : await queryRows(base44, "MessageNotification", { recipient_user_id: user.id }, { sort: "-created_date", limit: 50 });
       return Response.json({ notifications: rows, unread: await unreadSummary() });
     }
 

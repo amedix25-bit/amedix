@@ -120,10 +120,96 @@ export async function resolveMessagingActor(base44, user) {
       doctor,
       doctorId: doctor.id,
       specialty: doctor.specialization || "",
+      verified: doctor.is_verified === true,
+    };
+  }
+
+  // A patient account: read-only access to the one-way messages their treating
+  // doctors sent. Resolved last so a professional account can never be widened
+  // into a patient channel by owning a patient record.
+  const patients = await queryRows(base44, "PatientProfile", { user_id: user.id }, { limit: 1 });
+  if (patients.length > 0) {
+    const patient = patients[0];
+    return {
+      role: "patient",
+      userId: user.id,
+      displayName: patient.full_name,
+      patient,
+      patientId: patient.id,
+      patientCin: patient.cin || "",
     };
   }
 
   return null;
+}
+
+// The channel a conversation belongs to. Legacy conversations have no channel
+// field and are doctor ↔ hospital conversations.
+export function threadChannel(thread) {
+  return (thread && thread.channel) || "hospital";
+}
+
+export function isVerifiedDoctor(doctor) {
+  return !!doctor && doctor.is_verified === true;
+}
+
+// The care relationship that permits a doctor to message a patient: the patient
+// must have explicitly granted this doctor access to their record. A revoked,
+// suspended, declined or merely requested access never qualifies.
+export async function findCareLink(base44, doctorId, patientId) {
+  if (!doctorId || !patientId) return null;
+  const rows = await queryRows(
+    base44,
+    "AccessRequest",
+    { doctor_id: doctorId, patient_id: patientId, status: "approved" },
+    { limit: 1 }
+  );
+  return rows[0] || null;
+}
+
+export const PATIENT_MESSAGE_TYPES = [
+  { key: "follow_up", label: "Follow-up instructions" },
+  { key: "appointment_reminder", label: "Appointment reminder" },
+  { key: "medication_instructions", label: "Medication instructions" },
+  { key: "preparation_instructions", label: "Test / imaging preparation" },
+  { key: "post_consultation_care", label: "Post-consultation care" },
+  { key: "educational_material", label: "Approved educational material" },
+  { key: "general", label: "General message" },
+];
+
+export const PATIENT_MESSAGE_TYPE_KEYS = PATIENT_MESSAGE_TYPES.map((t) => t.key);
+
+// One-way messages from a doctor to a patient keep a single, continuous history
+// per doctor–patient pair, so a patient always reads the full instruction trail.
+export async function findPatientThread(base44, doctorUserId, patientId) {
+  if (!doctorUserId || !patientId) return null;
+  const rows = await queryRows(
+    base44,
+    "MessageThread",
+    { channel: "patient", doctor_user_id: doctorUserId, patient_id: patientId },
+    { limit: 1 }
+  );
+  return rows[0] || null;
+}
+
+// The private doctor ↔ doctor conversation between two verified doctors, in
+// either direction. Starting a conversation twice never creates a duplicate.
+export async function findDoctorPairThread(base44, userA, userB) {
+  if (!userA || !userB) return null;
+  const forward = await queryRows(
+    base44,
+    "MessageThread",
+    { channel: "doctor", doctor_user_id: userA, peer_doctor_user_id: userB },
+    { limit: 1 }
+  );
+  if (forward[0]) return forward[0];
+  const reverse = await queryRows(
+    base44,
+    "MessageThread",
+    { channel: "doctor", doctor_user_id: userB, peer_doctor_user_id: userA },
+    { limit: 1 }
+  );
+  return reverse[0] || null;
 }
 
 // Active hospital–doctor association. Messaging between a doctor and a
