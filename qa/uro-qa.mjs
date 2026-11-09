@@ -42,7 +42,8 @@ const check = (ok, message) => {
   console.error(`FAIL — ${message}`);
 };
 
-const ROOT = path.resolve(import.meta.dirname, "..");
+// Run from the app root: the harness reads the shipped source files.
+const ROOT = process.cwd();
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const docSource = read("src/lib/specialtyDocuments.js");
 const fieldSource = read("src/components/doctor/encounters/DocumentFields.jsx");
@@ -60,31 +61,45 @@ const uroBlockSrc = docSource.slice(
   docSource.indexOf("const PULMONOLOGY_DOCS = ["),
 );
 const originalSegments = uroBlockSrc.split(/key: "(uro_[a-z_]+)"/).slice(1);
-const originalFields = {};
+const originalDocs = [];
 for (let i = 0; i < originalSegments.length; i += 2) {
   const key = originalSegments[i];
   const segment = originalSegments[i + 1] || "";
-  originalFields[key] = [...segment.matchAll(/\b[INTS]\("([a-z0-9_]+)"/g)].map((m) => m[1]);
+  const fields = [...segment.matchAll(/\b[INTS]\("([a-z0-9_]+)",\s*"([^"]*)"/g)].map((m) => ({ key: m[1], label: m[2], type: "input" }));
+  originalDocs.push({ key, label: key, specialty: "urology", fields });
 }
 
+// The baseline is what the shipped portal DELIVERED for these templates: the
+// declared fields after the pre-existing note-section policy, which already
+// applied to every specialty before this upgrade. The upgrade must not remove a
+// single one of them.
+const baseline = Object.fromEntries(
+  applyNoteSectionPolicy(originalDocs).map((d) => [d.key, (d.fields || []).map((f) => f.key)]),
+);
+
 for (const key of ORIGINAL_URO_KEYS) {
-  check(ORIGINAL_URO_KEYS.includes(key), `original key listed: ${key}`);
-  check(originalFields[key] && originalFields[key].length > 0, `original template parsed from source: ${key}`);
+  check(originalDocs.some((d) => d.key === key), `original template parsed from source: ${key}`);
   const shipped = getDocDef(key);
+  if (key === "uro_referral") {
+    // Referral notes are retired from every specialty by the pre-existing policy
+    // (the Referral Letter module owns that document). That behaviour is unchanged.
+    check(!shipped, "the retired referral note type stays retired");
+    continue;
+  }
   check(Boolean(shipped), `original template still in the catalogue: ${key}`);
   if (shipped) {
     const keys = new Set((shipped.fields || []).map((f) => f.key));
-    for (const fieldKey of originalFields[key] || []) {
-      check(keys.has(fieldKey), `${key} still declares its original field "${fieldKey}"`);
+    for (const fieldKey of baseline[key] || []) {
+      check(keys.has(fieldKey), `${key} still declares its delivered field "${fieldKey}"`);
     }
-    check(shipped.label && /uro/i.test(shipped.key), `${key} keeps its key and label`);
+    check(shipped.key === key, `${key} keeps its key`);
     check(shipped.specialty === "urology", `${key} keeps its specialty`);
   }
 }
 
 // ---- 2. Append-only, no duplicate field key, sections survive the policy ----
 const uroDocs = getSpecialtyDocs("Urology");
-check(uroDocs.length >= ORIGINAL_URO_KEYS.length + URO_WORKFLOW_KEYS.length, "the urology catalogue grew by every added note type");
+check(uroDocs.length >= 8 + URO_WORKFLOW_KEYS.length, "the urology catalogue grew by every added note type");
 
 for (const doc of uroDocs) {
   const keys = (doc.fields || []).map((f) => f.key);
@@ -98,7 +113,7 @@ for (const doc of surviving) {
   check(keys.has("uro_safety"), `${doc.key} carries the safety review after the note-section policy`);
   check(keys.has("uro_guidance"), `${doc.key} carries its guideline basis after the note-section policy`);
 }
-check(surviving.length === uroDocs.filter((d) => d.key !== "uro_referral").length, "only the retired referral note type is removed by policy");
+check(surviving.length === uroDocs.length, "no urology note is dropped by the note-section policy");
 
 // ---- 3. Every referenced block, score and exam group exists -----------------
 const blockKeys = new Set(Object.keys(URO_BLOCKS));

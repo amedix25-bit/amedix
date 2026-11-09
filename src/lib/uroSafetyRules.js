@@ -15,7 +15,7 @@
 // A prompt fires only when the documented finding is present; with nothing
 // documented every rule stays silent.
 
-import { allText, anyNumber } from "@/lib/uroFieldKit";
+import { allText, anyNumber, anyText, str } from "@/lib/uroFieldKit";
 import { URO_REFERENCES } from "@/lib/uroReferences";
 
 const src = (key) => {
@@ -41,9 +41,25 @@ export const URO_SAFETY_RULES = [
     title: "Obstruction with infection — infected obstructed urinary tract",
     severity: "critical",
     source: src("eau_stones"),
-    trigger: (t) => {
-      const obstruction = has(t, /obstruct|hydronephros|calculus|stone|stricture|stent|retention/i);
-      const infection = has(t, /fever|pyrexi|temperature (of )?3[89]|rigor|sepsis|urosepsis|positive (urine )?culture|culture grew|leucocyt|wbc/);
+    trigger: (t, values) => {
+      // Obstructive context is read from the structured stone record as well as
+      // from free text: a documented obstruction grade, hydronephrosis or stone
+      // IS the finding, even when the note never repeats the word.
+      const obstructionGrade = str(anyText(values, ["stone_obstruction", "obstruction"]));
+      const hydronephrosis = str(anyText(values, ["hydronephrosis", "hydronephrosis_grade"]));
+      const stoneDocumented = Boolean(str(anyText(values, ["stone_site", "stone_size_mm", "stone_count"])));
+      const obstruction =
+        (obstructionGrade && !/^(none|not documented)$/i.test(obstructionGrade)) ||
+        (hydronephrosis && !/^(none|not documented)$/i.test(hydronephrosis)) ||
+        stoneDocumented ||
+        has(t, /obstruct|hydronephros|calculus|stone|stricture|stent|retention/i);
+
+      const temperature = anyNumber(values, ["temperature_c", "temperature"]);
+      const infectionFiled = /^yes$/i.test(str(anyText(values, ["stone_infection", "infection_documented"])));
+      const infection =
+        infectionFiled ||
+        (temperature !== null && temperature >= 38) ||
+        has(t, /fever|pyrexi|temperature (of )?3[89]|rigor|sepsis|urosepsis|positive (urine )?culture|culture grew|leucocyt|wbc/);
       if (!obstruction || !infection) return null;
       return {
         detail:
@@ -73,7 +89,7 @@ export const URO_SAFETY_RULES = [
     source: src("eau_luts"),
     trigger: (t, values) => {
       const pvr = anyNumber(values, ["post_void_residual", "pvr", "residual_volume", "residual"]);
-      const documentedRetention = has(t, /acute retention|unable to void|inability to void|cannot (pass|void)|retention of urine|painful retention/i);
+      const documentedRetention = has(t, /acute (urinary )?retention|unable to void|inability to void|cannot (pass|void)|retention of urine|painful retention/i);
       if (documentedRetention) {
         return {
           detail: "Retention is documented in this note.",
