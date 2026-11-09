@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { isActivated, loadAuthorization } from "../../shared/hospitalAuthorization.ts";
 
 // Doctor-side hospital join. A doctor can ONLY join a hospital with that
 // hospital's unique AMedix Hospital Code — never by typing a hospital name.
@@ -33,6 +34,18 @@ export default async function(req) {
     const hospital = hospitals[0];
     if (hospital.status === "suspended") {
       return Response.json({ error: "This hospital account is currently suspended." }, { status: 403 });
+    }
+
+    // A Hospital Code only carries weight once the institution passed AMedix
+    // administrative authorization. The check reads the server-owned
+    // authorization record, so a self-assigned hospital_code cannot be used to
+    // enrol doctors.
+    const authorization = await loadAuthorization(base44, hospital.id);
+    if (!isActivated(authorization)) {
+      return Response.json(
+        { error: "This hospital has not completed AMedix administrative authorization yet. Please ask the hospital administrator to contact AMedix administration." },
+        { status: 403 }
+      );
     }
 
     if (verifyOnly) {

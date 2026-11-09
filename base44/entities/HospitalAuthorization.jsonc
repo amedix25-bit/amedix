@@ -1,0 +1,288 @@
+{
+  "name": "HospitalAuthorization",
+  "type": "object",
+  "properties": {
+    "hospital_profile_id": {
+      "type": "string",
+      "description": "HospitalProfile id the authorization belongs to \u2014 exactly one authorization record per hospital"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the registering hospital account \u2014 written server-side only; drives Row Level Security so a hospital can read (never write) its own authorization state"
+    },
+    "request_reference": {
+      "type": "string",
+      "description": "Human-readable registration reference, e.g. HREG-20261109-8F3K \u2014 generated server-side at submission"
+    },
+    "hospital_name": {
+      "type": "string",
+      "description": "Institution name submitted at registration"
+    },
+    "location": {
+      "type": "string",
+      "description": "Institution address submitted at registration"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Institution contact number submitted at registration"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Registration email of the hospital account \u2014 set server-side from the verified account, never from the browser"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Institution photo submitted for verification"
+    },
+    "license_file_uri": {
+      "type": "string",
+      "description": "Private storage URI of the submitted registration / licence documentation. Never public; AMedix administration opens it through a short-lived signed URL"
+    },
+    "license_file_name": {
+      "type": "string",
+      "description": "Original file name of the submitted documentation, so the administrator knows what was uploaded"
+    },
+    "additional_documents": {
+      "type": "array",
+      "description": "Any further documents the institution submitted for verification",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_uri": {
+            "type": "string",
+            "description": "Private storage URI"
+          },
+          "file_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_uri",
+          "file_name"
+        ]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "pending",
+      "description": "Administrative decision. PENDING: submitted, awaiting AMedix administration review \u2014 no Hospital Code can be created. APPROVED: the institution is approved and may receive an authorization code. REJECTED: not approved; the reason is recorded. Written by the server only."
+    },
+    "submitted_datetime": {
+      "type": "string",
+      "description": "Date and time the registration was submitted (ISO datetime)"
+    },
+    "decision_datetime": {
+      "type": "string",
+      "description": "Date and time the administrative decision was recorded (ISO datetime)"
+    },
+    "reviewed_by_user_id": {
+      "type": "string",
+      "description": "User id of the administrator who recorded the decision"
+    },
+    "reviewed_by_name": {
+      "type": "string",
+      "description": "Name of the administrator who recorded the decision"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason recorded by the administrator when the institution was not approved"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Internal review notes \u2014 visible to AMedix administration only, never to the hospital"
+    },
+    "authorization_code_hash": {
+      "type": "string",
+      "description": "Salted SHA-256 hash of the issued authorization code. The plain code is shown to the administrator once at issue time and is never stored, logged or returned again"
+    },
+    "authorization_code_salt": {
+      "type": "string",
+      "description": "Random per-record salt used with the code hash"
+    },
+    "authorization_code_preview": {
+      "type": "string",
+      "description": "Masked reference of the issued code (last four characters only), so an administrator can identify which code was issued without revealing it"
+    },
+    "code_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "issued",
+        "used",
+        "revoked"
+      ],
+      "enumColors": [
+        "gray",
+        "blue",
+        "green",
+        "red"
+      ],
+      "default": "none",
+      "description": "NONE: no code issued yet. ISSUED: a valid single-use code is outstanding. USED: the hospital activated with it \u2014 single use, it can never activate again. REVOKED: withdrawn by administration before use. Expiry is derived from code_expiry_datetime, never stored as a separate state"
+    },
+    "code_version": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many authorization codes have been issued for this institution \u2014 regeneration increments it and invalidates the previous code"
+    },
+    "code_issued_datetime": {
+      "type": "string",
+      "description": "Date and time the current code was issued (ISO datetime)"
+    },
+    "code_issued_by_name": {
+      "type": "string",
+      "description": "Administrator who issued the current code"
+    },
+    "code_expiry_datetime": {
+      "type": "string",
+      "description": "Date and time the current code stops being valid (ISO datetime)"
+    },
+    "code_used_datetime": {
+      "type": "string",
+      "description": "Date and time the code was successfully activated (ISO datetime)"
+    },
+    "code_revoked_datetime": {
+      "type": "string",
+      "description": "Date and time the code was revoked by administration (ISO datetime)"
+    },
+    "code_revoke_reason": {
+      "type": "string",
+      "description": "Reason recorded when a code was revoked"
+    },
+    "code_history": {
+      "type": "array",
+      "description": "Append-only record of every code issued, regenerated, revoked or consumed \u2014 the previous codes are never overwritten. The plain code is never stored here",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "issued / regenerated / revoked / used / expired_on_attempt"
+          },
+          "preview": {
+            "type": "string"
+          },
+          "expiry_datetime": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      }
+    },
+    "failed_attempts": {
+      "type": "integer",
+      "default": 0,
+      "description": "Consecutive incorrect activation attempts since the last successful attempt or lockout"
+    },
+    "locked_until": {
+      "type": "string",
+      "description": "Activation attempts are refused until this time after repeated incorrect codes (ISO datetime) \u2014 server-side rate limiting"
+    },
+    "last_attempt_datetime": {
+      "type": "string",
+      "description": "Date and time of the most recent activation attempt (ISO datetime)"
+    },
+    "activated_datetime": {
+      "type": "string",
+      "description": "Date and time the institution completed administrative authorization. The only value that unlocks Hospital Code creation \u2014 written server-side by the activation transaction"
+    },
+    "hospital_code_issued": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the institution has since generated its own AMedix Hospital Code"
+    },
+    "audit": {
+      "type": "array",
+      "description": "Complete append-only authorization audit trail \u2014 submission, approval, rejection, code issue, regeneration, revocation, failed and successful activation, Hospital Code creation",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "submitted / approved / rejected / code_issued / code_regenerated / code_revoked / activation_failed / activated / activation_locked / hospital_code_created / access_denied"
+          },
+          "action_label": {
+            "type": "string"
+          },
+          "actor_user_id": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "actor_role": {
+            "type": "string",
+            "description": "hospital / admin / system"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      }
+    }
+  },
+  "required": [
+    "hospital_profile_id",
+    "hospital_user_id",
+    "hospital_name",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.hospital_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

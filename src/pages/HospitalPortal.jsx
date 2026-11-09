@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -13,6 +13,7 @@ import HospitalProfileCard from "@/components/hospital/portal/HospitalProfileCar
 import HospitalLabPanelsSection from "@/components/hospital/portal/HospitalLabPanelsSection";
 import HospitalRadiologySection from "@/components/hospital/portal/HospitalRadiologySection";
 import HospitalMessagingSection from "@/components/hospital/portal/HospitalMessagingSection";
+import HospitalAuthorizationGate from "@/components/hospital/authorization/HospitalAuthorizationGate";
 import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
 import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 import { Loader2 } from "lucide-react";
@@ -45,44 +46,58 @@ export default function HospitalPortal() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [profile, setProfile] = useState(null);
+  // AMedix administrative authorization state — the server's answer decides
+  // whether the workspace opens or the activation gate is shown.
+  const [authorization, setAuthorization] = useState(null);
   const [loading, setLoading] = useState(true);
   // Unread messaging notifications, shown on the Doctor Messages navigation
   // item so an incoming message is visible from anywhere in the portal.
   const { unread: messagingUnread } = useMessagingNotifications({ enabled: !!user });
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      try {
-        const profiles = await base44.entities.HospitalProfile.filter({ user_id: user.id });
-        if (profiles.length === 0) {
-          // Designated messaging staff sign in without owning a hospital
-          // profile; they open only their hospital's communication center.
-          const res = await base44.functions.invoke("messagingApi", { action: "context" }).catch(() => null);
-          if (res?.data?.actor?.role === "hospital") {
-            setProfile({ id: "", hospital_name: res.data.actor.hospital_name, is_messaging_staff: true });
-            setActiveTab("messages");
-            return;
-          }
-          navigate("/home");
+    try {
+      const profiles = await base44.entities.HospitalProfile.filter({ user_id: user.id });
+      if (profiles.length === 0) {
+        // Designated messaging staff sign in without owning a hospital
+        // profile; they open only their hospital's communication center.
+        const res = await base44.functions.invoke("messagingApi", { action: "context" }).catch(() => null);
+        if (res?.data?.actor?.role === "hospital") {
+          setProfile({ id: "", hospital_name: res.data.actor.hospital_name, is_messaging_staff: true });
+          setAuthorization({ is_activated: true });
+          setActiveTab("messages");
           return;
         }
-        setProfile(profiles[0]);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+        navigate("/home");
+        return;
       }
-    };
-    load();
-  }, [user]);
+      setProfile(profiles[0]);
+      const status = await base44.functions.invoke("hospitalAuthorization", { action: "status" });
+      setAuthorization(status.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, navigate]);
 
-  if (loading || !profile) {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading || !profile || !authorization) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Nothing in the workspace is reachable before AMedix administrative
+  // authorization: the hospital must activate its issued authorization code
+  // before any Hospital Code can exist.
+  if (!authorization.is_activated) {
+    return <HospitalAuthorizationGate profile={profile} initial={authorization} onActivated={load} />;
   }
 
   const withBadge = (list) =>

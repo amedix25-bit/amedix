@@ -5,21 +5,24 @@ import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Loader2, Mail, MapPin, Phone, Upload } from "lucide-react";
+import { Building2, FileText, Loader2, Mail, MapPin, Phone, ShieldCheck, Upload } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "@/components/ui/use-toast";
-
-const DEFAULT_PAYMENT_METHODS = ["Cash", "Card", "Bank Transfer"];
 
 export default function HospitalRegister({ embedded = false }) {
   const [form, setForm] = useState({ hospital_name: "", location: "", phone: "", email: "", password: "", confirm: "" });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [licenseFile, setLicenseFile] = useState(null);
+  // Set once the server has recorded the request — the hospital then waits for
+  // AMedix administrative approval.
+  const [submitted, setSubmitted] = useState(null);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const licenseInputRef = useRef(null);
 
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
 
@@ -39,11 +42,23 @@ export default function HospitalRegister({ embedded = false }) {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
+  const handleLicenseChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("The registration document must be smaller than 10 MB");
+      return;
+    }
+    setError("");
+    setLicenseFile(file);
+  };
+
   const validate = () => {
     if (!form.hospital_name.trim()) return "Hospital name is required";
     if (!form.location.trim()) return "Location / address is required";
     if (!form.phone.trim()) return "Phone number is required";
     if (!photoFile) return "Please upload a hospital photo";
+    if (!licenseFile) return "Please upload the hospital's registration / licence document for verification";
     if (form.password !== form.confirm) return "Passwords do not match";
     if (form.password.length < 6) return "Password must be at least 6 characters";
     return null;
@@ -73,24 +88,21 @@ export default function HospitalRegister({ embedded = false }) {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      const user = await base44.auth.me();
+      const photoRes = await base44.integrations.Core.UploadPublicFile({ file: photoFile });
+      const licenseRes = await base44.integrations.Core.UploadPrivateFile({ file: licenseFile });
 
-      const uploadRes = await base44.integrations.Core.UploadFile({ file: photoFile });
-
-      await base44.entities.HospitalProfile.create({
-        user_id: user.id,
+      // The profile and the authorization request are created server-side; the
+      // hospital cannot create either of them itself, and it can never set its
+      // own approval or activation state.
+      const res = await base44.functions.invoke("hospitalRegistrationSubmit", {
         hospital_name: form.hospital_name.trim(),
         location: form.location.trim(),
         phone: form.phone.trim(),
-        photo_url: uploadRes.file_url,
-        payment_methods: DEFAULT_PAYMENT_METHODS,
-        status: "active",
+        photo_url: photoRes.file_url,
+        license_file_uri: licenseRes.file_uri,
+        license_file_name: licenseFile?.name || "",
       });
-      toast({
-        title: "Hospital account created",
-        description: "You can now add receptionists and check in patients.",
-      });
-      window.location.href = "/hospital-portal";
+      setSubmitted(res.data);
     } catch (err) {
       setError(err.message || "Invalid verification code");
       setLoading(false);
@@ -106,6 +118,35 @@ export default function HospitalRegister({ embedded = false }) {
       setError(err.message || "Failed to resend code");
     }
   };
+
+  if (submitted) {
+    return (
+      <AuthLayout
+        embedded={embedded}
+        icon={ShieldCheck}
+        title="Pending administrative approval"
+        subtitle="Your registration has been submitted to AMedix"
+      >
+        <div className="space-y-4 text-sm">
+          <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+            <p className="font-medium">Reference: {submitted.request_reference || "—"}</p>
+            <p className="mt-1 text-foreground/80">
+              AMedix administration is reviewing {form.hospital_name} and the documentation you submitted. Your
+              AMedix Hospital Code stays locked until the institution is approved and you activate the authorization
+              code issued to this hospital.
+            </p>
+          </div>
+          <Button className="w-full h-12 font-medium" onClick={() => (window.location.href = "/hospital-portal")}>
+            Go to hospital portal
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            A notification with your registration details and documentation was sent to AMedix administration. The
+            decision appears in your hospital portal.
+          </p>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   if (showOtp) {
     return (
@@ -223,6 +264,28 @@ export default function HospitalRegister({ embedded = false }) {
               accept="image/*"
               className="hidden"
               onChange={handlePhotoChange}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Registration / Licence Document *</Label>
+          <p className="text-xs text-muted-foreground">
+            Upload the institution's official registration or licence so AMedix administration can verify it.
+          </p>
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" onClick={() => licenseInputRef.current?.click()}>
+              <FileText className="w-4 h-4 mr-2" />
+              {licenseFile ? "Change Document" : "Upload Document"}
+            </Button>
+            <span className="text-sm text-muted-foreground truncate">
+              {licenseFile ? licenseFile.name : "PDF or image, up to 10 MB"}
+            </span>
+            <input
+              ref={licenseInputRef}
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              onChange={handleLicenseChange}
             />
           </div>
         </div>
