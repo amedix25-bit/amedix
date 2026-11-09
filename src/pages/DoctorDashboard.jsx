@@ -28,18 +28,20 @@ import { LayoutDashboard, Search, Calendar, FileText, FlaskConical, Image, Users
 import DoctorMessages from "@/components/doctor/messaging/DoctorMessages";
 import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 
+// Section order follows the Doctor Portal sidebar design: consultation work
+// first, then the orders it produces, then the day's schedule and resources.
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
-  { key: "colleagues", label: "My Colleagues", icon: Users },
-  { key: "referrals", label: "Referral Letters", icon: Mail },
-  { key: "hospitals", label: "My Hospitals", icon: Building2 },
-  { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "notes", label: "Clinical Notes", icon: FileText },
-  { key: "prescriptions", label: "Prescriptions", icon: Pill },
-  { key: "messages", label: "Messages", icon: MessageSquare },
   { key: "labs", label: "Lab Requests", icon: FlaskConical },
   { key: "imaging", label: "Imaging", icon: Image },
+  { key: "prescriptions", label: "Prescriptions", icon: Pill },
+  { key: "referrals", label: "Referral Letters", icon: Mail },
+  { key: "appointments", label: "Appointments", icon: Calendar },
+  { key: "messages", label: "Messages", icon: MessageSquare },
+  { key: "colleagues", label: "My Colleagues", icon: Users },
+  { key: "hospitals", label: "My Hospitals", icon: Building2 },
 ];
 
 export default function DoctorDashboard() {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import DashboardLayout from "@/components/DashboardLayout";
+import DoctorSidebar from "@/components/doctor/shell/DoctorSidebar";
 import { useAppLanguage } from "@/lib/appLanguage";
 import RadiologistSpecialtySelect from "@/components/radiologist/RadiologistSpecialtySelect";
 import RadiologistFacilitySwitcher from "@/components/radiologist/RadiologistFacilitySwitcher";
@@ -77,7 +78,25 @@ export default function RadiologistDashboard() {
   };
 
   return (
-    <DashboardLayout navItems={navItems} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Radiologist" accent="radiology" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
+    <DashboardLayout
+      navItems={navItems}
+      activeKey={activeTab}
+      onNavClick={setActiveTab}
+      roleLabel="Radiologist"
+      accent="radiology"
+      sidebarTheme="navy"
+      renderSidebar={({ close, onLogout }) => (
+        <DoctorSidebar
+          navItems={navItems}
+          activeKey={activeTab}
+          onNavClick={setActiveTab}
+          onLogout={onLogout}
+          close={close}
+          subtitle="Radiologist Portal"
+          sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}
+        />
+      )}
+    >
       <div className={`p-4 lg:p-6 mx-auto ${["worklist", "viewer"].includes(activeTab) ? "max-w-[1700px]" : "max-w-5xl"}`}>
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>

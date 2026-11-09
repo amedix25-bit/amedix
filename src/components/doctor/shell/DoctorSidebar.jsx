@@ -8,7 +8,7 @@ import { useAppLanguage } from "@/lib/appLanguage";
 // the top, one flat list of the doctor's sections and a footer holding the
 // portal controls and the red Log Out action. Used on desktop and inside the
 // mobile drawer alike.
-export default function DoctorSidebar({ navItems = [], activeKey, onNavClick, onLogout, close, sidebarAction }) {
+export default function DoctorSidebar({ navItems = [], activeKey, onNavClick, onLogout, close, sidebarAction, subtitle = "Doctor Portal" }) {
   const { t } = useAppLanguage();
 
   return (
@@ -17,7 +17,7 @@ export default function DoctorSidebar({ navItems = [], activeKey, onNavClick, on
         <BrandLogo fittingType="fill" className="h-11 w-11 shrink-0 rounded-full" />
         <div className="min-w-0">
           <p className="truncate text-xl font-bold leading-none tracking-tight text-white">AMedix</p>
-          <p className="mt-1 truncate text-[11px] font-medium leading-none text-white/60">{t("Doctor Portal")}</p>
+          <p className="mt-1 truncate text-[11px] font-medium leading-none text-white/60">{t(subtitle)}</p>
         </div>
       </div>
 
