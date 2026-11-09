@@ -13,6 +13,7 @@ import DoctorPrescriptions from "@/components/doctor/DoctorPrescriptions";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorTopBar from "@/components/doctor/shell/DoctorTopBar";
+import DoctorSidebar from "@/components/doctor/shell/DoctorSidebar";
 import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
@@ -185,7 +186,22 @@ export default function DoctorDashboard() {
   const doctorName = `Dr. ${(profile?.full_name || "").replace(/^Dr\.?\s*/i, "").trim() || "Doctor"}`;
 
   return (
-    <DashboardLayout navItems={menuItems} activeKey={activeTab} onNavClick={handleNavigateTab} roleLabel="Doctor Portal" accent="doctor" sidebarTheme="navy" sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}>
+    <DashboardLayout
+      navItems={menuItems}
+      activeKey={activeTab}
+      onNavClick={handleNavigateTab}
+      sidebarTheme="navy"
+      renderSidebar={({ close, onLogout }) => (
+        <DoctorSidebar
+          navItems={menuItems}
+          activeKey={activeTab}
+          onNavClick={handleNavigateTab}
+          onLogout={onLogout}
+          close={close}
+          sidebarAction={user ? <PatientPortalSwitchAction user={user} /> : null}
+        />
+      )}
+    >
       <DoctorTopBar
         profile={profile}
         hospitalSession={hospitalSession}

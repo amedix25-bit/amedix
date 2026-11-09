@@ -69,7 +69,8 @@ module.exports = {
   				navy: 'hsl(var(--doctor-navy))',
   				blue: 'hsl(var(--doctor-blue))',
   				surface: 'hsl(var(--doctor-surface))',
-  				danger: 'hsl(var(--doctor-danger))'
+  				danger: 'hsl(var(--doctor-danger))',
+  				'danger-deep': 'hsl(var(--doctor-danger-deep))'
   			},
   			portal: {
   				patient: 'hsl(var(--accent-patient))',

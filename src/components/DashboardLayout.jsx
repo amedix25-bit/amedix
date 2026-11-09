@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LogOut, Menu, X } from "lucide-react";
+import { Activity, LogOut, Menu, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -60,13 +60,24 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="lg:hidden flex items-center justify-between border-b border-border px-4 py-3">
-          <button onClick={() => setSidebarOpen(true)} className="text-muted-foreground">
+        <header className={`lg:hidden flex items-center justify-between border-b px-4 py-3 ${navy ? "bg-doctor-navy border-white/10" : "border-border"}`}>
+          <button onClick={() => setSidebarOpen(true)} className={navy ? "text-white/80" : "text-muted-foreground"}>
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <Logo fittingType="fill" className="w-9 h-9 rounded-full" />
-            <span className="font-bold text-sm">AMedix</span>
+            {navy ? (
+              <>
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-doctor-blue">
+                  <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
+                </span>
+                <span className="font-bold text-sm text-white">AMedix</span>
+              </>
+            ) : (
+              <>
+                <Logo fittingType="fill" className="w-9 h-9 rounded-full" />
+                <span className="font-bold text-sm">AMedix</span>
+              </>
+            )}
           </div>
           <AppLanguageSwitcher />
         </header>

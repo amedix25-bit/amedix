@@ -128,14 +128,16 @@
     --accent-hospital: 215 25% 27%;
     --accent-insurance: 262 83% 58%;
     /* Doctor Portal shell — dark navy navigation, action blue, action red */
-    /* #0B1626 */
-    --doctor-navy: 216 55% 10%;
-    /* #2E69F4 */
-    --doctor-blue: 222 90% 57%;
+    /* #0D172A */
+    --doctor-navy: 218 53% 11%;
+    /* #3B82F6 */
+    --doctor-blue: 217 91% 60%;
     /* #F8FAFD */
     --doctor-surface: 216 55% 98%;
-    /* #E11D29 */
-    --doctor-danger: 356 77% 50%;
+    /* #EF4444 */
+    --doctor-danger: 0 84% 60%;
+    /* #B91C1C */
+    --doctor-danger-deep: 0 74% 42%;
     --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
     --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
