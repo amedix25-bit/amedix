@@ -9,6 +9,7 @@ import HospitalManagePatientsSection from "@/components/hospital/portal/Hospital
 import HospitalDoctorsSection from "@/components/hospital/portal/HospitalDoctorsSection";
 import HospitalReceptionistsSection from "@/components/hospital/portal/HospitalReceptionistsSection";
 import HospitalProfileSection from "@/components/hospital/portal/HospitalProfileSection";
+import HospitalProfileCard from "@/components/hospital/portal/HospitalProfileCard";
 import HospitalLabPanelsSection from "@/components/hospital/portal/HospitalLabPanelsSection";
 import HospitalRadiologySection from "@/components/hospital/portal/HospitalRadiologySection";
 import HospitalMessagingSection from "@/components/hospital/portal/HospitalMessagingSection";
@@ -92,7 +93,14 @@ export default function HospitalPortal() {
     : NAV_GROUPS.map((g) => ({ ...g, items: withBadge(g.items) }));
 
   return (
-    <DashboardLayout navGroups={visibleGroups} activeKey={activeTab} onNavClick={setActiveTab} roleLabel="Hospital OS" accent="hospital">
+    <DashboardLayout
+      navGroups={visibleGroups}
+      activeKey={activeTab}
+      onNavClick={setActiveTab}
+      roleLabel="Hospital OS"
+      accent="hospital"
+      sidebarAction={profile.is_messaging_staff ? null : <HospitalProfileCard profile={profile} />}
+    >
       <div className="p-4 lg:p-6 max-w-6xl mx-auto">
         {activeTab !== "dashboard" && (
           <div className="mb-6">
