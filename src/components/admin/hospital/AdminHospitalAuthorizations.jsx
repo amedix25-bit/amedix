@@ -55,6 +55,10 @@ export default function AdminHospitalAuthorizations() {
     setItems((prev) => (prev || []).map((i) => (i.id === updated.id ? { ...i, ...updated } : i)));
   };
 
+  const remove = (deleted) => {
+    setItems((prev) => (prev || []).filter((i) => i.id !== deleted.id));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -119,7 +123,7 @@ export default function AdminHospitalAuthorizations() {
       ) : (
         <div className="space-y-3">
           {visible.map((item) => (
-            <HospitalAuthorizationCard key={item.id} item={item} onChanged={replace} />
+            <HospitalAuthorizationCard key={item.id} item={item} onChanged={replace} onDeleted={remove} />
           ))}
         </div>
       )}

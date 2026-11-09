@@ -32,15 +32,109 @@ export default async function (req) {
     const action = String(body.action || 'list');
     const actor = { user_id: user.id, name: user.full_name || user.email || 'AMedix administrator', role: 'admin' };
 
+    const rows = (res) => (Array.isArray(res) ? res : res?.items || []);
+
     if (action === 'list') {
-      const rows = await base44.asServiceRole.entities.HospitalAuthorization.list('-submitted_datetime', 200);
-      return Response.json({ items: rows.map((r) => publicAuthorization(r, { includeAdminOnly: true })) });
+      const auths = rows(await base44.asServiceRole.entities.HospitalAuthorization.list('-submitted_datetime', 200));
+      const profiles = rows(await base44.asServiceRole.entities.HospitalProfile.list('-created_date', 500));
+      const statusFor = (auth) => {
+        const profile =
+          profiles.find((p) => p.id === auth.hospital_profile_id) ||
+          profiles.find((p) => p.user_id === auth.hospital_user_id);
+        return profile ? profile.status || 'active' : 'none';
+      };
+      return Response.json({
+        items: auths.map((r) => ({ ...publicAuthorization(r, { includeAdminOnly: true }), hospital_status: statusFor(r) })),
+      });
     }
 
     const auth = await loadAuthorizationById(base44, String(body.id || ''));
     if (!auth) return Response.json({ error: 'Authorization request not found.' }, { status: 404 });
 
     const stamp = () => new Date().toISOString();
+
+    // The hospital account behind a registration — matched by profile id, then by
+    // the registering account id, so a record written before the profile resolved
+    // is still tied to its institution.
+    const loadHospitalProfiles = async (record) => {
+      const byId = record.hospital_profile_id
+        ? rows(await base44.asServiceRole.entities.HospitalProfile.filter({ id: record.hospital_profile_id }))
+        : [];
+      if (byId.length > 0) return byId;
+      return record.hospital_user_id
+        ? rows(await base44.asServiceRole.entities.HospitalProfile.filter({ user_id: record.hospital_user_id }))
+        : [];
+    };
+
+    const deleteMatching = async (entityName, query) => {
+      const found = rows(await base44.asServiceRole.entities[entityName].filter(query));
+      for (const record of found) await base44.asServiceRole.entities[entityName].delete(record.id);
+    };
+
+    if (action === 'set_hospital_status') {
+      const next = String(body.status || '');
+      if (!['active', 'suspended'].includes(next)) {
+        return Response.json({ error: 'Select active or inactive.' }, { status: 400 });
+      }
+      const profiles = await loadHospitalProfiles(auth);
+      if (profiles.length === 0) {
+        return Response.json({ error: 'No hospital account is linked to this registration yet.' }, { status: 404 });
+      }
+      const reason = String(body.reason || '').trim();
+      for (const profile of profiles) {
+        await base44.asServiceRole.entities.HospitalProfile.update(profile.id, { status: next });
+      }
+      const label = next === 'active' ? 'Hospital account set active' : 'Hospital account set inactive';
+      const updated = await base44.asServiceRole.entities.HospitalAuthorization.update(auth.id, {
+        audit: withAudit(
+          auth,
+          auditEntry({
+            action: next === 'active' ? 'hospital_reactivated' : 'hospital_deactivated',
+            actionLabel: label,
+            actor,
+            detail: reason || (next === 'active' ? 'Full hospital access restored' : 'Hospital access withdrawn'),
+          })
+        ),
+      });
+      return Response.json({
+        authorization: { ...publicAuthorization(updated, { includeAdminOnly: true }), hospital_status: next },
+      });
+    }
+
+    if (action === 'delete_hospital') {
+      const confirmName = String(body.confirm_name || '').trim().toLowerCase();
+      if (!confirmName || confirmName !== String(auth.hospital_name || '').trim().toLowerCase()) {
+        return Response.json(
+          { error: 'Type the hospital name exactly to confirm deleting this hospital.' },
+          { status: 400 }
+        );
+      }
+      const profiles = await loadHospitalProfiles(auth);
+      for (const profile of profiles) {
+        await deleteMatching('HospitalDoctor', { hospital_id: profile.id });
+        await deleteMatching('HospitalReceptionist', { hospital_id: profile.id });
+        await deleteMatching('HospitalMessagingStaff', { hospital_id: profile.id });
+        await deleteMatching('RadiologyStaff', { hospital_id: profile.id });
+        await base44.asServiceRole.entities.HospitalProfile.delete(profile.id);
+      }
+      // The registration record goes with the hospital, but the deletion itself is
+      // kept in the administrative audit log so the institution's history is not lost.
+      await base44.asServiceRole.entities.AccountAuditLog.create({
+        user_id: auth.hospital_user_id || '',
+        account_type: 'hospital',
+        account_name: auth.hospital_name || '',
+        email: auth.contact_email || '',
+        action: 'account_deactivated',
+        action_label: 'Hospital deleted by AMedix administration',
+        detail: `Registration ${auth.request_reference || ''} and hospital account removed. Clinical records were preserved.`,
+        actor_user_id: user.id,
+        actor_name: actor.name,
+        actor_role: 'admin',
+        datetime: stamp(),
+      }).catch(() => null);
+      await base44.asServiceRole.entities.HospitalAuthorization.delete(auth.id);
+      return Response.json({ deleted: true });
+    }
 
     if (action === 'approve') {
       if (auth.status === 'approved') {

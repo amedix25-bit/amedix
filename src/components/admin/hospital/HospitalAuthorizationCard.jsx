@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   Building2, Check, X, KeyRound, Copy, RotateCcw, Ban, FileText, Loader2, Clock, ShieldCheck, ExternalLink,
 } from "lucide-react";
+import HospitalAccountControls, { HOSPITAL_STATUS_LABEL } from "./HospitalAccountControls";
 
 const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : "—");
 
@@ -19,7 +20,7 @@ const STATUS = {
   rejected: { label: "Rejected", cls: "bg-critical/15 text-critical border-critical/30" },
 };
 
-export default function HospitalAuthorizationCard({ item, onChanged }) {
+export default function HospitalAuthorizationCard({ item, onChanged, onDeleted }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
@@ -91,6 +92,11 @@ export default function HospitalAuthorizationCard({ item, onChanged }) {
                 Activated
               </span>
             )}
+            {item.hospital_status && item.hospital_status !== "active" && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full border bg-warning/15 text-warning border-warning/30">
+                {HOSPITAL_STATUS_LABEL[item.hospital_status]}
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {item.request_reference} · submitted {fmt(item.submitted_datetime)}
@@ -125,6 +131,7 @@ export default function HospitalAuthorizationCard({ item, onChanged }) {
         <Button variant="ghost" size="sm" onClick={() => setShowPanels((s) => !s)}>
           {showPanels ? "Hide controls" : "Review controls"}
         </Button>
+        <HospitalAccountControls item={item} onChanged={onChanged} onDeleted={onDeleted} />
       </div>
 
       {issuedCode && (
