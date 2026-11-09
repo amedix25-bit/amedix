@@ -1,20 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import {
   buildEligibilityIndex,
-  eligibleEvaluations,
   evaluateMessagingActor,
   evaluateAccount,
   eligibilityDenial,
 } from '../../shared/verifiedAccounts.ts';
 
-// AMedix verified doctor network — the nationwide directory every verified and
-// active doctor appears in, regardless of hospital. It is a directory of
-// PROFESSIONAL contacts only: adding a colleague never grants access to that
-// colleague's patients, records, notes or hospital information.
+// AMedix doctor network — the nationwide directory every doctor working in the
+// Doctor Portal appears in, regardless of hospital or verification stage. It is
+// a directory of PROFESSIONAL contacts only: adding a colleague never grants
+// access to that colleague's patients, records, notes or hospital information.
 //
-// Everything here is authorized server-side from the database. A doctor who is
-// suspended, deactivated or no longer verified disappears from the network and
-// can no longer be added, listed or messaged.
+// Listing shows every active doctor. Being LISTED is not the same as being
+// cleared for messaging: colleague requests and messaging still require the
+// doctor to pass full verification, enforced server-side here and in the
+// messaging API. Suspended, deactivated and quarantined test accounts are never
+// listed.
 // Predictive directory search: as soon as the doctor types two letters, every
 // word of the name, specialty or hospital is matched by PREFIX, so "niza"
 // finds NIZAR FATHI AGILA and "med" finds Internal Medicine. The full-text
@@ -66,14 +67,21 @@ export default async function (req: Request): Promise<Response> {
     if (action === 'list') {
       const index = await buildEligibilityIndex(base44);
       const search = String(body.search || '').trim().toLowerCase();
-      const doctors = eligibleEvaluations(index, 'doctor')
-        .filter((e) => e.user_id !== user.id)
+      // Every active doctor account that holds a doctor profile is listed, so a
+      // doctor who has entered the portal is immediately findable by colleagues.
+      const doctors = [...index.evaluations.values()]
+        .filter((e) => e.account_type === 'doctor' && e.doctor)
+        .filter((e) => e.user_id && e.user_id !== user.id)
+        .filter((e) => e.user_exists !== false)
+        .filter((e) => !['test_account', 'suspected_test', 'duplicate'].includes(e.classification))
+        .filter((e) => !e.status || e.status === 'active')
         .filter((e) => {
           if (!search) return true;
           const d = e.doctor || {};
           const specialties = Array.isArray(d.specialties) ? d.specialties.join(' ') : '';
           return matchesSearch([d.full_name, d.specialization, specialties, d.hospital].join(' '), search);
         })
+        .sort((a, b) => String(a.display_name || '').localeCompare(String(b.display_name || '')))
         .map((e) => ({
           doctor_id: e.profiles.doctor_id,
           doctor_user_id: e.user_id,
@@ -82,14 +90,16 @@ export default async function (req: Request): Promise<Response> {
           specialties: e.doctor.specialties || [],
           hospital: e.doctor.hospital || '',
           photo_url: e.doctor.photo_url || '',
-          license_number: e.doctor.license_number || '',
-          verified: true,
+          license_number: e.doctor.is_verified ? e.doctor.license_number || '' : '',
+          verified: e.eligible === true,
+          pending_reason: e.eligible ? '' : e.reason || '',
           is_colleague: colleagueIds.has(e.profiles.doctor_id),
         }));
       return Response.json({
         doctors,
         colleagues: doctors.filter((d) => d.is_colleague),
-        total_verified_doctors: doctors.length,
+        total_doctors: doctors.length,
+        total_verified_doctors: doctors.filter((d) => d.verified).length,
       });
     }
 

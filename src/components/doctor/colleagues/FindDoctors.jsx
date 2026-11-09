@@ -7,14 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { displayDoctor, initials } from "@/lib/messaging";
-import { Loader2, Search, ShieldCheck, UserPlus, UserMinus, Building2, MessageSquare, Send } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Clock, UserPlus, UserMinus, Building2, MessageSquare, Send } from "lucide-react";
 
 // Doctor Portal → Find Doctors / My Colleagues.
 //
-// Every doctor who is professionally verified, approved by AMedix administration
-// and active appears here, nationwide — regardless of hospital. Adding a
-// colleague is a professional contact only: it never grants access to that
-// doctor's patients, records, notes or hospital information.
+// Every doctor working in the Doctor Portal appears here, nationwide, at any
+// stage of verification. Adding a colleague and messaging are professional
+// contacts only and stay reserved to fully verified doctors.
 export default function FindDoctors({ profile }) {
   const { toast } = useToast();
   const [doctors, setDoctors] = useState([]);
@@ -34,7 +33,7 @@ export default function FindDoctors({ profile }) {
     try {
       const res = await base44.functions.invoke("doctorNetwork", { action: "list", search: query });
       setDoctors(res.data.doctors || []);
-      setTotal(res.data.total_verified_doctors || 0);
+      setTotal(res.data.total_doctors ?? res.data.total_verified_doctors ?? 0);
       setError("");
     } catch (e) {
       setError(e?.response?.data?.error || "The verified doctor network is unavailable.");
@@ -116,8 +115,8 @@ export default function FindDoctors({ profile }) {
               {loading
                 ? "Loading the verified doctor network…"
                 : search.trim().length > 1
-                  ? `${doctors.length} of ${total} verified, active doctors match “${search.trim()}”`
-                  : `${total} verified, active doctors across AMedix`}
+                  ? `${doctors.length} of ${total} doctors match “${search.trim()}”`
+                  : `${total} doctors across the AMedix network`}
             </p>
           </div>
           <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 text-xs">
@@ -171,8 +170,8 @@ export default function FindDoctors({ profile }) {
           {filter === "colleagues"
             ? "You have not added any colleagues yet."
             : search.trim().length > 1
-              ? `No approved doctor matches “${search.trim()}”. Doctors appear in the network once AMedix administration approves their verification.`
-              : "No other doctor is verified and active on AMedix yet. Doctors appear here once AMedix administration approves their verification."}
+              ? `No doctor matches “${search.trim()}”.`
+              : "No other doctor has joined the AMedix network yet."}
         </div>
       ) : (
         <div className="grid gap-2">
@@ -189,23 +188,32 @@ export default function FindDoctors({ profile }) {
                   >
                     {displayDoctor(doctor.full_name)}
                   </button>
-                  <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
-                    <ShieldCheck className="h-3 w-3" /> Verified
-                  </Badge>
+                  {doctor.verified ? (
+                    <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
+                      <ShieldCheck className="h-3 w-3" /> Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1 border-warning/30 bg-warning/10 text-warning">
+                      <Clock className="h-3 w-3" /> Awaiting verification
+                    </Badge>
+                  )}
                   {doctor.is_colleague && <Badge variant="secondary">Colleague</Badge>}
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {[doctor.specialization, doctor.hospital].filter(Boolean).join(" · ") || "Specialty not recorded"}
                 </p>
+                {!doctor.verified && (
+                  <p className="text-[11px] text-warning">Messaging opens once AMedix verification is complete.</p>
+                )}
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setMessageTo(doctor)}>
+                <Button size="sm" variant="outline" disabled={!doctor.verified} onClick={() => setMessageTo(doctor)}>
                   <MessageSquare className="h-3.5 w-3.5" /> Message
                 </Button>
                 <Button
                   size="sm"
                   variant={doctor.is_colleague ? "ghost" : "default"}
-                  disabled={busyId === doctor.doctor_id}
+                  disabled={busyId === doctor.doctor_id || !doctor.verified}
                   onClick={() => toggleColleague(doctor)}
                 >
                   {busyId === doctor.doctor_id ? (
@@ -231,9 +239,15 @@ export default function FindDoctors({ profile }) {
           {viewDoctor && (
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
-                  <ShieldCheck className="h-3 w-3" /> AMedix verified
-                </Badge>
+                {viewDoctor.verified ? (
+                  <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
+                    <ShieldCheck className="h-3 w-3" /> AMedix verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="gap-1 border-warning/30 bg-warning/10 text-warning">
+                    <Clock className="h-3 w-3" /> Awaiting AMedix verification
+                  </Badge>
+                )}
                 {viewDoctor.is_colleague && <Badge variant="secondary">Colleague</Badge>}
               </div>
               <div>
@@ -257,7 +271,7 @@ export default function FindDoctors({ profile }) {
                 Professional contact only — no clinical access is granted by this connection.
               </p>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setMessageTo(viewDoctor); setViewDoctor(null); }}>
+                <Button variant="outline" size="sm" disabled={!viewDoctor.verified} onClick={() => { setMessageTo(viewDoctor); setViewDoctor(null); }}>
                   <MessageSquare className="h-3.5 w-3.5" /> Message
                 </Button>
               </div>
