@@ -4,6 +4,7 @@ import { Loader2, MessageSquare, Stethoscope, Building2 } from "lucide-react";
 import DoctorsChannel from "@/components/doctor/messaging/DoctorsChannel";
 import HospitalsChannel from "@/components/doctor/messaging/HospitalsChannel";
 import PatientsChannel from "@/components/doctor/messaging/PatientsChannel";
+import MessagingLocked from "@/components/messaging/MessagingLocked";
 
 const TABS = [
   { key: "doctors", label: "Doctors", icon: Stethoscope, channel: "doctor", hint: "Two-way with verified doctors" },
@@ -42,6 +43,11 @@ export default function DoctorMessages({ profile, hospitalSession }) {
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // The server decides who may message; this only reflects its answer.
+  if (context.eligibility && !context.eligibility.eligible) {
+    return <MessagingLocked eligibility={context.eligibility} />;
   }
 
   const hospitals = context.hospitals || [];

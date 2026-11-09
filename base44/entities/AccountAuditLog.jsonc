@@ -1,0 +1,109 @@
+{
+  "name": "AccountAuditLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Account the event concerns"
+    },
+    "account_type": {
+      "type": "string",
+      "description": "doctor / hospital / patient / admin / none"
+    },
+    "account_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "verification_approved",
+        "verification_rejected",
+        "account_suspended",
+        "account_reactivated",
+        "account_deactivated",
+        "account_blocked",
+        "account_flagged",
+        "account_cleared",
+        "account_classified",
+        "test_account_removed",
+        "directory_removed",
+        "messaging_blocked",
+        "messaging_allowed",
+        "security_rejection"
+      ],
+      "enumColors": [
+        "green",
+        "red",
+        "yellow",
+        "green",
+        "gray",
+        "red",
+        "yellow",
+        "blue",
+        "purple",
+        "red",
+        "gray",
+        "red",
+        "green",
+        "red"
+      ],
+      "description": "Machine-readable event recorded by the server. SECURITY_REJECTION: a messaging action refused by the backend authorization layer."
+    },
+    "action_label": {
+      "type": "string",
+      "description": "Human-readable description of the event"
+    },
+    "detail": {
+      "type": "string",
+      "description": "What happened, in the administrator's or the server's own words"
+    },
+    "previous_value": {
+      "type": "string",
+      "description": "Value before the change, when the event changed something"
+    },
+    "new_value": {
+      "type": "string",
+      "description": "Value after the change"
+    },
+    "actor_user_id": {
+      "type": "string",
+      "description": "User id of the administrator or the account that triggered the event \u2014 empty for system events"
+    },
+    "actor_name": {
+      "type": "string"
+    },
+    "actor_role": {
+      "type": "string",
+      "description": "admin / doctor / hospital / patient / system"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the event (ISO datetime), set server-side"
+    }
+  },
+  "required": [
+    "action",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "id": "__immutable_audit_record__"
+    },
+    "delete": {
+      "id": "__immutable_audit_record__"
+    }
+  }
+}

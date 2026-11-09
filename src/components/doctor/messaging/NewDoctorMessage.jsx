@@ -109,7 +109,10 @@ export default function NewDoctorMessage({ onClose, onSent }) {
                     {initials(d.full_name)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{d.full_name}</p>
+                    <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                      {d.full_name}
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-success" aria-label="Verified and active doctor" />
+                    </p>
                     <p className="flex items-center gap-2 truncate text-[11px] text-muted-foreground">
                       {d.specialization && <span className="inline-flex items-center gap-1"><Stethoscope className="w-3 h-3" />{d.specialization}</span>}
                       {d.hospital && <span className="inline-flex items-center gap-1"><Building2 className="w-3 h-3" />{d.hospital}</span>}

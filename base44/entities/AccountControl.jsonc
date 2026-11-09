@@ -1,0 +1,205 @@
+{
+  "name": "AccountControl",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User id of the account this control record governs \u2014 exactly one control record per account"
+    },
+    "account_type": {
+      "type": "string",
+      "enum": [
+        "doctor",
+        "hospital",
+        "patient",
+        "admin",
+        "none"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green",
+        "gray",
+        "gray"
+      ],
+      "description": "Account type resolved from the account's own verified profile at the time the record was written"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Account name shown to the administrator"
+    },
+    "email": {
+      "type": "string",
+      "description": "Account email at the time the record was written"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "deactivated",
+        "blocked"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "gray",
+        "red"
+      ],
+      "default": "active",
+      "description": "Administrative account state. ACTIVE: the account may use messaging when it is otherwise verified. SUSPENDED: messaging is withdrawn immediately, the account disappears from every directory and cannot send or reply. DEACTIVATED: the account is no longer in use. BLOCKED: the account is blocked for security reasons. Written only by AMedix administration."
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "pending",
+        "rejected"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "red"
+      ],
+      "default": "pending",
+      "description": "Administrative verification decision recorded for this account. VERIFIED: identity and professional/institutional verification have been reviewed and approved by AMedix administration. PENDING: awaiting review. REJECTED: verification was reviewed and refused \u2014 the account cannot use messaging."
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "legitimate",
+        "test_account",
+        "suspected_test",
+        "duplicate",
+        "under_review"
+      ],
+      "enumColors": [
+        "green",
+        "red",
+        "yellow",
+        "purple",
+        "yellow"
+      ],
+      "default": "legitimate",
+      "description": "What the account was found to be during the account audit. TEST_ACCOUNT: confirmed fake/test/development account \u2014 never eligible for messaging. SUSPECTED_TEST: questionable account flagged for administrative review before any deletion. DUPLICATE: a duplicate of another account. UNDER_REVIEW: awaiting an administrative decision."
+    },
+    "review_state": {
+      "type": "string",
+      "enum": [
+        "none",
+        "flagged",
+        "cleared"
+      ],
+      "enumColors": [
+        "gray",
+        "yellow",
+        "green"
+      ],
+      "default": "none",
+      "description": "Administrative review state. FLAGGED: raised for review. CLEARED: reviewed and confirmed legitimate."
+    },
+    "review_note": {
+      "type": "string",
+      "description": "Why the account was flagged, suspended or classified \u2014 recorded by the administrator or by the account audit"
+    },
+    "test_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What identified the account as a test / questionable account, e.g. the profile name pattern and the clinical identifier"
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Profile references at the time of writing: { doctor_id, hospital_id, hospital_authorization_id, patient_id }"
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The reasons this account is currently ineligible for messaging, exactly as enforced server-side"
+    },
+    "messaging_eligible": {
+      "type": "boolean",
+      "default": false,
+      "description": "Result of the server-side eligibility evaluation this record was written from"
+    },
+    "removal_requested": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when an administrator confirmed the account as a test account and removed it from every messaging surface"
+    },
+    "removal_datetime": {
+      "type": "string",
+      "description": "Date and time the account was removed from the messaging surfaces (ISO datetime)"
+    },
+    "removal_note": {
+      "type": "string",
+      "description": "What was removed and what was deliberately preserved (clinical records, audit history)"
+    },
+    "last_reviewed_by_name": {
+      "type": "string"
+    },
+    "last_reviewed_datetime": {
+      "type": "string"
+    },
+    "audit": {
+      "type": "array",
+      "description": "Append-only history of every administrative change made to this account",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "action_label": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "user_id",
+    "account_type",
+    "status",
+    "verification_status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

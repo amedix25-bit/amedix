@@ -22,6 +22,14 @@ import {
   threadChannel,
 } from "../../shared/messaging.ts";
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
+import {
+  evaluateAccount,
+  evaluateMessagingActor,
+  buildEligibilityIndex,
+  eligibleEvaluations,
+  eligibilityDenial,
+  logAccountAudit,
+} from "../../shared/verifiedAccounts.ts";
 
 // Secure AMedix messaging. Three channels, one authorization core:
 //   hospital — doctor ↔ hospital administration (two-way)
@@ -43,6 +51,10 @@ export default async function (req) {
     if (!actor) {
       return Response.json({ error: "This account has no messaging access." }, { status: 403 });
     }
+
+    // The account's own verified standing, resolved from the database — never
+    // from anything the browser sent.
+    const actorCheck = await evaluateMessagingActor(base44, actor);
 
     const now = () => new Date().toISOString();
     const isPatientActor = actor.role === "patient";
@@ -175,6 +187,86 @@ export default async function (req) {
       return { threads_unread: threadsUnread, messages_unread: messagesUnread, notifications_unread: notifs.length, by_channel };
     };
 
+    // ---- Verified-accounts-only gate ----
+    // Every action except reading the messaging context needs an account that is
+    // both verified and active, evaluated here on every request. A hidden button,
+    // a typed recipient id or a saved conversation link therefore grants nothing.
+    const actorEligibility = {
+      eligible: actorCheck.eligible,
+      verified: actorCheck.verified,
+      account_type: actorCheck.account_type,
+      status: actorCheck.status,
+      classification: actorCheck.classification,
+      reason: actorCheck.reason,
+      blockers: actorCheck.blockers,
+    };
+
+    if (action !== "context" && !actorCheck.eligible) {
+      await logAccountAudit(base44, {
+        userId: user.id,
+        accountType: actorCheck.account_type,
+        accountName: actorCheck.display_name,
+        email: user.email || "",
+        action: "messaging_blocked",
+        actionLabel: "rejected a messaging action from an ineligible account",
+        detail: `${action}: ${actorCheck.reason}`,
+        actorUserId: user.id,
+        actorName: actor.displayName,
+        actorRole: actor.role,
+      });
+      return Response.json(eligibilityDenial(actorCheck), { status: 403 });
+    }
+
+    // The other party of a conversation must still be eligible right now — a
+    // conversation that exists gives no ongoing right to message an account that
+    // has since been suspended or lost verification.
+    const counterpartEligibility = async (thread) => {
+      const channel = threadChannel(thread);
+      const ids = [];
+      if (channel === "doctor") {
+        const peerId = thread.doctor_user_id === user.id ? thread.peer_doctor_user_id : thread.doctor_user_id;
+        if (peerId && peerId !== user.id) ids.push(peerId);
+      } else if (channel === "patient") {
+        if (thread.patient_user_id && thread.patient_user_id !== user.id) ids.push(thread.patient_user_id);
+      } else if (actor.role === "doctor") {
+        if (thread.hospital_user_id) ids.push(thread.hospital_user_id);
+      } else if (actor.role === "hospital") {
+        if (thread.doctor_user_id) ids.push(thread.doctor_user_id);
+      }
+      for (const id of ids) {
+        const evaluation = await evaluateAccount(base44, id);
+        if (!evaluation.eligible) return evaluation;
+      }
+      return null;
+    };
+
+    const rejectCounterpart = async (evaluation, threadId) => {
+      await logAccountAudit(base44, {
+        userId: evaluation.user_id,
+        accountType: evaluation.account_type,
+        accountName: evaluation.display_name,
+        action: "security_rejection",
+        actionLabel: "blocked a message involving an ineligible account",
+        detail: evaluation.reason,
+        actorUserId: user.id,
+        actorName: actor.displayName,
+        actorRole: actor.role,
+      });
+      await logMessageAudit(base44, {
+        thread: { id: threadId || "" },
+        actorUserId: user.id,
+        actorName: actor.displayName,
+        actorRole: actor.role,
+        action: "send_blocked",
+        actionLabel: "blocked a message to an account that is no longer eligible",
+        detail: `${evaluation.account_type}: ${evaluation.reason}`,
+      });
+      return Response.json(
+        { error: `This conversation cannot continue: ${evaluation.reason}`, code: "RECIPIENT_INELIGIBLE" },
+        { status: 403 }
+      );
+    };
+
     // Actions a patient account may ever reach. Everything else is refused
     // before any handler runs — a patient cannot compose, reply or manage.
     const PATIENT_ACTIONS = ["context", "listThreads", "thread", "attachmentUrl", "notifications", "markNotificationsRead"];
@@ -217,9 +309,25 @@ export default async function (req) {
             specialization: actor.doctor.specialization || "",
           });
         }
+        // Only hospitals that are institutionally verified, approved by AMedix
+        // administration and active may be written to — a hospital that is
+        // pending, suspended or unregistered never appears as a recipient.
+        const hospitalIndex = await buildEligibilityIndex(base44);
+        const verifiedHospitals = hospitals
+          .map((h) => {
+            const evaluation = h.hospital_user_id ? hospitalIndex.evaluations.get(h.hospital_user_id) : null;
+            return {
+              ...h,
+              verified: !!evaluation && evaluation.eligible,
+              verification_reason: evaluation ? evaluation.reason : "No eligible hospital account",
+            };
+          })
+          .filter((h) => h.verified);
+
         return Response.json({
           actor: publicActor(),
-          hospitals,
+          eligibility: actorEligibility,
+          hospitals: verifiedHospitals,
           unread,
           staff: [],
           departments: [],
@@ -229,6 +337,7 @@ export default async function (req) {
       if (actor.role === "patient") {
         return Response.json({
           actor: publicActor(),
+          eligibility: actorEligibility,
           hospitals: [],
           departments: [],
           staff: [],
@@ -445,19 +554,23 @@ export default async function (req) {
         return Response.json({ error: "Only verified doctors can use doctor-to-doctor messaging." }, { status: 403 });
       }
       const search = cleanText(body.search, 80).toLowerCase();
-      const rows = await queryRows(base44, "DoctorProfile", { is_verified: true }, { limit: 500 });
-      const doctors = rows
-        .filter((d) => d.user_id && d.user_id !== user.id)
-        .filter((d) => !search || [d.full_name, d.specialization, d.hospital].join(" ").toLowerCase().includes(search))
+      const index = await buildEligibilityIndex(base44);
+      const doctors = eligibleEvaluations(index, "doctor")
+        .filter((e) => e.user_id !== user.id)
+        .filter((e) => {
+          if (!search) return true;
+          const d = e.doctor || {};
+          return [d.full_name, d.specialization, d.hospital].join(" ").toLowerCase().includes(search);
+        })
         .slice(0, 40)
-        .map((d) => ({
-          doctor_id: d.id,
-          doctor_user_id: d.user_id,
-          full_name: d.full_name,
-          specialization: d.specialization || "",
-          hospital: d.hospital || "",
-          photo_url: d.photo_url || "",
-          verified: d.is_verified === true,
+        .map((e) => ({
+          doctor_id: e.profiles.doctor_id,
+          doctor_user_id: e.user_id,
+          full_name: e.doctor.full_name,
+          specialization: e.doctor.specialization || "",
+          hospital: e.doctor.hospital || "",
+          photo_url: e.doctor.photo_url || "",
+          verified: true,
         }));
       return Response.json({ doctors });
     }
@@ -480,8 +593,12 @@ export default async function (req) {
         }
       }
       const search = cleanText(body.search, 80).toLowerCase();
+      const index = await buildEligibilityIndex(base44);
       const patients = profiles
-        .filter((p) => p.user_id)
+        .filter((p) => {
+          const evaluation = p.user_id ? index.evaluations.get(p.user_id) : null;
+          return !!evaluation && evaluation.eligible && evaluation.account_type === "patient";
+        })
         .filter((p) => !search || [p.full_name, p.cin].join(" ").toLowerCase().includes(search))
         .sort((a, b) => String(a.full_name || "").localeCompare(String(b.full_name || "")))
         .slice(0, 200)
@@ -529,6 +646,8 @@ export default async function (req) {
         if (existingChannel === "doctor" && actor.role !== "doctor") {
           return Response.json({ error: "Only doctors can write in this conversation." }, { status: 403 });
         }
+        const counterpart = await counterpartEligibility(thread);
+        if (counterpart) return rejectCounterpart(counterpart, thread.id);
       } else if (requestedChannel === "doctor") {
         // ---- doctor ↔ doctor: both accounts must be verified ----
         if (actor.role !== "doctor") return Response.json({ error: "Doctor access required." }, { status: 403 });
@@ -543,6 +662,8 @@ export default async function (req) {
         if (!peer || !isVerifiedDoctor(peer)) {
           return Response.json({ error: "That doctor's account is not verified." }, { status: 403 });
         }
+        const peerEvaluation = await evaluateAccount(base44, peerUserId);
+        if (!peerEvaluation.eligible) return rejectCounterpart(peerEvaluation, "");
         const subject = cleanText(body.subject, 200);
         if (!subject) return Response.json({ error: "A conversation subject is required." }, { status: 400 });
 
@@ -597,6 +718,10 @@ export default async function (req) {
         const patientRows = await queryRows(base44, "PatientProfile", { id: patientId }, { limit: 1 });
         const patient = patientRows[0];
         if (!patient || !patient.user_id) return Response.json({ error: "Patient record not found." }, { status: 404 });
+        // The patient must hold a real, verified and active account before any
+        // clinical instruction is delivered to them.
+        const patientEvaluation = await evaluateAccount(base44, patient.user_id);
+        if (!patientEvaluation.eligible) return rejectCounterpart(patientEvaluation, "");
         const link = await findCareLink(base44, actor.doctorId, patientId);
         if (!link) {
           await logMessageAudit(base44, {
@@ -685,6 +810,13 @@ export default async function (req) {
             return Response.json({ error: "That doctor is not actively affiliated with your hospital." }, { status: 403 });
           }
         }
+
+        // The other party of a new hospital conversation must be eligible too.
+        const hospitalCounterpart = await evaluateAccount(
+          base44,
+          actor.role === "doctor" ? affiliation.hospital_user_id : affiliation.doctor_user_id
+        );
+        if (!hospitalCounterpart.eligible) return rejectCounterpart(hospitalCounterpart, "");
 
         const participants = participantsFor(affiliation.doctor_user_id, affiliation.hospital_user_id, null);
         thread = await base44.asServiceRole.entities.MessageThread.create({
@@ -1083,7 +1215,14 @@ export default async function (req) {
       if (scope === "department" && !department) return Response.json({ error: "Select the department to notify." }, { status: 400 });
 
       const affiliations = await queryRows(base44, "HospitalDoctor", { hospital_user_id: actor.hospitalUserId, status: "active" }, { limit: 300 });
-      const targets = affiliations.filter((a) => (scope === "department" ? a.specialization === department : true)).slice(0, 150);
+      const index = await buildEligibilityIndex(base44);
+      const targets = affiliations
+        .filter((a) => {
+          const evaluation = a.doctor_user_id ? index.evaluations.get(a.doctor_user_id) : null;
+          return !!evaluation && evaluation.eligible;
+        })
+        .filter((a) => (scope === "department" ? a.specialization === department : true))
+        .slice(0, 150);
       if (targets.length === 0) return Response.json({ error: "No affiliated doctors match that audience." }, { status: 400 });
 
       const stamp = now();
@@ -1177,14 +1316,20 @@ export default async function (req) {
     if (action === "directory") {
       if (actor.role !== "hospital") return Response.json({ error: "Hospital access required." }, { status: 403 });
       const affiliations = await queryRows(base44, "HospitalDoctor", { hospital_user_id: actor.hospitalUserId, status: "active" }, { limit: 500 });
-      const doctors = affiliations.map((a) => ({
-        doctor_id: a.doctor_id,
-        doctor_user_id: a.doctor_user_id,
-        doctor_name: a.doctor_name,
-        specialization: a.specialization || "",
-        department: a.specialization || "",
-        joined_datetime: a.joined_datetime || "",
-      }));
+      const index = await buildEligibilityIndex(base44);
+      const doctors = affiliations
+        .filter((a) => {
+          const evaluation = a.doctor_user_id ? index.evaluations.get(a.doctor_user_id) : null;
+          return !!evaluation && evaluation.eligible;
+        })
+        .map((a) => ({
+          doctor_id: a.doctor_id,
+          doctor_user_id: a.doctor_user_id,
+          doctor_name: a.doctor_name,
+          specialization: a.specialization || "",
+          department: a.specialization || "",
+          joined_datetime: a.joined_datetime || "",
+        }));
       return Response.json({ doctors });
     }
 
@@ -1208,6 +1353,25 @@ export default async function (req) {
       if (!email || !department) return Response.json({ error: "Email and department are required." }, { status: 400 });
       if (email === String(user.email || "").toLowerCase()) {
         return Response.json({ error: "You already manage this hospital." }, { status: 400 });
+      }
+      // A designated staff member gains access to hospital conversations, so an
+      // account already behind that email must itself be active and not a test
+      // or flagged account.
+      let staffAccount = null;
+      try {
+        const rows = await base44.asServiceRole.entities.User.filter({ email }, { limit: 1 });
+        staffAccount = (Array.isArray(rows) ? rows : rows.items || [])[0] || null;
+      } catch (err) {
+        staffAccount = null;
+      }
+      if (staffAccount) {
+        const staffEvaluation = await evaluateAccount(base44, staffAccount.id);
+        if (staffEvaluation.status !== "active" || staffEvaluation.classification === "test_account") {
+          return Response.json(
+            { error: `That account cannot be designated as messaging staff: ${staffEvaluation.reason}` },
+            { status: 403 }
+          );
+        }
       }
       const existing = await queryRows(base44, "HospitalMessagingStaff", { hospital_user_id: actor.hospitalUserId, email }, { limit: 1 });
       if (existing.length > 0) {

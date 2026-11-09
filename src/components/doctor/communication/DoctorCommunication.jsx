@@ -1,6 +1,6 @@
 import React from "react";
 import { Users, MessageSquare, Calendar, CornerUpRight } from "lucide-react";
-import DoctorColleagues from "@/components/doctor/colleagues/DoctorColleagues";
+import FindDoctors from "@/components/doctor/colleagues/FindDoctors";
 import DoctorMessages from "@/components/doctor/messaging/DoctorMessages";
 import DoctorAppointments from "@/components/doctor/DoctorAppointments";
 import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLetters";
@@ -9,7 +9,7 @@ import DoctorReferralLetters from "@/components/doctor/referral/DoctorReferralLe
 // communicates through — colleagues, messages, appointments and referrals —
 // so none of them is repeated anywhere else in the portal navigation.
 const TABS = [
-  { key: "colleagues", label: "Colleagues", icon: Users },
+  { key: "colleagues", label: "Find Doctors", icon: Users },
   { key: "messages", label: "Messages", icon: MessageSquare },
   { key: "appointments", label: "Appointments", icon: Calendar },
   { key: "referrals", label: "Referrals", icon: CornerUpRight },
@@ -52,7 +52,7 @@ export default function DoctorCommunication({ profile, hospitalSession, tab = "m
         })}
       </div>
 
-      {active === "colleagues" && profile && <DoctorColleagues doctorProfile={profile} />}
+      {active === "colleagues" && profile && <FindDoctors profile={profile} />}
       {active === "messages" && profile && (
         <DoctorMessages profile={profile} hospitalSession={hospitalSession} />
       )}
