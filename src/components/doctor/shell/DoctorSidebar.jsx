@@ -4,9 +4,9 @@ import BrandLogo from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
 
-// The Doctor Portal sidebar — navy navigation rail with the AMedix lockup, the
-// doctor's sections (some grouped into expandable menus), then Settings, Help &
-// Support and the red Log Out action. Used on desktop and inside the mobile
+// The Doctor Portal sidebar — light blue navigation rail with the AMedix lockup,
+// the doctor's sections (some grouped into expandable menus), then Settings, Help
+// & Support and the red Log Out action. Used on desktop and inside the mobile
 // drawer alike, so both always show exactly the same navigation.
 const isGroup = (item) => Array.isArray(item.items) && item.items.length > 0;
 const groupContains = (item, key) => isGroup(item) && item.items.some((c) => c.key === key);
@@ -46,7 +46,7 @@ export default function DoctorSidebar({ navItems = [], activeKey, activeView, on
         onClick={() => handleClick(item)}
         aria-current={isActive ? "page" : undefined}
         className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-          isActive ? "bg-doctor-blue text-white shadow-sm" : "text-white/75 hover:bg-white/10 hover:text-white"
+          isActive ? "bg-doctor-blue text-white shadow-sm" : "text-primary/75 hover:bg-white hover:text-primary"
         }`}
       >
         {Icon ? <Icon className="h-[18px] w-[18px] shrink-0" /> : null}
@@ -66,7 +66,7 @@ export default function DoctorSidebar({ navItems = [], activeKey, activeView, on
           onClick={() => toggleGroup(item.key)}
           aria-expanded={isOpen}
           className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-            hasActive ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"
+            hasActive ? "bg-white text-primary shadow-sm" : "text-primary/75 hover:bg-white hover:text-primary"
           }`}
         >
           {Icon ? <Icon className="h-[18px] w-[18px] shrink-0" /> : null}
@@ -84,7 +84,7 @@ export default function DoctorSidebar({ navItems = [], activeKey, activeView, on
                     onClick={() => handleClick(child)}
                     aria-current={childActive ? "page" : undefined}
                     className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[13px] transition-colors ${
-                      childActive ? "bg-doctor-blue font-semibold text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+                      childActive ? "bg-doctor-blue font-semibold text-white" : "text-primary/60 hover:bg-white hover:text-primary"
                     }`}
                   >
                     <span className="truncate">{t(child.label)}</span>
@@ -99,12 +99,12 @@ export default function DoctorSidebar({ navItems = [], activeKey, activeView, on
   };
 
   return (
-    <div className="flex h-full flex-col bg-doctor-navy">
+    <div className="flex h-full flex-col bg-doctor-rail">
       <div className="flex items-center gap-3 px-5 py-5">
         <BrandLogo fittingType="fill" className="h-11 w-11 shrink-0 rounded-full" />
         <div className="min-w-0">
-          <p className="truncate text-xl font-bold leading-none tracking-tight text-white">AMedix</p>
-          <p className="mt-1 truncate text-[11px] font-medium leading-none text-white/60">{t(subtitle)}</p>
+          <p className="truncate text-xl font-bold leading-none tracking-tight text-primary">AMedix</p>
+          <p className="mt-1 truncate text-[11px] font-medium leading-none text-primary/60">{t(subtitle)}</p>
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export default function DoctorSidebar({ navItems = [], activeKey, activeView, on
         {navItems.map((item) => (isGroup(item) ? renderGroup(item) : renderLeaf(item)))}
       </nav>
 
-      <div className="space-y-3 border-t border-white/10 px-3 py-4">
+      <div className="space-y-3 border-t border-primary/10 px-3 py-4">
         {sidebarAction}
         <div className="flex justify-center">
           <AppLanguageSwitcher />

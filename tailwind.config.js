@@ -66,7 +66,7 @@ module.exports = {
   				ring: 'hsl(var(--sidebar-ring))'
   			},
   			doctor: {
-  				navy: 'hsl(var(--doctor-navy))',
+  				rail: 'hsl(var(--doctor-rail))',
   				blue: 'hsl(var(--doctor-blue))',
   				surface: 'hsl(var(--doctor-surface))',
   				danger: 'hsl(var(--doctor-danger))',

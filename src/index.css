@@ -127,9 +127,9 @@
     --accent-pharmacy: 142 72% 29%;
     --accent-hospital: 215 25% 27%;
     --accent-insurance: 262 83% 58%;
-    /* Doctor Portal shell — dark navy navigation, action blue, action red */
-    /* #0B1626 */
-    --doctor-navy: 216 54% 10%;
+    /* Doctor Portal shell — light blue navigation rail, action blue, action red */
+    /* #E7F3FD */
+    --doctor-rail: 210 80% 95%;
     /* #2A7EFF */
     --doctor-blue: 216 100% 58%;
     /* #F8FAFD */

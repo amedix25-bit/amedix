@@ -43,15 +43,15 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className={`hidden lg:flex ${sidebarWidth} flex-col border-r rtl:border-l rtl:border-r-0 ${navy ? "bg-doctor-navy border-transparent" : "bg-sidebar border-border"}`}>
+      <aside className={`hidden lg:flex ${sidebarWidth} flex-col border-r rtl:border-l rtl:border-r-0 ${navy ? "bg-doctor-rail border-primary/10" : "bg-sidebar border-border"}`}>
         {renderSidebarContent()}
       </aside>
 
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <aside className={`relative ${sidebarWidth} flex flex-col ${navy ? "bg-doctor-navy" : "bg-sidebar"}`}>
-            <button onClick={() => setSidebarOpen(false)} className={`absolute top-4 right-4 z-10 ${navy ? "text-white/70" : "text-muted-foreground"}`}>
+          <aside className={`relative ${sidebarWidth} flex flex-col ${navy ? "bg-doctor-rail" : "bg-sidebar"}`}>
+            <button onClick={() => setSidebarOpen(false)} className={`absolute top-4 right-4 z-10 ${navy ? "text-primary/70" : "text-muted-foreground"}`}>
               <X className="w-5 h-5" />
             </button>
             {renderSidebarContent(() => setSidebarOpen(false))}
@@ -60,13 +60,13 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className={`lg:hidden flex items-center justify-between border-b px-4 py-3 ${navy ? "bg-doctor-navy border-white/10" : "border-border"}`}>
-          <button onClick={() => setSidebarOpen(true)} className={navy ? "text-white/80" : "text-muted-foreground"}>
+        <header className={`lg:hidden flex items-center justify-between border-b px-4 py-3 ${navy ? "bg-doctor-rail border-primary/10" : "border-border"}`}>
+          <button onClick={() => setSidebarOpen(true)} className={navy ? "text-primary/80" : "text-muted-foreground"}>
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
             <Logo fittingType="fill" className={navy ? "w-8 h-8 rounded-full" : "w-9 h-9 rounded-full"} />
-            <span className={`font-bold text-sm ${navy ? "text-white" : ""}`}>AMedix</span>
+            <span className={`font-bold text-sm ${navy ? "text-primary" : ""}`}>AMedix</span>
           </div>
           <AppLanguageSwitcher />
         </header>
@@ -88,7 +88,7 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
     const Icon = item.icon;
     const isActive = item.key === activeKey;
     const activeCls = navy ? "bg-doctor-blue text-white shadow-sm" : accentCfg.activeNav;
-    const idleCls = navy ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-sidebar-foreground hover:bg-sidebar-accent";
+    const idleCls = navy ? "text-primary/70 hover:bg-white hover:text-primary" : "text-sidebar-foreground hover:bg-sidebar-accent";
     return (
       <button
         key={item.key}
@@ -100,7 +100,7 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
         <Icon className="w-5 h-5 shrink-0" />
         <span className="truncate">{t(item.label)}</span>
         {item.badge > 0 ? (
-          <span className={`ml-auto rtl:mr-auto rtl:ml-0 shrink-0 rounded-full border px-1.5 text-[10px] font-semibold ${navy ? "border-white/30 bg-white/15 text-white" : "border-critical/30 bg-critical/10 text-critical"}`}>
+          <span className={`ml-auto rtl:mr-auto rtl:ml-0 shrink-0 rounded-full border px-1.5 text-[10px] font-semibold ${navy ? "border-primary/20 bg-white text-primary" : "border-critical/30 bg-critical/10 text-critical"}`}>
             {item.badge > 99 ? "99+" : item.badge}
           </span>
         ) : isActive ? (
@@ -111,13 +111,13 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
   };
   return (
     <>
-      <div className={`p-6 border-b ${navy ? "border-white/10" : "border-sidebar-border"}`}>
+      <div className={`p-6 border-b ${navy ? "border-primary/10" : "border-sidebar-border"}`}>
         <div className="flex items-center gap-4">
           <Logo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
           <div className="min-w-0">
-            <span className={`font-bold text-2xl tracking-tight leading-tight block ${navy ? "text-white" : ""}`}>AMedix</span>
+            <span className={`font-bold text-2xl tracking-tight leading-tight block ${navy ? "text-primary" : ""}`}>AMedix</span>
             {roleLabel && (
-              <p className={`text-xs font-medium ${navy ? "text-white/60" : accentCfg.heading}`}>
+              <p className={`text-xs font-medium ${navy ? "text-primary/60" : accentCfg.heading}`}>
                 {t(roleLabel)}
               </p>
             )}
@@ -129,7 +129,7 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
         {navGroups
           ? navGroups.map((group) => (
               <div key={group.title} className="pb-2">
-                <p className={`px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${navy ? "text-white/40" : "text-muted-foreground"}`}>
+                <p className={`px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${navy ? "text-primary/50" : "text-muted-foreground"}`}>
                   {t(group.title)}
                 </p>
                 <div className="space-y-1">{group.items.map(renderItem)}</div>
@@ -138,7 +138,7 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
           : (navItems || []).map(renderItem)}
       </nav>
 
-      <div className={`p-4 border-t space-y-3 ${navy ? "border-white/10" : "border-sidebar-border"}`}>
+      <div className={`p-4 border-t space-y-3 ${navy ? "border-primary/10" : "border-sidebar-border"}`}>
         {sidebarAction}
         <div className="flex justify-center">
           <AppLanguageSwitcher />
