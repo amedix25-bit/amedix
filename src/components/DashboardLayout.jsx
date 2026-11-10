@@ -113,9 +113,9 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
     <>
       <div className={`p-6 border-b ${navy ? "border-primary/10" : "border-sidebar-border"}`}>
         <div className="flex items-center gap-4">
-          <Logo fittingType="fill" className="w-20 h-20 rounded-full shrink-0" />
+          <Logo className="w-24 h-24 shrink-0" />
           <div className="min-w-0">
-            <span className={`font-bold text-2xl tracking-tight leading-tight block ${navy ? "text-primary" : ""}`}>AMedix</span>
+            <span className={`font-bold text-3xl tracking-tight leading-tight block ${navy ? "text-primary" : ""}`}>AMedix</span>
             {roleLabel && (
               <p className={`text-xs font-medium ${navy ? "text-primary/60" : accentCfg.heading}`}>
                 {t(roleLabel)}
