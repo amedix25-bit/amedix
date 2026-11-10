@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // inside its DNA helix ring. It is shown exactly as supplied wherever the app
 // displays its brand mark, in a rounded tile.
 export const AMEDIX_LOGO_URL =
-  "https://base44.app/api/apps/6a9ea24b809f9bb40f0d02bf/files/mp/public/6a9ea24b809f9bb40f0d02bf/c7516d19e_amedix-logo.png";
+  "https://base44.app/api/apps/6a9ea24b809f9bb40f0d02bf/files/mp/public/6a9ea24b809f9bb40f0d02bf/3d9813788_amedix-logo-original.png";
 
 export default function BrandLogo({ className, fittingType = "fit" }) {
   return (
