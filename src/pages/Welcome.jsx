@@ -40,7 +40,7 @@ export default function Welcome() {
           src={AMEDIX_LOGO_URL}
           alt=""
           fittingType="fill"
-          className="h-full w-full opacity-[0.15] mix-blend-multiply dark:invert dark:hue-rotate-180 dark:mix-blend-screen" />
+          className="h-full w-full opacity-[0.15]" />
         
       </div>
 
