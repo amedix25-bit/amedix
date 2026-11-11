@@ -6,6 +6,10 @@ import {
   notifyHospital,
   registrationReference,
 } from "../../shared/hospitalAuthorization.ts";
+import {
+  consumeAdministrationCode,
+  resolveAdministrationCode,
+} from "../../shared/registrationCodes.ts";
 
 const DEFAULT_PAYMENT_METHODS = ["Cash", "Card", "Bank Transfer"];
 
@@ -43,6 +47,17 @@ export default async function (req) {
     }
     if (!licenseUri) {
       return Response.json({ error: 'The hospital registration / licence document is required for verification.' }, { status: 400 });
+    }
+
+    // Mandatory AMedix Administration Code — re-validated here, server-side, so
+    // a hospital can never reach registration without one issued for hospitals.
+    const resolvedCode = await resolveAdministrationCode(base44, {
+      code: body.registration_code,
+      institutionType: 'hospital',
+      actor: { user_id: user.id, name: hospitalName, role: 'hospital' },
+    });
+    if (!resolvedCode.ok) {
+      return Response.json({ error: resolvedCode.error }, { status: resolvedCode.status });
     }
 
     const profiles = await base44.asServiceRole.entities.HospitalProfile.filter({ user_id: user.id });
@@ -104,6 +119,13 @@ export default async function (req) {
           detail: `Reference ${reference}`,
         }),
       ],
+    });
+
+    await consumeAdministrationCode(base44, {
+      record: resolvedCode.record,
+      user,
+      institutionId: profile.id,
+      actor: { user_id: user.id, name: hospitalName, role: 'hospital' },
     });
 
     const safeName = escapeHtml(hospitalName);

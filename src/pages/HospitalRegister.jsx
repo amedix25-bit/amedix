@@ -5,12 +5,19 @@ import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, FileText, Loader2, Mail, MapPin, Phone, ShieldCheck, Upload } from "lucide-react";
+import { Building2, FileText, KeyRound, Loader2, Mail, MapPin, Phone, ShieldCheck, Upload } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "@/components/ui/use-toast";
+import InstitutionCodeGate from "@/components/registration/InstitutionCodeGate";
+import RegistrationProgress from "@/components/registration/RegistrationProgress";
+
+const STEPS = ["Administration Code", "Email Verification", "Hospital Information", "AMedix Approval"];
 
 export default function HospitalRegister({ embedded = false }) {
   const [form, setForm] = useState({ hospital_name: "", location: "", phone: "", email: "", password: "", confirm: "" });
+  // The AMedix Administration Code verified before anything else. It is sent
+  // with the submission and validated again server-side.
+  const [codeInfo, setCodeInfo] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [licenseFile, setLicenseFile] = useState(null);
@@ -95,6 +102,7 @@ export default function HospitalRegister({ embedded = false }) {
       // hospital cannot create either of them itself, and it can never set its
       // own approval or activation state.
       const res = await base44.functions.invoke("hospitalRegistrationSubmit", {
+        registration_code: codeInfo?.code || "",
         hospital_name: form.hospital_name.trim(),
         location: form.location.trim(),
         phone: form.phone.trim(),
@@ -118,6 +126,29 @@ export default function HospitalRegister({ embedded = false }) {
       setError(err.message || "Failed to resend code");
     }
   };
+
+  // Step 1 — mandatory AMedix Administration Code, before any email address is
+  // entered and before any verification code can be sent.
+  if (!codeInfo) {
+    return (
+      <AuthLayout
+        embedded={embedded}
+        icon={KeyRound}
+        title="Register Your Hospital with AMedix"
+        subtitle="Step 1 of 4 · AMedix Administration Code"
+        footer={
+          <>
+            Already have a hospital account?{" "}
+            <Link to="/hospital" className="text-primary font-medium hover:underline">
+              Log in
+            </Link>
+          </>
+        }
+      >
+        <InstitutionCodeGate institutionType="hospital" onValidated={setCodeInfo} />
+      </AuthLayout>
+    );
+  }
 
   if (submitted) {
     return (
@@ -204,6 +235,7 @@ export default function HospitalRegister({ embedded = false }) {
       }
     >
       {error && <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+      <RegistrationProgress steps={STEPS} current={2} />
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="hospital_name">Hospital Name *</Label>

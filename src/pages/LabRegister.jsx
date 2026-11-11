@@ -5,16 +5,39 @@ import AuthLayout from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, Loader2, Mail, MapPin, MessageCircle, Phone, Upload } from "lucide-react";
+import { Building2, KeyRound, Loader2, Mail, MapPin, MessageCircle, Phone, ShieldCheck, Upload } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "@/components/ui/use-toast";
+import InstitutionCodeGate from "@/components/registration/InstitutionCodeGate";
+import InstitutionRegistrationFields from "@/components/registration/InstitutionRegistrationFields";
+import RegistrationProgress from "@/components/registration/RegistrationProgress";
 
 const PHONE_PATTERN = /^\+?[0-9\s-]{7,15}$/;
+const STEPS = ["Administration Code", "Email Verification", "Laboratory Information", "AMedix Approval"];
 
 export default function LabRegister({ embedded = false }) {
-  const [form, setForm] = useState({ lab_name: "", address: "", phone: "", whatsapp_number: "", email: "", password: "", confirm: "" });
+  const [form, setForm] = useState({
+    lab_name: "",
+    address: "",
+    phone: "",
+    whatsapp_number: "",
+    registration_number: "",
+    license_number: "",
+    responsible_person_name: "",
+    responsible_person_license: "",
+    administrator_name: "",
+    administrator_phone: "",
+    email: "",
+    password: "",
+    confirm: "",
+  });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [licenseFile, setLicenseFile] = useState(null);
+  // The AMedix Administration Code verified before any email is entered, and
+  // the pending registration returned by the server.
+  const [codeInfo, setCodeInfo] = useState(null);
+  const [submitted, setSubmitted] = useState(null);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [error, setError] = useState("");
@@ -45,6 +68,11 @@ export default function LabRegister({ embedded = false }) {
     if (!PHONE_PATTERN.test(form.phone.trim())) return "Please enter a valid phone number";
     if (!PHONE_PATTERN.test(form.whatsapp_number.trim())) return "Please enter a valid WhatsApp number";
     if (!logoFile) return "Please upload a profile picture or laboratory logo";
+    if (!form.registration_number.trim()) return "The laboratory registration number is required";
+    if (!form.license_number.trim()) return "The laboratory licence number is required";
+    if (!form.responsible_person_name.trim()) return "The responsible laboratory director is required";
+    if (!form.administrator_name.trim()) return "The authorised administrator is required";
+    if (!licenseFile) return "Please upload the laboratory licence document for verification";
     if (form.password !== form.confirm) return "Passwords do not match";
     if (form.password.length < 6) return "Password must be at least 6 characters";
     return null;
@@ -74,28 +102,33 @@ export default function LabRegister({ embedded = false }) {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
-      const user = await base44.auth.me();
+      const uploadRes = await base44.integrations.Core.UploadPublicFile({ file: logoFile });
+      const licenseRes = await base44.integrations.Core.UploadPrivateFile({ file: licenseFile });
 
-      // Upload the laboratory logo and generate the unique A&M Lab Number
-      const uploadRes = await base44.integrations.Core.UploadFile({ file: logoFile });
-      const numberRes = await base44.functions.invoke("generateLabNumber", {});
-      const labNumber = numberRes.data.lab_number;
-
-      await base44.entities.LaboratoryProfile.create({
-        user_id: user.id,
-        lab_name: form.lab_name.trim(),
-        lab_number: labNumber,
+      // The registration is recorded server-side against the AMedix
+      // Administration Code and stays PENDING. No laboratory profile is created
+      // here, and the institution gains no access until AMedix administration
+      // approves and activates it.
+      const res = await base44.functions.invoke("institutionRegistrationSubmit", {
+        institution_type: "laboratory",
+        registration_code: codeInfo?.code || "",
+        legal_name: form.lab_name.trim(),
+        registration_number: form.registration_number.trim(),
+        license_number: form.license_number.trim(),
         address: form.address.trim(),
         phone: form.phone.trim(),
         whatsapp_number: form.whatsapp_number.trim(),
-        email: form.email,
+        responsible_person_name: form.responsible_person_name.trim(),
+        responsible_person_license: (form.responsible_person_license || "").trim(),
+        administrator_name: form.administrator_name.trim(),
+        administrator_email: form.email,
+        administrator_phone: (form.administrator_phone || "").trim(),
         logo_url: uploadRes.file_url,
+        license_file_uri: licenseRes.file_uri,
+        license_file_name: licenseFile?.name || "",
       });
-      toast({
-        title: "Laboratory account created",
-        description: `Your A&M Lab Number is ${labNumber}`,
-      });
-      window.location.href = "/lab-portal";
+      setSubmitted(res.data);
+      setLoading(false);
     } catch (err) {
       setError(err.message || "Invalid verification code");
       setLoading(false);
@@ -112,10 +145,63 @@ export default function LabRegister({ embedded = false }) {
     }
   };
 
+  // Step 1 — mandatory AMedix Administration Code, before any email address is
+  // entered and before any verification code can be sent.
+  if (!codeInfo) {
+    return (
+      <AuthLayout
+        embedded={embedded}
+        icon={KeyRound}
+        title="Register Your Laboratory with AMedix"
+        subtitle="Step 1 of 4 · AMedix Administration Code"
+        footer={
+          <>
+            Already have a laboratory account?{" "}
+            <Link to="/lab" className="text-primary font-medium hover:underline">
+              Log in
+            </Link>
+          </>
+        }
+      >
+        <InstitutionCodeGate institutionType="laboratory" onValidated={setCodeInfo} />
+      </AuthLayout>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <AuthLayout
+        embedded={embedded}
+        icon={ShieldCheck}
+        title="Pending AMedix approval"
+        subtitle="Your laboratory registration has been submitted"
+      >
+        <div className="space-y-4 text-sm">
+          <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+            <p className="font-medium">Reference: {submitted.reference || "—"}</p>
+            <p className="mt-1 text-foreground/80">
+              AMedix administration is reviewing {form.lab_name} and the licence you submitted. The laboratory stays
+              inactive and cannot receive laboratory requests, submit results, or access patient records until it is
+              approved and activated.
+            </p>
+          </div>
+          <Button className="w-full h-12 font-medium" onClick={() => (window.location.href = "/lab-portal")}>
+            Go to laboratory portal
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            The reviewing administrator opens your licence through a secure private link. Approval is recorded in your
+            laboratory account.
+          </p>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   if (showOtp) {
     return (
       <AuthLayout embedded={embedded} icon={Mail} title="Verify your email" subtitle={`We sent a code to ${form.email}`}>
         {error && <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+        <RegistrationProgress steps={STEPS} current={1} />
         <div className="flex justify-center mb-6">
           <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode} autoFocus autoComplete="one-time-code">
             <InputOTPGroup>
@@ -168,9 +254,10 @@ export default function LabRegister({ embedded = false }) {
       }
     >
       {error && <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
+      <RegistrationProgress steps={STEPS} current={2} />
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="lab_name">Company / Laboratory Name *</Label>
+          <Label htmlFor="lab_name">Legal Laboratory Name *</Label>
           <Input
             id="lab_name"
             placeholder="e.g. Tripoli Medical Laboratory"
@@ -248,6 +335,14 @@ export default function LabRegister({ embedded = false }) {
             />
           </div>
         </div>
+        <InstitutionRegistrationFields
+          values={form}
+          onChange={(key, value) => setForm((s) => ({ ...s, [key]: value }))}
+          licenseFile={licenseFile}
+          onLicenseFile={setLicenseFile}
+          responsibleLabel="Responsible Laboratory Director"
+          responsiblePlaceholder="Full name of the laboratory director"
+        />
         <div className="space-y-2">
           <Label htmlFor="email">Email *</Label>
           <Input

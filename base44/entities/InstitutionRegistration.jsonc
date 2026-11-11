@@ -1,0 +1,171 @@
+{
+  "name": "InstitutionRegistration",
+  "type": "object",
+  "properties": {
+    "institution_type": {
+      "type": "string",
+      "enum": [
+        "laboratory",
+        "pharmacy"
+      ],
+      "enumColors": [
+        "purple",
+        "green"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "suspended"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red",
+        "gray"
+      ],
+      "default": "pending",
+      "description": "PENDING: submitted, awaiting AMedix administration review \u2014 the institution is not active. APPROVED: reviewed and activated by administration. REJECTED: refused, with the reason recorded. SUSPENDED: withdrawn after approval."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User account that submitted the registration"
+    },
+    "email": {
+      "type": "string",
+      "description": "Verified email of the registering account"
+    },
+    "legal_name": {
+      "type": "string",
+      "description": "Legal business / laboratory / pharmacy name"
+    },
+    "registration_number": {
+      "type": "string",
+      "description": "Commercial / business registration number"
+    },
+    "license_number": {
+      "type": "string",
+      "description": "Laboratory / pharmacy licence number"
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "whatsapp_number": {
+      "type": "string"
+    },
+    "responsible_person_name": {
+      "type": "string",
+      "description": "Responsible laboratory director or responsible pharmacist"
+    },
+    "responsible_person_license": {
+      "type": "string",
+      "description": "Professional licence number of the responsible person"
+    },
+    "administrator_name": {
+      "type": "string",
+      "description": "Authorised administrator of the institution account"
+    },
+    "administrator_email": {
+      "type": "string"
+    },
+    "administrator_phone": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "license_file_uri": {
+      "type": "string",
+      "description": "Private storage URI of the submitted licence document \u2014 opened by administration through a short-lived signed link"
+    },
+    "license_file_name": {
+      "type": "string"
+    },
+    "additional_documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_uri": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_uri",
+          "file_name"
+        ]
+      }
+    },
+    "registration_code_preview": {
+      "type": "string",
+      "description": "Masked AMedix Administration Code that authorised this registration"
+    },
+    "registration_reference": {
+      "type": "string",
+      "description": "Human-readable reference, e.g. IREG-20261111-8F3K"
+    },
+    "submitted_datetime": {
+      "type": "string"
+    },
+    "reviewed_by_user_id": {
+      "type": "string"
+    },
+    "reviewed_by_name": {
+      "type": "string"
+    },
+    "reviewed_datetime": {
+      "type": "string"
+    },
+    "decision_note": {
+      "type": "string",
+      "description": "Reason recorded by administration when the registration is rejected or suspended"
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "LaboratoryProfile / PharmacyProfile id created by the server on approval"
+    }
+  },
+  "required": [
+    "institution_type",
+    "status",
+    "legal_name"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

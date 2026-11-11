@@ -74,14 +74,17 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
     setBusy(true);
     try {
       const res = await base44.functions.invoke("doctorJoinHospital", { code: code.trim(), department: department.trim() });
+      // The hospital must approve the affiliation before clinical access here is
+      // activated — the code alone only creates the request.
       toast({
-        title: "Joined hospital",
-        description: `You are now officially associated with ${res.data.hospital_name}.`,
+        title: res.data.status === "pending" ? "Affiliation request sent" : "Joined hospital",
+        description:
+          res.data.message ||
+          `You are now officially associated with ${res.data.hospital_name}.`,
       });
       setStep("code");
       setCodeInput("");
       setHospitalName("");
-      if (!profile.hospital) onProfileUpdated({ ...profile, hospital: res.data.hospital_name });
       load();
     } catch (err) {
       fail(err);
@@ -107,6 +110,8 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
   };
 
   const active = (assocs || []).filter((a) => a.status === "active");
+  const pending = (assocs || []).filter((a) => a.status === "pending");
+  const rejected = (assocs || []).filter((a) => a.status === "rejected");
   const inactive = (assocs || []).filter((a) => a.status === "deactivated");
   const currentHospital = String(profile.hospital || "").trim().toLowerCase();
 
@@ -173,7 +178,7 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
         <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
           <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading...
         </div>
-      ) : active.length === 0 && inactive.length === 0 ? (
+      ) : active.length === 0 && inactive.length === 0 && pending.length === 0 && rejected.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm">You have not joined any hospital yet. Enter the hospital's AMedix Hospital Code above.</p>
@@ -220,6 +225,32 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
               </div>
             );
           })}
+          {pending.map((a) => (
+            <div key={a.id} className="rounded-xl border border-warning/30 bg-warning/5 p-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-medium truncate">{a.hospital_name}</p>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  {t("Awaiting hospital approval")}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t("Your affiliation request was sent to the hospital administrator. Clinical access at this hospital starts once it is approved.")}
+              </p>
+            </div>
+          ))}
+          {rejected.map((a) => (
+            <div key={a.id} className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-medium truncate">{a.hospital_name}</p>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                  {t("Not approved")}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {a.decision_note || t("The hospital did not approve this affiliation. Contact the hospital administrator.")}
+              </p>
+            </div>
+          ))}
           {inactive.map((a) => (
             <div key={a.id} className="rounded-xl border border-border bg-card p-4 opacity-70">
               <div className="flex items-center gap-2 flex-wrap">

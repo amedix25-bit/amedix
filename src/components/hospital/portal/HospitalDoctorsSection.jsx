@@ -111,6 +111,31 @@ export default function HospitalDoctorsSection({ profile }) {
     }
   };
 
+  // A doctor who joined with this hospital's code is PENDING until the hospital
+  // approves the affiliation. Decided server-side by hospitalDoctorAffiliation.
+  const decideAffiliation = async (a, decision) => {
+    setBusyId(a.id);
+    try {
+      await base44.functions.invoke("hospitalDoctorAffiliation", {
+        association_id: a.id,
+        action: decision,
+        note: decision === "reject" ? "Affiliation not approved by the hospital." : "",
+      });
+      toast({
+        title: decision === "approve" ? t("Affiliation approved") : t("Affiliation rejected"),
+        description:
+          decision === "approve"
+            ? `${a.doctor_name} can now work at your hospital.`
+            : `${a.doctor_name} was not added to your hospital.`,
+      });
+      load();
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -211,12 +236,38 @@ export default function HospitalDoctorsSection({ profile }) {
                             Deactivated
                           </span>
                         )}
+                        {a.status === "pending" && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            {t("Pending your approval")}
+                          </span>
+                        )}
+                        {a.status === "rejected" && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                            {t("Rejected")}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{a.specialization}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {a.status === "active" ? (
+                    {a.status === "pending" ? (
+                      <>
+                        <Button size="sm" onClick={() => decideAffiliation(a, "approve")} disabled={busyId === a.id}>
+                          {busyId === a.id && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                          {t("Approve Affiliation")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive"
+                          onClick={() => decideAffiliation(a, "reject")}
+                          disabled={busyId === a.id}
+                        >
+                          {t("Reject")}
+                        </Button>
+                      </>
+                    ) : a.status === "active" ? (
                       <Button
                         size="sm"
                         variant="outline"

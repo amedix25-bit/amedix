@@ -37,16 +37,37 @@
     "status": {
       "type": "string",
       "enum": [
+        "pending",
         "active",
+        "rejected",
         "deactivated",
         "removed"
       ],
-      "default": "active",
-      "description": "ACTIVE: the doctor is officially associated with the hospital. DEACTIVATED: the hospital paused the association \u2014 it can be reactivated. REMOVED: the association is ended and the doctor immediately loses access to this hospital's patients and information; re-joining requires the hospital code again."
+      "enumColors": [
+        "yellow",
+        "green",
+        "red",
+        "gray",
+        "gray"
+      ],
+      "default": "pending",
+      "description": "PENDING: the doctor entered this hospital's AMedix Hospital Code and is awaiting the hospital administrator's approval \u2014 no clinical access at this hospital until then. ACTIVE: the affiliation is approved and the doctor works here. REJECTED: the hospital declined the affiliation. DEACTIVATED: the hospital paused the association \u2014 it can be approved again. REMOVED: the association is ended and the doctor immediately loses access to this hospital's patients and information; re-joining requires the hospital code again."
     },
     "joined_datetime": {
       "type": "string",
-      "description": "Date and time the doctor joined the hospital (ISO datetime)"
+      "description": "Date and time the doctor requested this affiliation (ISO datetime)"
+    },
+    "decided_datetime": {
+      "type": "string",
+      "description": "Date and time the hospital approved or rejected the affiliation (ISO datetime)"
+    },
+    "decided_by_name": {
+      "type": "string",
+      "description": "Hospital administrator who recorded the decision"
+    },
+    "decision_note": {
+      "type": "string",
+      "description": "Reason recorded by the hospital when the affiliation was rejected, shown to the doctor"
     }
   },
   "required": [

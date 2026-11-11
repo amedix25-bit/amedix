@@ -12,7 +12,9 @@ import AdminPartnerAds from "@/components/admin/partner/AdminPartnerAds";
 import AdminHospitalAuthorizations from "@/components/admin/hospital/AdminHospitalAuthorizations";
 import AdminAccountGovernance from "@/components/admin/accounts/AdminAccountGovernance";
 import AdminIdentityReview from "@/components/admin/identity/AdminIdentityReview";
-import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound, BadgeCheck } from "lucide-react";
+import AdminAccessCodes from "@/components/admin/AdminAccessCodes";
+import AdminInstitutionApprovals from "@/components/admin/AdminInstitutionApprovals";
+import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound, BadgeCheck, ClipboardCheck } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -20,6 +22,8 @@ const navItems = [
   { key: "verification", label: "Doctor Verification", icon: ShieldCheck },
   { key: "identity", label: "Identity Review", icon: BadgeCheck },
   { key: "hospitals", label: "Hospital Approvals", icon: Building2 },
+  { key: "institution_approvals", label: "Institution Approvals", icon: ClipboardCheck },
+  { key: "access_codes", label: "Access Codes", icon: KeyRound },
   { key: "verification_network", label: "Verified Network", icon: KeyRound },
   { key: "lab_panels", label: "Lab Panels", icon: FlaskConical },
   { key: "partner_ads", label: "Partner Ads", icon: Megaphone },
@@ -50,6 +54,8 @@ export default function AdminDashboard() {
         {activeTab === "verification" && <AdminDoctorVerification />}
         {activeTab === "identity" && <AdminIdentityReview />}
         {activeTab === "hospitals" && <AdminHospitalAuthorizations />}
+        {activeTab === "institution_approvals" && <AdminInstitutionApprovals />}
+        {activeTab === "access_codes" && <AdminAccessCodes />}
         {activeTab === "verification_network" && <AdminAccountGovernance />}
         {activeTab === "lab_panels" && <AdminLabPanels />}
         {activeTab === "partner_ads" && <AdminPartnerAds />}

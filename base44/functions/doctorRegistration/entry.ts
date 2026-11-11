@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { isActivated, loadAuthorization } from '../../shared/hospitalAuthorization.ts';
+import { normalizeCode } from '../../shared/registrationCodes.ts';
 
 // Doctor registration that can be started, interrupted and resumed.
 //
@@ -205,7 +207,7 @@ export default async function (req) {
       const middle = clean(body.middle_name, 120);
       const last = clean(body.last_name, 120);
       const specialization = clean(body.specialization, 160);
-      const hospital = clean(body.hospital, 200);
+      let hospital = clean(body.hospital, 200);
       const phone = clean(body.phone, 60);
       const licenseNumber = clean(body.license_number, 80);
       if (!first || !last || !specialization) {
@@ -214,6 +216,24 @@ export default async function (req) {
       if (!licenseNumber) {
         return Response.json({ error: 'Your medical license number is required.' }, { status: 400 });
       }
+
+      // Mandatory AMedix Hospital Code: a doctor may only register through an
+      // approved, active hospital. Re-validated here, server-side, and the name
+      // attached to the profile is the VERIFIED hospital name — never typed text.
+      const hospitalCode = normalizeCode(body.hospital_code);
+      if (!hospitalCode) {
+        return Response.json({ error: 'Enter the AMedix Hospital Code given to you by your hospital.' }, { status: 400 });
+      }
+      const hospitalRows = rows(await base44.asServiceRole.entities.HospitalProfile.filter({ hospital_code: hospitalCode }));
+      const verifiedHospital = hospitalRows[0] || null;
+      if (!verifiedHospital || verifiedHospital.status === 'suspended') {
+        return Response.json({ error: 'This hospital code is not valid. Please check it with your hospital.' }, { status: 401 });
+      }
+      const hospitalAuthorization = await loadAuthorization(base44, verifiedHospital.id);
+      if (!isActivated(hospitalAuthorization)) {
+        return Response.json({ error: 'This hospital has not completed AMedix administrative authorization yet, so its code cannot be used.' }, { status: 403 });
+      }
+      hospital = verifiedHospital.hospital_name;
 
       const drafts = rows(await base44.entities.DoctorRegistrationDraft.filter({ user_id: user.id }));
       const draft = drafts[0] || null;
@@ -237,7 +257,9 @@ export default async function (req) {
         specialization,
         specialties: [specialization],
         license_number: licenseNumber,
-        hospital,
+        // The working hospital is only set once the hospital approves the
+        // affiliation — registration alone grants no clinical access.
+        hospital: '',
         phone,
         is_verified: false,
       });
@@ -251,6 +273,40 @@ export default async function (req) {
         );
       } catch (err) {
         // the profile itself is never rolled back for a link failure
+      }
+
+      // Affiliation request to the hospital whose code was used. It stays
+      // PENDING until that hospital's administrator approves it — the code only
+      // authorises the request, never clinical access.
+      try {
+        const existingAssoc = rows(await base44.asServiceRole.entities.HospitalDoctor.filter({
+          hospital_id: verifiedHospital.id,
+          doctor_id: profile.id,
+        }));
+        const assocPatch = {
+          status: 'pending',
+          specialization,
+          doctor_name: profile.full_name,
+          doctor_photo_url: profile.photo_url || '',
+          joined_datetime: now,
+          decided_datetime: '',
+          decided_by_name: '',
+          decision_note: '',
+        };
+        if (existingAssoc[0]) {
+          await base44.asServiceRole.entities.HospitalDoctor.update(existingAssoc[0].id, assocPatch);
+        } else {
+          await base44.asServiceRole.entities.HospitalDoctor.create({
+            ...assocPatch,
+            hospital_id: verifiedHospital.id,
+            hospital_name: verifiedHospital.hospital_name,
+            hospital_user_id: verifiedHospital.user_id,
+            doctor_id: profile.id,
+            doctor_user_id: user.id,
+          });
+        }
+      } catch (err) {
+        // the profile and the request record are authoritative
       }
 
       const patch = {

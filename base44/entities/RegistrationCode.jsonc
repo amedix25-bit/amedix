@@ -1,0 +1,163 @@
+{
+  "name": "RegistrationCode",
+  "type": "object",
+  "properties": {
+    "institution_type": {
+      "type": "string",
+      "enum": [
+        "hospital",
+        "laboratory",
+        "pharmacy"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green"
+      ],
+      "description": "The ONLY institution type this AMedix Administration Code may register. A code issued for a laboratory can never register a hospital or a pharmacy."
+    },
+    "assigned_institution_name": {
+      "type": "string",
+      "description": "Institution this code was issued for, recorded by AMedix administration. Left empty for an unassigned code"
+    },
+    "code_fingerprint": {
+      "type": "string",
+      "description": "SHA-256 fingerprint of the normalised code \u2014 the server looks the code up by this value. The plain code is shown once at issue time and is never stored, logged or returned again"
+    },
+    "code_preview": {
+      "type": "string",
+      "description": "Masked reference (last four characters only) so an administrator can identify which code was issued without revealing it"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "used",
+        "revoked",
+        "disabled"
+      ],
+      "enumColors": [
+        "blue",
+        "green",
+        "red",
+        "gray"
+      ],
+      "default": "issued",
+      "description": "ISSUED: valid and unused. USED: consumed by a registration \u2014 single use, it can never register another institution. REVOKED: withdrawn by AMedix administration. DISABLED: switched off by AMedix administration. Expiry is derived from expiry_datetime, never stored as a separate status"
+    },
+    "max_uses": {
+      "type": "integer",
+      "default": 1,
+      "description": "How many registrations this code may authorise \u2014 single use unless administration deliberately issues otherwise"
+    },
+    "used_count": {
+      "type": "integer",
+      "default": 0
+    },
+    "expiry_datetime": {
+      "type": "string",
+      "description": "Date and time the code stops being valid (ISO datetime)"
+    },
+    "issued_by_user_id": {
+      "type": "string"
+    },
+    "issued_by_name": {
+      "type": "string",
+      "description": "AMedix administrator who issued the code"
+    },
+    "issued_datetime": {
+      "type": "string"
+    },
+    "used_by_user_id": {
+      "type": "string"
+    },
+    "used_by_email": {
+      "type": "string"
+    },
+    "used_by_institution_id": {
+      "type": "string",
+      "description": "InstitutionRegistration id created with this code"
+    },
+    "used_datetime": {
+      "type": "string"
+    },
+    "revoked_datetime": {
+      "type": "string"
+    },
+    "revoked_by_name": {
+      "type": "string"
+    },
+    "revoke_reason": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal note recorded by administration at issue time"
+    },
+    "failed_attempts": {
+      "type": "integer",
+      "default": 0
+    },
+    "audit": {
+      "type": "array",
+      "description": "Append-only record of every event on this code \u2014 issued, validated, rejected attempts, used, revoked, disabled",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "action_label": {
+            "type": "string"
+          },
+          "actor_user_id": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "actor_role": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "institution_type",
+    "code_fingerprint",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

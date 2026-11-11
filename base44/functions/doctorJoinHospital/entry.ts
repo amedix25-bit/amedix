@@ -67,13 +67,24 @@ export default async function(req) {
       if (assoc.status === "active") {
         return Response.json({ error: "You are already associated with this hospital." }, { status: 409 });
       }
-      // A previously deactivated/removed association is re-established with the code.
+      if (assoc.status === "pending") {
+        return Response.json({
+          status: "pending",
+          hospital_name: hospital.hospital_name,
+          message: "Your affiliation request is already waiting for the hospital's approval.",
+        });
+      }
+      // A previously deactivated / rejected association is requested again with
+      // the code — it returns to PENDING for the hospital to approve.
       await base44.asServiceRole.entities.HospitalDoctor.update(assoc.id, {
-        status: "active",
+        status: "pending",
         specialization: department,
         doctor_name: doctor.full_name,
         doctor_photo_url: doctor.photo_url || "",
         joined_datetime: new Date().toISOString(),
+        decided_datetime: "",
+        decided_by_name: "",
+        decision_note: "",
       });
     } else {
       await base44.asServiceRole.entities.HospitalDoctor.create({
@@ -85,18 +96,20 @@ export default async function(req) {
         doctor_name: doctor.full_name,
         doctor_photo_url: doctor.photo_url || "",
         specialization: department,
-        status: "active",
+        status: "pending",
         joined_datetime: new Date().toISOString(),
       });
     }
 
-    // The first hospital the doctor joins becomes their current working
-    // hospital; afterwards the doctor switches between hospitals themselves.
-    if (!doctor.hospital) {
-      await base44.entities.DoctorProfile.update(doctor.id, { hospital: hospital.hospital_name });
-    }
-
-    return Response.json({ status: "joined", hospital_name: hospital.hospital_name, specialization: department });
+    // A valid code only CREATES the request. Clinical access at this hospital —
+    // and the working-hospital selection — needs the hospital's approval, which
+    // hospitalDoctorAffiliation records server-side.
+    return Response.json({
+      status: "pending",
+      hospital_name: hospital.hospital_name,
+      specialization: department,
+      message: `Affiliation request sent. ${hospital.hospital_name} must approve it before you can work at this hospital.`,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

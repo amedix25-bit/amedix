@@ -9,6 +9,7 @@ import VerificationMethodSelector from "@/components/verification/VerificationMe
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { EMPTY_DOCTOR_FORM, saveDoctorDraft, submitDoctorRegistration } from "@/lib/doctorRegistration";
+import { DOCTOR_HOSPITAL_CODE_KEY } from "@/components/registration/DoctorHospitalCodeGate";
 
 // The existing doctor registration form, now resumable: saved details and any
 // verification already completed are restored, and every change is saved
@@ -25,6 +26,18 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       ? { status: restores.license.status || "verified", verification_id: restores.license.verification_id }
       : null,
   });
+  // The AMedix Hospital Code verified at the start of registration (or entered
+  // here when a saved registration is resumed). The server requires it and
+  // validates it again when the registration is submitted.
+  const [verifiedHospital, setVerifiedHospital] = useState(() => {
+    try {
+      const raw = localStorage.getItem(DOCTOR_HOSPITAL_CODE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      return null;
+    }
+  });
+  const [hospitalCode, setHospitalCode] = useState(verifiedHospital?.hospital_code || verifiedHospital?.code || "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [saveState, setSaveState] = useState("idle");
@@ -68,6 +81,10 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       setError(t("Please select your specialty."));
       return;
     }
+    if (!hospitalCode.trim()) {
+      setError(t("Enter the AMedix Hospital Code given to you by your approved hospital."));
+      return;
+    }
     const submitted = (v) => ["verified", "pending"].includes(v?.status);
     if (!submitted(doctorVerification.identity) || !submitted(doctorVerification.medical_license)) {
       setError(t("Submit your identity and licence documents to continue."));
@@ -78,6 +95,7 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
     try {
       const res = await submitDoctorRegistration({
         ...buildPayload(),
+        hospital_code: hospitalCode.trim(),
         identity_verification_id: doctorVerification.identity.verification_id,
         license_verification_id: doctorVerification.medical_license.verification_id,
       });
@@ -193,6 +211,27 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
         </Select>
         <p className="text-xs text-muted-foreground">
           {t("Your specialty is permanent — it determines the portal and clinical documents you work in.")}
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="doc-hospital-code">{t("AMedix Hospital Code *")}</Label>
+        <Input
+          id="doc-hospital-code"
+          value={hospitalCode}
+          onChange={(e) => {
+            setHospitalCode(e.target.value.toUpperCase());
+            setVerifiedHospital(null);
+          }}
+          placeholder="AMX-XXXXXXXX"
+          className="font-mono uppercase tracking-wider"
+          autoComplete="off"
+          spellCheck={false}
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          {verifiedHospital?.hospital_name
+            ? `${t("Verified hospital")}: ${verifiedHospital.hospital_name}${verifiedHospital.hospital_location ? ` · ${verifiedHospital.hospital_location}` : ""}`
+            : t("Your registration is sent to this hospital for approval. The code is verified again when you submit.")}
         </p>
       </div>
       <div className="space-y-2">

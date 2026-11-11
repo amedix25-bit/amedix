@@ -1,0 +1,51 @@
+{
+  "name": "RegistrationCodeAttempt",
+  "type": "object",
+  "properties": {
+    "attempt_key": {
+      "type": "string",
+      "description": "What the rolling rate limit is counted for, e.g. the institution type being registered or hospital_code. Written and read by the server only"
+    },
+    "attempts": {
+      "type": "integer",
+      "default": 0,
+      "description": "Attempts made in the current window"
+    },
+    "window_start": {
+      "type": "string",
+      "description": "Start of the current counting window (ISO datetime)"
+    },
+    "locked_until": {
+      "type": "string",
+      "description": "Attempts are refused until this time after repeated wrong codes (ISO datetime)"
+    },
+    "last_attempt_datetime": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "attempt_key"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
