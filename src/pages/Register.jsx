@@ -291,6 +291,11 @@ export default function Register({ embedded = false, onLogin = null }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">{t("Email")}</Label>
+          {verified?.channel === "sms" && (
+            <p className="text-xs text-muted-foreground">
+              {t("Your phone number is already verified. This email is only the address you sign in with.")}
+            </p>
+          )}
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input

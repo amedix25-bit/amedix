@@ -158,6 +158,8 @@ const AR = {
   "Choose how you would like to verify yourself before creating your account.":
     "اختر طريقة التأكيد قبل إنشاء حسابك.",
   "Continue with Phone Number": "المتابعة برقم الهاتف",
+  "Your phone number is already verified. This email is only the address you sign in with.":
+    "تم تأكيد رقم هاتفك بالفعل. هذا البريد هو عنوان الدخول إلى حسابك فقط.",
   "We will text a 6-digit code to your Libyan mobile number.": "سنرسل رمزاً من ٦ أرقام برسالة نصية إلى رقمك الليبي.",
   "Continue with Email Address": "المتابعة بالبريد الإلكتروني",
   "We will email you a 6-digit code.": "سنرسل رمزاً من ٦ أرقام إلى بريدك الإلكتروني.",
