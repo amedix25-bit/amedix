@@ -1,32 +1,62 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { base44 } from "@/api/base44Client";
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
-import DocumentScanUpload from "@/components/verification/DocumentScanUpload";
 
 // The Verification Process section: the user chooses exactly ONE identity
-// verification method — Birth Certificate, Personal Card or Passport. A
-// successful verification of the selected method is sufficient to verify the
-// account; the other methods are not required. The backend re-validates the
-// chosen method — this UI never decides the verdict.
+// document — Passport, Driver's Licence or Birth Certificate (Personal Card is
+// kept for accounts that already used it). Submitting it enters the AMedix
+// administration review queue; the account is verified only when an
+// administrator approves it.
 const METHODS = [
-  { key: "birth_certificate", title: "Birth Certificate", description: "Scan your document or upload an existing document", twoSided: false },
-  { key: "personal_card", title: "Personal Card", description: "Scan your document or upload an existing document", twoSided: true },
-  { key: "passport", title: "Passport", description: "Scan your document or upload an existing document", twoSided: false },
+  { key: "passport", title: "Passport", twoSided: false },
+  { key: "drivers_licence", title: "Driver's Licence", twoSided: true },
+  { key: "birth_certificate", title: "Birth Certificate", twoSided: false },
+  { key: "personal_card", title: "Personal Card", twoSided: true },
 ];
 
+const METHOD_KEYS = METHODS.map((m) => m.key);
+
 export default function VerificationMethodSelector({
-  profileType, fullName = "", fullNameAr = "", cin = "", birthCertificateReadOnly = false, dateOfBirth = "", nationalIdNumber = "", result, onResult, t, initialMethod = "",
+  profileType, fullName = "", fullNameAr = "", cin = "", birthCertificateReadOnly = false,
+  dateOfBirth = "", nationalIdNumber = "", result, onResult, t, initialMethod = "",
 }) {
-  // A resumed registration reopens the method it already completed.
   const [method, setMethod] = useState(initialMethod);
-  // Identity values entered inside this section (doctor registration). For
-  // patients the Birth Certificate fields come from the registration form.
   const [entered, setEntered] = useState({
-    date_of_birth: "", national_id_number: "", personal_card_number: "", passport_number: "",
+    date_of_birth: "", national_id_number: "", personal_card_number: "", passport_number: "", licence_number: "",
   });
+
+  // A returning account reopens the document it already submitted (pending,
+  // approved or rejected) so its real state is shown instead of a blank form.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const me = await base44.auth.me();
+        const page = await base44.entities.IdentityVerification.filter(
+          { user_id: me.id, profile_type: profileType },
+          { sort: "-created_date", limit: 1 }
+        );
+        const latest = (page.items || [])[0];
+        if (cancelled || !latest || !METHOD_KEYS.includes(latest.document_type)) return;
+        setMethod((cur) => cur || latest.document_type);
+        onResult({
+          status: latest.status,
+          verification_id: latest.id,
+          reason: latest.reason || "",
+          review_reason: latest.review_reason || "",
+          submitted_datetime: latest.attempted_datetime || "",
+        });
+      } catch (err) {
+        // No saved submission — the form simply starts empty.
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileType]);
 
   const chooseMethod = (key) => {
     setMethod(key);
-    // Switching methods invalidates any previous verdict.
     onResult(null);
   };
 
@@ -35,29 +65,30 @@ export default function VerificationMethodSelector({
     onResult(null);
   };
 
-  // One unified scanning acquisition for every verification document type —
-  // the same document scanner, changing only the document type (and thus
-  // the filename/category the resulting PDF is stored under).
-  const scanSlot = (documentType, hint = "") => ({ file, setFile }) => (
-    <DocumentScanUpload
-      documentType={documentType}
-      patientName={fullName}
-      cin={cin}
-      hint={hint}
-      file={file}
-      onFile={setFile}
-      t={t}
-    />
-  );
-  const scanDescription = t("Scan your document or upload an existing document");
+  const description = t("Photograph the document, choose a photo from your gallery, or upload a PDF.");
 
   const configs = {
-    birth_certificate: {
-      documentType: "birth_certificate",
-      title: t("Birth Certificate"),
-      description: scanDescription,
+    passport: {
+      title: t("Passport"),
       twoSided: false,
-      frontSlot: scanSlot("birth_certificate"),
+      fields: [
+        { key: "full_name", label: t("Full Name"), readOnly: true },
+        { key: "passport_number", label: t("Passport Number"), placeholder: t("Passport Number") },
+      ],
+      values: { full_name: fullName, passport_number: entered.passport_number },
+    },
+    drivers_licence: {
+      title: t("Driver's Licence"),
+      twoSided: true,
+      fields: [
+        { key: "full_name", label: t("Full Name"), readOnly: true },
+        { key: "licence_number", label: t("Licence Number"), placeholder: t("Licence Number") },
+      ],
+      values: { full_name: fullNameAr || fullName, licence_number: entered.licence_number },
+    },
+    birth_certificate: {
+      title: t("Birth Certificate"),
+      twoSided: false,
       fields: [
         { key: "date_of_birth", label: t("Date of Birth"), readOnly: birthCertificateReadOnly, type: "date" },
         { key: "national_id_number", label: t("National ID Number"), readOnly: birthCertificateReadOnly },
@@ -68,36 +99,13 @@ export default function VerificationMethodSelector({
       },
     },
     personal_card: {
-      documentType: "personal_card",
       title: t("Personal Card"),
-      description: scanDescription,
       twoSided: true,
-      // Both sides are scanned as pages of one document (front first, then
-      // back) — the resulting single PDF satisfies the both-sides rule.
-      frontSlot: scanSlot(
-        "personal_card",
-        t("Scan both sides of the card — front side first, then the back side, using Add Page.")
-      ),
       fields: [
         { key: "full_name", label: t("Full Name"), readOnly: true },
         { key: "personal_card_number", label: t("Personal Card Number"), placeholder: t("Personal Card Number") },
       ],
-      // The Personal Card is printed in Arabic — the Arabic name is compared
-      // when available (the existing AMedix matching rules still apply).
       values: { full_name: fullNameAr || fullName, personal_card_number: entered.personal_card_number },
-    },
-    passport: {
-      documentType: "passport",
-      title: t("Passport"),
-      description: scanDescription,
-      twoSided: false,
-      // The passport's identification page carries the Latin/English name.
-      frontSlot: scanSlot("passport"),
-      fields: [
-        { key: "full_name", label: t("Full Name"), readOnly: true },
-        { key: "passport_number", label: t("Passport Number"), placeholder: t("Passport Number") },
-      ],
-      values: { full_name: fullName, passport_number: entered.passport_number },
     },
   };
 
@@ -105,7 +113,7 @@ export default function VerificationMethodSelector({
 
   return (
     <div className="space-y-3">
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {METHODS.map((m) => (
           <button
             key={m.key}
@@ -127,19 +135,18 @@ export default function VerificationMethodSelector({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        {t("Choose one verification method — successfully verifying it verifies your account. The other methods are not required.")}
+        {t("Choose one document — it is reviewed by AMedix administration, and approving it verifies your account. The other documents are not required.")}
       </p>
       {config && (
         <DocumentVerificationCard
           profileType={profileType}
-          documentType={config.documentType}
+          documentType={method}
           title={config.title}
-          description={config.description}
+          description={description}
           twoSided={config.twoSided}
           fields={config.fields}
           values={config.values}
           onValueChange={setValue}
-          frontSlot={config.frontSlot}
           result={result}
           onResult={onResult}
           t={t}

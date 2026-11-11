@@ -11,12 +11,14 @@ import AdminLabPanels from "@/components/admin/AdminLabPanels";
 import AdminPartnerAds from "@/components/admin/partner/AdminPartnerAds";
 import AdminHospitalAuthorizations from "@/components/admin/hospital/AdminHospitalAuthorizations";
 import AdminAccountGovernance from "@/components/admin/accounts/AdminAccountGovernance";
-import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound } from "lucide-react";
+import AdminIdentityReview from "@/components/admin/identity/AdminIdentityReview";
+import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound, BadgeCheck } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "users", label: "Users", icon: Users },
   { key: "verification", label: "Doctor Verification", icon: ShieldCheck },
+  { key: "identity", label: "Identity Review", icon: BadgeCheck },
   { key: "hospitals", label: "Hospital Approvals", icon: Building2 },
   { key: "verification_network", label: "Verified Network", icon: KeyRound },
   { key: "lab_panels", label: "Lab Panels", icon: FlaskConical },
@@ -46,6 +48,7 @@ export default function AdminDashboard() {
         {activeTab === "overview" && <AdminOverview />}
         {activeTab === "users" && <AdminUsers />}
         {activeTab === "verification" && <AdminDoctorVerification />}
+        {activeTab === "identity" && <AdminIdentityReview />}
         {activeTab === "hospitals" && <AdminHospitalAuthorizations />}
         {activeTab === "verification_network" && <AdminAccountGovernance />}
         {activeTab === "lab_panels" && <AdminLabPanels />}

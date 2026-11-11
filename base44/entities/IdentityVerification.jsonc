@@ -19,23 +19,52 @@
       "enum": [
         "birth_certificate",
         "personal_card",
+        "drivers_licence",
         "passport",
         "national_id",
         "medical_license"
       ],
-      "description": "Selected verification method \u2014 Birth Certificate, Personal Card or Passport (one identity method is enough to verify the account), Medical License for doctor credentials, or legacy national_id records"
+      "description": "Selected verification document \u2014 Passport, Driver's Licence or Birth Certificate for identity (one is enough), Personal Card for legacy records, Medical License for doctor credentials"
     },
     "file_uri": {
       "type": "string",
-      "description": "Private storage URI of the uploaded document (front side for a two-sided Personal Card) \u2014 only accessible via signed URLs issued by the backend"
+      "description": "Private storage URI of the submitted document (the assembled PDF) \u2014 only accessible via short-lived signed URLs issued by the backend after an administrator access check"
     },
     "file_name": {
       "type": "string",
-      "description": "Original name of the uploaded document"
+      "description": "Name of the submitted document"
+    },
+    "file_mime": {
+      "type": "string",
+      "description": "MIME type of the submitted document"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Size of the submitted document in bytes"
+    },
+    "page_count": {
+      "type": "integer",
+      "description": "Number of pages in the submitted document \u2014 a two-sided document is submitted as two pages of one PDF"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "camera",
+        "gallery",
+        "pdf"
+      ],
+      "description": "How the document was acquired: CAMERA (photographed in the integrated scanner), GALLERY (an existing photo chosen from the device) or PDF (an existing PDF uploaded as it is)"
+    },
+    "original_file_uri": {
+      "type": "string",
+      "description": "Private storage URI of the original, unedited image or PDF exactly as the user provided it \u2014 preserved alongside the processed document so nothing is lost by cropping or enhancement"
+    },
+    "original_file_name": {
+      "type": "string"
     },
     "file_uri_back": {
       "type": "string",
-      "description": "Private storage URI of the back side photo of a Personal Card uploaded as separate photos \u2014 empty when a single PDF contains both sides"
+      "description": "Private storage URI of the back side photo of a two-sided document uploaded as a separate photo \u2014 empty when a single PDF contains both sides"
     },
     "file_name_back": {
       "type": "string",
@@ -43,7 +72,7 @@
     },
     "expected_date_of_birth": {
       "type": "string",
-      "description": "Date of birth as entered by the user \u2014 compared against the document"
+      "description": "Date of birth as entered by the user \u2014 compared against the document for the administrator's review"
     },
     "extracted_date_of_birth": {
       "type": "string",
@@ -67,7 +96,7 @@
     },
     "expected_full_name": {
       "type": "string",
-      "description": "Full name as entered by the user \u2014 compared against the document (Personal Card / Passport)"
+      "description": "Full name as entered by the user \u2014 compared against the document"
     },
     "extracted_full_name": {
       "type": "string",
@@ -75,7 +104,7 @@
     },
     "expected_personal_card_number": {
       "type": "string",
-      "description": "Personal Card number as entered by the user \u2014 must match the document character-for-character"
+      "description": "Personal Card number as entered by the user"
     },
     "extracted_personal_card_number": {
       "type": "string",
@@ -83,7 +112,7 @@
     },
     "expected_passport_number": {
       "type": "string",
-      "description": "Passport number as entered by the user \u2014 must match the document character-for-character"
+      "description": "Passport number as entered by the user"
     },
     "extracted_passport_number": {
       "type": "string",
@@ -92,22 +121,107 @@
     "status": {
       "type": "string",
       "enum": [
+        "pending",
         "verified",
+        "rejected",
         "failed"
       ],
-      "description": "VERIFIED: every required field matched the document exactly. FAILED: mismatch, the two sides do not belong to the same card, or the document could not be read."
+      "enumColors": [
+        "yellow",
+        "green",
+        "red",
+        "red"
+      ],
+      "description": "PENDING: submitted and waiting for AMedix administration review \u2014 submitting never verifies an account. VERIFIED: approved by an authorized administrator. REJECTED: refused by an administrator, with the reason recorded. FAILED: a legacy automatic outcome kept unchanged for existing records."
     },
     "reason": {
       "type": "string",
-      "description": "mismatch / unreadable / card_mismatch \u2014 empty when verified"
+      "description": "Machine-readable outcome of the submission's automatic readability check \u2014 unreadable / mismatch / card_mismatch \u2014 a note for the reviewing administrator, never an approval or a refusal"
+    },
+    "auto_check": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Automated readability and detail comparison produced at submission time: { outcome: match | mismatch | unreadable, checked_datetime, checks: [{ field, label, entered, read, matched }] }. Advisory only \u2014 the administrator makes the decision"
+    },
+    "review_reason": {
+      "type": "string",
+      "description": "The specific reason recorded by the administrator when the submission was rejected \u2014 shown to the user so they can resubmit correctly"
+    },
+    "review_notes": {
+      "type": "string",
+      "description": "Internal reviewer notes"
+    },
+    "reviewed_by_user_id": {
+      "type": "string"
+    },
+    "reviewed_by_name": {
+      "type": "string",
+      "description": "The authorized AMedix administrator who approved or rejected the submission"
+    },
+    "reviewed_datetime": {
+      "type": "string",
+      "description": "Date and time of the administrative decision (ISO datetime)"
+    },
+    "review_history": {
+      "type": "array",
+      "description": "Append-only record of every event on this submission \u2014 submitted, document opened by a reviewer, approved, rejected",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "submitted / document_viewed / approved / rejected"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "actor_role": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    },
+    "document_access_log": {
+      "type": "array",
+      "description": "Audit trail of every time the private document was opened through a signed link, and by whom",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "actor_user_id": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime"
+        ]
+      }
     },
     "attempted_datetime": {
       "type": "string",
-      "description": "Date and time of the verification attempt (ISO datetime)"
+      "description": "Date and time the document was submitted (ISO datetime)"
     },
     "verified_datetime": {
       "type": "string",
-      "description": "Date and time the document was verified (ISO datetime) \u2014 set only on successful verification"
+      "description": "Date and time an administrator approved the document (ISO datetime)"
     },
     "patient_id": {
       "type": "string",

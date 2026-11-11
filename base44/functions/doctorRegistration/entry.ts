@@ -36,7 +36,9 @@ async function findVerified(base44, userId, verificationId, documentTypes) {
   if (!record) return null;
   if (record.user_id !== userId) return null;
   if (record.profile_type !== 'doctor') return null;
-  if (record.status !== 'verified') return null;
+  // A submitted document (pending review) or an approved one satisfies the
+  // registration step — approval itself stays with AMedix administration.
+  if (!['verified', 'pending'].includes(record.status)) return null;
   if (!documentTypes.includes(record.document_type)) return null;
   return record;
 }
@@ -46,7 +48,7 @@ async function findVerified(base44, userId, verificationId, documentTypes) {
 // asking the doctor to scan it again.
 async function latestVerified(base44, userId, documentTypes) {
   const list = rows(await base44.entities.IdentityVerification.filter(
-    { user_id: userId, profile_type: 'doctor', status: 'verified' },
+    { user_id: userId, profile_type: 'doctor', status: { $in: ['verified', 'pending'] } },
     { sort: '-created_date', limit: 20 }
   ));
   return list.find((record) => documentTypes.includes(record.document_type) && !record.doctor_id) || null;
@@ -143,8 +145,8 @@ export default async function (req) {
         restores: {
           fields: formOf(draft),
           step: draft.step || 'details',
-          identity: identity ? { status: 'verified', verification_id: identity.id, method: identity.document_type } : null,
-          license: license ? { status: 'verified', verification_id: license.id } : null,
+          identity: identity ? { status: identity.status, verification_id: identity.id, method: identity.document_type } : null,
+          license: license ? { status: license.status, verification_id: license.id } : null,
         },
       });
     }

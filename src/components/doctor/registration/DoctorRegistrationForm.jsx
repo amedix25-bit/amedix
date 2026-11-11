@@ -19,10 +19,10 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
   const [doctorForm, setDoctorForm] = useState({ ...EMPTY_DOCTOR_FORM, ...(restores?.fields || {}) });
   const [doctorVerification, setDoctorVerification] = useState({
     identity: restores?.identity
-      ? { status: "verified", verification_id: restores.identity.verification_id, document_type: restores.identity.method }
+      ? { status: restores.identity.status || "verified", verification_id: restores.identity.verification_id, document_type: restores.identity.method }
       : null,
     medical_license: restores?.license
-      ? { status: "verified", verification_id: restores.license.verification_id }
+      ? { status: restores.license.status || "verified", verification_id: restores.license.verification_id }
       : null,
   });
   const [error, setError] = useState("");
@@ -32,8 +32,8 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
   const restored = !!restores?.fields && Object.values(restores.fields).some((v) => (v || "").toString().trim() !== "");
 
   const buildPayload = () => {
-    const identityDone = doctorVerification.identity?.status === "verified";
-    const licenseDone = doctorVerification.medical_license?.status === "verified";
+    const identityDone = ["verified", "pending"].includes(doctorVerification.identity?.status);
+    const licenseDone = ["verified", "pending"].includes(doctorVerification.medical_license?.status);
     return {
       ...doctorForm,
       step: licenseDone ? "license_verification" : identityDone ? "identity_verification" : "details",
@@ -68,8 +68,9 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       setError(t("Please select your specialty."));
       return;
     }
-    if (doctorVerification.identity?.status !== "verified" || doctorVerification.medical_license?.status !== "verified") {
-      setError(t("Verification is required before you can continue."));
+    const submitted = (v) => ["verified", "pending"].includes(v?.status);
+    if (!submitted(doctorVerification.identity) || !submitted(doctorVerification.medical_license)) {
+      setError(t("Submit your identity and licence documents to continue."));
       return;
     }
     setError("");
@@ -115,7 +116,7 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
           <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-sm text-muted-foreground">
-            {t("Your registration has been submitted and your documents were verified. Your account is awaiting approval.")}
+            {t("Your registration has been submitted together with your documents. Your account is awaiting AMedix administration approval.")}
           </p>
         </div>
         <Button className="w-full" onClick={() => onSubmitted({ state })}>{t("Go to Doctor Portal")}</Button>
@@ -211,7 +212,7 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       <VerificationMethodSelector
         profileType="doctor"
         fullName={[doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" ")}
-        initialMethod={["birth_certificate", "personal_card", "passport"].includes(restores?.identity?.method) ? restores.identity.method : ""}
+        initialMethod={["birth_certificate", "personal_card", "drivers_licence", "passport"].includes(restores?.identity?.method) ? restores.identity.method : ""}
         result={doctorVerification.identity}
         onResult={(r) => setDoctorVerification((s) => ({ ...s, identity: r }))}
         t={t}
@@ -225,7 +226,6 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
         values={{ license_number: doctorForm.license_number }}
         onValueChange={(key, value) => {
           setDoctorForm((f) => ({ ...f, license_number: value }));
-          setDoctorVerification((s) => ({ ...s, medical_license: null }));
         }}
         result={doctorVerification.medical_license}
         onResult={(r) => setDoctorVerification((s) => ({ ...s, medical_license: r }))}

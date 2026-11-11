@@ -1,66 +1,69 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UploadCloud, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, ShieldCheck, Clock, ShieldX } from "lucide-react";
+import DocumentScanUpload from "@/components/verification/DocumentScanUpload";
+import { verificationState } from "@/components/verification/verificationStatus";
 
-// One document inside the Verification Process section of profile creation.
-// The user uploads documents to private storage and (when the fields are
-// editable) enters the identifying information; the OCR extraction and the
-// exact comparison run in the backend — this component only displays the
-// backend's verdict, it never decides it.
-//
-// twoSided (Personal Card): the front is always required; the back is required
-// too unless the uploaded front file is a single PDF containing both sides.
+// One identity document inside the Verification Process section. The user
+// photographs or uploads the document and submits it; the submission is stored
+// privately and enters the administrator review queue. Submitting never
+// verifies the account — this card only shows the state AMedix administration
+// has recorded for it, and lets the user resubmit after a rejection.
 //
 // fields: [{ key, label, placeholder?, type?, readOnly? }]
-// values: { [key]: currentValue } — readOnly fields are rendered as text and
-// are edited elsewhere (e.g. in the registration form above).
-// result: { status: "verified" | "failed", reason? } | null (backend verdict)
-// onResult: called with the backend result, or null when state is reset.
+// values: { [key]: currentValue } — readOnly fields are shown as text
+// result: { status, verification_id?, reason?, review_reason? } | null
 export default function DocumentVerificationCard({
-  profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t, twoSided = false, frontSlot = null,
+  profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t, twoSided = false,
 }) {
   const [file, setFile] = useState(null);
-  const [fileBack, setFileBack] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const frontInputRef = useRef(null);
-  const backInputRef = useRef(null);
+  const [resubmitting, setResubmitting] = useState(false);
 
+  // An existing submission (from an earlier session) is shown with its real
+  // state — pending review, approved or rejected with the administrator's reason.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const me = await base44.auth.me();
+        const page = await base44.entities.IdentityVerification.filter(
+          { user_id: me.id, profile_type: profileType, document_type: documentType },
+          { sort: "-created_date", limit: 1 }
+        );
+        const latest = (page.items || [])[0];
+        if (!cancelled && latest) {
+          onResult({
+            status: latest.status,
+            verification_id: latest.id,
+            reason: latest.reason || "",
+            review_reason: latest.review_reason || "",
+            submitted_datetime: latest.attempted_datetime || "",
+            reviewed_datetime: latest.reviewed_datetime || "",
+          });
+        }
+      } catch (err) {
+        // A missing status must never block the form.
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileType, documentType]);
+
+  const state = verificationState(result?.status);
   const allFieldsFilled = fields.every((f) => (values?.[f.key] || "").toString().trim() !== "");
-  const frontIsPdf = !!file && /\.pdf$/i.test(file.name);
-  // With the unified scanner the document is always a single multi-page PDF
-  // (a Personal Card's two sides are scanned as its pages), so the separate
-  // back-side slot only applies to the legacy two-photo upload path.
-  const backRequired = twoSided && !frontSlot && !frontIsPdf;
-  const readyToVerify = !!file && (!backRequired || !!fileBack) && allFieldsFilled;
+  const alreadySubmitted = state.key === "pending" || state.key === "verified";
+  const formVisible = !alreadySubmitted || resubmitting;
+  const readyToSubmit = !!file && allFieldsFilled && !submitting;
 
-  const handleFile = (slot) => async (e) => {
-    const selected = e.target.files?.[0];
-    e.target.value = "";
-    if (!selected) return;
-    setUploading(true);
-    setError("");
-    onResult(null);
-    try {
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: selected });
-      const uploaded = { uri: file_uri, name: selected.name };
-      if (slot === "back") setFileBack(uploaded);
-      else setFile(uploaded);
-    } catch (err) {
-      console.error(err);
-      setError(t("Something went wrong during verification. Please try again."));
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!readyToVerify) return;
-    setVerifying(true);
+  const handleSubmit = async () => {
+    if (!readyToSubmit) return;
+    setSubmitting(true);
     setError("");
     try {
       const expected = {};
@@ -70,140 +73,137 @@ export default function DocumentVerificationCard({
         document_type: documentType,
         file_uri: file.uri,
         file_name: file.name,
-        file_uri_back: twoSided && fileBack ? fileBack.uri : "",
-        file_name_back: twoSided && fileBack ? fileBack.name : "",
+        file_mime: file.mime || "",
+        file_size: file.size || 0,
+        page_count: file.page_count || 1,
+        source: file.source || "gallery",
+        original_file_uri: file.original_uri || "",
+        original_file_name: file.original_name || "",
         expected,
       });
-      onResult(res.data);
+      const data = res.data || {};
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+      onResult({
+        status: data.status || "pending",
+        verification_id: data.verification_id,
+        submitted_datetime: data.submitted_datetime,
+        reason: "",
+        read: data.read,
+        auto_check: data.auto_check,
+      });
+      setFile(null);
+      setResubmitting(false);
     } catch (err) {
       console.error(err);
-      setError(t("Something went wrong during verification. Please try again."));
+      setError(t("We could not submit your document. Check your connection and try again."));
     } finally {
-      setVerifying(false);
+      setSubmitting(false);
     }
   };
 
-  const renderSlot = (slot, label, uploadLabel) => {
-    const f = slot === "back" ? fileBack : file;
-    const ref = slot === "back" ? backInputRef : frontInputRef;
-    return (
-      <div className="space-y-1.5">
-        {twoSided && <Label>{label}</Label>}
-        <input ref={ref} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFile(slot)} />
-        {f ? (
-          <div className="flex items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2">
-            <p className="text-sm truncate">{f.name}</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => { (slot === "back" ? setFileBack : setFile)(null); onResult(null); }}
-            >
-              {t("Change file")}
-            </Button>
-          </div>
-        ) : (
-          <Button type="button" variant="outline" className="w-full" disabled={uploading} onClick={() => ref.current?.click()}>
-            {uploading ? (
-              <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
-            ) : (
-              <UploadCloud className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-            )}
-            {uploadLabel}
-          </Button>
-        )}
-      </div>
-    );
-  };
+  const stateIcon =
+    state.key === "verified" ? <ShieldCheck className="w-4 h-4 shrink-0" />
+      : state.key === "rejected" ? <ShieldX className="w-4 h-4 shrink-0" />
+        : <Clock className="w-4 h-4 shrink-0" />;
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <h4 className="text-sm font-semibold">{title}</h4>
-      {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
-      <div className="mt-3 space-y-3">
-        {fields.map((f) => (
-          <div key={f.key} className="space-y-1.5">
-            <Label>{f.label}</Label>
-            {f.readOnly ? (
-              <p className="text-sm font-medium px-3 py-2 rounded-lg bg-muted min-h-[2.25rem] flex items-center">
-                {(values?.[f.key] || "").toString().trim() !== "" ? values[f.key] : "—"}
-              </p>
-            ) : (
-              <Input
-                value={values?.[f.key] || ""}
-                onChange={(e) => onValueChange(f.key, e.target.value)}
-                placeholder={f.placeholder}
-                type={f.type || "text"}
-              />
-            )}
-          </div>
-        ))}
-
-        {frontSlot ? (
-          frontSlot({ file, setFile: (f) => { setFile(f); onResult(null); } })
-        ) : (
-          renderSlot("front", t("Front side"), twoSided ? t("Upload a clear photo or PDF of the front side") : t("Upload a clear photo or PDF"))
-        )}
-        {twoSided && !frontIsPdf && renderSlot("back", t("Back side"), t("Upload a clear photo or PDF of the back side"))}
-        {twoSided && frontIsPdf && (
-          <p className="text-xs text-muted-foreground">{t("One PDF containing both sides")}</p>
-        )}
-
-        {!allFieldsFilled && (
-          <p className="text-xs text-muted-foreground">{t("Enter the required information first.")}</p>
-        )}
-        {backRequired && !fileBack && (
-          <p className="text-xs text-muted-foreground">
-            {t("Please upload the back side of your Personal Card, or upload one PDF containing both sides.")}
-          </p>
-        )}
-
-        <Button type="button" className="w-full" disabled={!readyToVerify || verifying} onClick={handleVerify}>
-          {verifying ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
-              {t("Verifying...")}
-            </>
-          ) : (
-            t("Verify")
-          )}
-        </Button>
-
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        {result?.status === "verified" && (
-          <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-3 py-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{t("Verified ✓")}</p>
-          </div>
-        )}
-
-        {result?.status === "failed" && (
-          <div className="rounded-lg bg-destructive/10 border border-destructive/30 px-3 py-2.5">
-            <div className="flex items-center gap-2">
-              <XCircle className="w-4 h-4 text-destructive shrink-0" />
-              <p className="text-sm font-semibold text-destructive">{t("Verification Failed")}</p>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {result.reason === "unreadable"
-                ? t("We could not read the document. Please upload a clearer photo or PDF.")
-                : result.reason === "card_mismatch"
-                  ? t("The front and back photos do not belong to the same card. Please upload both sides of your Personal Card.")
-                  : t("The information you entered does not match the document. Please correct your information or upload the correct document.")}
-            </p>
-            {result.reason === "mismatch" && result.read && (
-              <p className="text-xs text-muted-foreground mt-1 break-words">
-                {t("Read from your document")}:{" "}
-                {fields
-                  .filter((f) => result.read[f.key])
-                  .map((f) => `${f.label}: ${result.read[f.key]}`)
-                  .join(" · ")}
-              </p>
-            )}
-          </div>
-        )}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-semibold">{title}</h4>
+          {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+        </div>
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shrink-0 ${state.box} ${state.text}`}>
+          {stateIcon}
+          {t(state.label)}
+        </span>
       </div>
+
+      {state.key !== "none" && (
+        <div className={`mt-3 rounded-lg border px-3 py-2.5 ${state.box}`}>
+          <p className={`text-sm font-semibold ${state.text}`}>{t(state.label)}</p>
+          {state.key === "pending" && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("Your document was received and is waiting for AMedix administration to review it. You do not need to do anything else.")}
+            </p>
+          )}
+          {state.key === "verified" && (
+            <p className="text-xs text-muted-foreground mt-1">{t("Your identity document was reviewed and approved.")}</p>
+          )}
+          {state.key === "rejected" && (
+            <p className="text-xs text-muted-foreground mt-1 break-words">
+              {result?.review_reason || t("Your document was not accepted. Please submit a new one below.")}
+            </p>
+          )}
+          {result?.verification_id && (
+            <p className="text-[11px] text-muted-foreground mt-1 break-all">
+              {t("Reference")}: {result.verification_id}
+            </p>
+          )}
+          {alreadySubmitted && !resubmitting && (
+            <Button type="button" variant="ghost" size="sm" className="mt-2 h-7 px-2" onClick={() => setResubmitting(true)}>
+              {t("Submit a different document")}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {formVisible && (
+        <div className="mt-3 space-y-3">
+          {fields.map((f) => (
+            <div key={f.key} className="space-y-1.5">
+              <Label>{f.label}</Label>
+              {f.readOnly ? (
+                <p className="text-sm font-medium px-3 py-2 rounded-lg bg-muted min-h-[2.25rem] flex items-center">
+                  {(values?.[f.key] || "").toString().trim() !== "" ? values[f.key] : "—"}
+                </p>
+              ) : (
+                <Input
+                  value={values?.[f.key] || ""}
+                  onChange={(e) => onValueChange(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                  type={f.type || "text"}
+                />
+              )}
+            </div>
+          ))}
+
+          <DocumentScanUpload
+            documentType={documentType}
+            sides={twoSided ? "both" : "single"}
+            patientName={values?.full_name || ""}
+            hint={twoSided
+              ? t("Photograph both sides — front first, then the back. You can also choose two photos or upload one PDF containing both sides.")
+              : t("Photograph the document, choose a photo from your gallery, or upload a PDF.")}
+            file={file}
+            onFile={(f) => { setFile(f); setError(""); }}
+            t={t}
+          />
+
+          {!allFieldsFilled && (
+            <p className="text-xs text-muted-foreground">{t("Enter the required information first.")}</p>
+          )}
+
+          <Button type="button" className="w-full" disabled={!readyToSubmit} onClick={handleSubmit}>
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
+                {t("Submitting…")}
+              </>
+            ) : (
+              t("Submit for review")
+            )}
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center">
+            {t("Your document is stored privately and reviewed by AMedix administration. Submitting does not verify your account by itself.")}
+          </p>
+        </div>
+      )}
+
+      {error && <p className="text-sm text-destructive mt-2">{error}</p>}
     </div>
   );
 }

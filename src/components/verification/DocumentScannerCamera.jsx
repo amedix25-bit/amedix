@@ -1,25 +1,24 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Zap, ZapOff, Loader2 } from "lucide-react";
+import { X, Zap, ZapOff, Loader2, Image as ImageIcon, FileUp, Camera } from "lucide-react";
 import { detectDocumentQuad, warpQuad, enhanceDocument } from "@/lib/documentScanner";
+import { assessCanvas } from "@/lib/documentImage";
 
-// The AMedix document-scanning camera — a real scanner interface, not a
-// normal camera upload. It detects the document's edges and four corners in
-// the live video, shows when the page is correctly positioned, captures
-// automatically once the page is stable (manual capture and torch are also
-// available), then crops to the detected boundaries, corrects perspective
-// and rotation, and enhances readability — producing a clean scan instead of
-// a raw photograph.
-export default function DocumentScannerCamera({ onCapture, onClose, t }) {
+// The AMedix document camera — a real scanner interface, not a normal camera
+// upload. It detects the page's edges in the live video, captures once the page
+// is stable, then crops to the detected boundaries, corrects perspective and
+// rotation and enhances readability. If the camera is unavailable or the
+// permission is denied, the phone gallery and PDF upload are offered
+// immediately — the user is never left on a blank screen.
+export default function DocumentScannerCamera({ onCapture, onClose, onPickGallery, onPickPdf, sideLabel = "", t }) {
   const videoRef = useRef(null);
   const overlayRef = useRef(null);
   const streamRef = useRef(null);
-  const quadRef = useRef(null);
   const prevQuadRef = useRef(null);
   const stableRef = useRef(0);
   const capturingRef = useRef(false);
 
   const [ready, setReady] = useState(false);
-  const [error, setError] = useState("");
+  const [errorKind, setErrorKind] = useState(""); // unsupported | denied | failed
   const [capturing, setCapturing] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
@@ -32,7 +31,7 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
 
     const start = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError(t("Document scanning is not supported on this device. Please use Upload Document instead."));
+        setErrorKind("unsupported");
         return;
       }
       try {
@@ -54,7 +53,8 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
         setReady(true);
         timer = setInterval(detectLoop, 400);
       } catch (err) {
-        setError(t("Camera access is required for scanning. Allow camera access and try again, or use Upload Document instead."));
+        const name = err && err.name ? err.name : "";
+        setErrorKind(name === "NotAllowedError" || name === "SecurityError" ? "denied" : "failed");
       }
     };
     start();
@@ -112,8 +112,6 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
     work.height = Math.round((video.videoHeight * 160) / video.videoWidth);
     work.getContext("2d", { willReadFrequently: true }).drawImage(video, 0, 0, work.width, work.height);
     const quad = detectDocumentQuad(work);
-    quadRef.current = quad;
-    setDetected(!!quad);
     if (quad && prevQuadRef.current) {
       const move =
         quad.reduce((s, p, i) => s + Math.hypot(p.x - prevQuadRef.current[i].x, p.y - prevQuadRef.current[i].y), 0) / 4;
@@ -121,6 +119,7 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
     } else {
       stableRef.current = 0;
     }
+    setDetected(!!quad);
     setStable(stableRef.current >= 3);
     prevQuadRef.current = quad;
     drawOverlay(quad, stableRef.current >= 3);
@@ -138,10 +137,9 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
       frame.width = video.videoWidth;
       frame.height = video.videoHeight;
       frame.getContext("2d", { willReadFrequently: true }).drawImage(video, 0, 0);
-      // Edge detection runs on the full-resolution capture; the scan is then
-      // cropped to the detected boundaries, perspective-corrected and
-      // enhanced. When detection fails, the enhanced full frame is delivered
-      // — the user can review it and retake.
+      // Crop to the detected boundaries, correct perspective and rotation, and
+      // enhance readability. When detection fails the enhanced full frame is
+      // delivered — the user reviews it and can retake.
       const quad = detectDocumentQuad(frame);
       let scan = null;
       if (quad) {
@@ -153,10 +151,11 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
       }
       if (!scan) scan = frame;
       enhanceDocument(scan);
-      const dataUrl = scan.toDataURL("image/jpeg", 0.92);
-      onCapture(dataUrl);
+      const quality = assessCanvas(scan);
+      onCapture({ dataUrl: scan.toDataURL("image/jpeg", 0.92), quality, source: "camera" });
     } finally {
       capturingRef.current = false;
+      setCapturing(false);
     }
   };
 
@@ -171,20 +170,30 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
     }
   };
 
-  const statusText = error
-    ? ""
-    : capturing
+  const errorText =
+    errorKind === "unsupported"
+      ? t("This device or browser cannot open the camera here. Use a photo from your gallery or a PDF instead.")
+      : errorKind === "denied"
+        ? t("Camera access was denied. Allow camera access in your browser settings, or use a photo from your gallery.")
+        : t("The camera could not start. You can still submit a photo from your gallery or a PDF.");
+
+  const statusText = ready
+    ? capturing
       ? t("Capturing…")
       : detected
         ? stable
           ? t("Hold steady… capturing")
           : t("Hold steady…")
-        : t("Position the document inside the frame");
+        : t("Position the document inside the frame")
+    : "";
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
       <div className="flex items-center justify-between p-4">
-        <p className="text-white font-semibold">{t("Scan Document")}</p>
+        <div>
+          <p className="text-white font-semibold">{t("Take a photo")}</p>
+          {sideLabel && <p className="text-xs text-white/70 mt-0.5">{sideLabel}</p>}
+        </div>
         <button type="button" onClick={onClose} className="p-2 -mr-2" aria-label={t("Close")}>
           <X className="w-6 h-6 text-white" />
         </button>
@@ -193,28 +202,52 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
       <div className="flex-1 relative flex items-center justify-center overflow-hidden">
         <video ref={videoRef} autoPlay muted playsInline className="max-w-full max-h-full object-contain" />
         <canvas ref={overlayRef} className="absolute inset-0 w-full h-full pointer-events-none" />
-        {!ready && !error && (
+        {!ready && !errorKind && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white">
             <Loader2 className="w-8 h-8 animate-spin" />
             <p className="text-sm">{t("Starting camera…")}</p>
           </div>
         )}
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center p-6">
-            <div className="rounded-xl bg-white p-5 text-center max-w-sm">
-              <p className="text-sm text-foreground">{error}</p>
-              <button type="button" onClick={onClose} className="mt-3 text-sm font-medium text-primary underline">
-                {t("Back to Upload Document")}
+        {errorKind && (
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="rounded-2xl bg-white p-5 text-center max-w-sm w-full space-y-3">
+              <p className="text-sm text-foreground">{errorText}</p>
+              <button
+                type="button"
+                onClick={onPickGallery}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+              >
+                <ImageIcon className="w-4 h-4" />
+                {t("Choose a photo instead")}
+              </button>
+              <button
+                type="button"
+                onClick={onPickPdf}
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium"
+              >
+                <FileUp className="w-4 h-4" />
+                {t("Upload a PDF instead")}
+              </button>
+              <button type="button" onClick={onClose} className="w-full text-sm text-muted-foreground py-1">
+                {t("Cancel")}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {!error && (
-        <div className="p-6 space-y-4 text-center">
+      {!errorKind && (
+        <div className="p-5 pb-7 space-y-4 text-center">
           <p className="text-sm text-white/85 min-h-[1.25rem]">{statusText}</p>
-          <div className="flex items-center justify-center gap-8">
+          <div className="flex items-center justify-center gap-7">
+            <button
+              type="button"
+              onClick={onPickGallery}
+              className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"
+              aria-label={t("Choose a photo from the gallery")}
+            >
+              <ImageIcon className="w-5 h-5 text-white" />
+            </button>
             {torchAvailable && (
               <button
                 type="button"
@@ -229,11 +262,23 @@ export default function DocumentScannerCamera({ onCapture, onClose, t }) {
               type="button"
               onClick={capture}
               disabled={!ready || capturing}
-              className="w-16 h-16 rounded-full bg-white disabled:opacity-40 ring-4 ring-white/40 active:scale-95 transition-transform"
+              className="w-16 h-16 rounded-full bg-white disabled:opacity-40 ring-4 ring-white/40 active:scale-95 transition-transform flex items-center justify-center"
               aria-label={t("Capture")}
-            />
+            >
+              <Camera className="w-6 h-6 text-black" />
+            </button>
+            <button
+              type="button"
+              onClick={onPickPdf}
+              className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"
+              aria-label={t("Upload a PDF")}
+            >
+              <FileUp className="w-5 h-5 text-white" />
+            </button>
           </div>
-          <p className="text-[11px] text-white/50">{t("The page is captured automatically when it is stable and correctly positioned.")}</p>
+          <p className="text-[11px] text-white/50">
+            {t("The page is captured automatically when it is stable and correctly positioned.")}
+          </p>
         </div>
       )}
     </div>

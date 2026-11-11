@@ -371,7 +371,9 @@ export function documentFileName(documentType, patientName, cin) {
   const PREFIXES = {
     passport: "Passport",
     personal_card: "PersonalCard",
+    drivers_licence: "DriversLicence",
     birth_certificate: "BirthCertificate",
+    medical_license: "MedicalLicence",
   };
   const clean = (s) =>
     String(s || "")

@@ -1,10 +1,10 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
-// Identity verification for profile creation. The user selects exactly ONE
-// method — Birth Certificate, Personal Card or Passport — and a successful
-// verification of that method is sufficient to verify the account; the other
-// methods are not required. Doctors additionally verify their medical license
-// through a separate call.
+// Identity document SUBMISSION (patients and doctors). A submission never
+// verifies an account: the document is stored privately and the record is
+// created as PENDING so the account enters the administrator review queue.
+// The automatic readability check below only produces an advisory note for the
+// reviewing administrator — it can neither approve nor refuse anything.
 //
 // Whitelist of accepted (profile_type, document_type) pairs and the fields
 // each must confirm — anything else is rejected before any extraction runs.
@@ -12,21 +12,36 @@ const DOC_TYPES = {
   patient: {
     birth_certificate: ['date_of_birth', 'national_id_number'],
     personal_card: ['full_name', 'personal_card_number'],
+    drivers_licence: ['full_name', 'licence_number'],
     passport: ['full_name', 'passport_number'],
   },
   doctor: {
     birth_certificate: ['date_of_birth', 'national_id_number'],
     personal_card: ['full_name', 'personal_card_number'],
+    drivers_licence: ['full_name', 'licence_number'],
     passport: ['full_name', 'passport_number'],
     national_id: ['national_id_number'], // legacy identity document
     medical_license: ['license_number'],
   },
 };
 
-// What the OCR extraction is asked to read from each document type.
-// Field descriptions guide the OCR extraction: values are read exactly as
-// printed, and names are read in BOTH the document's script and its Latin
-// transliteration — so the user's entered name can be in either language.
+// Two-sided documents: the front and back must both be in the submission —
+// either photographed as two pages of one PDF, or as two separate files.
+const TWO_SIDED = ['personal_card', 'drivers_licence'];
+
+const FIELD_LABELS = {
+  full_name: 'Full name',
+  personal_card_number: 'Personal Card number',
+  passport_number: 'Passport number',
+  licence_number: "Driver's licence number",
+  national_id_number: 'National ID number',
+  date_of_birth: 'Date of birth',
+  license_number: 'Medical licence number',
+};
+
+// What the automatic readability check is asked to read from each document
+// type. Values are read exactly as printed; names are read in BOTH the
+// document's script and its Latin transliteration.
 const EXTRACT_SCHEMAS = {
   birth_certificate: {
     date_of_birth: { type: 'string', description: 'The date of birth exactly as printed on the certificate' },
@@ -38,6 +53,11 @@ const EXTRACT_SCHEMAS = {
     full_name: { type: 'string', description: 'The full name exactly as printed on the card, in the script it is printed in' },
     full_name_latin: { type: 'string', description: 'The same full name transliterated into the Latin alphabet, as printed on the card if present' },
     personal_card_number: { type: 'string', description: 'The personal card number exactly as printed, every digit and letter, no spaces or separators' },
+  },
+  drivers_licence: {
+    full_name: { type: 'string', description: 'The full name exactly as printed on the licence, in the script it is printed in' },
+    full_name_latin: { type: 'string', description: 'The same full name transliterated into the Latin alphabet, as printed on the licence if present' },
+    licence_number: { type: 'string', description: 'The driving licence number exactly as printed, every digit and letter, no spaces or separators' },
   },
   passport: {
     full_name: { type: 'string', description: 'The full name exactly as printed on the passport, in the script it is printed in' },
@@ -53,11 +73,6 @@ function normalizeDigits(value) {
   return String(value).replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
 }
 
-// Normalize a date read from a document or entered by the user to YYYY-MM-DD.
-// Handles ISO (1990-03-14), day-first (14/03/1990), month-first (03/14/1990),
-// dotted (14.03.1990) and written ("14 March 1990" / "March 14, 1990") forms.
-// Returns null when no recognizable date is present — such a value can never
-// match, so verification fails.
 function normalizeDate(raw) {
   if (raw === undefined || raw === null) return null;
   const s = normalizeDigits(raw).trim();
@@ -88,10 +103,6 @@ function normalizeDate(raw) {
   return null;
 }
 
-// Identifiers are compared after converting Arabic-Indic digits, mapping the
-// common OCR letter/digit confusions (O→0, I→1) on both sides, and removing
-// every space, separator and MRZ fill character — so '1990/123.456' on the
-// document matches '1990123456' as entered.
 function normalizeId(raw) {
   if (raw === undefined || raw === null) return '';
   return normalizeDigits(String(raw))
@@ -101,9 +112,6 @@ function normalizeId(raw) {
     .replace(/[^A-Z0-9]/g, '');
 }
 
-// Names are normalized for comparison: Arabic-Indic digits converted, Arabic
-// diacritics and tatweel removed, alef variants unified, MRZ '<' fill
-// characters treated as spaces, case and spacing differences ignored.
 function normalizeName(raw) {
   if (raw === undefined || raw === null) return '';
   return normalizeDigits(String(raw))
@@ -116,10 +124,6 @@ function normalizeName(raw) {
     .trim();
 }
 
-// Name matching is order-insensitive: documents print names in many layouts
-// (surname first, MRZ), so every part of the entered name must appear among
-// the document's name parts. The entered name may be in the document's own
-// script or in its Latin transliteration.
 function nameMatches(extractedCandidates, expectedValue) {
   const expected = normalizeName(expectedValue);
   if (!expected) return false;
@@ -141,17 +145,19 @@ function fieldMatches(key, raw, expectedValue) {
   return normalizeId(raw) === normalizeId(expectedValue);
 }
 
-export default async function(req) {
+const str = (v, max = 200) => (typeof v === 'string' && v.length <= max ? v : '');
+
+export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const user = await base44.auth.me().catch((e) => (e.status === 401 ? null : Promise.reject(e)));
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const {
       profile_type, document_type, file_uri, file_name,
       file_uri_back = '', file_name_back = '', expected = {},
-    } = body;
+    } = body || {};
 
     const requiredFields = DOC_TYPES[profile_type]?.[document_type];
     if (!requiredFields) {
@@ -171,63 +177,49 @@ export default async function(req) {
       }
     }
 
-    // A Personal Card requires BOTH sides: either two separate photos or a
-    // single PDF containing both. Enforced server-side so the frontend cannot
-    // bypass it.
     const frontIsPdf = typeof file_name === 'string' && file_name.toLowerCase().endsWith('.pdf');
-    if (document_type === 'personal_card' && !file_uri_back && !frontIsPdf) {
+    if (TWO_SIDED.includes(document_type) && !file_uri_back && !frontIsPdf) {
       return Response.json(
-        { error: 'Personal Card requires both sides — upload the front and back photos, or one PDF containing both sides' },
+        { error: 'This document has two sides — submit the front and the back, or one PDF containing both sides' },
         { status: 400 }
       );
     }
 
-    const attemptedAt = new Date().toISOString();
-
+    const submittedAt = new Date().toISOString();
     const expectedRecord = {};
     for (const key of requiredFields) {
       expectedRecord[`expected_${key}`] = typeof expected[key] === 'string' ? expected[key] : '';
     }
+
     const baseRecord = {
       user_id: user.id,
       profile_type,
       document_type,
       file_uri,
-      file_name: typeof file_name === 'string' ? file_name.slice(0, 200) : '',
+      file_name: str(file_name),
+      file_mime: str(body.file_mime, 100),
+      file_size: typeof body.file_size === 'number' && body.file_size >= 0 ? body.file_size : 0,
+      page_count: typeof body.page_count === 'number' && body.page_count > 0 && body.page_count <= 20 ? Math.round(body.page_count) : 1,
+      source: ['camera', 'gallery', 'pdf'].includes(body.source) ? body.source : 'gallery',
+      original_file_uri: str(body.original_file_uri, 500),
+      original_file_name: str(body.original_file_name),
       file_uri_back,
-      file_name_back: typeof file_name_back === 'string' ? file_name_back.slice(0, 200) : '',
-      attempted_datetime: attemptedAt,
+      file_name_back: str(file_name_back),
+      attempted_datetime: submittedAt,
       ...expectedRecord,
     };
 
-    // The verification record is created with the service role — app users
-    // cannot create or modify verification results themselves, so a 'verified'
-    // status can only ever be produced here, after a real server-side match.
-    const saveRecord = async (status, reason, extractedValues = {}) => {
-      const extractedRecord = {};
+    const readRecord = (extractedValues = {}) => {
+      const out = {};
       for (const key of requiredFields) {
         const v = extractedValues[key];
-        extractedRecord[`extracted_${key}`] = v !== undefined && v !== null ? String(v) : '';
+        out[key] = v !== undefined && v !== null ? String(v) : '';
       }
-      const record = await base44.asServiceRole.entities.IdentityVerification.create({
-        ...baseRecord,
-        ...extractedRecord,
-        status,
-        reason,
-        verified_datetime: status === 'verified' ? new Date().toISOString() : '',
-      });
-      // 'read' echoes back what the document actually said, so a mismatch
-      // shows the user exactly what to correct instead of failing blindly.
-      const readRecord = {};
-      for (const key of requiredFields) {
-        const v = extractedValues[key];
-        readRecord[key] = v !== undefined && v !== null ? String(v) : '';
-      }
-      return Response.json({ status, reason, verification_id: record.id, read: readRecord });
+      return out;
     };
 
     // The document stays in private storage — the backend issues a
-    // short-lived signed URL just long enough for the OCR extraction.
+    // short-lived signed URL just long enough for the readability check.
     const extractFrom = async (uri, schema) => {
       const signed = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 300 });
       const res = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
@@ -239,47 +231,62 @@ export default async function(req) {
       return out && typeof out === 'object' ? out : null;
     };
 
-    let front;
+    // Advisory check only — a failure here never refuses the submission.
+    let front = null;
     try {
       front = await extractFrom(file_uri, EXTRACT_SCHEMAS[document_type]);
     } catch (extractError) {
-      // Unsupported or unreadable file — recorded as a failed attempt.
-      return saveRecord('failed', 'unreadable');
-    }
-    if (!front) return saveRecord('failed', 'unreadable');
-
-    // Personal Card with separate side photos: the back must be readable and
-    // carry the SAME card number as the front — proving both photos belong to
-    // one card.
-    if (document_type === 'personal_card' && file_uri_back) {
-      let back = null;
-      try {
-        back = await extractFrom(file_uri_back, { personal_card_number: { type: 'string' } });
-      } catch (backError) {
-        back = null;
-      }
-      const backNumber = back && back.personal_card_number !== undefined && back.personal_card_number !== null
-        ? String(back.personal_card_number) : '';
-      if (backNumber.trim() === '') return saveRecord('failed', 'unreadable', front);
-      if (normalizeId(backNumber) !== normalizeId(front.personal_card_number)) {
-        return saveRecord('failed', 'card_mismatch', front);
-      }
+      front = null;
     }
 
-    let anyExtracted = false;
-    for (const key of requiredFields) {
-      const raw = key === 'full_name' ? `${front.full_name || ''} ${front.full_name_latin || ''}` : front[key];
-      if (raw !== undefined && raw !== null && String(raw).trim() !== '') anyExtracted = true;
-    }
-    // Every required field must match the document — the entered information
-    // is never modified, so a mismatch fails verification instead of passing
-    // it. Names match in either the document's script or its Latin form.
-    const verified = requiredFields.every((key) =>
-      fieldMatches(key, key === 'full_name' ? [front.full_name, front.full_name_latin] : front[key], expected[key])
-    );
+    const checks = requiredFields.map((key) => {
+      const raw = key === 'full_name' && front
+        ? [front.full_name, front.full_name_latin].filter(Boolean).join(' ')
+        : front
+          ? front[key]
+          : '';
+      const read = raw === undefined || raw === null ? '' : String(raw);
+      return {
+        field: key,
+        label: FIELD_LABELS[key] || key,
+        entered: expected[key],
+        read,
+        matched: read.trim() !== '' && fieldMatches(key, key === 'full_name' ? [front?.full_name, front?.full_name_latin] : read, expected[key]),
+      };
+    });
 
-    if (verified) return saveRecord('verified', '', front);
-    return saveRecord('failed', !anyExtracted ? 'unreadable' : 'mismatch', front);
+    const anyRead = checks.some((c) => c.read.trim() !== '');
+    const outcome = !front || !anyRead ? 'unreadable' : checks.every((c) => c.matched) ? 'match' : 'mismatch';
+
+    let note = 'Submitted for review.';
+    if (outcome === 'unreadable') note = 'The document could not be read automatically — review the document itself.';
+    else if (outcome === 'mismatch') note = 'Some entered details differ from what was read on the document — verify them.';
+    else note = 'The entered details matched what was read on the document.';
+
+    const record = await base44.asServiceRole.entities.IdentityVerification.create({
+      ...baseRecord,
+      ...Object.fromEntries(Object.entries(readRecord(front || {})).map(([k, v]) => [`extracted_${k}`, v])),
+      status: 'pending',
+      reason: outcome === 'match' ? '' : outcome,
+      auto_check: { outcome, checked_datetime: submittedAt, checks },
+      review_history: [
+        {
+          datetime: submittedAt,
+          action: 'submitted',
+          actor_name: user.full_name || user.email || '',
+          actor_role: profile_type,
+          detail: `${document_type} submitted (${baseRecord.source}) — awaiting administrative review`,
+        },
+      ],
+    });
+
+    return Response.json({
+      status: 'pending',
+      verification_id: record.id,
+      submitted_datetime: submittedAt,
+      read: readRecord(front || {}),
+      auto_check: { outcome, checks, note },
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

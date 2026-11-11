@@ -16,6 +16,7 @@ import {
 import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
 import VaccinationDocumentUpload, { ImmunizationEntryForm, ChronicCareEntryForm, immunizationKindLabel, chronicCareTypeLabel } from "@/components/patient/onboarding/PreventiveCareForms";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
+import { isSubmitted } from "@/components/verification/verificationStatus";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
 
@@ -87,13 +88,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const [verification, setVerification] = useState(null);
   const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
-    // The entered identity information is part of the verification — editing
-    // it invalidates any previous verdict.
-    if ([
-      "date_of_birth", "identification_number",
-      "first_name", "father_name", "grandfather_name", "last_name",
-      "first_name_ar", "father_name_ar", "grandfather_name_ar", "last_name_ar",
-    ].includes(field)) setVerification(null);
+    // A submitted document stays submitted — it is stored server-side and
+    // reviewed by administration, so editing a detail never erases its state.
     setError("");
   };
   const setL = (field) => (e) => setLifestyle((s) => ({ ...s, [field]: e.target.value }));
@@ -149,8 +145,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       setError(t("Please select your sex."));
       return;
     }
-    if (verification?.status !== "verified") {
-      setError(t("Verification is required before you can continue."));
+    if (!isSubmitted(verification?.status)) {
+      setError(t("Submit your identity document to continue."));
       return;
     }
     setStep(1);
@@ -285,7 +281,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       }
       if (creates.length) await Promise.all(creates);
       // Associate the verified identity document with the new profile.
-      if (verification?.status === "verified" && verification.verification_id) {
+      if (verification?.verification_id) {
         try {
           await base44.functions.invoke("attachVerificationToProfile", {
             record_ids: [verification.verification_id],
