@@ -558,6 +558,62 @@ const AR = {
   "Dosage": "الجرعة",
   "Refills": "إعادة الصرف",
   "Quantity": "الكمية",
+
+  // ─── Messages from doctors (patient channel) ───
+  "Messages from Doctors": "رسائل من الأطباء",
+  "One-way messages sent to you by your treating doctors": "رسائل باتجاه واحد يرسلها إليك أطباؤك المعالجون",
+  "unread": "غير مقروءة",
+  "This is a one-way message channel. Replies are not available and messages cannot be edited. For anything urgent, contact your hospital or your doctor's clinic directly — this is not an emergency service.":
+    "هذه قناة رسائل باتجاه واحد: لا يمكن الرد على الرسائل ولا تعديلها. في الحالات العاجلة تواصل مباشرة مع مستشفاك أو عيادة طبيبك — هذه ليست خدمة طوارئ.",
+  "No messages from your doctors yet": "لا توجد رسائل من أطبائك بعد",
+  "When a doctor sends you instructions or a follow-up, it will appear here":
+    "عندما يرسل إليك الطبيب تعليمات أو متابعة، ستظهر هنا",
+  "Select a message": "اختر رسالة",
+  "You will see the doctor's name, specialty, hospital and the date and time of each message.":
+    "سترى اسم الطبيب وتخصصه والمستشفى وتاريخ ووقت كل رسالة.",
+  "Follow-up instructions": "تعليمات المتابعة",
+  "Appointment reminder": "تذكير بموعد",
+  "Medication instructions": "تعليمات الأدوية",
+  "Test / imaging preparation": "التحضير للتحليل / التصوير",
+  "Post-consultation care": "الرعاية بعد الاستشارة",
+  "Approved educational material": "مواد تعليمية معتمدة",
+  "General message": "رسالة عامة",
+  "Message": "رسالة",
+  "One-way": "اتجاه واحد",
+  "Announcement": "إعلان",
+  "Correction": "تصحيح",
+  "Read": "تمت القراءة",
+  "Delivered": "تم التسليم",
+  "No messages yet": "لا توجد رسائل بعد",
+  "Pending": "قيد الانتظار",
+  "In Progress": "قيد المعالجة",
+  "Not available": "غير متاح",
+  "Access denied": "تم رفض الوصول",
+  "Activity & access trail": "سجل النشاط والوصول",
+  "This is a one-way message from your doctor. Replies are not available.":
+    "هذه رسالة باتجاه واحد من طبيبك، ولا يمكن الرد عليها.",
+  "For assistance, contact": "للمساعدة، تواصل مع",
+  "One-way message: the patient can read these instructions and cannot reply here.":
+    "رسالة باتجاه واحد: يمكن للمريض قراءة هذه التعليمات ولا يمكنه الرد هنا.",
+
+  // ─── Remaining patient-portal labels ───
+  "The finalized report and study images will appear here once completed.":
+    "سيظهر التقرير النهائي وصور الفحص هنا بعد اكتمالهما.",
+  "Finalized Report": "التقرير النهائي",
+  "Follow-up Instructions": "تعليمات المتابعة",
+  "Study Images": "صور الفحص",
+  "Requested for": "مطلوب بتاريخ",
+  "Submit your identity document to continue.": "أرسل وثيقة هويتك للمتابعة.",
+  "Answer each section — add entries or tick \"None\".": "أجب عن كل قسم — أضف مدخلات أو حدد \"لا شيء\".",
+  "The questions below are optional and answered voluntarily. This information is access-controlled.":
+    "الأسئلة التالية اختيارية وتُجاب طوعاً، وهذه المعلومات محمية بضوابط الوصول.",
+  "Inhaler Device": "جهاز الاستنشاق",
+  "Diagnoses recorded by your doctors appear here. Clinical note contents are visible to your doctors only.":
+    "تظهر هنا التشخيصات التي سجلها أطباؤك. محتوى الملاحظات السريرية مرئي لأطبائك فقط.",
+  "No code": "بدون رمز",
+  "Coding review in progress": "مراجعة الترميز قيد التنفيذ",
+  "e.g. Tripoli Central Hospital": "مثال: مستشفى طرابلس المركزي",
+  "Upload vaccination card or supporting document": "ارفع بطاقة التطعيم أو مستنداً داعماً",
   "Result": "النتيجة",
 
   // Patient Registration screen

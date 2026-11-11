@@ -496,6 +496,46 @@ const AR = {
     "أدخل رمز مستشفى AMedix الذي حصلت عليه من مستشفاك المعتمد.",
   "Your registration is sent to this hospital for approval. The code is verified again when you submit.":
     "يُرسل تسجيلك إلى هذا المستشفى للموافقة، ويُتحقق من الرمز مرة أخرى عند التقديم.",
+
+  // ─── Messaging (shared conversation components) ───
+  "Pending": "قيد الانتظار",
+  "In Progress": "قيد المعالجة",
+  "Resolved": "تم الحل",
+  "Announcement": "إعلان",
+  "Correction": "تصحيح",
+  "Read": "تمت القراءة",
+  "Delivered": "تم التسليم",
+  "One-way": "اتجاه واحد",
+  "No messages yet": "لا توجد رسائل بعد",
+  "Message": "رسالة",
+  "Not available": "غير متاح",
+  "Access denied": "تم رفض الوصول",
+  "General Administration": "الإدارة العامة",
+  "Human Resources": "الموارد البشرية",
+  "Scheduling & Duty Rosters": "الجداول والمناوبات",
+  "Finance & Payments": "المالية والمدفوعات",
+  "Medical Administration": "الإدارة الطبية",
+  "IT Support": "الدعم التقني",
+  "Equipment & Supplies": "المعدات والمستلزمات",
+  "Complaints & Suggestions": "الشكاوى والاقتراحات",
+  "General Inquiries": "استفسارات عامة",
+  "Follow-up instructions": "تعليمات المتابعة",
+  "Appointment reminder": "تذكير بموعد",
+  "Medication instructions": "تعليمات الأدوية",
+  "Test / imaging preparation": "التحضير للتحليل / التصوير",
+  "Post-consultation care": "الرعاية بعد الاستشارة",
+  "Approved educational material": "مواد تعليمية معتمدة",
+  "General message": "رسالة عامة",
+  "Hospital announcement": "إعلان المستشفى",
+  "all doctors": "جميع الأطباء",
+  "One-way message: the patient can read these instructions and cannot reply here.":
+    "رسالة باتجاه واحد: يمكن للمريض قراءة هذه التعليمات ولا يمكنه الرد هنا.",
+  "This is a one-way message from your doctor. Replies are not available.":
+    "هذه رسالة باتجاه واحد من طبيبك، ولا يمكن الرد عليها.",
+  "For assistance, contact": "للمساعدة، تواصل مع",
+  "Activity & access trail": "سجل النشاط والوصول",
+  "No messages from your doctors yet": "لا توجد رسائل من أطبائك بعد",
+  "Select a message": "اختر رسالة",
 };
 
 const AppLanguageContext = createContext(null);

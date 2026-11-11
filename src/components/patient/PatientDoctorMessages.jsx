@@ -4,6 +4,7 @@ import ConversationThread from "@/components/messaging/ConversationThread";
 import ThreadListItem from "@/components/messaging/ThreadListItem";
 import useMessagingChannel from "@/hooks/useMessagingChannel";
 import { useAuth } from "@/lib/AuthContext";
+import { usePatientLanguage } from "@/lib/patientLanguage";
 import { patientMessageTypeLabel } from "@/lib/messaging";
 
 // Patient Portal → Messages from Doctors. Strictly read-only: there is no
@@ -11,9 +12,10 @@ import { patientMessageTypeLabel } from "@/lib/messaging";
 // treating doctors sent, with the doctor's name, specialty and hospital.
 export default function PatientDoctorMessages({ profile }) {
   const { user } = useAuth();
+  const { t } = usePatientLanguage();
   const channel = useMessagingChannel({ channel: "patient" });
   const threads = channel.threads;
-  const unreadTotal = threads.reduce((sum, t) => sum + (t.viewer_unread || 0), 0);
+  const unreadTotal = threads.reduce((sum, thread) => sum + (thread.viewer_unread || 0), 0);
 
   if (channel.loading && threads.length === 0) {
     return (
@@ -26,18 +28,17 @@ export default function PatientDoctorMessages({ profile }) {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="font-heading text-base font-semibold">Messages from Doctors</h2>
+        <h2 className="font-heading text-base font-semibold">{t("Messages from Doctors")}</h2>
         <p className="text-[11px] text-muted-foreground">
-          One-way messages sent to you by your treating doctors
-          {unreadTotal > 0 ? ` · ${unreadTotal} unread` : ""}
+          {t("One-way messages sent to you by your treating doctors")}
+          {unreadTotal > 0 ? ` · ${unreadTotal} ${t("unread")}` : ""}
         </p>
       </div>
 
       <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
-          This is a one-way message channel. Replies are not available and messages cannot be edited.
-          For anything urgent, contact your hospital or your doctor's clinic directly — this is not an emergency service.
+          {t("This is a one-way message channel. Replies are not available and messages cannot be edited. For anything urgent, contact your hospital or your doctor's clinic directly — this is not an emergency service.")}
         </span>
       </div>
 
@@ -48,25 +49,26 @@ export default function PatientDoctorMessages({ profile }) {
       {threads.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center">
           <MessageSquare className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-          <p className="text-sm font-medium">No messages from your doctors yet</p>
+          <p className="text-sm font-medium">{t("No messages from your doctors yet")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            When a doctor sends you instructions or a follow-up, it will appear here{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
+            {t("When a doctor sends you instructions or a follow-up, it will appear here")}
+            {profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
           </p>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
           <div className={`overflow-hidden rounded-2xl border border-border bg-card ${channel.selected ? "hidden lg:block" : ""}`}>
             <div className="max-h-[560px] overflow-y-auto">
-              {threads.map((t) => (
+              {threads.map((thread) => (
                 <ThreadListItem
-                  key={t.id}
-                  thread={{ ...t, channel: "patient" }}
+                  key={thread.id}
+                  thread={{ ...thread, channel: "patient" }}
                   side="patient"
-                  active={channel.selected?.id === t.id}
-                  title={t.counterpart_name}
-                  subtitle={[t.counterpart_subtitle, patientMessageTypeLabel(t.patient_message_type)].filter(Boolean).join(" · ")}
-                  unread={t.viewer_unread || 0}
-                  onClick={() => channel.openThread(t)}
+                  active={channel.selected?.id === thread.id}
+                  title={thread.counterpart_name}
+                  subtitle={[thread.counterpart_subtitle, t(patientMessageTypeLabel(thread.patient_message_type))].filter(Boolean).join(" · ")}
+                  unread={thread.viewer_unread || 0}
+                  onClick={() => channel.openThread(thread)}
                 />
               ))}
             </div>
@@ -88,9 +90,9 @@ export default function PatientDoctorMessages({ profile }) {
               />
             ) : (
               <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card p-6 text-center">
-                <p className="text-sm font-medium">Select a message</p>
+                <p className="text-sm font-medium">{t("Select a message")}</p>
                 <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                  You will see the doctor's name, specialty, hospital and the date and time of each message.
+                  {t("You will see the doctor's name, specialty, hospital and the date and time of each message.")}
                 </p>
               </div>
             )}

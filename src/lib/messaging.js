@@ -43,15 +43,15 @@ export const THREAD_STATUS_META = {
   resolved: { label: "Resolved", className: "bg-success/10 text-success border-success/30" },
 };
 
-export function formatMessageTime(iso) {
+export function formatMessageTime(iso, locale) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const today = new Date();
   const sameDay = d.toDateString() === today.toDateString();
-  if (sameDay) return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) +
-    " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  if (sameDay) return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short" }) +
+    " · " + d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
 export function initials(name) {

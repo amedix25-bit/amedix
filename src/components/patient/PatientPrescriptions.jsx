@@ -100,7 +100,7 @@ function AuthorizationFlow({ prescription, onAuthorized }) {
 // a pharmacy with live stock, and the CIN QR code to present at the counter.
 export default function PatientPrescriptions() {
   const { user } = useAuth();
-  const { t } = usePatientLanguage();
+  const { t, locale } = usePatientLanguage();
   const [items, setItems] = useState(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -129,7 +129,7 @@ export default function PatientPrescriptions() {
   if (!items) {
     return (
       <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
-        <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading...
+        <Loader2 className="w-5 h-5 mr-2 animate-spin" /> {t("Loading...")}
       </div>
     );
   }
@@ -211,7 +211,7 @@ export default function PatientPrescriptions() {
                 <p key={i} className="text-xs text-muted-foreground mt-2">
                   {t("Substituted")}: {s.original_medication_name}{s.original_strength ? ` ${s.original_strength}` : ""} → {s.replacement_medication_name}{s.replacement_strength ? ` ${s.replacement_strength}` : ""}
                   {s.approved_by_name ? ` · ${t("approved by")} ${s.approved_by_name}` : ""}
-                  {s.approved_datetime ? ` · ${new Date(s.approved_datetime).toLocaleString()}` : ""}
+                  {s.approved_datetime ? ` · ${new Date(s.approved_datetime).toLocaleString(locale)}` : ""}
                 </p>
               ))}
               {p.pending_substitution?.medication_name && (
@@ -233,7 +233,7 @@ export default function PatientPrescriptions() {
                   </p>
                   {p.status === "dispensed" && p.dispensed_datetime && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t("Dispensed")} {new Date(p.dispensed_datetime).toLocaleString()} · {p.dispensed_by_name || ""}
+                      {t("Dispensed")} {new Date(p.dispensed_datetime).toLocaleString(locale)} · {p.dispensed_by_name || ""}
                     </p>
                   )}
                 </div>

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Paperclip, Download, AlertTriangle } from "lucide-react";
+import { useAppLanguage } from "@/lib/appLanguage";
 import { formatMessageTime, initials } from "@/lib/messaging";
 
 function AttachmentRow({ attachment, threadId }) {
+  const { t } = useAppLanguage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,7 +37,7 @@ function AttachmentRow({ attachment, threadId }) {
       <span className="min-w-0 flex-1 truncate">{attachment.file_name}</span>
       {error ? (
         <span className="flex items-center gap-1 text-critical">
-          <AlertTriangle className="w-3 h-3" /> {error}
+          <AlertTriangle className="w-3 h-3" /> {t(error)}
         </span>
       ) : (
         <Download className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
@@ -45,6 +47,7 @@ function AttachmentRow({ attachment, threadId }) {
 }
 
 export default function MessageBubble({ message, own, side, threadId, readByOther }) {
+  const { t, isArabic } = useAppLanguage();
   const isSystem = message.kind === "system";
   // The server computes whose read flag means "the other side read it" for each
   // channel; fall back to the hospital-channel rule when it is not supplied.
@@ -56,7 +59,7 @@ export default function MessageBubble({ message, own, side, threadId, readByOthe
     return (
       <div className="flex justify-center py-1">
         <p className="rounded-full bg-muted px-3 py-1 text-[11px] text-muted-foreground text-center">
-          {message.sender_name} — {message.body} · {formatMessageTime(message.datetime)}
+          {message.sender_name} — {message.body} · {formatMessageTime(message.datetime, isArabic ? "ar" : undefined)}
         </p>
       </div>
     );
@@ -78,12 +81,12 @@ export default function MessageBubble({ message, own, side, threadId, readByOthe
         )}
         {message.kind === "correction" && (
           <span className="mb-1 rounded bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
-            Correction
+            {t("Correction")}
           </span>
         )}
         {message.kind === "announcement" && (
           <span className="mb-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-            Announcement
+            {t("Announcement")}
           </span>
         )}
         <div
@@ -97,8 +100,8 @@ export default function MessageBubble({ message, own, side, threadId, readByOthe
           ))}
         </div>
         <p className="mt-1 text-[10px] text-muted-foreground">
-          {formatMessageTime(message.datetime)}
-          {own ? (readByCounterpart ? " · Read" : " · Delivered") : ""}
+          {formatMessageTime(message.datetime, isArabic ? "ar" : undefined)}
+          {own ? ` · ${readByCounterpart ? t("Read") : t("Delivered")}` : ""}
         </p>
       </div>
     </div>

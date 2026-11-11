@@ -10,7 +10,7 @@ import { STAGE_LABELS, STAGE_CHIP, canonicalStage } from "@/lib/radiologyWorkflo
 // View Request (opens the original request PDF) and View Results (opens the
 // radiologist's finalized report PDF and study images).
 export default function PatientImaging({ patientId }) {
-  const { t } = usePatientLanguage();
+  const { t, locale } = usePatientLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resultsRequest, setResultsRequest] = useState(null);
@@ -56,7 +56,7 @@ export default function PatientImaging({ patientId }) {
                 {(img.scheduled_datetime || img.requested_date) && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {img.scheduled_datetime
-                      ? `${t("Scheduled")}: ${new Date(img.scheduled_datetime).toLocaleString()}`
+                      ? `${t("Scheduled")}: ${new Date(img.scheduled_datetime).toLocaleString(locale)}`
                       : `${t("Requested for")}: ${img.requested_date}`}
                   </p>
                 )}
