@@ -380,6 +380,28 @@ const AR = {
   "recorded visits": "زيارة مسجلة",
   "Every figure above is counted from this hospital's own records. A dash means the figure could not be measured — it is never shown as zero.":
     "كل رقم أعلاه محسوب من سجلات هذا المستشفى. الشرطة تعني أن الرقم لم يُقس، ولا يُعرض أبداً كصفر.",
+
+  // ─── Public entry: patient / professional ───
+  "I'm a Patient": "أنا مريض",
+  "I'm a Healthcare Professional": "أنا من الكوادر الصحية",
+  "Log in to your health record, or create an account to receive your Clinical Identification Number (CIN).":
+    "سجّل الدخول إلى سجلك الصحي، أو أنشئ حساباً للحصول على رقم التعريف السريري (CIN).",
+  "Doctor, hospital, laboratory, or pharmacy — sign in to your professional portal.":
+    "طبيب، مستشفى، مختبر، أو صيدلية — سجّل الدخول إلى بوابتك المهنية.",
+  "Patient Login / Register": "دخول / تسجيل المريض",
+  "Professional Access": "دخول الكوادر الصحية",
+  "Healthcare Professional Access": "دخول الكوادر الصحية",
+  "Select your professional portal to log in or register your account.":
+    "اختر بوابتك المهنية لتسجيل الدخول أو إنشاء حسابك.",
+  "Login or Register": "تسجيل الدخول أو إنشاء حساب",
+  "Pharmacy": "صيدلية",
+  "Clinical portal for verified doctors.": "بوابة سريرية للأطباء الموثّقين.",
+  "Institutional portal for hospitals and clinics.": "بوابة مؤسسية للمستشفيات والعيادات.",
+  "Laboratory portal for test requests and results.": "بوابة المختبر لطلبات التحاليل ونتائجها.",
+  "Pharmacy portal for prescriptions and medication stock.": "بوابة الصيدلية للوصفات ومخزون الأدوية.",
+  "Back to Home": "العودة إلى الرئيسية",
+  "Professional accounts are verified by AMedix administration before clinical or institutional access is granted. Hospitals receive an authorization code on approval.":
+    "يتم توثيق الحسابات المهنية من إدارة AMedix قبل منح الوصول السريري أو المؤسسي، وتحصل المستشفيات على رمز تفويض عند الموافقة.",
 };
 
 const AppLanguageContext = createContext(null);

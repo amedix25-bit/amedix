@@ -34,6 +34,8 @@ import RadiologistDashboard from '@/pages/RadiologistDashboard';
 import RadiologyDepartmentPortal from '@/pages/RadiologyDepartmentPortal';
 import RadiologyPortal from '@/pages/RadiologyPortal';
 import ClinicalReferences from '@/pages/ClinicalReferences';
+import ProfessionalAccess from '@/pages/ProfessionalAccess';
+import PortalRouteGuard from '@/components/PortalRouteGuard';
 import { AppLanguageProvider } from '@/lib/appLanguage';
 
 const AuthenticatedApp = () => {
@@ -73,18 +75,19 @@ const AuthenticatedApp = () => {
       <Route path="/lab-technician" element={<LabTechnician />} />
       <Route path="/" element={<Welcome />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/professional-access" element={<ProfessionalAccess />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/home" element={<Home />} />
-        <Route path="/patient" element={<PatientDashboard />} />
-        <Route path="/doctor" element={<DoctorDashboard />} />
-        <Route path="/radiologist" element={<RadiologistDashboard />} />
+        <Route path="/patient" element={<PortalRouteGuard portal="patient"><PatientDashboard /></PortalRouteGuard>} />
+        <Route path="/doctor" element={<PortalRouteGuard portal="doctor"><DoctorDashboard /></PortalRouteGuard>} />
+        <Route path="/radiologist" element={<PortalRouteGuard portal="radiologist"><RadiologistDashboard /></PortalRouteGuard>} />
         <Route path="/radiology-department" element={<RadiologyDepartmentPortal />} />
         <Route path="/radiology-portal" element={<RadiologyPortal />} />
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/lab-portal" element={<LabPortal />} />
-        <Route path="/pharmacy-portal" element={<PharmacyPortal />} />
-        <Route path="/hospital-portal" element={<HospitalPortal />} />
+        <Route path="/lab-portal" element={<PortalRouteGuard portal="lab"><LabPortal /></PortalRouteGuard>} />
+        <Route path="/pharmacy-portal" element={<PortalRouteGuard portal="pharmacy"><PharmacyPortal /></PortalRouteGuard>} />
+        <Route path="/hospital-portal" element={<PortalRouteGuard portal="hospital"><HospitalPortal /></PortalRouteGuard>} />
         <Route path="/clinical-references" element={<ClinicalReferences />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
