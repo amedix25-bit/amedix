@@ -115,7 +115,7 @@ export default function SignupVerification({ onVerified }) {
         <Button
           variant="outline"
           className="w-full h-14 justify-start px-4 gap-3 font-medium"
-          onClick={() => { setChannel("email"); setError(""); }}
+          onClick={() => { setError(""); onVerified({ channel: "email", destination: "" }); }}
         >
           <Mail className="w-5 h-5 text-primary" />
           <span className="text-left">
