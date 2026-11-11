@@ -12,6 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { lookupDoctorRegistration } from "@/lib/doctorRegistration";
+import SignupVerification from "@/components/registration/SignupVerification";
 
 export default function Register({ embedded = false, onLogin = null }) {
   const [email, setEmail] = useState("");
@@ -25,6 +26,9 @@ export default function Register({ embedded = false, onLogin = null }) {
   // instead of reporting that the account already exists.
   const [existingState, setExistingState] = useState("");
   const [continuing, setContinuing] = useState(false);
+  // The chosen verification (phone by SMS or email by code) must succeed before
+  // the registration form appears at all.
+  const [verified, setVerified] = useState(null);
   const { t } = useAppLanguage();
 
   const handleSubmit = async (e) => {
@@ -103,6 +107,38 @@ export default function Register({ embedded = false, onLogin = null }) {
   const handleGoogle = () => {
     base44.auth.loginWithProvider("google", safeReturnTo());
   };
+
+  const loginFooter = (
+    <>
+      {t("Already have an account?")}{" "}
+      {onLogin ? (
+        <button type="button" onClick={onLogin} className="text-primary font-medium hover:underline">{t("Log in")}</button>
+      ) : (
+        <Link to={"/login" + (safeReturnTo(null) ? "?returnTo=" + encodeURIComponent(safeReturnTo(null)) : "")} className="text-primary font-medium hover:underline">{t("Log in")}</Link>
+      )}
+    </>
+  );
+
+  // Step one of account creation: prove a phone number or an email address.
+  // Everything after this point is the registration flow exactly as before.
+  if (!verified) {
+    return (
+      <AuthLayout
+        embedded={embedded}
+        icon={ShieldCheck}
+        title={t("Create your account")}
+        subtitle={t("Verify your phone number or email address to continue.")}
+        footer={loginFooter}
+      >
+        <SignupVerification
+          onVerified={(result) => {
+            if (result.channel === "email" && result.destination) setEmail(result.destination);
+            setVerified(result);
+          }}
+        />
+      </AuthLayout>
+    );
+  }
 
   if (showOtp) {
     return (
@@ -226,16 +262,7 @@ export default function Register({ embedded = false, onLogin = null }) {
       icon={UserPlus}
       title={t("Join A&M Healthcare")}
       subtitle={t("Connected Care. Better Health.")}
-      footer={
-        <>
-          {t("Already have an account?")}{" "}
-          {onLogin ? (
-            <button type="button" onClick={onLogin} className="text-primary font-medium hover:underline">{t("Log in")}</button>
-          ) : (
-            <Link to={"/login" + (safeReturnTo(null) ? "?returnTo=" + encodeURIComponent(safeReturnTo(null)) : "")} className="text-primary font-medium hover:underline">{t("Log in")}</Link>
-          )}
-        </>
-      }
+      footer={loginFooter}
     >
       <Button
         variant="outline"
