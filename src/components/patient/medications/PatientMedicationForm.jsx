@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, X } from "lucide-react";
+import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 import { MED_ROUTES, MEAL_OPTIONS, routeLabel } from "@/lib/medicationUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
@@ -44,7 +45,13 @@ export default function PatientMedicationForm({ initial, saving, onSubmit, onCan
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>{t("Drug Name *")}</Label>
-          <Input value={form.name} onChange={set("name")} placeholder={t("e.g. Metformin")} required />
+          <MedicationAutocomplete
+            value={form.name}
+            onChange={(v) => setForm((s) => ({ ...s, name: v }))}
+            onSelect={(option) => setForm((s) => ({ ...s, name: option.medication_name }))}
+            placeholder={t("e.g. Metformin")}
+            required
+          />
         </div>
         <div className="space-y-1.5">
           <Label>{t("Dose")}</Label>

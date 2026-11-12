@@ -20,8 +20,11 @@ export default function PatientMedications({ patient }) {
   const load = useCallback(async () => {
     if (!patient?.id) return;
     try {
-      const results = await base44.entities.Medication.filter({ patient_id: patient.id }, "-start_date");
-      setMeds(results);
+      const page = await base44.entities.Medication.filter(
+        { patient_id: patient.id },
+        { sort: "-start_date", limit: 500 }
+      );
+      setMeds(page.items || page);
     } catch (err) {
       console.error(err);
     } finally {

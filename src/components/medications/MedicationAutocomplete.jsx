@@ -9,8 +9,8 @@ function escapeRegex(v) {
 
 const matchQuery = (q) => ({
   $or: [
-    { medication_name: { $regex: `^${escapeRegex(q)}`, $options: "i" } },
-    { active_ingredient: { $regex: `^${escapeRegex(q)}`, $options: "i" } },
+    { medication_name: { $regex: escapeRegex(q), $options: "i" } },
+    { active_ingredient: { $regex: escapeRegex(q), $options: "i" } },
   ],
 });
 
@@ -43,18 +43,13 @@ export default function MedicationAutocomplete({
         const query = matchQuery(q);
         const fields = ["medication_name", "active_ingredient", "strength", "dosage_form"];
         const [catalogPage, inventoryPage] = await Promise.all([
-          base44.entities.DrugCatalog.filter(
-            {
-              $or: [
-                { medication_name: { $regex: `^${escapeRegex(q)}`, $options: "i" } },
-                { active_ingredient: { $regex: `^${escapeRegex(q)}`, $options: "i" } },
-              ],
-            },
-            { fields: ["medication_name", "active_ingredient", "dosage_form"], limit: 100 }
-          ),
+          base44.entities.DrugCatalog.filter(query, {
+            fields: ["medication_name", "active_ingredient", "dosage_form"],
+            limit: 300,
+          }),
           base44.entities.PharmacyInventory.filter(
             { $and: [query, { is_quarantined: { $ne: true } }, { quantity_in_stock: { $gt: 0 } }] },
-            { fields, limit: 100 }
+            { fields, limit: 300 }
           ),
         ]);
         const catalog = (catalogPage.items || catalogPage) || [];
@@ -76,7 +71,7 @@ export default function MedicationAutocomplete({
           merged.push({ ...item, in_stock: false });
         }
         merged.sort((a, b) => (b.in_stock === a.in_stock ? 0 : b.in_stock ? 1 : -1));
-        setOptions(merged.slice(0, 8));
+        setOptions(merged.slice(0, 60));
       } catch {
         setOptions([]);
       }
@@ -105,7 +100,7 @@ export default function MedicationAutocomplete({
         {...inputProps}
       />
       {open && options.length > 0 && (
-        <div className="absolute z-50 left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-lg max-h-52 overflow-y-auto">
+        <div className="absolute z-50 left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-lg max-h-72 overflow-y-auto">
           {options.map((option) => (
             <button
               key={option.medication_name}
