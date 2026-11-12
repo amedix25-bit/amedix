@@ -12,7 +12,6 @@ import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { lookupDoctorRegistration } from "@/lib/doctorRegistration";
-import SignupVerification from "@/components/registration/SignupVerification";
 
 export default function Register({ embedded = false, onLogin = null }) {
   const [email, setEmail] = useState("");
@@ -26,9 +25,6 @@ export default function Register({ embedded = false, onLogin = null }) {
   // instead of reporting that the account already exists.
   const [existingState, setExistingState] = useState("");
   const [continuing, setContinuing] = useState(false);
-  // The chosen verification (phone by SMS or email by code) must succeed before
-  // the registration form appears at all.
-  const [verified, setVerified] = useState(null);
   const { t } = useAppLanguage();
 
   const handleSubmit = async (e) => {
@@ -118,27 +114,6 @@ export default function Register({ embedded = false, onLogin = null }) {
       )}
     </>
   );
-
-  // Step one of account creation: prove a phone number or an email address.
-  // Everything after this point is the registration flow exactly as before.
-  if (!verified) {
-    return (
-      <AuthLayout
-        embedded={embedded}
-        icon={ShieldCheck}
-        title={t("Create your account")}
-        subtitle={t("Verify your phone number or email address to continue.")}
-        footer={loginFooter}
-      >
-        <SignupVerification
-          onVerified={(result) => {
-            if (result.channel === "email" && result.destination) setEmail(result.destination);
-            setVerified(result);
-          }}
-        />
-      </AuthLayout>
-    );
-  }
 
   if (showOtp) {
     return (
@@ -291,11 +266,6 @@ export default function Register({ embedded = false, onLogin = null }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">{t("Email")}</Label>
-          {verified?.channel === "sms" && (
-            <p className="text-xs text-muted-foreground">
-              {t("Your phone number is already verified. This email is only the address you sign in with.")}
-            </p>
-          )}
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <Input

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
@@ -71,22 +71,12 @@ export default function Landing() {
           ) : step ? (
             <PortalAuthForm portal={option.key} mode={step} onModeChange={changeStep} />
           ) : (
-            <>
-              <PortalChoice
-                option={option}
-                onLogin={() => changeStep("login")}
-                onRegister={() => changeStep("register")}
-                onBack={() => setParams({})}
-              />
-              {option.key === "patient" && (
-                <Link
-                  to="/patient-phone"
-                  className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                >
-                  {t("Sign in with your phone number only")}
-                </Link>
-              )}
-            </>
+            <PortalChoice
+              option={option}
+              onLogin={() => changeStep("login")}
+              onRegister={() => changeStep("register")}
+              onBack={() => setParams({})}
+            />
           )}
         </div>
       </main>
