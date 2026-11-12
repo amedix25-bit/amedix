@@ -1,9 +1,18 @@
 import { jsPDF } from "jspdf";
+import {
+  PDF_INK,
+  PDF_PAGE,
+  FLOW_BOTTOM,
+  loadRequestLogo,
+  drawRequestHeader,
+  startPage,
+  drawSectionLabel,
+  drawField,
+  drawDivider,
+  drawRequestFooter,
+} from "@/lib/requestPdfLayout";
 
-const TEAL = [23, 50, 77]; // #17324D dark blue
-const DARK = [23, 40, 45];
-const GRAY = [105, 115, 120];
-const LIGHT = [236, 245, 244];
+const TITLE = "PAYMENT RECEIPT";
 
 const METHOD_LABELS = {
   cash: "Cash",
@@ -21,152 +30,140 @@ const STATUS_LABELS = {
   refunded: "Refunded",
 };
 
-// Printable payment receipt for a pharmacy PaymentTransaction — pharmacy
-// details, transaction reference, date, items charged, amounts, method,
-// outstanding balance and the full payment history.
-export function generateReceiptPdf(tx) {
+// Printable payment receipt for a pharmacy PaymentTransaction, in the shared
+// AMedix document layout — pharmacy and patient, the items charged, the
+// amounts, the method and the full payment history.
+export async function generateReceiptPdf(tx, logo) {
+  const artwork = logo || (await loadRequestLogo());
   const doc = new jsPDF();
-  const W = 210, M = 15, R = W - M;
-  let y;
+  const { margin: M, right: R } = PDF_PAGE;
 
-  // ===== Header band =====
-  doc.setFillColor(...TEAL);
-  doc.rect(0, 0, W, 27, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("AMedix", M, 12);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("Connected Care. Better Health.", M, 18.5);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12.5);
-  doc.text("PAYMENT RECEIPT", R, 12, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text(`Transaction ID: ${tx.transaction_id || "-"}`, R, 18.5, { align: "right" });
-  doc.text(`Issued: ${new Date().toLocaleString()}`, R, 23, { align: "right" });
+  let y = drawRequestHeader(doc, { logo: artwork, title: TITLE });
+
+  const need = (height) => {
+    if (y + height > FLOW_BOTTOM) y = startPage(doc, artwork, TITLE) + 4;
+  };
 
   // ===== Pharmacy & patient =====
-  y = 36;
+  drawSectionLabel(doc, "Pharmacy", y);
+  drawSectionLabel(doc, "Patient", y, M + 92);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("PHARMACY", M, y);
-  doc.text("PATIENT", R, y);
-  y += 5;
-  doc.setTextColor(...DARK);
-  doc.setFontSize(9.5);
-  doc.setFont("helvetica", "bold");
-  doc.text(tx.pharmacy_name || "-", M, y);
-  doc.text(tx.patient_name || "-", R, y);
-  y += 5;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...GRAY);
-  doc.text(`Pharmacist: ${tx.pharmacist_name || "-"}`, M, y);
-  doc.text(`CIN: ${tx.patient_cin || "-"}`, R, y);
-  y += 4.5;
-  doc.text(`Prescription: ${tx.prescription_ref || "-"}`, M, y);
-  if (tx.dispensing_datetime) {
-    doc.text(`Dispensed: ${new Date(tx.dispensing_datetime).toLocaleString()}`, R, y);
-  } else {
-    doc.text("Payment recorded before dispensing", R, y);
-  }
+  doc.setFontSize(13);
+  doc.setTextColor(...PDF_INK.ink);
+  doc.text(String(tx.pharmacy_name || "—"), M, y + 9, { maxWidth: 82 });
+  doc.text(String(tx.patient_name || "—"), M + 92, y + 9, { maxWidth: 78 });
+
+  drawField(doc, "Pharmacist", tx.pharmacist_name, M, y + 18);
+  drawField(doc, "Clinical Identification Number (CIN)", tx.patient_cin, M + 92, y + 18, { bold: true, color: PDF_INK.navy });
+  drawField(doc, "Prescription", tx.prescription_ref, M, y + 33);
+  drawField(
+    doc,
+    "Dispensed",
+    tx.dispensing_datetime
+      ? new Date(tx.dispensing_datetime).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "Payment recorded before dispensing",
+    M + 92,
+    y + 33,
+    { width: 78 },
+  );
+
+  y += 44;
+  drawDivider(doc, y);
+  y += 10;
 
   // ===== Items =====
-  y += 10;
-  doc.setFillColor(...LIGHT);
-  doc.rect(M, y - 4, W - 2 * M, 7, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...DARK);
-  doc.text("ITEM / MEDICATION", M + 2, y + 0.5);
-  doc.text("STRENGTH", R - 60, y + 0.5, { align: "right" });
-  doc.text("QTY", R - 32, y + 0.5, { align: "right" });
-  y += 8;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  const items = tx.items && tx.items.length ? tx.items : [];
+  drawSectionLabel(doc, "Items Dispensed", y);
+  drawSectionLabel(doc, "Strength", y, R - 26, "right");
+  drawSectionLabel(doc, "Qty", y, R, "right");
+  y += 7.5;
+
+  const items = tx.items || [];
   if (items.length === 0) {
-    doc.setTextColor(...GRAY);
-    doc.text("No item detail recorded", M + 2, y);
-    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...PDF_INK.muted);
+    doc.text("No item detail recorded", M, y);
+    y += 7;
   }
-  for (const it of items) {
-    doc.setTextColor(...DARK);
-    doc.text(String(it.medication_name || "-").slice(0, 60), M + 2, y);
-    doc.setTextColor(...GRAY);
-    doc.text(String(it.strength || "-"), R - 60, y, { align: "right" });
-    doc.text(String(it.quantity || "-"), R - 32, y, { align: "right" });
-    y += 5.5;
-  }
+  items.forEach((item) => {
+    need(9);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...PDF_INK.ink);
+    doc.text(String(item.medication_name || "—").slice(0, 60), M, y);
+    doc.setFontSize(9.5);
+    doc.setTextColor(...PDF_INK.muted);
+    doc.text(String(item.strength || "—"), R - 26, y, { align: "right" });
+    doc.text(String(item.quantity || "—"), R, y, { align: "right" });
+    y += 7;
+  });
 
   // ===== Payment summary =====
-  y += 3;
-  doc.setDrawColor(...LIGHT);
-  doc.line(M, y, R, y);
-  y += 7;
-  const summaryRows = [
-    ["Amount due", String(tx.amount_due ?? "-")],
-    ["Amount paid", String(tx.amount_paid ?? "0")],
-    ["Outstanding balance", String(tx.outstanding_balance ?? "-")],
-    ["Payment status", STATUS_LABELS[tx.payment_status] || tx.payment_status || "-"],
-  ];
-  doc.setFontSize(9);
-  for (const [label, value] of summaryRows) {
+  y += 2;
+  drawDivider(doc, y);
+  y += 9;
+  drawSectionLabel(doc, "Payment Summary", y);
+  y += 7.5;
+
+  [
+    ["Amount due", tx.amount_due ?? "—"],
+    ["Amount paid", tx.amount_paid ?? "0"],
+    ["Outstanding balance", tx.outstanding_balance ?? "—"],
+    ["Payment status", STATUS_LABELS[tx.payment_status] || tx.payment_status || "—"],
+  ].forEach(([label, value]) => {
+    need(9);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...GRAY);
-    doc.text(label, M, y);
+    doc.setFontSize(10.5);
+    doc.setTextColor(...PDF_INK.ink);
+    doc.text(String(label), M, y);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...DARK);
-    doc.text(value, R, y, { align: "right" });
-    y += 6;
-  }
+    doc.text(String(value), R, y, { align: "right" });
+    y += 7;
+  });
 
   // ===== Payment history =====
   y += 2;
-  doc.setDrawColor(...LIGHT);
-  doc.line(M, y, R, y);
-  y += 7;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("PAYMENT HISTORY", M, y);
-  y += 5;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  const entries = tx.payments && tx.payments.length ? tx.payments : [];
-  if (entries.length === 0) {
-    doc.setTextColor(...GRAY);
-    doc.text("No payments recorded yet", M, y);
-    y += 6;
-  }
-  for (const e of entries) {
-    if (y > 275) { doc.addPage(); y = 20; }
-    const type = e.entry_type === "payment" ? "Payment" : e.entry_type === "refund" ? "Refund" : "Adjustment";
-    const method = e.method ? ` · ${METHOD_LABELS[e.method] || e.method}` : "";
-    const ver = e.verification === "pending_verification" ? " (pending verification)" : "";
-    doc.setTextColor(...DARK);
-    doc.text(`${type}: ${e.amount ?? 0}${method}${ver}`, M, y);
-    doc.setTextColor(...GRAY);
-    doc.setFontSize(7.5);
-    doc.text(
-      `${e.datetime ? new Date(e.datetime).toLocaleString() : ""} · ${e.pharmacist_name || "-"}${e.note ? ` · ${e.note}` : ""}`,
-      M, y + 4,
-    );
-    doc.setFontSize(8.5);
-    y += 10;
-  }
+  drawDivider(doc, y);
+  y += 9;
+  drawSectionLabel(doc, "Payment History", y);
+  y += 7.5;
 
-  // ===== Footer =====
-  y = Math.max(y + 4, 280);
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text(
+  const entries = tx.payments || [];
+  if (entries.length === 0) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...PDF_INK.muted);
+    doc.text("No payments recorded yet", M, y);
+    y += 7;
+  }
+  entries.forEach((entry) => {
+    need(14);
+    const type = entry.entry_type === "payment" ? "Payment" : entry.entry_type === "refund" ? "Refund" : "Adjustment";
+    const method = entry.method ? `  ·  ${METHOD_LABELS[entry.method] || entry.method}` : "";
+    const verification = entry.verification === "pending_verification" ? "  ·  Pending verification" : "";
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...PDF_INK.ink);
+    doc.text(`${type}: ${entry.amount ?? 0}${method}${verification}`, M, y, { maxWidth: R - M });
+
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_INK.muted);
+    doc.text(
+      [entry.datetime ? new Date(entry.datetime).toLocaleString("en-GB") : "", entry.pharmacist_name || "", entry.note || ""]
+        .filter(Boolean)
+        .join("  ·  "),
+      M,
+      y + 4.5,
+      { maxWidth: R - M },
+    );
+    y += 11;
+  });
+
+  drawRequestFooter(
+    doc,
+    tx.transaction_id,
     "Payment status is recorded separately from dispensing status. Non-cash payments are confirmed only after verification by the pharmacy.",
-    M, y, { maxWidth: W - 2 * M },
   );
 
   doc.save(`receipt-${tx.transaction_id || "transaction"}.pdf`);

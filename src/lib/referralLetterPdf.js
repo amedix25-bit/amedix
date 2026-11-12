@@ -1,15 +1,22 @@
 import { jsPDF } from "jspdf";
 import { calcAge } from "@/lib/labRequestPdf";
+import {
+  PDF_INK,
+  PDF_PAGE,
+  FLOW_BOTTOM,
+  loadRequestLogo,
+  drawRequestHeader,
+  startPage,
+  drawIdentityBlock,
+  drawSectionLabel,
+  drawFieldGrid,
+  drawDivider,
+  drawWrappedBlock,
+  drawSignatureInline,
+  drawRequestFooter,
+} from "@/lib/requestPdfLayout";
 
-const TEAL = [23, 50, 77]; // #17324D dark blue
-const DARK = [23, 40, 45];
-const GRAY = [105, 115, 120];
-
-const URGENCY_COLORS = {
-  Routine: [16, 122, 87],
-  Urgent: [176, 102, 7],
-  Emergency: [185, 28, 28],
-};
+const TITLE = "REFERRAL LETTER";
 
 export function makeReferralId() {
   const d = new Date();
@@ -22,184 +29,127 @@ export function makeVerificationCode() {
   return `AMH-${part()}-${part()}`;
 }
 
-// Professional referral letter PDF — same visual language as the lab and
-// imaging request forms. All optional sections are skipped when empty.
-export function generateReferralLetterPdf(ref) {
+// Professional referral letter PDF — the same document family as the request
+// forms: the AMedix letterhead, letter-spaced section labels, no boxes, and a
+// single footer carrying the referral reference. Optional sections are skipped
+// when empty.
+export async function generateReferralLetterPdf(ref, logo) {
+  const artwork = logo || (await loadRequestLogo());
   const doc = new jsPDF();
-  const W = 210, M = 15, R = W - M, RX = 112;
-  let y;
+  const { margin: M, right: R } = PDF_PAGE;
 
-  const ensure = (h) => {
-    if (y + h > 278) {
-      doc.addPage();
-      y = 20;
-    }
+  let y = drawRequestHeader(doc, { logo: artwork, title: TITLE });
+
+  const need = (height) => {
+    if (y + height > FLOW_BOTTOM) y = startPage(doc, artwork, TITLE) + 4;
   };
 
-  // ===== Header band =====
-  doc.setFillColor(...TEAL);
-  doc.rect(0, 0, W, 27, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("AMedix", M, 12);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("Connected Care. Better Health.", M, 18.5);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12.5);
-  doc.text("REFERRAL LETTER", R, 12, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text(`Referral No: ${ref.referral_number || "-"}`, R, 18.5, { align: "right" });
-  doc.text(`Date: ${ref.referral_date || "-"}`, R, 23, { align: "right" });
-
-  // Urgency chip
-  const uColor = URGENCY_COLORS[ref.urgency] || URGENCY_COLORS.Routine;
-  doc.setFillColor(...uColor);
-  doc.roundedRect(M, 31, 42, 7, 1.5, 1.5, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text(String(ref.urgency || "Routine").toUpperCase(), M + 21, 35.7, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text(`Verification Code: ${ref.verification_code || "-"}`, R, 35.7, { align: "right" });
-
-  // ===== Referring doctor & patient =====
-  y = 44;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("REFERRING DOCTOR", M, y);
-  doc.text("PATIENT", RX, y);
-  doc.setFontSize(12);
-  doc.setTextColor(...DARK);
-  doc.text(String(ref.doctor_name || "-"), M, y + 6.5, { maxWidth: RX - M - 8 });
-  doc.text(String(ref.patient_name || "-"), RX, y + 6.5, { maxWidth: R - RX });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...GRAY);
-  const docLines = [
-    [ref.doctor_specialization, ref.doctor_hospital].filter(Boolean).join(" — "),
-    ref.doctor_contact ? `Contact: ${ref.doctor_contact}` : "",
-    ref.doctor_license ? `Doctor ID / Reg. No: ${ref.doctor_license}` : "",
-  ].filter(Boolean);
-  docLines.forEach((l, i) => doc.text(l, M, y + 12.5 + i * 5, { maxWidth: RX - M - 8 }));
-
+  // ===== Patient =====
   const age = calcAge(ref.patient_dob);
-  const patLines = [
-    `CIN: ${ref.patient_cin || "-"}`,
-    ref.patient_dob ? `DOB: ${ref.patient_dob}${age ? ` (${age})` : ""}` : "",
-    [ref.patient_sex ? `Sex: ${ref.patient_sex}` : "", ref.patient_contact ? `Contact: ${ref.patient_contact}` : ""].filter(Boolean).join("   "),
-  ].filter(Boolean);
-  patLines.forEach((l, i) => doc.text(l, RX, y + 12.5 + i * 5, { maxWidth: R - RX }));
+  y = drawIdentityBlock(doc, {
+    name: ref.patient_name,
+    cin: ref.patient_cin,
+    fields: [
+      ["Date of Birth", ref.patient_dob ? (age ? `${ref.patient_dob} (${age})` : ref.patient_dob) : ""],
+      ["Sex", ref.patient_sex],
+      ["Contact", ref.patient_contact],
+    ],
+  }, y);
 
-  y += 14 + Math.max(docLines.length, patLines.length) * 5 + 2;
-  doc.setDrawColor(215, 224, 226);
-  doc.setLineWidth(0.3);
-  doc.line(M, y, R, y);
+  // ===== Referring doctor =====
+  y += 7;
+  drawSectionLabel(doc, "Referring Doctor", y);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...PDF_INK.ink);
+  doc.text(String(ref.doctor_name || "").trim() || "—", M, y + 9);
 
-  // ===== Section builders =====
-  const sectionHeader = (title) => {
-    ensure(14);
-    y += 7;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
-    doc.setTextColor(...TEAL);
-    doc.text(title, M, y);
-    y += 2.5;
-  };
-
-  const labelValue = (label, value) => {
-    if (!value || !String(value).trim()) return;
-    const lines = doc.splitTextToSize(String(value), R - M - 2);
-    ensure(12 + lines.length * 4.8);
-    y += 6;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...GRAY);
-    doc.text(label.toUpperCase(), M, y);
-    y += 4.8;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...DARK);
-    lines.forEach((l) => {
-      ensure(5.5);
-      doc.text(l, M, y);
-      y += 4.8;
-    });
-  };
+  const urgencyCell = [ref.urgency ? String(ref.urgency) : "", { bold: true, color: PDF_INK.navy }];
+  y = drawFieldGrid(doc, [
+    ["Specialty", ref.doctor_specialization],
+    ["Hospital / Clinic", ref.doctor_hospital],
+    ["Referral Date", ref.referral_date],
+    urgencyCell,
+  ], y + 18);
+  drawDivider(doc, y);
+  y += 10;
 
   // ===== Referral information =====
-  sectionHeader("REFERRAL INFORMATION");
-  labelValue("RECEIVING DOCTOR / DEPARTMENT", [ref.receiving_doctor, ref.receiving_specialty].filter(Boolean).join(" — "));
-  labelValue("RECEIVING HOSPITAL / CLINIC", ref.receiving_hospital);
-  labelValue("RECEIVING DOCTOR CONTACT", ref.receiving_contact);
-  labelValue("REASON FOR REFERRAL", ref.reason_for_referral);
-  labelValue("PRIMARY / WORKING DIAGNOSIS", ref.working_diagnosis);
+  need(52);
+  drawSectionLabel(doc, "Referral Information", y);
+  y = drawFieldGrid(doc, [
+    ["Receiving Doctor", ref.receiving_doctor],
+    ["Receiving Specialty", ref.receiving_specialty],
+    ["Receiving Hospital / Clinic", ref.receiving_hospital],
+    ["Receiving Contact", ref.receiving_contact],
+    ["Referring Doctor Contact", ref.doctor_contact],
+    ["Verification Code", ref.verification_code],
+  ], y + 7);
+  y += 8;
+
+  y = drawWrappedBlock(doc, "Reason for Referral", ref.reason_for_referral, y, artwork, TITLE);
+  y = drawWrappedBlock(doc, "Primary / Working Diagnosis", ref.working_diagnosis, y, artwork, TITLE);
 
   // ===== Clinical information =====
-  sectionHeader("CLINICAL INFORMATION");
-  labelValue("RELEVANT SYMPTOMS & DURATION", ref.symptoms_duration);
-  labelValue("PAST MEDICAL HISTORY", ref.past_medical_history);
-  labelValue("PAST SURGICAL HISTORY", ref.past_surgical_history);
-  labelValue("CURRENT MEDICATIONS", ref.current_medications);
-  labelValue("ALLERGIES", ref.allergies);
-  labelValue("PHYSICAL EXAMINATION FINDINGS", ref.physical_examination);
-  labelValue("VITAL SIGNS", ref.vital_signs);
+  [
+    ["Relevant Symptoms & Duration", ref.symptoms_duration],
+    ["Past Medical History", ref.past_medical_history],
+    ["Past Surgical History", ref.past_surgical_history],
+    ["Current Medications", ref.current_medications],
+    ["Allergies", ref.allergies],
+    ["Physical Examination Findings", ref.physical_examination],
+    ["Vital Signs", ref.vital_signs],
+  ].forEach(([label, value]) => {
+    y = drawWrappedBlock(doc, label, value, y, artwork, TITLE);
+  });
 
   // ===== Investigations =====
-  sectionHeader("INVESTIGATIONS");
-  labelValue("RELEVANT LABORATORY RESULTS", ref.lab_results);
-  labelValue("IMAGING RESULTS", ref.imaging_results);
-  labelValue("PATHOLOGY / BIOPSY RESULTS", ref.pathology_results);
-  labelValue("OTHER RELEVANT INVESTIGATIONS", ref.other_investigations);
+  [
+    ["Relevant Laboratory Results", ref.lab_results],
+    ["Imaging Results", ref.imaging_results],
+    ["Pathology / Biopsy Results", ref.pathology_results],
+    ["Other Relevant Investigations", ref.other_investigations],
+  ].forEach(([label, value]) => {
+    y = drawWrappedBlock(doc, label, value, y, artwork, TITLE);
+  });
 
   // ===== Treatment already provided =====
-  sectionHeader("TREATMENT ALREADY PROVIDED");
-  labelValue("MEDICATIONS", ref.treatment_medications);
-  labelValue("PROCEDURES", ref.treatment_procedures);
-  labelValue("PREVIOUS TREATMENTS", ref.previous_treatments);
-  labelValue("RESPONSE TO TREATMENT", ref.treatment_response);
+  [
+    ["Treatment — Medications", ref.treatment_medications],
+    ["Treatment — Procedures", ref.treatment_procedures],
+    ["Previous Treatments", ref.previous_treatments],
+    ["Response to Treatment", ref.treatment_response],
+  ].forEach(([label, value]) => {
+    y = drawWrappedBlock(doc, label, value, y, artwork, TITLE);
+  });
 
   // ===== Specific request =====
-  sectionHeader("SPECIFIC REQUEST TO RECEIVING DOCTOR");
-  labelValue("EVALUATION / INVESTIGATION / OPINION / MANAGEMENT REQUESTED", ref.specific_request);
+  y = drawWrappedBlock(doc, "Evaluation / Investigation / Opinion / Management Requested", ref.specific_request, y, artwork, TITLE);
 
   // ===== Attachments =====
-  if ((ref.attachments || []).length > 0) {
-    sectionHeader("ATTACHED DOCUMENTS");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(...DARK);
-    (ref.attachments || []).forEach((a, i) => {
-      ensure(7);
-      y += 5.5;
-      doc.text(`${i + 1}. ${a.title || a.file_name || "Document"}`, M, y, { maxWidth: R - M });
+  const attachments = ref.attachments || [];
+  if (attachments.length > 0) {
+    need(14);
+    drawSectionLabel(doc, "Attached Documents", y);
+    y += 7;
+    attachments.forEach((file, index) => {
+      y = drawWrappedBlock(doc, null, `${index + 1}. ${file.title || file.file_name || "Document"}`, y, artwork, TITLE, { gap: 1.5, fontSize: 9.5 });
     });
+    y += 3;
   }
 
   // ===== Electronic signature =====
-  ensure(40);
-  y = Math.max(y + 16, 240);
-  doc.setDrawColor(110, 120, 124);
-  doc.setLineWidth(0.4);
-  doc.line(M, y, M + 85, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text(`Dr. ${String(ref.doctor_name || "").replace(/^Dr\.?\s*/i, "")} — ${ref.doctor_specialization || ""}`, M, y + 5, { maxWidth: 85 });
-  doc.text("Electronically signed & approved", M, y + 9.5);
-  doc.text(`Date/Time: ${new Date().toLocaleString()}`, RX, y + 5, { maxWidth: R - RX });
-  doc.text(`Referral No: ${ref.referral_number}`, RX, y + 9.5, { maxWidth: R - RX });
-  doc.text(`Verification Code: ${ref.verification_code || "-"}`, RX, y + 14, { maxWidth: R - RX });
+  drawSignatureInline(doc, {
+    doctorName: ref.doctor_name,
+    detail: [ref.doctor_specialization, ref.doctor_hospital].filter(Boolean).join("  ·  "),
+    note: `Electronically signed & approved ${new Date().toLocaleString("en-GB")}   ·   Referral ${ref.referral_number || "—"}`,
+  }, y, artwork, TITLE);
 
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("Generated by A&M Healthcare — Connected Care. Better Health.", W / 2, 291, { align: "center" });
+  drawRequestFooter(
+    doc,
+    ref.referral_number,
+    ref.verification_code ? `Verification code: ${ref.verification_code}` : null,
+  );
 
   return doc;
 }
@@ -226,14 +176,13 @@ export async function addReferralQr(doc, referralNumber) {
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
     canvas.getContext("2d").drawImage(img, 0, 0);
-    const size = 24;
+    const size = 22;
     doc.setPage(1);
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", 195 - size, 260, size, size);
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", PDF_PAGE.right - size, 244, size, size);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6);
-    doc.setTextColor(...GRAY);
-    doc.text("Scan QR Code to Verify", 195, 288, { align: "right" });
-    doc.text("Referral Letter", 195, 291.5, { align: "right" });
+    doc.setTextColor(...PDF_INK.muted);
+    doc.text("Scan to verify this referral", PDF_PAGE.right, 270, { align: "right" });
   } catch (err) {
     console.warn("Referral QR could not be added:", err);
   }

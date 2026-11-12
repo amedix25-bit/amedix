@@ -70,7 +70,7 @@ export default function RadiologistSubmitResults({ request, user, radiologistPro
         ["Additional Clinical Notes", form.notes],
       ].filter(([, t]) => t && t.trim());
 
-      const doc = generateRadiologyReportPdf({
+      const doc = await generateRadiologyReportPdf({
         patientName: request.patient_name,
         patientCin: request.patient_cin,
         scanType: request.scan_type,

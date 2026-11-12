@@ -232,7 +232,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   const makePdf = async () => {
     const dateStr = new Date().toISOString().slice(0, 10);
     const rows = buildRows();
-    const doc = generateRadiologyReportPdf({
+    const doc = await generateRadiologyReportPdf({
       patientName: study.patient_name,
       patientCin: study.patient_cin,
       scanType: study.scan_type,

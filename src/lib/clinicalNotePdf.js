@@ -1,148 +1,101 @@
 import { jsPDF } from "jspdf";
+import {
+  PDF_INK,
+  PDF_PAGE,
+  FLOW_BOTTOM,
+  loadRequestLogo,
+  drawRequestHeader,
+  startPage,
+  drawIdentityBlock,
+  drawSectionLabel,
+  drawField,
+  drawDivider,
+  drawWrappedBlock,
+  drawSignatureInline,
+  drawRequestFooter,
+} from "@/lib/requestPdfLayout";
 
-const TEAL = [23, 50, 77]; // #17324D dark blue
-const DARK = [23, 40, 45];
-const GRAY = [105, 115, 120];
+const TITLE = "CLINICAL NOTE";
 
-// Builds a patient-facing PDF for a saved clinical note. The PDF carries the
-// full encounter documentation: patient identity, doctor, date/time, location,
-// provisional diagnoses, vital signs, examination findings, management and
-// recommendations.
-export function generateClinicalNotePdf(note) {
+// Builds a patient-facing PDF for a saved clinical note, in the same document
+// family as every other AMedix document: the full encounter documentation —
+// patient identity, doctor, date/time, location, provisional diagnoses, vital
+// signs, examination findings, management and recommendations.
+export async function generateClinicalNotePdf(note, logo) {
+  const artwork = logo || (await loadRequestLogo());
   const doc = new jsPDF();
-  const W = 210, M = 15, R = W - M, RX = 118, boxW = R - M;
+  const { margin: M, right: R } = PDF_PAGE;
 
-  const ensure = (yy, needed) => {
-    if (yy + needed > 278) {
-      doc.addPage();
-      return 20;
-    }
-    return yy;
-  };
-
-  // ===== Header band =====
-  doc.setFillColor(...TEAL);
-  doc.rect(0, 0, W, 27, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("AMedix", M, 12);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("Connected Care. Better Health.", M, 18.5);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12.5);
-  doc.text("CLINICAL NOTE", R, 12, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text(`Note date: ${note.date || "-"}`, R, 18.5, { align: "right" });
-
-  // ===== Patient =====
-  let y = 36;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("PATIENT", M, y);
-  doc.setTextColor(...DARK);
-  doc.setFontSize(16);
-  doc.text(String(note.patient_name || "-"), M, y + 7.5, { maxWidth: 95 });
-
-  doc.setFillColor(240, 249, 248);
-  doc.setDrawColor(...TEAL);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(M, y + 11, 95, 12.5, 1.5, 1.5, "FD");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("CLINICAL IDENTIFICATION NUMBER (CIN)", M + 3.5, y + 15.5);
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...TEAL);
-  doc.text(String(note.patient_cin || "-"), M + 3.5, y + 21.5);
-  doc.setFont("helvetica", "normal");
+  let y = drawRequestHeader(doc, { logo: artwork, title: TITLE });
 
   const dt = note.encounter_datetime ? new Date(note.encounter_datetime) : null;
   const valid = dt && !isNaN(dt.getTime());
   const dateStr = valid
     ? dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    : note.date || "-";
+    : note.date || "—";
   const timeStr = valid ? dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "";
 
-  const detailRow = (label, value, ly) => {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...GRAY);
-    doc.text(label, RX, ly);
-    doc.setFontSize(10.5);
-    doc.setTextColor(...DARK);
-    doc.text(String(value || "-"), RX, ly + 4.8, { maxWidth: R - RX });
-  };
-  detailRow("DOCTOR", note.doctor_name, y + 2);
-  detailRow("DATE & TIME SEEN", `${dateStr}   ${timeStr}`, y + 13);
-  detailRow("CLINICAL LOCATION / ENCOUNTER", note.location, y + 24);
-  doc.setFont("helvetica", "normal");
+  y = drawIdentityBlock(doc, {
+    name: note.patient_name,
+    cin: note.patient_cin,
+    fields: [["Date of Birth", note.patient_dob]],
+  }, y);
 
-  y += 34;
-  doc.setDrawColor(215, 224, 226);
-  doc.setLineWidth(0.3);
-  doc.line(M, y, R, y);
+  // ===== Treating doctor & encounter =====
+  const top = y + 7;
+  drawSectionLabel(doc, "Treating Doctor", top);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...PDF_INK.ink);
+  doc.text(String(note.doctor_name || "").trim() || "—", M, top + 9);
 
-  // ===== Provisional diagnoses =====
-  const dxList =
-    Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
-      ? note.provisional_diagnoses
-      : [note.diagnosis].filter(Boolean);
+  drawField(doc, "Date & Time Seen", [dateStr, timeStr].filter(Boolean).join("  ·  "), M, top + 18);
+  drawField(doc, "Clinical Location", note.location, M + 92, top + 18);
+  drawField(doc, "Specialty", note.specialty, M, top + 33);
+  drawField(doc, "Hospital / Clinic", note.hospital, M + 92, top + 33);
+
+  y = top + 44;
+  drawDivider(doc, y);
+  y += 9;
+
+  // ===== Provisional diagnosis =====
+  const dxList = Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
+    ? note.provisional_diagnoses
+    : [note.diagnosis].filter(Boolean);
 
   if (dxList.length > 0) {
-    y = ensure(y + 8, 12 + dxList.length * 6);
-    y += 8;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(...TEAL);
-    doc.text("PROVISIONAL DIAGNOSIS", M, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
-    doc.setTextColor(...DARK);
-    let dy = y + 7;
-    dxList.forEach((d, i) => {
-      const lines = doc.splitTextToSize(`${i + 1}. ${d}`, boxW - 4);
-      dy = ensure(dy, lines.length * 5);
-      lines.forEach((l) => doc.text(l, M, dy));
-      dy += lines.length * 5;
+    if (y > FLOW_BOTTOM - 16) y = startPage(doc, artwork, TITLE) + 4;
+    drawSectionLabel(doc, "Provisional Diagnosis", y);
+    y += 7.5;
+    dxList.forEach((diagnosis, index) => {
+      y = drawWrappedBlock(doc, null, `${index + 1}. ${diagnosis}`, y, artwork, TITLE, { gap: 1.5, fontSize: 10.5 }) + 1;
     });
-    y = dy + 2;
+    y += 4;
   }
 
-  // ===== Documentation sections =====
-  const section = (title, text) => {
-    if (!text) return;
-    const lines = doc.splitTextToSize(String(text), boxW - 8);
-    y = ensure(y, 16 + lines.length * 5);
-    doc.setFillColor(248, 250, 250);
-    doc.setDrawColor(215, 224, 226);
-    doc.roundedRect(M, y, boxW, 10 + lines.length * 5, 2, 2, "FD");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text(title, M + 4, y + 5.5);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...DARK);
-    lines.forEach((l, i) => doc.text(l, M + 4, y + 11 + i * 5));
-    y += 14 + lines.length * 5;
-  };
+  // ===== Documentation =====
+  [
+    ["Vital Signs", note.vital_signs],
+    ["History", note.history],
+    ["Physical Examination", note.physical_examination],
+    ["Prescriptions", note.prescription],
+    ["Interventions", note.interventions],
+    ["Biopsy", note.biopsy],
+    ["Doctor's Recommendations", note.recommendations],
+    ["Additional Notes", note.notes],
+  ].forEach(([label, value]) => {
+    y = drawWrappedBlock(doc, label, value, y, artwork, TITLE);
+  });
 
-  section("VITAL SIGNS", note.vital_signs);
-  section("HISTORY", note.history);
-  section("PHYSICAL EXAMINATION / EXAMINATION FINDINGS", note.physical_examination);
-  section("PRESCRIPTIONS", note.prescription);
-  section("INTERVENTIONS", note.interventions);
-  section("BIOPSY", note.biopsy);
-  section("DOCTOR'S RECOMMENDATIONS", note.recommendations);
-  section("ADDITIONAL NOTES", note.notes);
+  // ===== Electronic signature =====
+  y = drawSignatureInline(doc, {
+    doctorName: note.signed_by_name || note.doctor_name,
+    detail: [note.specialty, note.hospital].filter(Boolean).join("  ·  "),
+    note: note.signed_datetime
+      ? `Electronically signed ${new Date(note.signed_datetime).toLocaleString("en-GB")}`
+      : "Electronically signed",
+  }, y, artwork, TITLE);
 
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("Generated by A&M Healthcare — Connected Care. Better Health.", W / 2, 291, { align: "center" });
-
+  drawRequestFooter(doc, note.note_reference || note.id);
   return doc;
 }

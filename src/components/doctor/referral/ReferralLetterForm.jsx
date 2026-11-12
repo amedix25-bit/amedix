@@ -251,7 +251,7 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         attachments,
       };
 
-      const doc = generateReferralLetterPdf(payload);
+      const doc = await generateReferralLetterPdf(payload);
       await addReferralQr(doc, referral_number);
       const pdfFile = new File(
         [doc.output("blob")],

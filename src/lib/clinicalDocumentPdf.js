@@ -1,164 +1,113 @@
 import { jsPDF } from "jspdf";
 import { base44 } from "@/api/base44Client";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
+import {
+  PDF_INK,
+  PDF_PAGE,
+  loadRequestLogo,
+  drawRequestHeader,
+  drawIdentityBlock,
+  drawSectionLabel,
+  drawField,
+  drawDivider,
+  drawWrappedBlock,
+  drawSignatureInline,
+  drawRequestFooter,
+} from "@/lib/requestPdfLayout";
 
-const TEAL = [23, 50, 77]; // #17324D dark blue
-const DARK = [23, 40, 45];
-const GRAY = [105, 115, 120];
+const FALLBACK_TITLE = "CLINICAL DOCUMENT";
 
 const fmt = (iso) => {
   const d = iso ? new Date(iso) : null;
   return d && !isNaN(d.getTime())
     ? d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
-    : "-";
+    : "—";
 };
 
-// Builds the official PDF of a completed clinical document — the full
-// automatic header (patient identity, encounter context, AMedix Document ID,
-// version, amendment status) plus the clinical content and the digital
-// signature block — and uploads it so it is stored in the patient's Clinical
-// Notes/Documents.
-export async function generateClinicalDocumentPdfUrl(doc) {
+// Turns a stored structured value into the text the document prints.
+function fieldText(value) {
+  let val = formatStoredValue(value);
+  if (Array.isArray(val)) {
+    // Tooth Chart entries and other structured arrays render as lines.
+    val = val.map((e) => e && typeof e === "object"
+      ? `Tooth ${e.tooth} — ${(e.status || "").replace(/_/g, " ")}${e.note ? ` (${e.note})` : ""}`
+      : String(e)).join("\n");
+  }
+  return String(val ?? "");
+}
+
+// Builds the official PDF of a completed clinical document in the shared
+// AMedix layout — patient identity, the authoring doctor and encounter, the
+// record reference, the clinical content and the electronic signature block —
+// and uploads it so it is stored in the patient's Clinical Notes/Documents.
+export async function generateClinicalDocumentPdfUrl(record, logo) {
+  const artwork = logo || (await loadRequestLogo());
   const pdf = new jsPDF();
-  const W = 210, M = 15, R = W - M, boxW = R - M;
+  const { margin: M } = PDF_PAGE;
+  const title = String(record.document_type_label || FALLBACK_TITLE).toUpperCase();
 
-  const ensure = (yy, needed) => {
-    if (yy + needed > 278) {
-      pdf.addPage();
-      return 20;
-    }
-    return yy;
-  };
+  let y = drawRequestHeader(pdf, { logo: artwork, title });
 
-  // ===== Header band =====
-  pdf.setFillColor(...TEAL);
-  pdf.rect(0, 0, W, 27, "F");
-  pdf.setTextColor(255, 255, 255);
+  y = drawIdentityBlock(pdf, {
+    name: record.patient_name,
+    cin: record.patient_cin,
+    fields: [["Date of Birth", record.patient_dob]],
+  }, y);
+
+  // ===== Authoring doctor & encounter =====
+  const top = y + 7;
+  drawSectionLabel(pdf, "Document Author", top);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.text("AMedix", M, 12);
+  pdf.setFontSize(13);
+  pdf.setTextColor(...PDF_INK.ink);
+  pdf.text(String(record.doctor_name || "").trim() || "—", M, top + 9);
+
+  drawField(pdf, "Specialty", record.doctor_specialty, M, top + 18);
+  drawField(pdf, "Hospital / Clinic", record.hospital, M + 92, top + 18);
+  drawField(pdf, "Department", record.department, M, top + 33);
+  drawField(pdf, "Date & Time", fmt(record.created_datetime), M + 92, top + 33);
+
+  y = top + 44;
+
+  // ===== Record reference =====
+  drawSectionLabel(pdf, "Document Record", y);
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8.5);
-  pdf.text("Connected Care. Better Health.", M, 18.5);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(11);
-  pdf.text(String(doc.document_type_label || "CLINICAL DOCUMENT").toUpperCase(), R, 12, { align: "right" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8.5);
-  pdf.text(`AMedix Document ID: ${doc.document_id || "-"}`, R, 18.5, { align: "right" });
-
-  // ===== Patient =====
-  let y = 36;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-  pdf.setTextColor(...GRAY);
-  pdf.text("PATIENT", M, y);
-  pdf.setTextColor(...DARK);
-  pdf.setFontSize(15);
-  pdf.text(String(doc.patient_name || "-"), M, y + 7, { maxWidth: 95 });
-
-  pdf.setFillColor(240, 249, 248);
-  pdf.setDrawColor(...TEAL);
-  pdf.setLineWidth(0.4);
-  pdf.roundedRect(M, y + 10.5, 95, 12, 1.5, 1.5, "FD");
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(...GRAY);
-  pdf.text("CLINICAL IDENTIFICATION NUMBER (CIN)", M + 3.5, y + 14.5);
-  pdf.setFontSize(12.5);
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(...TEAL);
-  pdf.text(String(doc.patient_cin || "-"), M + 3.5, y + 20);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(...DARK);
-  pdf.text(`Date of birth: ${doc.patient_dob || "-"}`, M + 55, y + 20);
-
-  const detailRow = (label, value, ly) => {
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.5);
-    pdf.setTextColor(...GRAY);
-    pdf.text(label, 118, ly);
-    pdf.setFontSize(9.5);
-    pdf.setTextColor(...DARK);
-    pdf.text(String(value || "-"), 118, ly + 4.5, { maxWidth: R - 118 });
-  };
-  detailRow("DOCTOR", doc.doctor_name, y + 2);
-  detailRow("SPECIALTY", doc.doctor_specialty, y + 10);
-  detailRow("HOSPITAL / CLINIC", doc.hospital, y + 18);
-  detailRow("DEPARTMENT", doc.department, y + 26);
-  detailRow("DATE & TIME", fmt(doc.created_datetime), y + 34);
-
-  y += 48;
-  pdf.setFillColor(248, 250, 250);
-  pdf.setDrawColor(215, 224, 226);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(M, y, boxW, 9, 1.5, 1.5, "FD");
-  pdf.setFontSize(8);
-  pdf.setTextColor(...GRAY);
-  pdf.text(`Visit ID: ${doc.encounter_id || "-"}    Version: ${doc.version || 1}    Amendment status: ${doc.amendment_status === "amendment" ? "Amendment" : "Original"}    Status: ${doc.status === "signed" ? "Signed" : "Draft"}`, M + 3, y + 5.5);
+  pdf.setFontSize(9.5);
+  pdf.setTextColor(...PDF_INK.muted);
+  pdf.text(
+    `Visit ${record.encounter_id || "—"}   ·   Version ${record.version || 1} ${record.amendment_status === "amendment" ? "Amendment" : "Original"}   ·   ${record.status === "signed" ? "Signed" : "Draft"}`,
+    M,
+    y + 6,
+    { maxWidth: PDF_PAGE.right - M },
+  );
+  y += 12;
+  drawDivider(pdf, y);
+  y += 8;
 
   // ===== Structured specialty fields =====
-  if (doc.data && Object.keys(doc.data).length > 0) {
-    y += 8;
-    Object.values(doc.data).forEach((f) => {
-      if (!f || f.value === null || f.value === undefined || String(f.value) === "") return;
-      const label = String(f.label || "");
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
-      y = ensure(y, 12);
-      pdf.text(label, M, y);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9.5);
-      let val = formatStoredValue(f.value);
-      if (Array.isArray(val)) {
-        // Tooth Chart entries and other structured arrays render as lines.
-        val = val.map((e) => e && typeof e === "object"
-          ? `Tooth ${e.tooth} — ${(e.status || "").replace(/_/g, " ")}${e.note ? ` (${e.note})` : ""}`
-          : String(e)).join("\n");
-      }
-      const valLines = pdf.splitTextToSize(String(val), boxW - 6);
-      y = ensure(y, 5 + valLines.length * 4.8);
-      pdf.text(valLines, M + 4, y + 4.5);
-      y += 4.5 + valLines.length * 4.8 + 1.5;
+  if (record.data && Object.keys(record.data).length > 0) {
+    Object.values(record.data).forEach((field) => {
+      if (!field || field.value === null || field.value === undefined || String(field.value) === "") return;
+      y = drawWrappedBlock(pdf, String(field.label || ""), fieldText(field.value), y, artwork, title);
     });
   }
 
-  // ===== Content =====
-  y += 8;
-  const lines = pdf.splitTextToSize(String(doc.content || ""), boxW - 2);
-  pdf.setFontSize(10.5);
-  pdf.setTextColor(...DARK);
-  lines.forEach((l) => {
-    y = ensure(y, 6);
-    pdf.text(l, M, y);
-    y += 5;
-  });
+  // ===== Clinical content =====
+  y = drawWrappedBlock(pdf, null, record.content, y, artwork, title);
 
-  // ===== Digital signature block =====
-  if (doc.status === "signed") {
-    y = ensure(y, 26);
-    y += 6;
-    pdf.setFillColor(240, 249, 248);
-    pdf.setDrawColor(...TEAL);
-    pdf.setLineWidth(0.4);
-    pdf.roundedRect(M, y, boxW, 20, 2, 2, "FD");
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(9.5);
-    pdf.setTextColor(...TEAL);
-    pdf.text(`Electronically signed by Dr. ${doc.signed_by_name || "-"}`, M + 4, y + 7);
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
-    pdf.setTextColor(...GRAY);
-    pdf.text(`Date & time signed: ${fmt(doc.signed_datetime)}`, M + 4, y + 12.5);
-    pdf.text(`AMedix Document ID: ${doc.document_id}    Version: ${doc.version}    ${doc.amendment_status === "amendment" ? "Amendment" : "Original"}`, M + 4, y + 17);
+  // ===== Electronic signature =====
+  if (record.status === "signed") {
+    y = drawSignatureInline(pdf, {
+      doctorName: record.signed_by_name || record.doctor_name,
+      detail: [record.doctor_specialty, record.hospital].filter(Boolean).join("  ·  "),
+      note: `Electronically signed ${fmt(record.signed_datetime)}   ·   Document ${record.document_id} version ${record.version} ${record.amendment_status === "amendment" ? "amendment" : "original"}`,
+    }, y, artwork, title);
   }
 
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(...GRAY);
-  pdf.text("Generated by AMedix — Connected Care. Better Health.", W / 2, 291, { align: "center" });
+  drawRequestFooter(pdf, record.document_id);
 
   const blob = pdf.output("blob");
-  const file = new File([blob], `AMedix-${doc.document_id}-v${doc.version}.pdf`, { type: "application/pdf" });
+  const file = new File([blob], `AMedix-${record.document_id}-v${record.version}.pdf`, { type: "application/pdf" });
   // Signed clinical documents are private: the stored reference is a private
   // file URI, resolved to a short-lived signed URL for authorized readers only.
   const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
