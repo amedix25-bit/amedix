@@ -47,6 +47,26 @@ export default async function(req) {
       return Response.json({ record_id: med.id });
     }
 
+    // Patient mode — the patient records a chronic condition from their own
+    // Medical ID card. Category is fixed server-side and the entry is stored
+    // as patient-reported, never presented as clinically verified.
+    if (isPatient && kind === "condition" && !doctor) {
+      const name = String(record.name || "").trim();
+      if (!name) return Response.json({ error: "Condition name is required." }, { status: 400 });
+      const condition = await base44.asServiceRole.entities.MedicalCondition.create({
+        patient_id: patient.id,
+        patient_user_id: patient.user_id,
+        patient_cin: patient.cin,
+        patient_name: patient.full_name,
+        name,
+        name_ar: String(record.name_ar || "").trim() || undefined,
+        category: "known_case",
+        current_status: record.current_status || "active",
+        date: record.date || new Date().toISOString().slice(0, 10),
+      });
+      return Response.json({ record_id: condition.id });
+    }
+
     if (!doctor) {
       return Response.json({ error: "Not authorized to write clinical records for this patient." }, { status: 403 });
     }

@@ -9,6 +9,10 @@
       "type": "string",
       "description": "Clinical Identification Number - unique permanent patient identifier"
     },
+    "photo_uri": {
+      "type": "string",
+      "description": "Private storage URI of the patient's own picture shown on their Medical ID card. Uploaded by the patient from the Patient Portal; never a public URL \u2014 the card displays it through a short-lived signed link."
+    },
     "full_name": {
       "type": "string",
       "description": "Patient's full name in English \u2014 First, Father's, Grandfather's and Last Name joined. Used in clinical documents and wherever the English name is required."

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrCode, X, Pencil } from "lucide-react";
+import { Calendar, FlaskConical, Image as ImageIcon, FileText, Pill, Shield, QrCode, X, Pencil, CreditCard } from "lucide-react";
 import QrCodeCard from "@/components/QrCodeCard";
+import PatientMedicalIdCard from "@/components/patient/PatientMedicalIdCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import InfoRow from "@/components/patient/medical/InfoRow";
 import { Button } from "@/components/ui/button";
 import { calcAge, capitalize, patientDisplayName, SMOKING_LABELS, ALCOHOL_LABELS, PREGNANCY_LABELS } from "@/lib/patientUtils";
@@ -10,26 +12,29 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 export default function PatientOverview({ profile, stats, loading, onGoToProfile }) {
   const { t, lang } = usePatientLanguage();
   const [showQr, setShowQr] = useState(false);
+  const [showCard, setShowCard] = useState(false);
   const [med, setMed] = useState({ conditions: [], medications: [], allergies: [] });
+
+  const loadMedical = useCallback(async () => {
+    if (!profile?.id) return;
+    try {
+      const [conditions, medications, allergies] = await Promise.all([
+        base44.entities.MedicalCondition.filter({ patient_id: profile.id, category: "known_case" }),
+        base44.entities.Medication.filter({ patient_id: profile.id }),
+        base44.entities.Allergy.filter({ patient_id: profile.id }),
+      ]);
+      setMed({ conditions, medications, allergies });
+    } catch (err) {
+      console.error(err);
+    }
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!profile?.id) return;
-    const load = async () => {
-      try {
-        const [conditions, medications, allergies] = await Promise.all([
-          base44.entities.MedicalCondition.filter({ patient_id: profile.id, category: "known_case" }),
-          base44.entities.Medication.filter({ patient_id: profile.id }),
-          base44.entities.Allergy.filter({ patient_id: profile.id }),
-        ]);
-        setMed({ conditions, medications, allergies });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    load();
-    const unsubscribe = base44.entities.Medication.subscribe(() => load());
+    loadMedical();
+    const unsubscribe = base44.entities.Medication.subscribe(() => loadMedical());
     return unsubscribe;
-  }, [profile?.id]);
+  }, [profile?.id, loadMedical]);
 
   if (loading) {
     return <div className="text-muted-foreground text-sm">{t("Loading...")}</div>;
@@ -90,10 +95,16 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
             <p className="text-xs text-muted-foreground mt-2">
               {t("Your permanent Clinical Identification Number — unique to you.")}
             </p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={() => setShowQr(true)}>
-              <QrCode className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-              {t("Show QR Code")}
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowQr(true)}>
+                <QrCode className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                {t("Show QR Code")}
+              </Button>
+              <Button size="sm" onClick={() => setShowCard(true)}>
+                <CreditCard className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                {t("View card")}
+              </Button>
+            </div>
           </div>
           <div className="mx-auto sm:mx-0">
             <QrCodeCard cin={profile?.cin} size={120} />
@@ -184,6 +195,21 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
           </div>
         </div>
       </div>
+
+      <Dialog open={showCard} onOpenChange={setShowCard}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("My Medical ID card")}</DialogTitle>
+          </DialogHeader>
+          <PatientMedicalIdCard
+            profile={profile}
+            conditions={med.conditions}
+            allergyText={allergyText}
+            emergencyContact={emergencyContacts[0]}
+            onConditionsChanged={loadMedical}
+          />
+        </DialogContent>
+      </Dialog>
 
       {showQr && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowQr(false)}>
