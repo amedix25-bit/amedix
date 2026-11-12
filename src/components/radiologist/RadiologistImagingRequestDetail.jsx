@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Loader2, ExternalLink, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RadiologistSubmitResults from "@/components/radiologist/RadiologistSubmitResults";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 
 function Field({ label, value }) {
   return (
@@ -110,12 +111,14 @@ export default function RadiologistImagingRequestDetail({ requestId, user, radio
 
         {request.pdf_url && (
           <div className="pt-4 border-t border-border">
-            <a href={request.pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex">
-              <Button variant="outline" size="sm">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open Written Request (PDF)
-              </Button>
-            </a>
+            <ResolvedFileButton
+              requestId={request.id}
+              fileRef={request.pdf_url}
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background shadow-sm hover:bg-accent h-8 px-3 text-xs font-medium"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open Written Request (PDF)
+            </ResolvedFileButton>
           </div>
         )}
 

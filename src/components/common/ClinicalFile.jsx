@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 import resolveClinicalFile from "@/lib/clinicalFileUrl";
 
 // Access-checked clinical file UI: resolves a stored (private) file
@@ -30,6 +31,15 @@ export function ClinicalFileButton({ kind, id, fileRef, className, children, onC
     try {
       const url = await resolveClinicalFile(kind, id, fileRef);
       if (url) window.open(url, "_blank", "noopener");
+      else throw new Error("empty");
+    } catch (err) {
+      // Never a blank screen: say what failed and leave the button ready to retry.
+      toast({
+        title: "This document could not be opened",
+        description:
+          err?.response?.data?.error ||
+          "Your access could not be verified, or the file is temporarily unavailable. Please try again.",
+      });
     } finally {
       setLoading(false);
     }

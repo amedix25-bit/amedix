@@ -6,6 +6,7 @@ import ToothChart from "@/components/doctor/dental/ToothChart";
 import { format } from "date-fns";
 import { generateClinicalDocumentPdfUrl } from "@/lib/clinicalDocumentPdf";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import { Loader2, FileSignature, History, FileText, PenLine, ChevronDown } from "lucide-react";
 
 // One clinical document family with full version control: shows the automatic
@@ -189,9 +190,14 @@ export default function DocumentCard({ doc, versions, doctorProfile, onAmend, on
         </div>
       )}
       {viewing.pdf_url && (
-        <a href={viewing.pdf_url} target="_blank" rel="noreferrer" className="inline-block text-sm text-primary underline">
+        <ClinicalFileButton
+          kind="clinical_document"
+          id={viewing.id}
+          fileRef={viewing.pdf_url}
+          className="inline-block text-sm text-primary underline"
+        >
           View PDF
-        </a>
+        </ClinicalFileButton>
       )}
 
       {/* Version history — originals remain permanently accessible */}

@@ -6,6 +6,7 @@ import { Building2, FileText, ShieldCheck } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 import { ClinicalFileButton } from "@/components/common/ClinicalFile";
+import { openLabRequestPdfFromRecord } from "@/lib/labRequestPdfFromRecord";
 
 export default function PatientLabRequestCard({ group, patientId, onRequestUpdated }) {
   const { t, locale } = usePatientLanguage();
@@ -37,6 +38,11 @@ export default function PatientLabRequestCard({ group, patientId, onRequestUpdat
     ? first.result
     : group.map((l) => l.result).filter(Boolean).join("\n");
   const resultFileRec = consolidated ? first : (group.find((l) => l.result_file_url) || null);
+  // The request form PDF may live on any row of a legacy (per-test) group.
+  const pdfRec = consolidated ? first : (group.find((l) => l.pdf_url) || null);
+  // Legacy requests saved without a form can still be rendered from their own
+  // data — one form covering every test in the group.
+  const pdfSource = consolidated ? first : { ...first, tests };
   const resultFile = resultFileRec ? resultFileRec.result_file_url : null;
 
   const byCategory = new Map();
@@ -116,19 +122,28 @@ export default function PatientLabRequestCard({ group, patientId, onRequestUpdat
         </div>
       )}
 
-      {first.pdf_url && (
-        <div className="mt-3 pt-3 border-t border-border">
-          <a
-            href={first.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
+      <div className="mt-3 pt-3 border-t border-border">
+        {pdfRec ? (
+          <ClinicalFileButton
+            kind="lab_request"
+            id={pdfRec.id}
+            fileRef={pdfRec.pdf_url}
             className="inline-flex items-center gap-1.5 text-sm text-primary underline"
           >
             <FileText className="w-4 h-4" />
             {t("Download request PDF")}
-          </a>
-        </div>
-      )}
+          </ClinicalFileButton>
+        ) : (
+          <button
+            type="button"
+            onClick={() => openLabRequestPdfFromRecord(pdfSource)}
+            className="inline-flex items-center gap-1.5 text-sm text-primary underline"
+          >
+            <FileText className="w-4 h-4" />
+            {t("Download request PDF")}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

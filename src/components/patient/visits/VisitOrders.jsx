@@ -4,6 +4,7 @@ import { Loader2, Pill, FlaskConical, ScanLine, ChevronRight, FileText } from "l
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 import { ClinicalFileButton } from "@/components/common/ClinicalFile";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
@@ -147,7 +148,7 @@ export default function VisitOrders({ visit }) {
             <Row label={t("Priority")} value={im.priority} />
             {im.contrast && <Row label={t("Contrast")} value={im.contrast} />}
             {im.report && <Row label={t("Result")} value={ar(im.report)} />}
-            <PdfLinks links={[
+            <PdfLinks requestId={im.id} links={[
               im.pdf_url && { label: t("Download request PDF"), url: im.pdf_url },
               im.report_file_url && { label: t("Open Report (PDF)"), url: im.report_file_url },
             ].filter(Boolean)} />
@@ -210,15 +211,22 @@ function Row({ label, value }) {
   );
 }
 
-function PdfLinks({ links }) {
+// Imaging request/report files are stored privately: each link is resolved to a
+// short-lived signed URL for an authorized reader instead of opened directly.
+function PdfLinks({ requestId, links }) {
   if (links.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2">
       {links.map((link) => (
-        <Button key={link.url} variant="outline" size="sm" onClick={() => window.open(link.url, "_blank")}>
+        <ResolvedFileButton
+          key={link.url}
+          requestId={requestId}
+          fileRef={link.url}
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background shadow-sm hover:bg-accent h-8 px-3 text-xs font-medium"
+        >
           <FileText className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
           {link.label}
-        </Button>
+        </ResolvedFileButton>
       ))}
     </div>
   );

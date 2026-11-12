@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Image as ImageIcon, FileText, ScanLine, Loader2 } from "lucide-react";
 import PatientImagingResults from "@/components/patient/PatientImagingResults";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import { capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { STAGE_LABELS, STAGE_CHIP, canonicalStage } from "@/lib/radiologyWorkflow";
@@ -72,15 +73,14 @@ export default function PatientImaging({ patientId }) {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <button
-                type="button"
-                onClick={() => img.pdf_url && window.open(img.pdf_url, "_blank")}
-                disabled={!img.pdf_url}
+              <ResolvedFileButton
+                requestId={img.id}
+                fileRef={img.pdf_url}
                 className="flex flex-col items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/5 text-primary py-5 text-sm font-semibold hover:bg-primary/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileText className="w-6 h-6" />
                 {t("View Request")}
-              </button>
+              </ResolvedFileButton>
               <button
                 type="button"
                 onClick={() => setResultsRequest(img)}

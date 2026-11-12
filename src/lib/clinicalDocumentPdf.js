@@ -159,6 +159,8 @@ export async function generateClinicalDocumentPdfUrl(doc) {
 
   const blob = pdf.output("blob");
   const file = new File([blob], `AMedix-${doc.document_id}-v${doc.version}.pdf`, { type: "application/pdf" });
-  const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
-  return file_url;
+  // Signed clinical documents are private: the stored reference is a private
+  // file URI, resolved to a short-lived signed URL for authorized readers only.
+  const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+  return file_uri;
 }

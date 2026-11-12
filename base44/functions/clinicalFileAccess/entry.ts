@@ -68,6 +68,14 @@ export default async function(req: Request): Promise<Response> {
       if (!record) return Response.json({ error: "Request not found." }, { status: 404 });
       patientId = record.patient_id;
       allowedFiles = [record.result_file_url, record.corrected_result_file_url, record.pdf_url];
+    } else if (kind === "clinical_document") {
+      const rows = await svc.entities.ClinicalDocument.filter({ id: recordId });
+      record = rows[0];
+      if (!record) return Response.json({ error: "Document not found." }, { status: 404 });
+      patientId = record.patient_id;
+      allowedFiles = [record.pdf_url];
+      if (record.patient_user_id) authorized.add(record.patient_user_id);
+      if (record.doctor_user_id) authorized.add(record.doctor_user_id);
     } else if (kind === "lab_patient_visit") {
       const rows = await svc.entities.LabPatientVisit.filter({ id: recordId });
       record = rows[0];

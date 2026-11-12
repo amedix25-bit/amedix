@@ -5,6 +5,8 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorTextAr } from "@/lib/doctorContentArabic";
 import VisitOrders from "@/components/patient/visits/VisitOrders";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+import resolveClinicalFile from "@/lib/clinicalFileUrl";
 
 // Patient Portal → Doctor Visits. Lists every doctor visit (doctor, place,
 // time). Clicking a visit opens its visit notes plus the clinical documents
@@ -117,11 +119,21 @@ function DoctorVisitDetail({ visit, onBack }) {
     load();
   }, [visit.patient_id, visit.encounter_id]);
 
-  const openPdf = (item) => {
+  const openPdf = async (item) => {
     // Only signed clinical documents have a PDF — clinical notes are not
-    // exposed to patients.
-    if (item.kind === "document" && item.pdf_url) {
-      window.open(item.pdf_url, "_blank");
+    // exposed to patients. The stored reference is private, so it is resolved
+    // to a short-lived signed URL after the server verifies access.
+    if (item.kind !== "document" || !item.pdf_url) return;
+    try {
+      const url = await resolveClinicalFile("clinical_document", item.id, item.pdf_url);
+      window.open(url, "_blank", "noopener");
+    } catch (err) {
+      toast({
+        title: t("This document could not be opened"),
+        description:
+          err?.response?.data?.error ||
+          t("Your access could not be verified. Please try again."),
+      });
     }
   };
 

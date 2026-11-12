@@ -5,6 +5,7 @@ import { Image } from "@/components/ui/image";
 import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock, ChevronDown } from "lucide-react";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -210,13 +211,14 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
                 <span>Imaging request made ({imagingIds.length})</span>
                 {imagingIds.map((id) =>
                   imagingMap?.[id]?.pdf_url ? (
-                    <button
+                    <ResolvedFileButton
                       key={id}
-                      onClick={() => window.open(imagingMap[id].pdf_url, "_blank")}
+                      requestId={id}
+                      fileRef={imagingMap[id].pdf_url}
                       className="text-xs text-primary underline inline-flex items-center gap-0.5"
                     >
                       Open PDF <ExternalLink className="w-3 h-3" />
-                    </button>
+                    </ResolvedFileButton>
                   ) : null
                 )}
               </div>

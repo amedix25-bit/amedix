@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { STAGE_LABELS, STAGE_CHIP, canonicalStage, formatStageTime } from "@/lib/radiologyWorkflow";
 import PromptDialog from "./PromptDialog";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import { Loader2, X, AlertTriangle, Paperclip, History, UserCog } from "lucide-react";
 
 // Full imaging request detail for the radiology department: clinical
@@ -354,10 +355,22 @@ export default function DepartmentRequestDialog({ requestId, mode, onClose, onCh
               <p className="text-xs font-semibold text-emerald-700 uppercase">Report</p>
               {record.report && <p className="whitespace-pre-wrap">{record.report}</p>}
               {record.report_file_url && (
-                <a href={record.report_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline block">Open report file</a>
+                <ResolvedFileButton
+                  requestId={record.id}
+                  fileRef={record.report_file_url}
+                  className="text-xs text-emerald-600 underline block text-left"
+                >
+                  Open report file
+                </ResolvedFileButton>
               )}
               {record.pdf_url && (
-                <a href={record.pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 underline block">Imaging request PDF</a>
+                <ResolvedFileButton
+                  requestId={record.id}
+                  fileRef={record.pdf_url}
+                  className="text-xs text-emerald-600 underline block text-left"
+                >
+                  Imaging request PDF
+                </ResolvedFileButton>
               )}
             </div>
           )}

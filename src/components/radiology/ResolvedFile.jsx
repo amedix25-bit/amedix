@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import resolveRadiologyFile from "@/lib/radiologyFileUrl";
 import { Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 // Resolves study file references (private storage URIs or legacy public URLs)
 // to fetchable, access-checked URLs (Phase 9 protected file access).
@@ -34,6 +35,15 @@ export function ResolvedFileButton({ requestId, fileRef, className, children }) 
     try {
       const url = await resolveRadiologyFile(requestId, fileRef);
       if (url) window.open(url, "_blank", "noopener");
+      else throw new Error("empty");
+    } catch (err) {
+      // Never a blank screen: say what failed and leave the button ready to retry.
+      toast({
+        title: "This document could not be opened",
+        description:
+          err?.response?.data?.error ||
+          "Your access could not be verified, or the file is temporarily unavailable. Please try again.",
+      });
     } finally {
       setLoading(false);
     }

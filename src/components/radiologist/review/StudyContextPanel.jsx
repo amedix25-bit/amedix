@@ -1,6 +1,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, GitCompare, ShieldAlert } from "lucide-react";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 function Field({ label, value }) {
   return (
@@ -116,11 +118,13 @@ export default function StudyContextPanel({ request, patient, conditions, priorS
                   </span>
                 )}
                 {p.report_file_url && (
-                  <a href={p.report_file_url} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="ghost" className="h-7 text-xs">
-                      <ExternalLink className="w-3 h-3 mr-1" /> Report
-                    </Button>
-                  </a>
+                  <ResolvedFileButton
+                    requestId={p.id}
+                    fileRef={p.report_file_url}
+                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs font-medium hover:bg-accent"
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" /> Report
+                  </ResolvedFileButton>
                 )}
               </div>
             </div>
@@ -133,10 +137,14 @@ export default function StudyContextPanel({ request, patient, conditions, priorS
                 {r.radiologist_name ? ` · Dr. ${r.radiologist_name}` : ""}
               </p>
               {r.report_pdf_url && (
-                <a href={r.report_pdf_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+                <ClinicalFileButton
+                  kind="imaging_result"
+                  id={r.id}
+                  fileRef={r.report_pdf_url}
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                >
                   <ExternalLink className="w-3 h-3" /> Open report PDF
-                </a>
+                </ClinicalFileButton>
               )}
             </div>
           ))}

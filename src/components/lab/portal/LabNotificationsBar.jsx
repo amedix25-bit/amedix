@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Bell, FileText } from "lucide-react";
 import { useLabNotifications } from "@/hooks/useLabNotifications";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 // Top notification bar — new authorized laboratory requests.
 // Lab Portal: <LabNotificationsBar /> · Technician Portal: <LabNotificationsBar session={session} />
@@ -14,7 +15,6 @@ export default function LabNotificationsBar({ session }) {
 
   const openRequest = (n) => {
     markRead(n.id);
-    if (n.pdf_url) window.open(n.pdf_url, "_blank");
   };
 
   return (
@@ -49,9 +49,15 @@ export default function LabNotificationsBar({ session }) {
               </p>
             </div>
             {n.pdf_url && (
-              <Button size="sm" className="shrink-0" onClick={() => openRequest(n)}>
+              <ClinicalFileButton
+                kind="lab_request"
+                id={n.id}
+                fileRef={n.pdf_url}
+                onClick={() => openRequest(n)}
+                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground shadow hover:bg-primary/90 h-8 px-3 text-xs font-medium"
+              >
                 <FileText className="w-4 h-4" /> View PDF
-              </Button>
+              </ClinicalFileButton>
             )}
           </div>
         ))}

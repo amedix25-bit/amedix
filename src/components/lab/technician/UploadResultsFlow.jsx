@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
+import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import { ArrowLeft, FileText, Loader2, Search, Upload } from "lucide-react";
 
 const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp";
@@ -280,14 +281,14 @@ export default function UploadResultsFlow({ session, onSubmitted }) {
               <LabStatusBadge status={normalizeLabStatus(request.status)} />
             </div>
             {request.pdf_url && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={() => window.open(request.pdf_url, "_blank")}
+              <ClinicalFileButton
+                kind="lab_request"
+                id={request.id}
+                fileRef={request.pdf_url}
+                className="mt-3 inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background shadow-sm hover:bg-accent h-8 px-3 text-xs font-medium"
               >
                 <FileText className="w-4 h-4 mr-1" /> View Lab Request PDF
-              </Button>
+              </ClinicalFileButton>
             )}
           </div>
 
