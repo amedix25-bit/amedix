@@ -1,0 +1,92 @@
+{
+  "name": "PatientPhoneIdentity",
+  "type": "object",
+  "properties": {
+    "phone": {
+      "type": "string",
+      "description": "Normalised Libyan mobile number (2189XXXXXXXX) that the external phone provider verified by SMS. One active identity per number."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id this verified number signs in to. Existing patient records are linked, never recreated \u2014 the CIN, clinical records, prescriptions, documents and permissions stay exactly as they are."
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "The value written to the patient record's user_id. For a phone-only account it is 'phone:<this identity id>', which can never collide with a real Base44 user id; when the number belongs to an existing patient account it is that account's own user id, unchanged."
+    },
+    "cin": {
+      "type": "string",
+      "description": "Clinical Identification Number of the linked patient record, copied at link time for support and audit."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "linking",
+        "active",
+        "revoked"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "linking",
+      "description": "LINKING: the number was verified and the patient record is being created. ACTIVE: the number signs in to the patient record. REVOKED: sign-in with this number is withdrawn by AMedix administration."
+    },
+    "link_method": {
+      "type": "string",
+      "enum": [
+        "verified_phone_match",
+        "new_registration"
+      ],
+      "enumColors": [
+        "blue",
+        "green"
+      ],
+      "description": "VERIFIED_PHONE_MATCH: the verified number matched exactly one existing patient record, which was linked. NEW_REGISTRATION: the verified number created a new patient record."
+    },
+    "provider": {
+      "type": "string",
+      "default": "supabase",
+      "description": "External phone-authentication service that verified the number. Recorded so the provenance of the identity is auditable."
+    },
+    "provider_user_id": {
+      "type": "string",
+      "description": "The verified identity's id at the external provider. No token or password is ever stored here."
+    },
+    "verified_datetime": {
+      "type": "string",
+      "description": "Date and time the number was first verified by SMS (ISO datetime)"
+    },
+    "last_sign_in_datetime": {
+      "type": "string",
+      "description": "Date and time of the most recent successful phone sign-in (ISO datetime)"
+    }
+  },
+  "required": [
+    "phone",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
