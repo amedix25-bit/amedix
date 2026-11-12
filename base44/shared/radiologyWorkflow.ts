@@ -14,8 +14,78 @@
 export const STAGES = [
   "requested", "under_review", "clarification_required", "accepted",
   "scheduled", "in_progress", "examination_completed", "images_awaiting_transfer",
-  "ready_for_reporting", "reporting_in_progress", "final_report", "released", "cancelled",
+  "ready_for_reporting", "reporting_in_progress", "awaiting_signature",
+  "final_report", "released", "cancelled",
 ];
+
+// Stages at which a radiologist may write the report.
+export const REPORTABLE_STAGES = [
+  "ready_for_reporting", "performed", "examination_completed",
+  "reporting_in_progress", "interpretation", "awaiting_signature",
+];
+
+export function imageCount(request: any): number {
+  return (request?.image_file_urls || []).filter(Boolean).length;
+}
+
+// Why reporting is closed for this study — null when it is open. Shown to the
+// radiologist so a locked workspace always says exactly what is missing.
+export function reportingLockReason(request: any): string | null {
+  const stage = canonicalStage(request?.workflow_status);
+  if (["final_report", "released", "cancelled"].includes(stage)) return null;
+  const images = imageCount(request);
+  if (!REPORTABLE_STAGES.includes(stage)) {
+    if (!images) {
+      return "The examination has not been completed and no study images have been received. Reporting unlocks automatically once the examination is completed and the images are received and verified.";
+    }
+    return "The study images were received, but the examination is not yet verified as completed. Reporting unlocks automatically at that point.";
+  }
+  if (!images) {
+    return "The examination is completed but no study images are attached to this request. Reporting stays locked until the images are received and verified — the department can import the study, or the facility can connect its PACS/DICOM source.";
+  }
+  return null;
+}
+
+export function imagesVerified(request: any): boolean {
+  return REPORTABLE_STAGES.includes(canonicalStage(request?.workflow_status)) && imageCount(request) > 0;
+}
+
+// Automatic transition: examination completed + images received and verified
+// ⇒ ready for reporting. No manual departmental unlock is needed.
+export async function autoReadyForReporting(base44: any, request: any, actorName = "Radiology Department") {
+  const stage = canonicalStage(request?.workflow_status);
+  if (stage === "ready_for_reporting") return request;
+  if (!["examination_completed", "performed", "images_awaiting_transfer"].includes(stage)) return request;
+  if (imageCount(request) === 0) return request;
+  const now = nowIso();
+  const update: Record<string, any> = {
+    workflow_status: "ready_for_reporting",
+    images_received_datetime: request.images_received_datetime || now,
+    ready_datetime: now,
+    updated_datetime: now,
+    status_history: historyEntry(
+      request, "images_verified", String(request.workflow_status), "ready_for_reporting",
+      actorName, "department", "Images received and verified — reporting unlocked automatically"
+    ),
+  };
+  await base44.asServiceRole.entities.ImagingRequest.update(request.id, update);
+  try {
+    await logClinicalAudit(base44, {
+      actor_user_id: "",
+      actor_name: actorName,
+      actor_role: "radiology_department",
+      action: "imaging_images_verified",
+      action_label: "verified the received images — study ready for reporting",
+      patient_id: request.patient_id,
+      patient_cin: request.patient_cin,
+      patient_name: request.patient_name,
+      encounter_id: request.encounter_id || "",
+      document_id: request.request_id,
+      hospital: request.routed_hospital || request.doctor_hospital || "",
+    });
+  } catch (e) { /* audit never blocks the transition */ }
+  return { ...request, ...update };
+}
 
 export const LEGACY_STAGE_MAP = {
   performed: "examination_completed",
@@ -72,12 +142,18 @@ export const TRANSITIONS: Record<string, Transition> = {
     label: "recorded the images as received — ready for reporting", actor: "department",
   },
   start_reporting: {
-    from: ["ready_for_reporting", "performed"], to: "reporting_in_progress", field: "reporting_datetime",
+    from: ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress"], to: "reporting_in_progress", field: "reporting_datetime",
     label: "started reporting", actor: "radiologist", require_assignment: true,
   },
+  submit_for_signature: {
+    from: ["reporting_in_progress", "interpretation", "ready_for_reporting", "performed", "examination_completed"],
+    to: "awaiting_signature", field: "updated_datetime",
+    label: "completed the interpretation — awaiting electronic signature",
+    actor: "radiologist", require_report: true, require_assignment: true,
+  },
   finalize_report: {
-    from: ["reporting_in_progress", "interpretation", "ready_for_reporting"], to: "final_report", field: "final_report_datetime",
-    label: "finalized the radiology report", actor: "radiologist", require_report: true, require_assignment: false,
+    from: ["awaiting_signature", "reporting_in_progress", "interpretation", "ready_for_reporting"], to: "final_report", field: "final_report_datetime",
+    label: "signed and finalized the radiology report", actor: "radiologist", require_report: true, require_assignment: true,
   },
   release: {
     from: ["final_report"], to: "released", field: "released_datetime",
@@ -166,12 +242,17 @@ export async function applyTransition(base44: any, request: any, action: string,
       if (String(payload.image_notes || "").trim()) update.image_notes = String(payload.image_notes).trim();
     }
     update.images_received_datetime = now;
+    update.ready_datetime = now;
   } else if (action === "cancel") {
     const reason = String(payload.reason || "").trim();
     if (!reason) throw new Error("A documented cancellation reason is required.");
     update.cancel_reason = reason;
     update.cancelled_by_name = actor.name;
     update.cancelled_datetime = now;
+  } else if (action === "submit_for_signature") {
+    const submittedReport = String(payload.report || "").trim();
+    if (submittedReport) update.report = submittedReport;
+    // The awaiting-signature time is carried by the status history entry.
   } else if (action === "finalize_report") {
     const submittedReport = String(payload.report || "").trim();
     if (submittedReport) update.report = submittedReport;
@@ -307,6 +388,17 @@ export async function setAssignment(base44: any, request: any, assignment: Recor
     update.assigned_radiologist_user_id = assignment.radiologist_user_id;
     update.assigned_radiologist_name = assignment.radiologist_name;
     update.assigned_datetime = now;
+    // The radiologist who claims the study becomes its reporting radiologist —
+    // the study moves to Reporting in Progress automatically.
+    if (assignment.action === "claimed" &&
+        ["ready_for_reporting", "performed", "examination_completed"].includes(canonicalStage(request.workflow_status))) {
+      update.workflow_status = "reporting_in_progress";
+      update.reporting_datetime = now;
+      update.status_history = historyEntry(
+        request, "claim_study", String(request.workflow_status), "reporting_in_progress",
+        assignment.radiologist_name, "radiologist", assignment.reason || "Claimed the study for reporting"
+      );
+    }
   }
   await base44.asServiceRole.entities.ImagingRequest.update(request.id, update);
   try {

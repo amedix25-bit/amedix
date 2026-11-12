@@ -15,6 +15,7 @@ import ReportTemplatePicker from "@/components/radiologist/review/ReportTemplate
 import ReportPreviewDialog from "@/components/radiologist/review/ReportPreviewDialog";
 import CriticalCommunicationPanel from "@/components/radiologist/review/CriticalCommunicationPanel";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
+import { reportingLockReason } from "@/lib/radiologyWorkflow";
 
 // Structured reporting (Phase 5) — examination-specific templates, persistent
 // drafts, dictation, formatting assistance (always a reviewed suggestion),
@@ -78,8 +79,12 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   // save claims the study, so interpretation is never blocked behind the
   // assignment step for a radiologist authorized for the department.
   const canStart = ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
-  const editable = ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress"].includes(stage);
+  const editable = ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress", "awaiting_signature"].includes(stage);
+  // Why the workspace is locked — examination/images not yet received and verified.
+  const lockReason = reportingLockReason(study);
   const canAmend = authorized && ["final_report", "released"].includes(stage);
+  // Only the assigned radiologist writes the report — everyone else views it.
+  const writeAllowed = editable && !assignedOther;
   const latestVersion = (reportVersions && reportVersions.length) ? reportVersions[0] : null;
 
   useEffect(() => {
@@ -116,7 +121,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
 
   // Drafts survive interruptions (Phase 10) — autosave 4s after the last edit,
   // and a browser warning while unsaved changes remain.
-  const dirty = draftLoaded && editable && JSON.stringify(sections) !== savedJson;
+  const dirty = draftLoaded && writeAllowed && JSON.stringify(sections) !== savedJson;
   useEffect(() => {
     if (!dirty || !editable) return;
     const timer = setTimeout(async () => {
@@ -283,6 +288,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       return;
     }
     run("finalize", async () => {
+      await ensureClaimed();
       const { reportPdfUrl, reportText } = await makePdf();
       await base44.functions.invoke("radiologyUpdateWorkflowStatus", {
         request_id: study.id,
@@ -476,7 +482,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
           <p className="text-sm text-blue-800">
             Assigned to <span className="font-semibold">{study.assigned_radiologist_name}</span>
             {study.reporting_since ? ` — reporting since ${new Date(study.reporting_since).toLocaleString()}` : ""}.
-            You can also open and report this study — every radiologist of the department may work on it.
+            You can view the study, its status and the report, but only the assigned radiologist can edit or sign it.
           </p>
         </div>
       )}
@@ -491,6 +497,17 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
         </div>
       )}
 
+      {/* Locked — always say exactly what is missing */}
+      {!closed && !editable && lockReason && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">Reporting is locked</p>
+            <p className="text-sm text-amber-800 mt-0.5">{lockReason}</p>
+          </div>
+        </div>
+      )}
+
       {canStart && (
         <Button onClick={startReporting} disabled={!!busy} className="w-full">
           {spinner("start")} <FileSignature className="w-4 h-4 mr-1" /> Start Reporting
@@ -499,7 +516,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
 
       {/* The editor */}
       {!closed && draftLoaded && (
-        <div className={`space-y-3 ${editable ? "" : "pointer-events-none opacity-50"}`}>
+        <div className={`space-y-3 ${writeAllowed ? "" : "pointer-events-none opacity-50"}`}>
           <ReportTemplatePicker
             study={study}
             user={user}

@@ -338,6 +338,7 @@ export default async function (req: Request): Promise<Response> {
       await svc.entities.ImagingRequest.update(request.id, {
         workflow_status: "ready_for_reporting",
         images_received_datetime: now,
+        ready_datetime: now,
         images_note: `Imported manually by ${actor.displayName}`,
         status_history: history,
         updated_datetime: now,

@@ -13,7 +13,7 @@ import { Loader2, Search, AlertTriangle, FilterX, FileImage, FileText } from "lu
 const MODALITIES = ["X-Ray", "CT", "MRI", "Ultrasound", "Mammography", "Other"];
 const MODE_STAGES = {
   requests: ["requested", "under_review", "clarification_required", "scheduled"],
-  worklist: ["accepted", "scheduled", "in_progress", "examination_completed", "images_awaiting_transfer", "ready_for_reporting", "reporting_in_progress"],
+  worklist: ["accepted", "scheduled", "in_progress", "examination_completed", "images_awaiting_transfer", "ready_for_reporting", "reporting_in_progress", "awaiting_signature"],
 };
 
 // Imaging Requests (triage) and the Imaging Worklist (active studies) share

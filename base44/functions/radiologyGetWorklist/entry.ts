@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { canonicalStage, isOverdue } from "../../shared/radiologyWorkflow.ts";
+import { canonicalStage, isOverdue, reportingLockReason } from "../../shared/radiologyWorkflow.ts";
 import { authorizedFacilities } from "../../shared/radiologyMembership.ts";
 
 // Radiologist worklist + summary counts. ONE query for every study this
@@ -16,7 +16,8 @@ const SIGNED = ["final_report", "released"];
 // Stages at which imaging should already be attached to the request.
 const IMAGING_STAGES = [
   "examination_completed", "performed", "images_awaiting_transfer",
-  "ready_for_reporting", "reporting_in_progress", "interpretation", "final_report", "released",
+  "ready_for_reporting", "reporting_in_progress", "interpretation", "awaiting_signature",
+  "final_report", "released",
 ];
 
 function escapeRegExp(s: string): string {
@@ -46,6 +47,7 @@ function reportingStatus(stage: string, latestVersion: any, draft: any): string 
     if (latestVersion && latestVersion.is_amendment) return "amended";
     return stage === "released" ? "released" : "finalized";
   }
+  if (stage === "awaiting_signature") return "awaiting_signature";
   if (draft && draft.status === "preliminary" && !SIGNED.includes(stage)) return "awaiting_signature";
   if (draft) return "draft";
   if (stage === "reporting_in_progress" || stage === "interpretation") return "in_progress";
@@ -122,6 +124,8 @@ export default async function(req: Request): Promise<Response> {
         id: r.id,
         request_id: r.request_id,
         pdf_url: r.pdf_url || "",
+        // Why the reporting workspace is locked for this study (null = open).
+        reporting_lock_reason: reportingLockReason(r),
         patient_id: r.patient_id,
         patient_cin: r.patient_cin,
         patient_name: r.patient_name,
@@ -180,7 +184,8 @@ export default async function(req: Request): Promise<Response> {
       awaiting_imaging: (r) => ["scheduled", "in_progress", "examination_completed", "performed", "images_awaiting_transfer"].includes(r.stage),
       ready_for_interpretation: (r) => REPORTABLE.includes(r.stage) && r.stage !== "examination_completed",
       in_progress: (r) => ["reporting_in_progress", "interpretation"].includes(r.stage),
-      awaiting_signature: (r) => r.has_preliminary && !SIGNED.includes(r.stage) && r.stage !== "cancelled",
+      awaiting_signature: (r) =>
+        r.stage === "awaiting_signature" || (r.has_preliminary && !SIGNED.includes(r.stage) && r.stage !== "cancelled"),
       completed: (r) => SIGNED.includes(r.stage),
       unmatched: (r) => r.stage !== "cancelled" && ["unmatched", "images_only"].includes(r.study_match),
     };
@@ -191,7 +196,7 @@ export default async function(req: Request): Promise<Response> {
       mine: (r) => r.ownership === "mine",
       in_progress_view: (r) => open(r) && ["reporting_in_progress", "interpretation"].includes(r.stage),
       drafts: (r) => r.has_draft && !SIGNED.includes(r.stage) && r.stage !== "cancelled",
-      awaiting_signature_view: (r) => r.has_preliminary && !SIGNED.includes(r.stage),
+      awaiting_signature_view: (r) => r.stage === "awaiting_signature" || (r.has_preliminary && !SIGNED.includes(r.stage)),
       completed_view: (r) => SIGNED.includes(r.stage),
       urgent: (r) => ["Urgent", "Emergency"].includes(r.priority) && open(r),
       overdue: (r) => r.is_overdue,

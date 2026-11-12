@@ -1,5 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { TRANSITIONS, applyTransition, setAssignment, historyEntry, canonicalStage } from "../../shared/radiologyWorkflow.ts";
+import {
+  TRANSITIONS, applyTransition, setAssignment, historyEntry, canonicalStage,
+  reportingLockReason, autoReadyForReporting,
+} from "../../shared/radiologyWorkflow.ts";
 import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
@@ -124,7 +127,13 @@ export default async function(req: Request): Promise<Response> {
           }, { status: 409 });
         }
         if (!["ready_for_reporting", "performed", "examination_completed"].includes(stage)) {
-          return Response.json({ error: "This study is not ready for reporting yet." }, { status: 400 });
+          return Response.json({
+            error: reportingLockReason(request) || "This study is not ready for reporting yet.",
+          }, { status: 400 });
+        }
+        const lockReason = reportingLockReason(request);
+        if (lockReason) {
+          return Response.json({ error: lockReason }, { status: 400 });
         }
         const updated = await setAssignment(base44, request, {
           action: "claimed",
@@ -319,12 +328,27 @@ export default async function(req: Request): Promise<Response> {
       );
     }
 
+    // A report may only be submitted for signature once an interpretation exists.
+    if (action === "submit_for_signature" && !String(request.report || payload.report || "").trim()) {
+      return Response.json(
+        { error: "Save the interpretation before submitting it for signature." },
+        { status: 400 }
+      );
+    }
+
     const updated = await applyTransition(base44, request, action, {
       name: user.full_name || (isDepartment ? "Radiology Department" : request.doctor_name || ""),
       role: transition.actor,
       userId: user.id,
       payload,
     });
+
+    // Automatic unlock — examination completed + images received and verified
+    // moves the study to Ready for Reporting with no manual department step.
+    let settled = updated;
+    if (["complete_examination", "images_received"].includes(action)) {
+      settled = await autoReadyForReporting(base44, updated, user.full_name || "Radiology Department");
+    }
 
     // Report integrity (Phase 5.3) — every finalized report is preserved as
     // an immutable signed version record carrying the study association, the
@@ -360,7 +384,7 @@ export default async function(req: Request): Promise<Response> {
       }
     }
 
-    return Response.json({ ok: true, imaging_request: updated });
+    return Response.json({ ok: true, imaging_request: settled });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: error.statusCode || 500 });
   }

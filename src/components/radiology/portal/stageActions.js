@@ -21,6 +21,7 @@ export const NEXT_ACTIONS = {
   images_awaiting_transfer: [{ action: "images_received", label: "Images received" }],
   ready_for_reporting: [{ action: "start_reporting", label: "Start reporting", radiologistOnly: true }],
   reporting_in_progress: [],
+  awaiting_signature: [],
   final_report: [{ action: "release", label: "Release to patient record", administratorOnly: true }],
   released: [],
   cancelled: [],
