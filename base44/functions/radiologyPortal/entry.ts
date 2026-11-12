@@ -199,6 +199,9 @@ export default async function (req: Request): Promise<Response> {
         request_datetime: r.request_datetime || r.date_requested || "",
         is_critical: !!r.is_critical,
         doctor_name: r.doctor_name || "",
+        // The doctor's written request form — opened through the access-checked
+        // file endpoint, never linked publicly.
+        pdf_url: r.pdf_url || "",
         overdue: isOverdue(r),
       }));
 
