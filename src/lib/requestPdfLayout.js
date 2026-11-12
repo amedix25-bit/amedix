@@ -114,6 +114,22 @@ function drawWatermark(doc, logo) {
   }
 }
 
+// Letter-spaced text, drawn glyph by glyph so the measured width — and
+// therefore the right edge — is exact. The PDF engine's own character-spacing
+// command is unreliable across viewers and pushed right-aligned text past the
+// border, so it is never used.
+function drawTrackedText(doc, text, x, y, tracking, align = "left") {
+  const chars = Array.from(String(text));
+  const widths = chars.map((c) => doc.getTextWidth(c));
+  const total = widths.reduce((sum, w) => sum + w, 0) + tracking * Math.max(0, chars.length - 1);
+  let cx = align === "right" ? x - total : x;
+  chars.forEach((c, i) => {
+    if (c !== " ") doc.text(c, cx, y);
+    cx += widths[i] + tracking;
+  });
+  return total;
+}
+
 // ===== Header =====
 export function drawRequestHeader(doc, {
   logo,
@@ -146,10 +162,8 @@ export function drawRequestHeader(doc, {
       size -= 0.5;
       doc.setFontSize(size);
     }
-    doc.setCharSpace(1.4);
     doc.setTextColor(...PDF_INK.navy);
-    doc.text(text, PDF_PAGE.right - text.length * 1.4, 22);
-    doc.setCharSpace(0);
+    drawTrackedText(doc, text, PDF_PAGE.right, 22, 1.4, "right");
     doc.setDrawColor(...PDF_INK.hair);
     doc.setLineWidth(0.5);
     doc.line(PDF_PAGE.margin, 33, PDF_PAGE.right, 33);
@@ -201,10 +215,8 @@ export function drawRequestHeader(doc, {
     size -= 0.4;
     doc.setFontSize(size);
   }
-  doc.setCharSpace(tracking);
   doc.setTextColor(...PDF_INK.navy);
-  doc.text(heading, R - heading.length * tracking, HEADER_TOP + 4.8);
-  doc.setCharSpace(0);
+  drawTrackedText(doc, heading, R, HEADER_TOP + 4.8, tracking, "right");
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
@@ -241,12 +253,8 @@ export function drawSectionLabel(doc, text, y, x = M, align = "left") {
   const tracking = 1.1;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.6);
-  doc.setCharSpace(tracking);
   doc.setTextColor(...PDF_INK.navy);
-  // Tracking is compensated, so a right-aligned label ends on the content
-  // edge rather than hanging past the border.
-  doc.text(label, align === "right" ? x - label.length * tracking : x, y);
-  doc.setCharSpace(0);
+  drawTrackedText(doc, label, x, y, tracking, align);
 }
 
 export function drawSectionHead(doc, label, y, right) {
