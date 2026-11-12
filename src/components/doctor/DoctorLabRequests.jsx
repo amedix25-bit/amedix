@@ -271,8 +271,8 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       load();
     } catch (err) {
       console.error(err);
-      // Retain the draft — stay on the review screen with the selection intact for a safe retry.
-      setFormError("Failed to submit the request. Please try again.");
+      // Retain the draft and display the actual rejection instead of hiding it.
+      setFormError(err.response?.data?.error || err.data?.error || err.message || "Failed to submit the request. Please try again.");
     } finally {
       setSubmitting(false);
       submitGuard.current = false;

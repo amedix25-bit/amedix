@@ -33,8 +33,8 @@ export default async function(req) {
     // submission) is rejected instead of creating a duplicate order.
     if (payload.request_id) {
       try {
-        const dupesPage = await base44.asServiceRole.entities.LabRequest.filter({ request_id: String(payload.request_id) }, { limit: 1 });
-        const dupes = dupesPage.items || [];
+        // This function's SDK uses positional filter arguments and returns an array.
+        const dupes = await base44.asServiceRole.entities.LabRequest.filter({ request_id: String(payload.request_id) }, "-created_date", 1);
         if (dupes.length > 0) {
           return Response.json({ error: "Duplicate submission — this request was already saved.", duplicate: true }, { status: 409 });
         }
@@ -53,11 +53,11 @@ export default async function(req) {
       }, { status: 400 });
     }
 
-    let signature: any = null;
-    try {
-      const sigPage = await base44.asServiceRole.entities.DoctorSignature.filter({ id: signatureId }, { limit: 1 });
-      signature = (sigPage.items || [])[0] || null;
-    } catch (e) { signature = null; }
+    // A signature id identifies one record. The old filter overload treated the
+    // options object as a sort value, then discarded the array response as if
+    // it were a cursor page, so every valid signature was rejected.
+    const signature = await base44.asServiceRole.entities.DoctorSignature.get(signatureId)
+      .catch((e) => e.status === 404 ? null : Promise.reject(e));
 
     if (!signature) {
       return Response.json({ error: "The signature could not be verified. Please sign the request again." }, { status: 403 });
