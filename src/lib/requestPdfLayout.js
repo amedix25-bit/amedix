@@ -398,6 +398,67 @@ export function drawInvestigationLine(doc, y, name, note) {
   return y + 9;
 }
 
+// A long panel flows into up to three columns on the SAME sheet, so a request
+// never spills onto a second page. Rows fill the first column, then the next.
+export function drawInvestigationColumns(doc, tests, y, { bottom = CONTENT_BOTTOM } = {}) {
+  const items = (Array.isArray(tests) ? tests : []).filter((t) => String(t?.name || "").trim());
+  const rows = items.length ? items : [{ name: "—" }];
+
+  const avail = bottom - y;
+  const maxRows = Math.max(1, Math.floor(avail / 9));
+  const cols = rows.length <= maxRows ? 1 : rows.length <= maxRows * 2 ? 2 : 3;
+  const perCol = Math.ceil(rows.length / cols);
+  const lineH = Math.min(9, avail / perCol);
+  const gap = 9;
+  const colW = (R - M - gap * (cols - 1)) / cols;
+
+  rows.forEach((test, i) => {
+    const col = Math.min(cols - 1, Math.floor(i / perCol));
+    const row = i % perCol;
+    const x = M + col * (colW + gap);
+    const top = y + row * lineH;
+    const baseline = top + lineH * 0.62;
+
+    if (row > 0) {
+      doc.setDrawColor(232, 238, 244);
+      doc.setLineWidth(0.25);
+      doc.line(x, top - 0.4, x + colW, top - 0.4);
+    }
+
+    const note = String(test.specimen || "").trim();
+    const reserve = note && cols === 1 ? 34 : 0;
+    const maxW = Math.max(12, colW - reserve - 2);
+    const name = String(test.name || "").trim();
+
+    // Shrink, then trim, so a name always stays inside its column.
+    doc.setFont("helvetica", "normal");
+    let size = Math.max(6.2, Math.min(9.2, (lineH / 0.3528) * 0.55));
+    doc.setFontSize(size);
+    while (size > 5.8 && doc.getTextWidth(name) > maxW) {
+      size -= 0.3;
+      doc.setFontSize(size);
+    }
+    let label = name;
+    while (label.length > 3 && doc.getTextWidth(label) > maxW) label = label.slice(0, -1);
+    if (label !== name) label = `${label.replace(/[\s,·-]+$/, "")}…`;
+    const labelW = doc.getTextWidth(label);
+    doc.setTextColor(...PDF_INK.ink);
+    doc.text(label, x, baseline);
+
+    if (note) {
+      doc.setFontSize(6.7);
+      const noteW = doc.getTextWidth(note);
+      if (labelW + noteW + 2.5 <= colW) {
+        doc.setTextColor(...PDF_INK.muted);
+        const right = cols === 1 ? R : x + colW;
+        if (right - noteW > x + labelW + 1.5) doc.text(note, right, baseline, { align: "right" });
+      }
+    }
+  });
+
+  return y + perCol * lineH;
+}
+
 // A titled paragraph — the clinical narrative sections of a form.
 export function drawTextBlock(doc, label, value, y, { gap = 5 } = {}) {
   const text = String(value || "").trim();

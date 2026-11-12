@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import {
   PDF_PAGE,
   PDF_INK,
+  CONTENT_BOTTOM,
   drawRequestHeader,
   ensureSpace,
   ensureSignatureRoom,
@@ -9,7 +10,7 @@ import {
   drawPatientBlock,
   drawDoctorBlock,
   drawInvestigationsHeading,
-  drawInvestigationLine,
+  drawInvestigationColumns,
   drawTextBlock,
   drawSignatureBlock,
   drawRequestFooter,
@@ -46,21 +47,20 @@ export function generateLabRequestPdf(req) {
   y = drawDoctorBlock(doc, req, y);
   y = drawInvestigationsHeading(doc, y, req.priority);
 
-  // One investigation per line — no numbering, no request numbers.
-  const tests = Array.isArray(req.tests) ? req.tests : [];
-  if (!tests.length) y = drawInvestigationLine(doc, y, "—", "");
-  tests.forEach((test) => {
-    y = ensureSpace(doc, y, 10, logo);
-    y = drawInvestigationLine(doc, y, test.name, test.specimen);
-  });
-
-  y += 2;
-  [
+  // One investigation per line — no numbering, no request numbers. A long panel
+  // flows into further columns on the same sheet rather than a second page,
+  // leaving room for the clinical text that follows.
+  const narrative = [
     ["Clinical Indication", req.indication],
     ["Relevant Clinical Information", req.clinical_info],
     ["Laboratory Instructions", req.instructions],
-  ].forEach(([label, value]) => {
-    if (!String(value || "").trim()) return;
+  ].filter(([, value]) => String(value || "").trim());
+  const narrativeHeight = narrative.reduce((sum, [, value]) => sum + textBlockHeight(doc, value), 0);
+  const invBottom = Math.max(y + 40, CONTENT_BOTTOM - Math.min(narrativeHeight + 4, 62));
+  y = drawInvestigationColumns(doc, req.tests, y, { bottom: invBottom });
+
+  y += 2;
+  narrative.forEach(([label, value]) => {
     y = ensureSpace(doc, y, textBlockHeight(doc, value), logo);
     y = drawTextBlock(doc, label, value, y);
   });
