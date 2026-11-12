@@ -29,7 +29,7 @@ export const NEXT_ACTIONS = {
 export function actionsForStage(stage, role) {
   const list = NEXT_ACTIONS[stage] || [];
   return list.filter((a) => {
-    if (a.radiologistOnly && role === "technician") return false;
+    if (a.radiologistOnly && role !== "radiologist") return false;
     if (a.administratorOnly && role !== "administrator") return false;
     return true;
   });

@@ -40,6 +40,7 @@ export default function RadiologyDepartmentPortal() {
           setAccess({ mode: "department", hospitalProfile: hospital, radiologistProfile: null });
         } else if (radiologist && String(radiologist.hospital || "").trim()) {
           setAccess({ mode: "radiologist", hospitalProfile: null, radiologistProfile: radiologist });
+          setActiveTab("worklist");
         } else {
           setAccess(null);
         }

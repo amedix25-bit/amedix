@@ -292,7 +292,12 @@ export default async function(req: Request): Promise<Response> {
       request.assigned_radiologist_user_id === user.id ||
       isFacilityRadiologist
     );
-    const isDepartment = !!hospital && !!hospital.radiology_department_enabled && request.routed_hospital_user_id === user.id;
+    // An AMedix administrator oversees every facility's radiology department, so
+    // the department steps stay operable from the Radiology Portal even though
+    // the request is routed to the facility's own account.
+    const isDepartment =
+      (!!hospital && !!hospital.radiology_department_enabled && request.routed_hospital_user_id === user.id) ||
+      (user.role === "admin" && !!request.routed_hospital_user_id);
     const isRequestingDoctor = request.doctor_user_id === user.id;
 
     const allowed =

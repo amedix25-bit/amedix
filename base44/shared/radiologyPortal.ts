@@ -58,7 +58,38 @@ export async function resolveRadiologyActor(base44: any, user: any): Promise<Rad
     };
   }
 
-  // 2. Designated radiology staff — an invitation claims on first sign-in with
+  // 2. An AMedix administrator oversees every facility's radiology department.
+  //    Without this the portal is unusable for administration: the account has
+  //    no facility of its own, so every read would resolve to nothing.
+  if (user.role === "admin") {
+    const enabled = rows(
+      await base44.asServiceRole.entities.HospitalProfile.filter(
+        { radiology_department_enabled: true },
+        { limit: 50 }
+      )
+    ).filter((h: any) => h.status !== "suspended");
+    const ids = [...new Set(enabled.map((h: any) => String(h.user_id || "")).filter(Boolean))];
+    const names = [...new Set(enabled.map((h: any) => String(h.hospital_name || "").trim()).filter(Boolean))];
+    if (ids.length > 0 || names.length > 0) {
+      return {
+        role: "administrator",
+        userId: user.id,
+        displayName: user.full_name || "AMedix Administrator",
+        hospitalUserId: ids[0] || "",
+        hospitalId: enabled[0] ? enabled[0].id : "",
+        hospitalName: names[0] || "",
+        hospitalIds: ids,
+        hospitalNames: names,
+        staff: null,
+        radiologist: null,
+        isAdministrator: true,
+        canReport: true,
+        canImport: true,
+      };
+    }
+  }
+
+  // 3. Designated radiology staff — an invitation claims on first sign-in with
   //    the exact designated email. Nothing is granted by self-declaration.
   const email = String(user.email || "").toLowerCase();
   if (email) {
@@ -85,7 +116,7 @@ export async function resolveRadiologyActor(base44: any, user: any): Promise<Rad
   );
   if (staffRows.length > 0) return actorFromStaff(user, staffRows[0]);
 
-  // 3. A radiologist authorized for at least one facility's department.
+  // 4. A radiologist authorized for at least one facility's department.
   const radiologists = rows(
     await base44.asServiceRole.entities.RadiologistProfile.filter({ user_id: user.id }, { limit: 1 })
   );
@@ -98,6 +129,18 @@ export async function resolveRadiologyActor(base44: any, user: any): Promise<Rad
     for (const f of Array.isArray(radiologist.authorized_facilities) ? radiologist.authorized_facilities : []) {
       if (f && f.hospital_user_id) ids.add(String(f.hospital_user_id));
       if (f && f.hospital_name) names.add(String(f.hospital_name));
+    }
+    // A profile can name the facility without ever holding its id — resolve the
+    // id from the name so facility-scoped reads (settings, PACS, staff, demo
+    // state) work instead of resolving to nothing.
+    if (ids.size === 0 && names.size > 0) {
+      const byName = rows(
+        await base44.asServiceRole.entities.HospitalProfile.filter(
+          { hospital_name: { $in: [...names] } },
+          { limit: 10 }
+        )
+      );
+      byName.forEach((h: any) => h.user_id && ids.add(String(h.user_id)));
     }
     if (ids.size > 0 || names.size > 0) {
       return {
