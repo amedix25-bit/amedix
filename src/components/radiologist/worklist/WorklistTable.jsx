@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, ClipboardList, Hand, AlertTriangle } from "lucide-react";
+import { Loader2, ClipboardList, Hand, AlertTriangle, FileText } from "lucide-react";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import { formatDate, formatDateTime, reportStatus, studyMatch } from "@/lib/radiologistWorklist";
 import RadiAntRequestLink from "@/components/radiologist/imaging/RadiAntRequestLink";
@@ -40,11 +41,12 @@ export default function WorklistTable({ rows, loading, claiming, onOpen, onClaim
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="overflow-x-auto max-h-[calc(100vh-360px)] overflow-y-auto">
-        <table className="w-full min-w-[1180px] border-collapse text-sm">
+        <table className="w-full min-w-[1270px] border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
             <tr className="border-b border-border">
               <th className={TH}>Patient</th>
               <th className={TH}>CIN</th>
+              <th className={TH}>View PDF request</th>
               <th className={TH}>Request ID</th>
               <th className={TH}>Examination</th>
               <th className={TH}>Modality</th>
@@ -89,6 +91,16 @@ export default function WorklistTable({ rows, loading, claiming, onOpen, onClaim
                     </div>
                   </td>
                   <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{r.patient_cin}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <ResolvedFileButton
+                      requestId={r.id}
+                      fileRef={r.pdf_url}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-accent disabled:opacity-40"
+                    >
+                      <FileText className="w-4 h-4 shrink-0" />
+                      View PDF
+                    </ResolvedFileButton>
+                  </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     <RadiAntRequestLink requestId={r.id} requestRef={r.request_id} />
                   </td>

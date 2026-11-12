@@ -121,6 +121,7 @@ export default async function(req: Request): Promise<Response> {
       return {
         id: r.id,
         request_id: r.request_id,
+        pdf_url: r.pdf_url || "",
         patient_id: r.patient_id,
         patient_cin: r.patient_cin,
         patient_name: r.patient_name,

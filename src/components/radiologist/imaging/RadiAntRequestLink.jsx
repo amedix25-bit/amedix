@@ -18,10 +18,10 @@ export default function RadiAntRequestLink({ requestId, requestRef, className = 
           e.stopPropagation();
           setOpen(true);
         }}
-        className={`inline-flex items-center gap-1 font-mono text-xs underline decoration-dotted underline-offset-2 hover:text-primary ${className}`}
+        className={`inline-flex flex-col items-start gap-1 font-mono text-xs underline decoration-dotted underline-offset-2 hover:text-primary ${className}`}
       >
         {requestRef}
-        <MonitorPlay className="w-3 h-3 shrink-0" />
+        <MonitorPlay className="w-6 h-6 shrink-0" />
       </button>
       {open && (
         <RadiAntLaunchDialog
