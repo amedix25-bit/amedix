@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { X, Info } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
+import ProfessionalSignaturePanel from "@/components/doctor/signature/ProfessionalSignaturePanel";
 import {
   IMAGING_TYPES,
   EXAMINATIONS,
@@ -48,6 +49,7 @@ const EMPTY_FORM = {
 
 export default function ImagingRequestForm({ doctorProfile, initialCin, onSubmit, onCancel }) {
   const [form, setForm] = useState({ ...EMPTY_FORM, patient_cin: initialCin || "" });
+  const [signature, setSignature] = useState(null);
   const [errors, setErrors] = useState([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
@@ -84,6 +86,7 @@ export default function ImagingRequestForm({ doctorProfile, initialCin, onSubmit
     if (isMri && (!form.mri_metal_implant || !form.mri_pacemaker || !form.mri_other_device || !form.mri_metallic_foreign_body)) {
       errs.push("Complete all MRI safety questions before submitting.");
     }
+    if (!signature?.signed) errs.push("Apply your professional signature before sending the request.");
     setErrors(errs);
     if (errs.length === 0) setConfirmOpen(true);
   };
@@ -268,6 +271,13 @@ export default function ImagingRequestForm({ doctorProfile, initialCin, onSubmit
         </div>
       )}
 
+      <ProfessionalSignaturePanel
+        doctorProfile={doctorProfile}
+        value={signature}
+        onChange={setSignature}
+        subject="imaging request"
+      />
+
       <div className="flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
         <Info className="w-4 h-4 shrink-0 mt-0.5" />
         <span>
@@ -299,7 +309,7 @@ export default function ImagingRequestForm({ doctorProfile, initialCin, onSubmit
           <AlertDialogAction
             onClick={() => {
               setConfirmOpen(false);
-              onSubmit(form);
+              onSubmit({ ...form, signature });
             }}
           >
             Yes, Send Request

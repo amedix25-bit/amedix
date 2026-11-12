@@ -33,6 +33,7 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin, initi
   };
 
   const handleSubmit = async (form) => {
+    const { signature } = form;
     try {
       const patients = await base44.entities.PatientProfile.filter({ cin: form.patient_cin.toUpperCase() });
       if (patients.length === 0) { alert("Patient not found"); return; }
@@ -92,13 +93,23 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin, initi
         patient_gender: p.gender,
         patient_blood_type: p.blood_type,
         doctor_license: doctorProfile.license_number,
+        signature: signature || null,
       });
       const pdfFile = new File([doc.output("blob")], `ImagingRequest_${p.cin}_${payload.date_requested}.pdf`, { type: "application/pdf" });
       const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
-      await base44.functions.invoke("createImagingRequest", { ...payload, pdf_url: file_url });
+      await base44.functions.invoke("createImagingRequest", {
+        ...payload,
+        pdf_url: file_url,
+        signature_record_id: signature?.signature_record_id,
+        signature_version: signature?.signature_version,
+        signature_source: signature?.source,
+      });
       setView("list");
       load();
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || err.message);
+    }
   };
 
   const handleRespondClarification = async (id, text) => {

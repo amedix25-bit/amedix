@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
+import { verifyDoctorSignature, recordDocumentSignature } from "../../shared/professionalSignature.ts";
 
 // Electronic prescription issue with the mandatory check-in gate. The backend
 // independently verifies that an active check-in exists for this patient at
@@ -30,6 +31,17 @@ export default async function(req) {
 
     const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
     if (!checkin) return gateBlocked();
+
+    // ===== Mandatory professional signature =====
+    // A prescription is never issued unsigned. The signature must be a record
+    // owned by the signed-in doctor; every signer field is written server-side.
+    const signatureCheck = await verifyDoctorSignature(base44, user, doctor, payload);
+    if (signatureCheck.error) {
+      return Response.json(
+        { error: signatureCheck.error, signature_required: signatureCheck.signature_required === true },
+        { status: signatureCheck.status }
+      );
+    }
 
     // Idempotency: an identical prescription_id already persisted (replayed or
     // retried submission) is rejected instead of creating a duplicate.
@@ -77,6 +89,19 @@ export default async function(req) {
       status: "issued",
     });
 
+    const signing = await recordDocumentSignature(base44, {
+      documentType: "prescription",
+      documentId: prescription.id,
+      documentReference: prescription.prescription_id || payload.prescription_id,
+      patient,
+      user,
+      doctor,
+      signature: signatureCheck.signature,
+      version: signatureCheck.version,
+      source: signatureCheck.source,
+      payload,
+    });
+
     await logClinicalAudit(base44, {
       actor_user_id: user.id,
       actor_name: doctor.full_name,
@@ -101,7 +126,7 @@ export default async function(req) {
       related_id: prescription.id,
     });
 
-    return Response.json({ prescription, checkin_id: checkin.id });
+    return Response.json({ prescription, checkin_id: checkin.id, signature_reference: signing.reference });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -11,6 +11,7 @@ import { LOCKED_MESSAGE } from "@/lib/checkInGate";
 import MedicationSafetyAlerts from "@/components/doctor/pharmacy/MedicationSafetyAlerts";
 import MedicationAutocomplete from "@/components/medications/MedicationAutocomplete";
 import InhalerDeviceField from "@/components/doctor/pharmacy/InhalerDeviceField";
+import ProfessionalSignaturePanel from "@/components/doctor/signature/ProfessionalSignaturePanel";
 
 const ROUTES = [
   { value: "oral", label: "Oral" },
@@ -61,6 +62,7 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
   const [safetyLoading, setSafetyLoading] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [justification, setJustification] = useState("");
+  const [signature, setSignature] = useState(null);
   const { toast } = useToast();
   const checkSeq = useRef(0);
 
@@ -122,6 +124,7 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
     if (blocked) return setError("Prescription blocked by the medication safety check. Choose an alternative medication.");
     if (needsAck && !acknowledged) return setError("A critical safety warning requires your acknowledgment before issuing.");
     if (needsAck && acknowledged && !justification.trim()) return setError("Describe your clinical justification for proceeding.");
+    if (!signature?.signed) return setError("Apply your professional signature before issuing the prescription.");
     setSubmitting(true);
     try {
       const safety_check = safety
@@ -163,9 +166,13 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
             }
           : {}),
         safety_check,
+        signature_record_id: signature.signature_record_id,
+        signature_version: signature.signature_version,
+        signature_source: signature.source,
       });
       toast({ title: "Prescription issued", description: "Checking availability across affiliated pharmacies..." });
       setForm(EMPTY);
+      setSignature(null);
       onCreated?.(res.data.prescription);
     } catch (err) {
       const msg = err.response?.data?.error || err.message || "Could not issue the prescription.";
@@ -290,7 +297,13 @@ export default function PrescriptionForm({ patient, doctorProfile, encounterId, 
           The safety rules block this prescription. Choose an alternative medication or update the patient's allergy record.
         </div>
       )}
-      <Button type="submit" disabled={submitting || blocked || (needsAck && (!acknowledged || !justification.trim()))} className="w-full sm:w-auto">
+      <ProfessionalSignaturePanel
+        doctorProfile={doctorProfile}
+        value={signature}
+        onChange={setSignature}
+        subject="prescription"
+      />
+      <Button type="submit" disabled={submitting || blocked || !signature?.signed || (needsAck && (!acknowledged || !justification.trim()))} className="w-full sm:w-auto">
         {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         Issue Prescription
       </Button>

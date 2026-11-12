@@ -102,10 +102,15 @@ export function generateImagingRequestPdf(req) {
 
   // ===== Signature at the foot of the document =====
   y = ensureSignatureRoom(doc, y, logo);
+  const sig = req.signature || null;
   drawSignatureBlock(doc, {
-    doctorName: req.doctor_name,
+    image: sig?.image_data_url,
+    imageFormat: sig?.image_format,
+    doctorName: sig?.signed_by_name || req.doctor_name,
     detail: [req.doctor_specialization, req.doctor_hospital].filter(Boolean).join("  ·  "),
-    note: "Requesting doctor",
+    note: sig?.signed_at
+      ? `Electronically signed ${new Date(sig.signed_at).toLocaleString()}`
+      : "Requesting doctor",
   });
 
   drawRequestFooter(doc, req.request_id);

@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { historyEntry } from "../../shared/radiologyWorkflow.ts";
+import { verifyDoctorSignature, recordDocumentSignature } from "../../shared/professionalSignature.ts";
 
 // Imaging request creation with the mandatory check-in gate AND department
 // routing: the request is routed to the RADIOLOGY DEPARTMENT of the doctor's
@@ -28,6 +29,18 @@ export default async function(req) {
 
     const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
     if (!checkin) return gateBlocked();
+
+    // ===== Mandatory professional signature =====
+    // An imaging request is never issued unsigned. The signature must be a
+    // record owned by the signed-in doctor; every signer field is written
+    // server-side, so values sent by the browser are never trusted.
+    const signatureCheck = await verifyDoctorSignature(base44, user, doctor, payload);
+    if (signatureCheck.error) {
+      return Response.json(
+        { error: signatureCheck.error, signature_required: signatureCheck.signature_required === true },
+        { status: signatureCheck.status }
+      );
+    }
 
     // ===== Department routing =====
     const hospitalName = String(doctor.hospital || "").trim();
@@ -97,6 +110,19 @@ export default async function(req) {
         `Routed to the Radiology Department of ${facility.hospital_name}`),
     });
 
+    const signing = await recordDocumentSignature(base44, {
+      documentType: "imaging_request",
+      documentId: imaging_request.id,
+      documentReference: payload.request_id,
+      patient: null,
+      user,
+      doctor,
+      signature: signatureCheck.signature,
+      version: signatureCheck.version,
+      source: signatureCheck.source,
+      payload,
+    });
+
     await logClinicalAudit(base44, {
       actor_user_id: user.id,
       actor_name: doctor.full_name,
@@ -113,6 +139,7 @@ export default async function(req) {
       imaging_request,
       checkin_id: checkin.id,
       routed_hospital: facility.hospital_name,
+      signature_reference: signing.reference,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
