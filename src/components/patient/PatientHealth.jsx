@@ -12,6 +12,7 @@ import MedicalHistorySection from "@/components/patient/medical/MedicalHistorySe
 import { calcAge, capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
+import { formatDateDisplay } from "@/lib/dateFormat";
 import { Lock, Pencil, Loader2 } from "lucide-react";
 
 // My Health — nine collapsible points. The patient cannot edit any section
@@ -73,7 +74,7 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
           <InfoRow label={t("CIN")} value={profile?.cin} />
           <InfoRow label={t("Age")} value={age === null ? null : t("{age} years", { age })} />
           <InfoRow label={t("Sex")} value={profile?.gender ? t(capitalize(profile.gender)) : null} />
-          <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth} />
+          <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth ? formatDateDisplay(profile.date_of_birth) : null} />
         </div>
       </SectionCard>
 

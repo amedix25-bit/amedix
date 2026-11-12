@@ -17,6 +17,12 @@ import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/c
 import VaccinationDocumentUpload, { ImmunizationEntryForm, ChronicCareEntryForm, immunizationKindLabel, chronicCareTypeLabel } from "@/components/patient/onboarding/PreventiveCareForms";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import { isSubmitted } from "@/components/verification/verificationStatus";
+import DateField from "@/components/ui/date-field";
+import DietNutritionFields from "@/components/patient/lifestyle/DietNutritionFields";
+import SleepPatternFields from "@/components/patient/lifestyle/SleepPatternFields";
+import LivingSituationFields from "@/components/patient/lifestyle/LivingSituationFields";
+import VaccinationStatusFields from "@/components/patient/lifestyle/VaccinationStatusFields";
+import { vaccinationMapToRecords } from "@/lib/lifestyleOptions";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
 
@@ -72,8 +78,17 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const [lifestyle, setLifestyle] = useState({
     smoking_status: "", tobacco_details: "", vaping_history: "", alcohol_use: "", substance_use: "",
     consanguinity: "",
-    occupation: "", occupational_exposure: "", physical_activity: "", typical_diet: "",
-    sleep_concerns: "", mobility_limitations: "", living_situation: "",
+    occupation: "", occupational_exposure: "", physical_activity: "",
+    // Diet & nutrition — multiple diet types, "other" specification and the
+    // patient's food allergies / intolerances / dietary restrictions.
+    diet_types: [], typical_diet: "", food_allergies_intolerances: "",
+    // Sleep pattern — multiple patterns, "other" specification and concerns.
+    sleep_patterns: [], sleep_pattern_other: "", sleep_concerns: "",
+    // Living situation — one primary situation plus optional details.
+    living_situation_type: "", living_situation: "",
+    mobility_limitations: "",
+    // Vaccination status and the per-vaccine history (map keyed by vaccine).
+    vaccination_status: "", vaccination_records: {},
     marital_status: "",
     pregnancy_status: "", gestational_age: "", estimated_due_date: "",
     pregnancy_complications: "", menstrual_history: "", contraception_history: "",
@@ -141,6 +156,10 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
   const nextFromStep0 = (e) => {
     e.preventDefault();
+    if (!form.date_of_birth) {
+      setError(t("Please select your date of birth."));
+      return;
+    }
     if (!form.gender) {
       setError(t("Please select your sex."));
       return;
@@ -194,9 +213,16 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         occupational_exposure: lifestyle.occupational_exposure,
         physical_activity: lifestyle.physical_activity,
         typical_diet: lifestyle.typical_diet,
+        diet_types: lifestyle.diet_types,
+        food_allergies_intolerances: lifestyle.food_allergies_intolerances,
+        sleep_patterns: lifestyle.sleep_patterns,
+        sleep_pattern_other: lifestyle.sleep_pattern_other,
         sleep_concerns: lifestyle.sleep_concerns,
         mobility_limitations: lifestyle.mobility_limitations,
+        living_situation_type: lifestyle.living_situation_type,
         living_situation: lifestyle.living_situation,
+        vaccination_status: lifestyle.vaccination_status,
+        vaccination_records: vaccinationMapToRecords(lifestyle.vaccination_records),
         consanguinity: lifestyle.consanguinity,
         allergy_record_status: medical.allergies.length ? "" : allergyRecord,
         marital_status: isFemale ? lifestyle.marital_status : "",
@@ -424,7 +450,13 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     <div className="grid sm:grid-cols-2 gap-3 mt-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="dob">{t("Date of birth")} *</Label>
-                        <Input id="dob" type="date" value={form.date_of_birth} onChange={set("date_of_birth")} required />
+                        <DateField
+                          id="dob"
+                          value={form.date_of_birth}
+                          onChange={(date) => setForm((f) => ({ ...f, date_of_birth: date }))}
+                          disableFuture
+                          minYear={1900}
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label>{t("Sex")} *</Label>
@@ -738,20 +770,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="diet">{t("Typical diet")}</Label>
-                        <Input id="diet" value={lifestyle.typical_diet} onChange={setL("typical_diet")} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="sleep">{t("Sleep concerns")}</Label>
-                        <Input id="sleep" value={lifestyle.sleep_concerns} onChange={setL("sleep_concerns")} />
-                      </div>
-                      <div className="space-y-1.5">
                         <Label htmlFor="mobility">{t("Mobility / functional limitations")}</Label>
                         <Input id="mobility" value={lifestyle.mobility_limitations} onChange={setL("mobility_limitations")} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="living">{t("Living situation / caregiving needs")}</Label>
-                        <Input id="living" value={lifestyle.living_situation} onChange={setL("living_situation")} />
                       </div>
                       <div className="space-y-1.5">
                         <Label>{t("Known consanguinity")}</Label>
@@ -765,6 +785,70 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         </Select>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-primary">{t("Diet & Nutrition")}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {t("Optional — helps your care team tailor your care and medication advice.")}
+                      </p>
+                    </div>
+                    <DietNutritionFields
+                      dietTypes={lifestyle.diet_types}
+                      dietOther={lifestyle.typical_diet}
+                      foodRestrictions={lifestyle.food_allergies_intolerances}
+                      onChange={(patch) =>
+                        setLifestyle((s) => ({
+                          ...s,
+                          ...(patch.dietTypes !== undefined ? { diet_types: patch.dietTypes } : {}),
+                          ...(patch.dietOther !== undefined ? { typical_diet: patch.dietOther } : {}),
+                          ...(patch.foodRestrictions !== undefined
+                            ? { food_allergies_intolerances: patch.foodRestrictions }
+                            : {}),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-primary">{t("Sleep Pattern")}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{t("Optional — select all that apply.")}</p>
+                    </div>
+                    <SleepPatternFields
+                      patterns={lifestyle.sleep_patterns}
+                      other={lifestyle.sleep_pattern_other}
+                      concerns={lifestyle.sleep_concerns}
+                      onChange={(patch) =>
+                        setLifestyle((s) => ({
+                          ...s,
+                          ...(patch.patterns !== undefined ? { sleep_patterns: patch.patterns } : {}),
+                          ...(patch.other !== undefined ? { sleep_pattern_other: patch.other } : {}),
+                          ...(patch.concerns !== undefined ? { sleep_concerns: patch.concerns } : {}),
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-primary">{t("Living Situation")}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {t("Optional — select your primary living situation.")}
+                      </p>
+                    </div>
+                    <LivingSituationFields
+                      type={lifestyle.living_situation_type}
+                      details={lifestyle.living_situation}
+                      onChange={(patch) =>
+                        setLifestyle((s) => ({
+                          ...s,
+                          ...(patch.type !== undefined ? { living_situation_type: patch.type } : {}),
+                          ...(patch.details !== undefined ? { living_situation: patch.details } : {}),
+                        }))
+                      }
+                    />
                   </div>
 
                   {isFemale && (
@@ -823,7 +907,11 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                             </div>
                             <div className="space-y-1.5">
                               <Label htmlFor="edd">{t("Estimated due date")} *</Label>
-                              <Input id="edd" type="date" value={lifestyle.estimated_due_date} onChange={setL("estimated_due_date")} />
+                              <DateField
+                                id="edd"
+                                value={lifestyle.estimated_due_date}
+                                onChange={(date) => setLifestyle((s) => ({ ...s, estimated_due_date: date }))}
+                              />
                             </div>
                           </>
                         )}
@@ -900,6 +988,26 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                       </p>
                     </div>
                   </MedicalListSection>
+
+                  <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-primary">{t("Vaccination Status")}</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {t("Optional — recorded as reported by you. Blank answers are saved as not recorded, never as unvaccinated.")}
+                      </p>
+                    </div>
+                    <VaccinationStatusFields
+                      status={lifestyle.vaccination_status}
+                      records={lifestyle.vaccination_records}
+                      onChange={(patch) =>
+                        setLifestyle((s) => ({
+                          ...s,
+                          ...(patch.status !== undefined ? { vaccination_status: patch.status } : {}),
+                          ...(patch.records !== undefined ? { vaccination_records: patch.records } : {}),
+                        }))
+                      }
+                    />
+                  </div>
 
                   <MedicalListSection
                     id="none_chronicCare"

@@ -7,10 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Save, Lock, CheckCircle2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { OccupationsEditor, PhoneNumbersEditor, EmergencyContactsEditor } from "@/components/patient/profile/DemographicsEditors";
+import DietNutritionFields from "@/components/patient/lifestyle/DietNutritionFields";
+import SleepPatternFields from "@/components/patient/lifestyle/SleepPatternFields";
+import LivingSituationFields from "@/components/patient/lifestyle/LivingSituationFields";
+import VaccinationStatusFields from "@/components/patient/lifestyle/VaccinationStatusFields";
+import { vaccinationMapToRecords, vaccinationRecordsToMap } from "@/lib/lifestyleOptions";
+import { formatDateDisplay } from "@/lib/dateFormat";
 
 export default function PatientProfileEdit({ profile, onSaved }) {
   const { t } = usePatientLanguage();
-  const [form, setForm] = useState({ address: "", blood_type: "Unknown", allergies: "", nationality: "" });
+  const [form, setForm] = useState({
+    address: "",
+    blood_type: "Unknown",
+    allergies: "",
+    nationality: "",
+    typical_diet: "",
+    food_allergies_intolerances: "",
+    sleep_pattern_other: "",
+    sleep_concerns: "",
+    living_situation: "",
+  });
+  const [dietTypes, setDietTypes] = useState([]);
+  const [sleepPatterns, setSleepPatterns] = useState([]);
+  const [livingType, setLivingType] = useState("");
+  const [vaccStatus, setVaccStatus] = useState("");
+  const [vaccRecords, setVaccRecords] = useState({});
   const [occupations, setOccupations] = useState([]);
   const [phoneNumbers, setPhoneNumbers] = useState([]);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
@@ -24,7 +45,17 @@ export default function PatientProfileEdit({ profile, onSaved }) {
         blood_type: profile.blood_type || "Unknown",
         allergies: profile.allergies || "",
         nationality: profile.nationality || "",
+        typical_diet: profile.typical_diet || "",
+        food_allergies_intolerances: profile.food_allergies_intolerances || "",
+        sleep_pattern_other: profile.sleep_pattern_other || "",
+        sleep_concerns: profile.sleep_concerns || "",
+        living_situation: profile.living_situation || "",
       });
+      setDietTypes(profile.diet_types || []);
+      setSleepPatterns(profile.sleep_patterns || []);
+      setLivingType(profile.living_situation_type || "");
+      setVaccStatus(profile.vaccination_status || "");
+      setVaccRecords(vaccinationRecordsToMap(profile.vaccination_records));
       // Seed the multi-entry lists from the legacy single fields so existing
       // profiles upgrade automatically.
       setPhoneNumbers(
@@ -70,6 +101,19 @@ export default function PatientProfileEdit({ profile, onSaved }) {
         occupations: occs,
         phone_numbers: phones,
         emergency_contacts: contacts,
+        // Diet, sleep, living situation and vaccination answers stay
+        // patient-editable — they are lifestyle information, not the locked
+        // clinical history.
+        diet_types: dietTypes,
+        typical_diet: form.typical_diet,
+        food_allergies_intolerances: form.food_allergies_intolerances,
+        sleep_patterns: sleepPatterns,
+        sleep_pattern_other: form.sleep_pattern_other,
+        sleep_concerns: form.sleep_concerns,
+        living_situation_type: livingType,
+        living_situation: form.living_situation,
+        vaccination_status: vaccStatus,
+        vaccination_records: vaccinationMapToRecords(vaccRecords),
         // Keep the legacy single fields in sync so every existing view of the
         // patient's demographics stays up to date.
         phone: phones[0]?.number || "",
@@ -103,7 +147,7 @@ export default function PatientProfileEdit({ profile, onSaved }) {
           </div>
           <div className="p-3 rounded-lg bg-muted">
             <p className="text-xs text-muted-foreground">{t("Date of Birth")}</p>
-            <p className="font-semibold mt-1">{profile?.date_of_birth || "—"}</p>
+            <p className="font-semibold mt-1">{profile?.date_of_birth ? formatDateDisplay(profile.date_of_birth) : "—"}</p>
           </div>
           <div className="p-3 rounded-lg bg-muted">
             <p className="text-xs text-muted-foreground">{t("Identification Number")}</p>
@@ -150,10 +194,68 @@ export default function PatientProfileEdit({ profile, onSaved }) {
           </div>
           <p className="sm:col-span-2 text-xs text-muted-foreground">
             {t(
-              "Your medical history (conditions, medications, allergies, surgeries, lifestyle) was recorded at registration and is locked. Contact your doctor or an administrator for any corrections."
+              "Your medical history (conditions, medications, allergies and surgeries) was recorded at registration and is locked. Contact your doctor or an administrator for any corrections. Your diet, sleep, living situation and vaccination answers can be updated here."
             )}
           </p>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4">{t("Diet & Nutrition")}</h3>
+        <DietNutritionFields
+          dietTypes={dietTypes}
+          dietOther={form.typical_diet}
+          foodRestrictions={form.food_allergies_intolerances}
+          onChange={(patch) => {
+            if (patch.dietTypes !== undefined) setDietTypes(patch.dietTypes);
+            if (patch.dietOther !== undefined) setForm((f) => ({ ...f, typical_diet: patch.dietOther }));
+            if (patch.foodRestrictions !== undefined) {
+              setForm((f) => ({ ...f, food_allergies_intolerances: patch.foodRestrictions }));
+            }
+            setSaved(false);
+          }}
+        />
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4">{t("Sleep Pattern")}</h3>
+        <SleepPatternFields
+          patterns={sleepPatterns}
+          other={form.sleep_pattern_other}
+          concerns={form.sleep_concerns}
+          onChange={(patch) => {
+            if (patch.patterns !== undefined) setSleepPatterns(patch.patterns);
+            if (patch.other !== undefined) setForm((f) => ({ ...f, sleep_pattern_other: patch.other }));
+            if (patch.concerns !== undefined) setForm((f) => ({ ...f, sleep_concerns: patch.concerns }));
+            setSaved(false);
+          }}
+        />
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4">{t("Living Situation")}</h3>
+        <LivingSituationFields
+          type={livingType}
+          details={form.living_situation}
+          onChange={(patch) => {
+            if (patch.type !== undefined) setLivingType(patch.type);
+            if (patch.details !== undefined) setForm((f) => ({ ...f, living_situation: patch.details }));
+            setSaved(false);
+          }}
+        />
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="font-semibold text-sm mb-4">{t("Vaccination Status")}</h3>
+        <VaccinationStatusFields
+          status={vaccStatus}
+          records={vaccRecords}
+          onChange={(patch) => {
+            if (patch.status !== undefined) setVaccStatus(patch.status);
+            if (patch.records !== undefined) setVaccRecords(patch.records);
+            setSaved(false);
+          }}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">

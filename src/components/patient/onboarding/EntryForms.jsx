@@ -9,6 +9,7 @@ import { MED_ROUTES, MEAL_OPTIONS, routeLabel } from "@/lib/medicationUtils";
 import { AR_CONDITION_TERMS, AR_SURGERY_TERMS, ARABIC_REGEX } from "@/lib/arabicMedicalTerms";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import ArabicMedicalInput from "./ArabicMedicalInput";
+import DateField from "@/components/ui/date-field";
 
 // Structured list section: optional "none of the above" flag, saved entry
 // rows, and the entry form below. headerExtra renders extra controls in the
@@ -158,7 +159,12 @@ export function ConditionEntryForm({ onAdd }) {
       <div className="grid sm:grid-cols-3 gap-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">{t("Approximate date of diagnosis")}</Label>
-          <Input type="date" value={form.date} onChange={set("date")} />
+          <DateField
+            value={form.date}
+            onChange={(date) => setForm((s) => ({ ...s, date }))}
+            disableFuture
+            placeholder={t("DD/MM/YYYY")}
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">{t("Treating facility")}</Label>
@@ -296,11 +302,18 @@ export function MedicationEntryForm({ onAdd }) {
       <div className="grid sm:grid-cols-3 gap-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">{t("Start date, if known")}</Label>
-          <Input type="date" value={form.start_date} onChange={set("start_date")} />
+          <DateField
+            value={form.start_date}
+            onChange={(date) => setForm((s) => ({ ...s, start_date: date }))}
+            disableFuture
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">{t("End date, if known")}</Label>
-          <Input type="date" value={form.end_date} onChange={set("end_date")} />
+          <DateField
+            value={form.end_date}
+            onChange={(date) => setForm((s) => ({ ...s, end_date: date }))}
+          />
         </div>
         <Input placeholder={t("Prescribing doctor / facility, if known")} value={form.prescribed_by} onChange={set("prescribed_by")} />
       </div>
@@ -433,7 +446,11 @@ export function SurgeryEntryForm({ onAdd }) {
         placeholder={`${t("Type of surgery, e.g. Appendectomy")} *`}
         terms={AR_SURGERY_TERMS}
       />
-      <Input type="date" value={form.surgery_date} onChange={set("surgery_date")} />
+      <DateField
+        value={form.surgery_date}
+        onChange={(date) => setForm((s) => ({ ...s, surgery_date: date }))}
+        disableFuture
+      />
       <Input placeholder={t("Reason / indication")} value={form.reason} onChange={set("reason")} />
       <Input placeholder={t("Complications")} value={form.complications} onChange={set("complications")} />
       <Input placeholder={t("Recovery / outcome")} value={form.outcome} onChange={set("outcome")} />

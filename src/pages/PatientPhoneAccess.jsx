@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import DateField from "@/components/ui/date-field";
 import AuthLayout from "@/components/AuthLayout";
 import BrandLogo from "@/components/BrandLogo";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -249,7 +250,13 @@ export default function PatientPhoneAccess() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="dob">{t("Date of birth")}</Label>
-              <Input id="dob" type="date" value={details.date_of_birth} onChange={(e) => setDetails((d) => ({ ...d, date_of_birth: e.target.value }))} required />
+              <DateField
+                id="dob"
+                value={details.date_of_birth}
+                onChange={(date) => setDetails((d) => ({ ...d, date_of_birth: date }))}
+                disableFuture
+                minYear={1900}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("Sex")}</Label>

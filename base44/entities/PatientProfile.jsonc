@@ -221,19 +221,76 @@
     },
     "typical_diet": {
       "type": "string",
-      "description": "Typical diet, where clinically useful \u2014 optional free text"
+      "description": "Diet details / the specification of an 'other' diet type, where clinically useful \u2014 optional free text. The structured diet types are stored in diet_types."
+    },
+    "diet_types": {
+      "type": "array",
+      "description": "Diet types the patient reports following \u2014 several may apply. Optional and patient-reported; 'other' pairs with the typical_diet details field.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "balanced",
+          "vegetarian",
+          "vegan",
+          "mediterranean",
+          "low_carb",
+          "high_protein",
+          "low_salt",
+          "diabetic",
+          "renal",
+          "gluten_free",
+          "lactose_free",
+          "other"
+        ]
+      }
+    },
+    "food_allergies_intolerances": {
+      "type": "string",
+      "description": "Food allergies, intolerances and dietary restrictions reported by the patient \u2014 optional free text. Self-reported and never treated as clinically verified; allergy entries stay in the Allergy records."
+    },
+    "sleep_patterns": {
+      "type": "array",
+      "description": "Sleep patterns the patient reports \u2014 several may apply. Optional; 'other' pairs with sleep_pattern_other and further detail with sleep_concerns.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "sleeps_through_night",
+          "frequent_waking",
+          "difficulty_falling_asleep",
+          "early_waking",
+          "restless_sleep",
+          "excessive_sleep",
+          "other"
+        ]
+      }
+    },
+    "sleep_pattern_other": {
+      "type": "string",
+      "description": "The patient's specification of an 'other' sleep pattern \u2014 optional"
     },
     "sleep_concerns": {
       "type": "string",
-      "description": "Sleep concerns, if any \u2014 optional"
+      "description": "Any additional sleep-related concerns reported by the patient \u2014 optional"
     },
     "mobility_limitations": {
       "type": "string",
       "description": "Mobility and functional limitations, if any \u2014 optional"
     },
+    "living_situation_type": {
+      "type": "string",
+      "enum": [
+        "alone",
+        "immediate_family",
+        "extended_family",
+        "caregiver",
+        "assisted_living",
+        "other"
+      ],
+      "description": "Primary living situation \u2014 one answer only. Optional; additional detail (including the specification of 'other') is stored in living_situation."
+    },
     "living_situation": {
       "type": "string",
-      "description": "Living situation or caregiving needs, if relevant to care \u2014 optional"
+      "description": "Additional living-situation details or caregiving needs, including the specification of an 'other' living situation \u2014 optional"
     },
     "consanguinity": {
       "type": "string",
@@ -243,6 +300,71 @@
         "prefer_not_to_answer"
       ],
       "description": "Known consanguinity \u2014 voluntarily disclosed; the patient may decline to answer"
+    },
+    "vaccination_status": {
+      "type": "string",
+      "enum": [
+        "fully_vaccinated",
+        "partially_vaccinated",
+        "not_vaccinated",
+        "unknown"
+      ],
+      "description": "Vaccination status reported by the patient, one answer only. Optional and self-reported: an unanswered or unknown status is never treated as unvaccinated."
+    },
+    "vaccination_records": {
+      "type": "array",
+      "description": "Individual vaccines the patient reported \u2014 whether received, the date, doses and notes where known. Only answered vaccines are stored: a vaccine the patient did not answer is not recorded at all, never as not received.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "vaccine": {
+            "type": "string",
+            "enum": [
+              "hepatitis_b",
+              "hepatitis_a",
+              "bcg",
+              "polio",
+              "dtp",
+              "hib",
+              "pneumococcal",
+              "mmr",
+              "varicella",
+              "hpv",
+              "meningococcal",
+              "influenza",
+              "covid19",
+              "other"
+            ]
+          },
+          "other_label": {
+            "type": "string",
+            "description": "Name of the vaccine when 'other' was selected"
+          },
+          "received": {
+            "type": "string",
+            "enum": [
+              "received",
+              "not_received",
+              "unknown"
+            ],
+            "description": "RECEIVED: the patient reports having had the vaccine. NOT_RECEIVED: the patient reports not having had it. UNKNOWN: the patient is unsure."
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "doses": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "vaccine",
+          "received"
+        ]
+      }
     },
     "allergy_record_status": {
       "type": "string",
