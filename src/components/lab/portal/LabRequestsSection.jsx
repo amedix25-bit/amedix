@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { normalizeLabStatus } from "@/lib/labRequestUtils";
-import { Loader2, FlaskConical } from "lucide-react";
+import { Loader2, FlaskConical, ShieldCheck, ShieldAlert } from "lucide-react";
 
 export default function LabRequestsSection({ profile }) {
   const [items, setItems] = useState(null);
@@ -48,6 +48,20 @@ export default function LabRequestsSection({ profile }) {
               <p className="text-xs text-muted-foreground mt-1 truncate">
                 Tests: {(r.tests || []).map((t) => t.name).join(", ")}
               </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Ordering doctor: <span className="font-medium text-foreground">{r.doctor_name || "—"}</span>
+              </p>
+              {r.signature_status === "signed" ? (
+                <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-success">
+                  <ShieldCheck className="h-3 w-3" />
+                  Signed by Dr {r.signed_by_name || r.doctor_name} · {r.signature_reference || "signature on file"}
+                </p>
+              ) : (
+                <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-warning">
+                  <ShieldAlert className="h-3 w-3" />
+                  Legacy request — issued before professional signing
+                </p>
+              )}
             </div>
             <LabStatusBadge status={normalizeLabStatus(r.status)} />
           </div>

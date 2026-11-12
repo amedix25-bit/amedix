@@ -41,9 +41,79 @@ export default async function(req) {
       } catch (e) { console.log("DUPCHECK-ERROR:", e && e.message); }
     }
 
+    // ===== Mandatory professional signature =====
+    // A laboratory request is never issued unsigned. The signature must be a
+    // record owned by the signed-in doctor; every signer field below is
+    // written here, so values sent by the browser are never trusted.
+    const signatureId = String(payload.signature_record_id || "").trim();
+    if (!signatureId) {
+      return Response.json({
+        error: "A professional signature is required before this laboratory request can be issued.",
+        signature_required: true,
+      }, { status: 400 });
+    }
+
+    let signature: any = null;
+    try {
+      const sigPage = await base44.asServiceRole.entities.DoctorSignature.filter({ id: signatureId }, { limit: 1 });
+      signature = (sigPage.items || [])[0] || null;
+    } catch (e) { signature = null; }
+
+    if (!signature) {
+      return Response.json({ error: "The signature could not be verified. Please sign the request again." }, { status: 403 });
+    }
+    // A signature image alone never grants signing authority: the record must
+    // belong to the authenticated doctor and be their active signature.
+    if (signature.user_id !== user.id || signature.status !== "active" || !signature.signature_file_uri) {
+      return Response.json({ error: "This signature does not belong to the signed-in doctor." }, { status: 403 });
+    }
+    if (signature.doctor_id && String(signature.doctor_id) !== String(doctor.id)) {
+      return Response.json({ error: "This signature does not belong to the signed-in doctor." }, { status: 403 });
+    }
+
+    const signedAt = new Date().toISOString();
+    const signatureVersion = Number(signature.version) || 1;
+    const signatureSource = ["saved_profile", "drawn_now", "uploaded_now"].indexOf(payload.signature_source) >= 0
+      ? payload.signature_source
+      : "saved_profile";
+    const signatureReference = `SIG-V${signatureVersion}-${String(payload.request_id || signature.id).slice(-4).toUpperCase()}`;
+
     // Written with the service role — doctors cannot create lab requests
     // directly through the client API (Row Level Security blocks it).
-    const lab_request = await base44.asServiceRole.entities.LabRequest.create(payload);
+    const lab_request = await base44.asServiceRole.entities.LabRequest.create({
+      ...payload,
+      signature_status: "signed",
+      signature_record_id: signature.id,
+      signature_version: signatureVersion,
+      signature_reference: signatureReference,
+      signature_source: signatureSource,
+      signed_by_user_id: user.id,
+      signed_by_name: doctor.full_name || signature.doctor_name || "",
+      signed_by_license: doctor.license_number || "",
+      signed_datetime: signedAt,
+      signature_audit: [{
+        datetime: signedAt,
+        action: "signed",
+        action_label: "Professional signature applied",
+        actor_user_id: user.id,
+        actor_name: doctor.full_name || "",
+        detail: `${signatureReference} · ${signatureSource}`,
+      }],
+    });
+
+    await logClinicalAudit(base44, {
+      actor_user_id: user.id,
+      actor_name: doctor.full_name,
+      actor_role: "doctor",
+      action: "signed_laboratory_request",
+      action_label: "applied their professional signature to a laboratory request",
+      patient_id: String(payload.patient_id),
+      patient_user_id: "",
+      patient_cin: payload.patient_cin || "",
+      patient_name: payload.patient_name || "",
+      document_id: lab_request.id,
+      hospital: doctor.hospital || "",
+    });
 
     await logClinicalAudit(base44, {
       actor_user_id: user.id,

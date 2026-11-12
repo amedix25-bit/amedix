@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
-import { Building2, Languages, ShieldCheck, Stethoscope, User } from "lucide-react";
+import DoctorSignatureSettings from "@/components/doctor/signature/DoctorSignatureSettings";
+import { Building2, Languages, PenLine, ShieldCheck, Stethoscope, User } from "lucide-react";
 
 // Doctor Portal → Settings. Account, professional and language settings, all
 // writing through the existing profile components — no parallel settings store.
@@ -51,6 +52,10 @@ export default function DoctorSettingsSection({ profile, onProfileUpdated, user,
         <Button variant="outline" size="sm" className="mt-3" onClick={() => onNavigate({ key: "hospitals" })}>
           Manage my hospitals
         </Button>
+      </Card>
+
+      <Card icon={PenLine} title="My Professional Signature" description="Required on every laboratory request you issue. Stored privately and applied only when you sign.">
+        <DoctorSignatureSettings profile={profile} user={user} />
       </Card>
 
       <Card icon={Languages} title="Language and region" description="The portal language applies to labels across your screens.">

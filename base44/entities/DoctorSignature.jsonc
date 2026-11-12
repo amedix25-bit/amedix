@@ -1,0 +1,145 @@
+{
+  "name": "DoctorSignature",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User id of the doctor who owns this signature \u2014 the server requires the signing session to match this value, so a signature image alone never grants signing authority"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id the signature belongs to"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Doctor name recorded when the signature was created"
+    },
+    "signature_file_uri": {
+      "type": "string",
+      "description": "Private storage URI of the signature image. Never public: it is read by the owner and by document-generation only through a short-lived signed link"
+    },
+    "signature_file_name": {
+      "type": "string"
+    },
+    "mime_type": {
+      "type": "string",
+      "description": "image/png or image/jpeg only"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Size of the stored signature image in bytes (1 MB maximum)"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "drawn",
+        "uploaded"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "description": "DRAWN: captured on the digital signature pad. UPLOADED: an authorised PNG/JPG signature image was uploaded"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "deleted"
+      ],
+      "enumColors": [
+        "green",
+        "gray"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the doctor's current professional signature and the only one that can sign a request. DELETED: removed by the doctor \u2014 retained as a record so the audit history is never lost, and never usable for signing"
+    },
+    "version": {
+      "type": "integer",
+      "default": 1,
+      "description": "Incremented every time the signature is replaced \u2014 each signed document records the version it was signed with"
+    },
+    "created_datetime": {
+      "type": "string"
+    },
+    "updated_datetime": {
+      "type": "string"
+    },
+    "audit": {
+      "type": "array",
+      "description": "Append-only record of every event on this signature \u2014 created, replaced, deleted",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "created / replaced / deleted"
+          },
+          "action_label": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "user_id",
+    "signature_file_uri",
+    "status",
+    "version"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

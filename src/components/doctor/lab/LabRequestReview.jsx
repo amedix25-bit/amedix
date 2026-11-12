@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { entryById } from "@/lib/labTestCatalog";
+import LabRequestSignature from "@/components/doctor/lab/LabRequestSignature";
 import {
   ArrowLeft, AlertTriangle, Send, Loader2, ClipboardCheck, X,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const UNSPECIFIED = "Specimen not specified in the catalog";
 export default function LabRequestReview({
   patient, doctorProfile, form, priority, onPriorityChange,
   selectedIds, onRemoveTest, onBack, onSubmit, submitting, submitError,
+  signature, onSignatureChange,
 }) {
   const entries = useMemo(() => selectedIds.map(entryById), [selectedIds]);
   const known = entries.filter(Boolean);
@@ -41,6 +43,7 @@ export default function LabRequestReview({
   if (known.length === 0) errors.push("At least one test must be selected.");
   if (!form.indication.trim()) errors.push("A clinical indication is required.");
   if (unknown.length > 0) errors.push("Remove the retired/unavailable tests flagged below before submitting.");
+  if (!signature?.signed) errors.push("Your professional signature must be applied before this request can be issued.");
 
   const canSubmit = errors.length === 0 && !submitting;
 
@@ -189,6 +192,8 @@ export default function LabRequestReview({
           <p className="whitespace-pre-wrap mt-1">{form.instructions || <span className="text-muted-foreground italic">None recorded</span>}</p>
         </div>
       </div>
+
+      <LabRequestSignature doctorProfile={doctorProfile} value={signature} onChange={onSignatureChange} />
 
       {errors.length > 0 && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-1">

@@ -40,6 +40,92 @@
     "doctor_license": {
       "type": "string"
     },
+    "signature_status": {
+      "type": "string",
+      "enum": [
+        "signed",
+        "legacy_unsigned"
+      ],
+      "enumColors": [
+        "green",
+        "gray"
+      ],
+      "description": "SIGNED: the responsible doctor explicitly applied their professional signature, recorded server-side with the signature version and signing time \u2014 every newly issued request carries this. LEGACY_UNSIGNED: issued before mandatory signing existed; preserved unchanged and never presented as signed, never signed retrospectively without an administrator-approved migration."
+    },
+    "signature_record_id": {
+      "type": "string",
+      "description": "DoctorSignature record the signature was applied from \u2014 written server-side after verifying it belongs to the signing doctor"
+    },
+    "signature_version": {
+      "type": "integer",
+      "description": "Version of the doctor's professional signature used on this request"
+    },
+    "signature_reference": {
+      "type": "string",
+      "description": "Human-readable signature reference printed on the request form and recorded in the audit trail, e.g. SIG-V2-8F3K"
+    },
+    "signature_source": {
+      "type": "string",
+      "enum": [
+        "saved_profile",
+        "drawn_now",
+        "uploaded_now"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "pink"
+      ],
+      "description": "How the signature was applied: SAVED_PROFILE \u2014 the doctor's saved professional signature after explicit confirmation. DRAWN_NOW \u2014 drawn on the signature pad for this request. UPLOADED_NOW \u2014 an authorised signature image uploaded for this request."
+    },
+    "signed_by_user_id": {
+      "type": "string",
+      "description": "User id of the authenticated doctor session that applied the signature \u2014 set by the server, never accepted from the browser"
+    },
+    "signed_by_name": {
+      "type": "string",
+      "description": "Full professional name of the signing doctor, set by the server from their verified profile"
+    },
+    "signed_by_license": {
+      "type": "string",
+      "description": "Professional licence number printed in the signature section, set by the server from the doctor's verified profile"
+    },
+    "signed_datetime": {
+      "type": "string",
+      "description": "Exact date and time the signature was applied (ISO datetime), set by the server"
+    },
+    "signature_audit": {
+      "type": "array",
+      "description": "Append-only record of every signature event on this request \u2014 signed, amended, cancelled",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "signed / amended / cancelled"
+          },
+          "action_label": {
+            "type": "string"
+          },
+          "actor_user_id": {
+            "type": "string"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    },
     "tests": {
       "type": "array",
       "description": "All laboratory investigations included in this consolidated request",
@@ -208,7 +294,7 @@
     },
     "pdf_url": {
       "type": "string",
-      "description": "Generated PDF Lab Request Form"
+      "description": "Generated PDF Lab Request Form \u2014 for a signed request this is the final signed document and is never altered in place"
     },
     "date_requested": {
       "type": "string",

@@ -46,6 +46,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
   const [step, setStep] = useState("edit");
   const [resolvedPatient, setResolvedPatient] = useState(null);
   const [priority, setPriority] = useState("Routine");
+  const [signature, setSignature] = useState({ signed: false });
   const [view, setView] = useState(initialView === "history" ? "history" : "patients");
   const submitGuard = React.useRef(false);
 
@@ -187,6 +188,10 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       setFormError("A clinical indication is required.");
       return;
     }
+    if (!signature.signed) {
+      setFormError("Your professional signature must be applied before this request can be issued.");
+      return;
+    }
     setSubmitting(true);
     submitGuard.current = true;
     try {
@@ -218,8 +223,21 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
         lab_name: form.lab_name,
         status: "requested",
         date_requested: today,
+        // The signature the doctor explicitly applied on the review screen.
+        // The server re-verifies that this signature belongs to this doctor.
+        signature_record_id: signature.signature_record_id,
+        signature_source: signature.source,
       };
-      const doc = generateLabRequestPdf(payload);
+      const doc = generateLabRequestPdf({
+        ...payload,
+        signature: {
+          image_data_url: signature.image_data_url,
+          image_format: signature.image_format,
+          signed_at: new Date().toLocaleString(),
+          signed_by_name: signature.signed_by_name || doctorProfile.full_name,
+          reference: `SIG-V${signature.signature_version}-${String(payload.request_id).slice(-4).toUpperCase()}`,
+        },
+      });
       await addRequestBarcode(doc, payload.request_id);
       const pdfFile = new File([doc.output("blob")], `LabRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
       const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
@@ -241,6 +259,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
       setSelected(new Set());
       setForm({ patient_cin: "", indication: "", clinical_info: "", instructions: "", lab_name: doctorProfile?.hospital || "" });
       setResolvedPatient(null);
+      setSignature({ signed: false });
       setStep("edit");
       setShowForm(false);
       setSuccessMsg(
@@ -266,7 +285,7 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             Select whole panels or individual tests — all selections are combined into one consolidated request with a single Request ID and PDF form.
           </p>
         </div>
-        <button type="button" onClick={() => { setShowForm(false); setStep("edit"); setFormError(""); }} className="text-muted-foreground"><X className="w-5 h-5" /></button>
+        <button type="button" onClick={() => { setShowForm(false); setStep("edit"); setFormError(""); setSignature({ signed: false }); }} className="text-muted-foreground"><X className="w-5 h-5" /></button>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -433,10 +452,12 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
               onPriorityChange={setPriority}
               selectedIds={[...selected]}
               onRemoveTest={toggleTest}
-              onBack={() => { setStep("edit"); setFormError(""); }}
+              onBack={() => { setStep("edit"); setFormError(""); setSignature({ signed: false }); }}
               onSubmit={handleSubmit}
               submitting={submitting}
               submitError={formError}
+              signature={signature}
+              onSignatureChange={setSignature}
             />
           )}
 
