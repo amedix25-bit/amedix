@@ -1,0 +1,100 @@
+{
+  "name": "PatientSession",
+  "type": "object",
+  "properties": {
+    "token_fingerprint": {
+      "type": "string",
+      "description": "SHA-256 fingerprint of the opaque session token handed to the browser. The token itself is never stored, logged or returned again, and the record id is never used as a credential."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "registration",
+        "active",
+        "revoked",
+        "expired"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red",
+        "gray"
+      ],
+      "default": "registration",
+      "description": "REGISTRATION: the number is verified but the patient record is not created yet \u2014 this token may only submit personal details. ACTIVE: a signed-in patient session. REVOKED: signed out or withdrawn. EXPIRED: past its expiry."
+    },
+    "phone": {
+      "type": "string",
+      "description": "Normalised verified mobile number the session belongs to (2189XXXXXXXX)."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id this session is scoped to. Every request made with the session is filtered to this record."
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "user_id value of the scoped patient record, so clinical records created by this patient carry the same identity as their profile."
+    },
+    "cin": {
+      "type": "string",
+      "description": "Clinical Identification Number of the scoped patient record."
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient full name at sign-in, shown back to the patient only."
+    },
+    "provider": {
+      "type": "string",
+      "default": "supabase",
+      "description": "External phone-authentication service whose genuine, verified session was validated server-side before this session was issued."
+    },
+    "provider_user_id": {
+      "type": "string",
+      "description": "Id of the verified provider identity. No provider access token or refresh token is stored."
+    },
+    "expires_datetime": {
+      "type": "string",
+      "description": "Date and time the session stops being valid (ISO datetime)."
+    },
+    "verified_datetime": {
+      "type": "string",
+      "description": "Date and time the SMS code was verified by the provider (ISO datetime)."
+    },
+    "last_used_datetime": {
+      "type": "string",
+      "description": "Date and time the session was last used successfully (ISO datetime)."
+    },
+    "revoked_datetime": {
+      "type": "string",
+      "description": "Date and time the session was signed out or revoked (ISO datetime)."
+    }
+  },
+  "required": [
+    "token_fingerprint",
+    "status",
+    "phone",
+    "expires_datetime"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
