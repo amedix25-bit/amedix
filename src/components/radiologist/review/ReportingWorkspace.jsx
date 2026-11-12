@@ -74,8 +74,11 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
   const authorized = study.authorized_by_patient || assignedToAnyone;
   const claimable = !study.assigned_radiologist_user_id &&
     ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
-  const canStart = assignedToAnyone && ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
-  const editable = assignedToAnyone && ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress"].includes(stage);
+  // Typing is unlocked as soon as the study is ready for reporting: the first
+  // save claims the study, so interpretation is never blocked behind the
+  // assignment step for a radiologist authorized for the department.
+  const canStart = ["ready_for_reporting", "performed", "examination_completed"].includes(stage);
+  const editable = ["ready_for_reporting", "performed", "examination_completed", "reporting_in_progress"].includes(stage);
   const canAmend = authorized && ["final_report", "released"].includes(stage);
   const latestVersion = (reportVersions && reportVersions.length) ? reportVersions[0] : null;
 
@@ -178,13 +181,26 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       base44.functions.invoke("radiologyUpdateWorkflowStatus", { request_id: study.id, action: "claim_study" }),
       "Study claimed — it is now assigned to you");
 
+  // A save on an unclaimed study takes it first, so typing is never lost to the
+  // assignment step and the department still sees who is reporting.
+  const ensureClaimed = async () => {
+    if (study.assigned_radiologist_user_id) return;
+    try {
+      await base44.functions.invoke("radiologyUpdateWorkflowStatus", { request_id: study.id, action: "claim_study" });
+    } catch (err) {
+      // Someone else holds it now — the save itself reports the real outcome.
+    }
+  };
+
   const startReporting = () =>
-    run("start", () =>
-      base44.functions.invoke("radiologyUpdateWorkflowStatus", { request_id: study.id, action: "start_reporting" }),
-      "Reporting started");
+    run("start", async () => {
+      await ensureClaimed();
+      await base44.functions.invoke("radiologyUpdateWorkflowStatus", { request_id: study.id, action: "start_reporting" });
+    }, "Reporting started");
 
   const saveDraft = () =>
     run("draft", async () => {
+      await ensureClaimed();
       await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections, status: "draft" });
       setSavedJson(JSON.stringify(sections));
       setHasDraft(true);
@@ -200,6 +216,7 @@ export default function ReportingWorkspace({ study, user, radiologistProfile, on
       return;
     }
     run("preliminary", async () => {
+      await ensureClaimed();
       await base44.functions.invoke("radiologyReportDraft", { request_id: study.id, sections, status: "preliminary" });
       setSavedJson(JSON.stringify(sections));
       setHasDraft(true);

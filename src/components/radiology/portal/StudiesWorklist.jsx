@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STAGE_LABELS, STAGE_CHIP, canonicalStage } from "@/lib/radiologyWorkflow";
 import { actionsForStage } from "./stageActions";
-import { Loader2, Search, AlertTriangle, FilterX, FileImage } from "lucide-react";
+import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
+import { Loader2, Search, AlertTriangle, FilterX, FileImage, FileText } from "lucide-react";
 
 const MODALITIES = ["X-Ray", "CT", "MRI", "Ultrasound", "Mammography", "Other"];
 const MODE_STAGES = {
@@ -191,6 +192,17 @@ export default function StudiesWorklist({ mode = "worklist", role = "radiologist
                     <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${STAGE_CHIP[row.stage] || "bg-secondary"}`}>
                       {STAGE_LABELS[row.stage] || row.stage}
                     </span>
+                    <div className="flex flex-wrap gap-1.5 justify-end">
+                      {row.pdf_url && (
+                        <ResolvedFileButton
+                          requestId={row.id}
+                          fileRef={row.pdf_url}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background shadow-sm hover:bg-accent h-8 px-3 text-xs font-medium"
+                        >
+                          <FileText className="w-3.5 h-3.5" /> Request PDF
+                        </ResolvedFileButton>
+                      )}
+                    </div>
                     {actions.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 justify-end">
                         {actions.map((a) => (
