@@ -13,6 +13,7 @@ import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
 import DoctorLabHistory from "@/components/doctor/lab/DoctorLabHistory";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
+import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import { FlaskConical, Plus, X, CheckCircle2, ArrowLeft, ArrowRight, Search, ClipboardList, History } from "lucide-react";
 
@@ -228,8 +229,10 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
         signature_record_id: signature.signature_record_id,
         signature_source: signature.source,
       };
+      const logo = await loadRequestLogo();
       const doc = generateLabRequestPdf({
         ...payload,
+        logo,
         signature: {
           image_data_url: signature.image_data_url,
           image_format: signature.image_format,

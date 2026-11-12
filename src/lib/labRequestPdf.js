@@ -1,9 +1,19 @@
 import { jsPDF } from "jspdf";
-
-const TEAL = [23, 50, 77]; // #17324D dark blue
-const DARK = [23, 40, 45];
-const GRAY = [105, 115, 120];
-const LIGHT = [236, 245, 244];
+import {
+  PDF_PAGE,
+  PDF_INK,
+  drawRequestHeader,
+  ensureSpace,
+  ensureSignatureRoom,
+  textBlockHeight,
+  drawPatientBlock,
+  drawDoctorBlock,
+  drawInvestigationsHeading,
+  drawInvestigationLine,
+  drawTextBlock,
+  drawSignatureBlock,
+  drawRequestFooter,
+} from "@/lib/requestPdfLayout";
 
 export function makeRequestId() {
   const d = new Date();
@@ -24,243 +34,50 @@ export function calcAge(dob) {
 
 export function generateLabRequestPdf(req) {
   const doc = new jsPDF();
-  const W = 210, M = 15, R = W - M, RX = 118;
-  let y;
+  const logo = req.logo;
 
-  const ensure = (h) => {
-    if (y + h > 280) {
-      doc.addPage();
-      y = 20;
-    }
-  };
+  let y = drawRequestHeader(doc, { logo });
+  y = drawPatientBlock(doc, req, y);
+  y = drawDoctorBlock(doc, req, y);
+  y = drawInvestigationsHeading(doc, y, req.priority);
 
-  // ===== Header band =====
-  doc.setFillColor(...TEAL);
-  doc.rect(0, 0, W, 27, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("AMedix", M, 12);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("Connected Care. Better Health.", M, 18.5);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12.5);
-  doc.text("LABORATORY REQUEST FORM", R, 12, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text(`Request ID: ${req.request_id || "-"}`, R, 18.5, { align: "right" });
-  doc.text(`Issued: ${new Date().toLocaleString()}`, R, 23, { align: "right" });
-
-  // ===== Patient =====
-  y = 36;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("PATIENT", M, y);
-  doc.setTextColor(...DARK);
-  doc.setFontSize(16);
-  doc.text(String(req.patient_name || "-"), M, y + 7.5, { maxWidth: 95 });
-
-  // Prominent CIN box
-  doc.setFillColor(240, 249, 248);
-  doc.setDrawColor(...TEAL);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(M, y + 11, 95, 12.5, 1.5, 1.5, "FD");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("CLINICAL IDENTIFICATION NUMBER (CIN)", M + 3.5, y + 15.5);
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...TEAL);
-  doc.text(String(req.patient_cin || "-"), M + 3.5, y + 21.5);
-
-  // Patient details (right column)
-  const age = calcAge(req.patient_dob);
-  const dobLine = req.patient_dob ? (age ? `${req.patient_dob} (${age})` : req.patient_dob) : "-";
-  const detailRow = (label, value, ly) => {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...GRAY);
-    doc.text(label, RX, ly);
-    doc.setFontSize(10.5);
-    doc.setTextColor(...DARK);
-    doc.text(String(value || "-"), RX, ly + 4.8, { maxWidth: R - RX });
-  };
-  detailRow("DATE OF BIRTH / AGE", dobLine, y + 2);
-  detailRow("GENDER", req.patient_gender, y + 13);
-  detailRow("BLOOD TYPE", req.patient_blood_type, y + 24);
-  doc.setFont("helvetica", "normal");
-
-  y += 30;
-  doc.setDrawColor(215, 224, 226);
-  doc.setLineWidth(0.3);
-  doc.line(M, y, R, y);
-
-  // ===== Requesting physician =====
-  y += 8;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("REQUESTING PHYSICIAN", M, y);
-  doc.setTextColor(...DARK);
-  doc.setFontSize(12.5);
-  doc.text(String(req.doctor_name || "-"), M, y + 6.5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  doc.setTextColor(...GRAY);
-  const specLine = [req.doctor_specialization, req.doctor_hospital].filter(Boolean).join(" — ");
-  doc.text(specLine || "-", M, y + 12, { maxWidth: 95 });
-  if (req.doctor_license) {
-    doc.text(`License No.: ${req.doctor_license}`, M, y + 17);
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("DESTINATION LABORATORY", RX, y + 2);
-  doc.setFontSize(10.5);
-  doc.setTextColor(...DARK);
-  doc.text(String(req.lab_name || "-"), RX, y + 7, { maxWidth: R - RX });
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("DATE & TIME REQUESTED", RX, y + 14);
-  doc.setFontSize(10.5);
-  doc.setTextColor(...DARK);
-  doc.text(`${req.date_requested || "-"}   ${new Date().toLocaleTimeString()}`, RX, y + 19, { maxWidth: R - RX });
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...GRAY);
-  doc.text("PRIORITY", RX, y + 25);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
-  doc.setTextColor(...DARK);
-  doc.text(String(req.priority || "Routine"), RX, y + 30, { maxWidth: R - RX });
-  doc.setFont("helvetica", "normal");
-
-  y += 33;
-  doc.setDrawColor(215, 224, 226);
-  doc.line(M, y, R, y);
-
-  // ===== Requested investigations =====
-  const grouped = new Map();
-  (req.tests || []).forEach((t) => {
-    const key = t.category || "Other";
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key).push(t.name);
+  // One investigation per line — no numbering, no request numbers.
+  const tests = Array.isArray(req.tests) ? req.tests : [];
+  if (!tests.length) y = drawInvestigationLine(doc, y, "—", "");
+  tests.forEach((test) => {
+    y = ensureSpace(doc, y, 10, logo);
+    y = drawInvestigationLine(doc, y, test.name, test.specimen);
   });
 
-  y += 8;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...TEAL);
-  doc.text("REQUESTED INVESTIGATIONS", M, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...GRAY);
-  doc.text(`${(req.tests || []).length} test(s)`, R, y, { align: "right" });
-  y += 4;
-
-  let n = 1;
-  grouped.forEach((names, category) => {
-    ensure(16);
-    y += 6;
-    doc.setFillColor(...LIGHT);
-    doc.rect(M, y - 4.2, R - M, 6.8, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...DARK);
-    doc.text(category.toUpperCase(), M + 2.5, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...DARK);
-    names.forEach((name) => {
-      ensure(9);
-      doc.text(`${n}.`, M + 2.5, y);
-      doc.text(String(name), M + 9, y, { maxWidth: R - M - 12 });
-      doc.setDrawColor(236, 240, 241);
-      doc.line(M, y + 2, R, y + 2);
-      y += 7;
-      n += 1;
-    });
-    y += 1;
+  y += 2;
+  [
+    ["Clinical Indication", req.indication],
+    ["Relevant Clinical Information", req.clinical_info],
+    ["Laboratory Instructions", req.instructions],
+  ].forEach(([label, value]) => {
+    if (!String(value || "").trim()) return;
+    y = ensureSpace(doc, y, textBlockHeight(doc, value), logo);
+    y = drawTextBlock(doc, label, value, y);
   });
 
-  // ===== Clinical sections =====
-  const section = (label, value) => {
-    if (!value || !String(value).trim()) return;
-    const lines = doc.splitTextToSize(String(value), R - M - 2);
-    ensure(16 + lines.length * 5.2);
-    y += 7;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text(label.toUpperCase(), M, y);
-    y += 5.5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...DARK);
-    lines.forEach((l) => {
-      doc.text(l, M, y);
-      y += 5.2;
-    });
-  };
-  y += 3;
-  section("CLINICAL INDICATION / REASON FOR TESTING", req.indication);
-  section("RELEVANT CLINICAL INFORMATION", req.clinical_info);
-  section("LABORATORY INSTRUCTIONS", req.instructions);
-
-  // ===== Professional signature =====
-  ensure(58);
-  y = Math.max(y + 14, 232);
+  // ===== Signature at the foot of the document =====
+  y = ensureSignatureRoom(doc, y, logo);
   const sig = req.signature || null;
+  drawSignatureBlock(doc, {
+    image: sig?.image_data_url,
+    imageFormat: sig?.image_format,
+    doctorName: req.doctor_name,
+    detail: [req.doctor_specialization, req.doctor_hospital].filter(Boolean).join("  ·  "),
+    note: sig
+      ? [`Electronically signed ${sig.signed_at || ""}`.trim(), sig.reference ? `Signature ${sig.reference}` : ""]
+          .filter(Boolean)
+          .join("  ·  ")
+      : req.signature_status === "legacy_unsigned"
+        ? "Issued before professional signing was introduced — this request is not electronically signed."
+        : "",
+  });
 
-  // The doctor's signature sits in the dedicated signature area, above the line.
-  if (sig && sig.image_data_url) {
-    try {
-      doc.addImage(String(sig.image_data_url), sig.image_format || "PNG", M, y - 17, 60, 15, undefined, "FAST");
-    } catch (e) {
-      // A request is never issued without its signature — stop rather than
-      // print a form that only looks signed.
-      throw new Error("The signature could not be placed on the request form.");
-    }
-  }
-
-  doc.setDrawColor(110, 120, 124);
-  doc.setLineWidth(0.4);
-  doc.line(M, y, M + 75, y);
-  doc.line(RX + 20, y, R, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...GRAY);
-  doc.text("Requesting physician — signature & stamp", M, y + 5);
-  doc.text("Date", RX + 20, y + 5);
-
-  if (sig) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...DARK);
-    doc.text(String(req.doctor_name || "-"), M, y + 10);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(...GRAY);
-    const credentials = [
-      req.doctor_specialization,
-      req.doctor_license ? `Licence ${req.doctor_license}` : "",
-      req.doctor_hospital,
-    ].filter(Boolean).join(" · ");
-    if (credentials) doc.text(credentials, M, y + 14.5, { maxWidth: 95 });
-    doc.text(`Electronically signed by ${sig.signed_by_name || req.doctor_name || "-"}`, M, y + 19);
-    doc.text(`Signed: ${sig.signed_at || "-"}`, RX + 20, y + 10);
-    doc.text(`Signature ${sig.reference || "-"}`, RX + 20, y + 14);
-    doc.text(`Request ID ${req.request_id || "-"}`, RX + 20, y + 18);
-  }
-
-  doc.setFontSize(7.5);
-  doc.text("Generated by A&M Healthcare — Connected Care. Better Health.", W / 2, 291, { align: "center" });
-
+  drawRequestFooter(doc, req.request_id);
   return doc;
 }
 
@@ -287,16 +104,15 @@ export async function addRequestBarcode(doc, requestId) {
     canvas.height = img.naturalHeight;
     canvas.getContext("2d").drawImage(img, 0, 0);
 
-    // Bottom-right corner of the form — content and design otherwise untouched.
-    // The QR encodes ONLY the unique request reference (LR-...) — no patient data.
-    const size = 24;
-    doc.setPage(1);
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", 195 - size, 260, size, size);
+    // Bottom-right of the form, clear of the signature block. The QR encodes
+    // ONLY the unique request reference — no patient data.
+    const size = 19;
+    doc.setPage(doc.getNumberOfPages());
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", PDF_PAGE.right - size, 252, size, size);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6);
-    doc.setTextColor(...GRAY);
-    doc.text("Scan QR Code to View", 195, 288, { align: "right" });
-    doc.text("Laboratory Request", 195, 291.5, { align: "right" });
+    doc.setTextColor(...PDF_INK.muted);
+    doc.text("Scan to view this request", PDF_PAGE.right, 274, { align: "right" });
   } catch (err) {
     console.warn("Request barcode could not be added:", err);
   }

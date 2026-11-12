@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { makeImagingRequestId, generateImagingRequestPdf } from "@/lib/imagingRequestPdf";
+import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { Image, Plus, Eye } from "lucide-react";
 import ImagingRequestForm from "./imaging/ImagingRequestForm";
 import ImagingRequestCard from "./imaging/ImagingRequestCard";
@@ -83,8 +84,10 @@ export default function DoctorImagingRequests({ doctorProfile, initialCin, initi
         request_time: now.toTimeString().slice(0, 5),
       };
 
+      const logo = await loadRequestLogo();
       const doc = generateImagingRequestPdf({
         ...payload,
+        logo,
         patient_dob: p.date_of_birth,
         patient_gender: p.gender,
         patient_blood_type: p.blood_type,
