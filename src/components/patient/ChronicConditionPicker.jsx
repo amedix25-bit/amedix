@@ -3,12 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { Check, Loader2, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { AR_CONDITION_TERMS } from "@/lib/arabicMedicalTerms";
+import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-// Lets a patient record a chronic disease from a list of standardized
-// conditions. The entry is saved as their own reported condition — it is
-// never presented as clinically verified.
+// Lets a patient record one of the emergency-relevant chronic conditions on
+// their Medical ID card. The entry is saved as their own reported condition —
+// it is never presented as clinically verified.
 export default function ChronicConditionPicker({ patientId, existing = [], open, onOpenChange, onAdded }) {
   const { t, lang } = usePatientLanguage();
   const [query, setQuery] = useState("");
@@ -22,15 +22,13 @@ export default function ChronicConditionPicker({ patientId, existing = [], open,
 
   const options = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = AR_CONDITION_TERMS.map((term) => ({
+    const list = PATIENT_ID_CONDITIONS.map((term) => ({
       ...term,
       label: lang === "ar" ? term.ar : term.en,
       secondary: lang === "ar" ? term.en : term.ar,
     }));
     if (!q) return list;
-    return list.filter(
-      (term) => term.en.toLowerCase().includes(q) || term.ar.includes(q) || term.aliases.some((a) => a.includes(q))
-    );
+    return list.filter((term) => term.en.toLowerCase().includes(q) || term.ar.includes(q));
   }, [query, lang]);
 
   const add = async (term) => {
