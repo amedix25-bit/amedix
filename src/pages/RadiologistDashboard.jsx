@@ -67,6 +67,13 @@ export default function RadiologistDashboard() {
     }
   };
 
+  // The radiologist sidebar hands back the whole navigation item, so the tab
+  // key is taken from it — otherwise no section matches and the page stays blank.
+  const handleNav = (item) => {
+    if (!item) return;
+    setActiveTab(typeof item === "string" ? item : item.key);
+  };
+
   const openFromNotification = (target) => {
     setActiveTab("find");
     setPendingMode(target === "my_patients" ? "my" : "add");
@@ -81,7 +88,7 @@ export default function RadiologistDashboard() {
     <DashboardLayout
       navItems={navItems}
       activeKey={activeTab}
-      onNavClick={setActiveTab}
+      onNavClick={handleNav}
       roleLabel="Radiologist"
       accent="radiology"
       sidebarTheme="navy"
@@ -89,7 +96,7 @@ export default function RadiologistDashboard() {
         <DoctorSidebar
           navItems={navItems}
           activeKey={activeTab}
-          onNavClick={setActiveTab}
+          onNavClick={handleNav}
           onLogout={onLogout}
           close={close}
           subtitle="Radiologist Portal"
