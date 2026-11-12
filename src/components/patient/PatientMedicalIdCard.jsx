@@ -18,7 +18,7 @@ function Detail({ label, value }) {
   return (
     <div className="min-w-0">
       <p className="text-[10px] text-muted-foreground">{label}</p>
-      <p className="text-sm font-semibold text-primary truncate">{value || "—"}</p>
+      <p className="text-sm font-semibold text-primary break-words">{value || "—"}</p>
     </div>
   );
 }
@@ -40,9 +40,9 @@ function StripCell({ icon: Icon, label, value, sub, action, onClick }) {
           {value}
         </span>
       ) : (
-        <span className="block text-xs font-semibold text-primary truncate">{value || "—"}</span>
+        <span className="block text-xs font-semibold text-primary break-words">{value || "—"}</span>
       )}
-      {sub && <span className="block text-[10px] text-muted-foreground truncate">{sub}</span>}
+      {sub && <span className="block text-[10px] text-muted-foreground break-words">{sub}</span>}
     </Wrapper>
   );
 }
@@ -82,17 +82,22 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
 
       <div className="relative p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div>
-              <BrandLogo className="h-7 w-auto" />
-              <p className="text-[11px] text-muted-foreground mt-0.5">{t("Patient Card")}</p>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <BrandLogo className="h-11 w-11 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-heading text-[17px] sm:text-lg font-bold text-primary leading-none whitespace-nowrap">
+                AMedix
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1 whitespace-nowrap">{t("Patient Card")}</p>
             </div>
-            <span className="w-px h-9 bg-border" />
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-info/10 px-2.5 py-1 text-[11px] font-medium text-info">
-            <HeartPulse className="w-3.5 h-3.5" />
-            {t("Medical ID")}
-          </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="w-px h-10 bg-border" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-info/10 px-2.5 py-1 text-[11px] font-medium text-info whitespace-nowrap">
+              <HeartPulse className="w-3.5 h-3.5" />
+              {t("Medical ID")}
+            </span>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-col sm:flex-row items-start gap-4">
