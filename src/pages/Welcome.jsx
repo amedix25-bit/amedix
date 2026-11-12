@@ -6,20 +6,26 @@ import { ArrowRight } from "lucide-react";
 import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
-import { AR_PARAGRAPHS, AR_VISION_HEADING, AR_VISION_LINE } from "@/lib/amedixStoryArabic";
+import { AR_PARAGRAPHS, AR_VISION_HEADING, AR_VISION_LINE, AR_FOUNDERS } from "@/lib/amedixStoryArabic";
 
 // Welcome screen — the first screen anyone sees when opening AMedix.
 // The AMedix logo sits behind the message as a large, low-opacity watermark
 // so the text and button stay fully readable. Get Started leads to the
 // existing role-choice page. The language switcher is available from here,
 // before any login or registration.
-// Renders text with every "AMedix" occurrence bolded.
+// Renders text with every brand name and founder name bolded. The founder
+// names only occur in the Arabic story, so the English version is untouched.
+const BOLD_PHRASES = ["AMedix", ...AR_FOUNDERS];
+const BOLD_PATTERN = new RegExp(
+  `(${BOLD_PHRASES.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`
+);
+
 function AMedixBold({ text }) {
-  const parts = String(text || "").split(/(AMedix)/);
+  const parts = String(text || "").split(BOLD_PATTERN);
   return (
     <>
       {parts.map((part, i) =>
-        part === "AMedix" ? <strong key={i}>{part}</strong> : part
+        BOLD_PHRASES.includes(part) ? <strong key={i}>{part}</strong> : part
       )}
     </>
   );

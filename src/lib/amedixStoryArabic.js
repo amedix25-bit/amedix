@@ -8,6 +8,10 @@ export const AR_PARAGRAPHS = [
   "والأهم من ذلك، تضع AMedix المريض في مركز رحلته الصحية. فمن خلال ربط المتخصصين في الرعاية الصحية والخدمات والمعلومات حول كل مريض، تهدف المنصة إلى توفير تجربة رعاية صحية أبسط وأكثر تنسيقًا ووضوحًا.",
 ];
 
+// The founders' names exactly as they appear in the Arabic story. They are
+// emphasised in the Arabic welcome message only.
+export const AR_FOUNDERS = ["ايةالله عابد العليقي", "محمد سعد السبع"];
+
 export const AR_VISION_HEADING = "رؤيتنا بسيطة:";
 
 export const AR_VISION_LINE = "مريض واحد. رحلة صحية مترابطة. كل شيء في مكان واحد.";
