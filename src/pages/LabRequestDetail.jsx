@@ -7,6 +7,7 @@ import LabStatusBadge from "@/components/lab/LabStatusBadge";
 import { getTests, groupTestsByCategory, normalizeLabStatus } from "@/lib/labRequestUtils";
 import { ArrowLeft, FileText, CheckCircle2, Loader2, FlaskConical, Building2 } from "lucide-react";
 import { ClinicalFileButton } from "@/components/common/ClinicalFile";
+import { openLabRequestPdfFromRecord } from "@/lib/labRequestPdfFromRecord";
 
 export default function LabRequestDetail() {
   const { id } = useParams();
@@ -110,9 +111,9 @@ export default function LabRequestDetail() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {lab.pdf_url && (
-            <ClinicalFileButton kind="lab_request" id={lab.id} fileRef={lab.pdf_url} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 text-sm font-medium">
+            <button type="button" onClick={() => openLabRequestPdfFromRecord(lab)} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 text-sm font-medium">
               <FileText className="w-4 h-4 mr-2" />View PDF
-            </ClinicalFileButton>
+            </button>
           )}
           {status === "results" && (
             <Button variant="outline" onClick={() => setShowResults(!showResults)}>
