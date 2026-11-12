@@ -53,7 +53,7 @@ export default function OphthalmologyInvestigationsField({ value = [], onChange 
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Eye examined</Label>
                 <Select value={record.eye || undefined} onValueChange={(v) => update(index, { eye: v })}>

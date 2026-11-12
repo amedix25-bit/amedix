@@ -429,7 +429,7 @@ export default function DoctorAppointments({ doctorProfile }) {
             <DialogTitle>Reschedule Appointment</DialogTitle>
             <DialogDescription>{reschedule?.patient_name}</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>New Date</Label>
               <Input type="date" value={rescheduleForm.date} onChange={(e) => setRescheduleForm({ ...rescheduleForm, date: e.target.value })} />

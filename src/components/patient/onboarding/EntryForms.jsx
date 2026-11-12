@@ -156,7 +156,7 @@ export function ConditionEntryForm({ onAdd }) {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">{t("Approximate date of diagnosis")}</Label>
           <DateField
@@ -220,7 +220,7 @@ export function MedicalEventEntryForm({ onAdd }) {
         </Select>
         <Input placeholder={`${t("What happened, e.g. Appendectomy admission")} *`} value={form.title} onChange={set("title")} />
       </div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <Input placeholder={t("Approximate date")} value={form.event_date} onChange={set("event_date")} />
         <Input placeholder={t("Treating facility, if known")} value={form.treating_facility} onChange={set("treating_facility")} />
         <Select value={form.current_status} onValueChange={(v) => setForm((s) => ({ ...s, current_status: v }))}>
@@ -273,7 +273,7 @@ export function MedicationEntryForm({ onAdd }) {
   };
   return (
     <div className="space-y-2">
-      <div className="grid sm:grid-cols-[2fr_2fr_1fr] gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_2fr_1fr] gap-2">
         <Input placeholder={`${t("Medication name")} *`} value={form.name} onChange={set("name")} />
         <Select value={form.medication_kind} onValueChange={(v) => setForm((s) => ({ ...s, medication_kind: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
@@ -287,7 +287,7 @@ export function MedicationEntryForm({ onAdd }) {
         </Select>
         <Input placeholder={t("Dose, e.g. 500 mg")} value={form.dose} onChange={set("dose")} />
       </div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <Select value={form.route} onValueChange={(v) => setForm((s) => ({ ...s, route: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -299,7 +299,7 @@ export function MedicationEntryForm({ onAdd }) {
         <Input placeholder={t("Frequency, e.g. Twice daily")} value={form.frequency} onChange={set("frequency")} />
         <Input placeholder={t("Reason for taking it")} value={form.reason} onChange={set("reason")} />
       </div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <div className="space-y-1">
           <Label className="text-[11px] text-muted-foreground">{t("Start date, if known")}</Label>
           <DateField
@@ -317,7 +317,7 @@ export function MedicationEntryForm({ onAdd }) {
         </div>
         <Input placeholder={t("Prescribing doctor / facility, if known")} value={form.prescribed_by} onChange={set("prescribed_by")} />
       </div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <Select value={form.current_status} onValueChange={(v) => setForm((s) => ({ ...s, current_status: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -362,7 +362,7 @@ export function AllergyEntryForm({ onAdd }) {
   };
   return (
     <div className="space-y-2">
-      <div className="grid sm:grid-cols-[2fr_1fr_1fr] gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] gap-2">
         <Input placeholder={`${t("Substance causing the reaction, e.g. Penicillin")} *`} value={form.allergen} onChange={set("allergen")} />
         <Select value={form.allergy_type} onValueChange={(v) => setForm((s) => ({ ...s, allergy_type: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
@@ -383,7 +383,7 @@ export function AllergyEntryForm({ onAdd }) {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <Input placeholder={t("Reaction, e.g. Rash")} value={form.reaction} onChange={set("reaction")} />
         <Select value={form.severity} onValueChange={(v) => setForm((s) => ({ ...s, severity: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
@@ -437,29 +437,46 @@ export function SurgeryEntryForm({ onAdd }) {
       surgery_type: "", surgery_type_en: "", surgery_type_ar: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "",
     });
   };
+  // One field per cell: the date, reason, complications, outcome and hospital
+  // stay each get their own space, stacking on a phone and spreading over two
+  // then three columns as the screen widens. The add button has its own row so
+  // it can never squash the field beside it.
   return (
-    <div className="grid sm:grid-cols-3 gap-2">
-      <ArabicMedicalInput
-        value={form.surgery_type}
-        onChange={set("surgery_type")}
-        onSelectTerm={selectTerm}
-        placeholder={`${t("Type of surgery, e.g. Appendectomy")} *`}
-        terms={AR_SURGERY_TERMS}
-      />
-      <DateField
-        value={form.surgery_date}
-        onChange={(date) => setForm((s) => ({ ...s, surgery_date: date }))}
-        disableFuture
-      />
-      <Input placeholder={t("Reason / indication")} value={form.reason} onChange={set("reason")} />
-      <Input placeholder={t("Complications")} value={form.complications} onChange={set("complications")} />
-      <Input placeholder={t("Recovery / outcome")} value={form.outcome} onChange={set("outcome")} />
-      <div className="flex gap-2">
-        <Input placeholder={t("Hospital stay, e.g. 3 days")} value={form.hospitalization_duration} onChange={set("hospitalization_duration")} />
-        <Button type="button" variant="outline" onClick={add} disabled={!form.surgery_type}>
-          <Plus className="w-4 h-4" />
-        </Button>
+    <div className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="min-w-0">
+          <ArabicMedicalInput
+            value={form.surgery_type}
+            onChange={set("surgery_type")}
+            onSelectTerm={selectTerm}
+            placeholder={`${t("Type of surgery, e.g. Appendectomy")} *`}
+            terms={AR_SURGERY_TERMS}
+          />
+        </div>
+        <div className="min-w-0">
+          <DateField
+            value={form.surgery_date}
+            onChange={(date) => setForm((s) => ({ ...s, surgery_date: date }))}
+            disableFuture
+          />
+        </div>
+        <div className="min-w-0">
+          <Input placeholder={t("Reason / indication")} value={form.reason} onChange={set("reason")} />
+        </div>
+        <div className="min-w-0">
+          <Input placeholder={t("Complications")} value={form.complications} onChange={set("complications")} />
+        </div>
+        <div className="min-w-0">
+          <Input placeholder={t("Recovery / outcome")} value={form.outcome} onChange={set("outcome")} />
+        </div>
+        <div className="min-w-0">
+          <Input placeholder={t("Hospital stay, e.g. 3 days")} value={form.hospitalization_duration} onChange={set("hospitalization_duration")} />
+        </div>
       </div>
+      <Button type="button" variant="outline" onClick={add} disabled={!form.surgery_type} className="w-full sm:w-auto">
+        <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+        {t("Add")}
+      </Button>
     </div>
   );
 }

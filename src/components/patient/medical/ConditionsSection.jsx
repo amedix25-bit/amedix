@@ -4,6 +4,7 @@ import SectionCard from "./SectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DateField from "@/components/ui/date-field";
 import { Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -152,7 +153,7 @@ export default function ConditionsSection({ number, title, category, patient, em
             </div>
             <div className="space-y-1.5">
               <Label>{t("Date")}</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              <DateField value={form.date} onChange={(date) => setForm({ ...form, date })} disableFuture />
             </div>
             <div className="space-y-1.5">
               <Label>{t("Details (optional)")}</Label>

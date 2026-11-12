@@ -180,7 +180,7 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
           </p>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label htmlFor="doc-first-name">{t("First Name *")}</Label>
           <Input id="doc-first-name" placeholder={t("First name")} value={doctorForm.first_name} onChange={(e) => setDoctorForm({ ...doctorForm, first_name: e.target.value })} required />

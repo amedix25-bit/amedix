@@ -413,7 +413,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
                       {t("Exactly as it appears on your Passport or official English identification document, including the same spelling and order.")}
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="first_name">{t("First Name")} *</Label>
                         <Input id="first_name" value={form.first_name} onChange={set("first_name")} required />
@@ -432,7 +432,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                       <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
                         {t("Exactly as it appears on your official Arabic document.")}
                       </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <div className="space-y-1.5">
                           <Label htmlFor="first_name_ar">الاسم الأول *</Label>
                           <Input id="first_name_ar" value={form.first_name_ar} onChange={set("first_name_ar")} required />
@@ -492,7 +492,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
                   <section>
                     <h3 className="text-sm font-semibold text-primary mb-3">{t("Emergency Contact")}</h3>
-                    <div className="grid sm:grid-cols-3 gap-3">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="ec_name">{t("Name")} *</Label>
                         <Input id="ec_name" value={form.emergency_contact_name} onChange={set("emergency_contact_name")} required />
@@ -706,7 +706,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                 <div className="p-6 space-y-4">
                   <div className="rounded-xl border border-border bg-card p-5 space-y-3">
                     <h3 className="text-sm font-semibold text-primary">{t("Lifestyle")} *</h3>
-                    <div className="grid sm:grid-cols-3 gap-3">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <Label>{t("Smoking status")} *</Label>
                         <Select value={lifestyle.smoking_status} onValueChange={(v) => setLifestyle((s) => ({ ...s, smoking_status: v }))}>
@@ -921,7 +921,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                           {t("Answer about previous pregnancies even if you are not pregnant now.")}
                         </p>
                       )}
-                      <div className="grid sm:grid-cols-3 gap-3">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {PREGNANCY_COUNTS.map(({ key, label }) => (
                           <div key={key} className="space-y-1.5">
                             <Label>{t(label)} *</Label>

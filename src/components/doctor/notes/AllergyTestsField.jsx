@@ -115,7 +115,7 @@ export default function AllergyTestsField({ value, onChange, encounterId }) {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-[11px]">Result / value</Label>
                 <Input value={row.value ?? ""} onChange={(e) => update(index, { value: e.target.value })} />

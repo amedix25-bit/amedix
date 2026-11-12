@@ -328,7 +328,7 @@ export default function PharmacyInventorySection({ profile }) {
                   <Label>Active Ingredient</Label>
                   <Input placeholder="e.g. Paracetamol" value={form.active_ingredient} onChange={set("active_ingredient")} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Strength</Label>
                     <Input placeholder="e.g. 500 mg" value={form.strength} onChange={set("strength")} />
@@ -346,7 +346,7 @@ export default function PharmacyInventorySection({ profile }) {
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Batch Number</Label>
                     <Input placeholder="e.g. B-2026-0417" value={form.batch_number} onChange={set("batch_number")} />
@@ -356,7 +356,7 @@ export default function PharmacyInventorySection({ profile }) {
                     <Input type="date" min={today()} value={form.expiry_date} onChange={set("expiry_date")} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Quantity in Stock *</Label>
                     <Input type="number" min="0" placeholder="e.g. 100" value={form.quantity_in_stock} onChange={set("quantity_in_stock")} required />

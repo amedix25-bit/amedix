@@ -85,7 +85,7 @@ export default function NeurosurgicalExamField({ value, onChange }) {
       </Group>
 
       <Group title="Pupils">
-        <div className="grid gap-2 grid-cols-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Sel label="Right pupil size" value={pupils.right_size} onChange={(x) => setIn("pupils", { right_size: x })} options={NSG_PUPIL_SIZE} />
           <Sel label="Right reactivity" value={pupils.right_reactivity} onChange={(x) => setIn("pupils", { right_reactivity: x })} options={NSG_PUPIL_REACTIVITY} />
           <Sel label="Left pupil size" value={pupils.left_size} onChange={(x) => setIn("pupils", { left_size: x })} options={NSG_PUPIL_SIZE} />
@@ -105,7 +105,7 @@ export default function NeurosurgicalExamField({ value, onChange }) {
       </Group>
 
       <Group title="Motor function (MRC 0–5)">
-        <div className="grid gap-2 grid-cols-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Sel label="Right arm" value={motor.right_arm} onChange={(x) => setIn("motor", { right_arm: x })} options={NSG_MRC} />
           <Sel label="Left arm" value={motor.left_arm} onChange={(x) => setIn("motor", { left_arm: x })} options={NSG_MRC} />
           <Sel label="Right leg" value={motor.right_leg} onChange={(x) => setIn("motor", { right_leg: x })} options={NSG_MRC} />
@@ -144,7 +144,7 @@ export default function NeurosurgicalExamField({ value, onChange }) {
       </Group>
 
       <Group title="Reflexes, plantar response and clonus">
-        <div className="grid gap-2 grid-cols-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Sel label="Biceps" value={reflexes.biceps} onChange={(x) => setIn("reflexes", { biceps: x })} options={NSG_REFLEX} />
           <Sel label="Supinator" value={reflexes.supinator} onChange={(x) => setIn("reflexes", { supinator: x })} options={NSG_REFLEX} />
           <Sel label="Triceps" value={reflexes.triceps} onChange={(x) => setIn("reflexes", { triceps: x })} options={NSG_REFLEX} />

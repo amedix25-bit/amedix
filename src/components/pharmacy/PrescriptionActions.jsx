@@ -231,7 +231,7 @@ export default function PrescriptionActions({ prescription, onChanged, session }
                 </p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label htmlFor="dispense-payment">{t("Payment Amount")}</Label>
                 <Input

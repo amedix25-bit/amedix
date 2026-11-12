@@ -5,6 +5,7 @@ import InfoRow from "./InfoRow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DateField from "@/components/ui/date-field";
 import { Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTranslations";
@@ -137,7 +138,7 @@ export default function SurgicalSection({ number, patient, doctorView, editable 
             </div>
             <div className="space-y-1.5">
               <Label>{t("Date")}</Label>
-              <Input type="date" value={form.surgery_date} onChange={(e) => setForm({ ...form, surgery_date: e.target.value })} />
+              <DateField value={form.surgery_date} onChange={(surgery_date) => setForm({ ...form, surgery_date })} disableFuture />
             </div>
             <div className="space-y-1.5">
               <Label>{t("Reason / Indication")}</Label>

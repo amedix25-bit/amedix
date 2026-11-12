@@ -164,7 +164,7 @@ export default function AntenatalItemDialog({ open, item, mode, patientId, docto
               </div>
             )}
             {showResult && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Result value</Label>
                   <Input value={resultValue} onChange={(e) => setResultValue(e.target.value)} placeholder="e.g. 8.9" className="mt-1" />

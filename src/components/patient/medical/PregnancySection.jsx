@@ -5,6 +5,7 @@ import InfoRow from "./InfoRow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DateField from "@/components/ui/date-field";
 import { Loader2, Pencil, X } from "lucide-react";
 import { PREGNANCY_LABELS } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -117,10 +118,9 @@ export default function PregnancySection({ number, patient, doctorView, editable
             </div>
             <div className="space-y-1.5">
               <Label>{t("Estimated due date")}</Label>
-              <Input
-                type="date"
+              <DateField
                 value={form.estimated_due_date}
-                onChange={(e) => setForm({ ...form, estimated_due_date: e.target.value })}
+                onChange={(estimated_due_date) => setForm({ ...form, estimated_due_date })}
               />
             </div>
           </div>

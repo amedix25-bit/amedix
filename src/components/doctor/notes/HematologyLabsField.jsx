@@ -63,7 +63,7 @@ export default function HematologyLabsField({ value = [], onChange, panels = [] 
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-[11px]">Value</Label>
                 <Input value={row.value ?? ""} onChange={(e) => update(index, { value: e.target.value })} />
@@ -104,7 +104,7 @@ export default function HematologyLabsField({ value = [], onChange, panels = [] 
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-[11px]">Previous value</Label>
                 <Input
@@ -122,7 +122,7 @@ export default function HematologyLabsField({ value = [], onChange, panels = [] 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-[11px]">Trend</Label>
                 <Select value={row.trend || undefined} onValueChange={(v) => update(index, { trend: v })}>

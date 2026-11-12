@@ -90,7 +90,7 @@ export default function PaymentRecordDialog({ dialog, busy, error, onSubmit, onC
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <Label>Amount due</Label>
             <Input type="number" min="0" step="0.01" value={form.amount_due} onChange={(e) => set({ amount_due: e.target.value })} placeholder="0" />

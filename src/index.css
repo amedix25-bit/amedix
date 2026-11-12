@@ -225,4 +225,19 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
   }
+
+  /* Responsive safety net — no control may paint over its neighbour.
+     A text input keeps an intrinsic width (its default `size`), and grid/flex
+     items default to min-width:auto, so inside a narrow column a field refuses
+     to shrink below that width and overlaps the field beside it. Letting every
+     control shrink keeps each field inside its own cell at any screen width;
+     the container decides the width, never the control. */
+  input,
+  select,
+  textarea,
+  [role="combobox"],
+  .grid > *:not(button):not(a),
+  .flex > *:not(button):not(a) {
+    min-width: 0;
+  }
 }

@@ -122,7 +122,7 @@ export default function CriticalCommunicationPanel({ study, user, onChanged }) {
             <Textarea rows={2} value={form.finding_summary} onChange={(e) => setForm({ ...form, finding_summary: e.target.value })}
               placeholder="Summarize the critical finding communicated..." />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Responsible Clinician</Label>
               <Input value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} />

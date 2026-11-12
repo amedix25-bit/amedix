@@ -4,6 +4,7 @@ import SectionCard from "./SectionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DateField from "@/components/ui/date-field";
 import { Loader2, Plus, X, Ban, RotateCcw } from "lucide-react";
 import { medicationStatus, mealLabel, routeLabel, todayStr } from "@/lib/medicationUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -123,7 +124,7 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
             </div>
             <div className="space-y-1.5">
               <Label>{t("Start date")}</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <DateField value={startDate} onChange={setStartDate} disableFuture />
             </div>
           </div>
           <Button type="submit" size="sm" disabled={saving}>
