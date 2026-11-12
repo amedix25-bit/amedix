@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Activity, Calendar, CreditCard, Droplet, HeartPulse, Phone, Plus, UserRound } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import QrCodeCard from "@/components/QrCodeCard";
 import PatientCardPhoto from "@/components/patient/PatientCardPhoto";
 import ChronicConditionPicker from "@/components/patient/ChronicConditionPicker";
+import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 function formatDate(value) {
@@ -23,37 +24,54 @@ function Detail({ label, value }) {
   );
 }
 
-function StripCell({ icon: Icon, label, value, sub, action, onClick }) {
+function StripCell({ icon: Icon, label, value, sub, extra, action, onClick }) {
   const Wrapper = onClick ? "button" : "div";
   return (
     <Wrapper
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`flex-1 min-w-0 px-3 py-2 text-start ${onClick ? "hover:bg-accent/60" : ""}`}
+      className={`w-1/2 sm:w-1/4 sm:flex-1 min-w-0 px-3 py-2 text-start ${onClick ? "hover:bg-accent/60" : ""}`}
     >
-      <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <Icon className="w-3.5 h-3.5" />
-        {label}
+      <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground whitespace-nowrap">
+        <Icon className="w-3.5 h-3.5 shrink-0" />
+        <span className="truncate">{label}</span>
       </span>
       {action ? (
         <span className="mt-1 inline-block rounded-md border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground">
           {value}
         </span>
       ) : (
-        <span className="block text-xs font-semibold text-primary break-words">{value || "—"}</span>
+        <span className="mt-0.5 flex items-baseline gap-1">
+          <span className="text-xs font-semibold text-primary line-clamp-2 break-words">{value || "—"}</span>
+          {extra > 0 && <span className="text-[10px] text-muted-foreground shrink-0">+{extra}</span>}
+        </span>
       )}
-      {sub && <span className="block text-[10px] text-muted-foreground break-words">{sub}</span>}
+      {sub && <span className="block text-[10px] text-muted-foreground truncate">{sub}</span>}
     </Wrapper>
   );
 }
 
 // The patient's Medical ID card — every value comes from the patient's own
-// account. Empty sections invite the patient to complete them.
+// account. Only the emergency-relevant conditions listed on the card are
+// shown; anything else stays in the full clinical record.
 export default function PatientMedicalIdCard({ profile, conditions = [], allergyText, emergencyContact, onConditionsChanged }) {
   const { t, lang } = usePatientLanguage();
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const conditionText = conditions.map((c) => (lang === "ar" ? c.name_ar || c.name : c.name)).filter(Boolean).join(", ");
+  const allowedNames = useMemo(
+    () => new Set(PATIENT_ID_CONDITIONS.map((c) => c.en.toLowerCase())),
+    []
+  );
+
+  const cardConditions = useMemo(
+    () => conditions.filter((c) => allowedNames.has(String(c.name || "").trim().toLowerCase())),
+    [conditions, allowedNames]
+  );
+
+  const conditionLabels = cardConditions
+    .map((c) => (lang === "ar" ? c.name_ar || c.name : c.name))
+    .filter(Boolean);
+
   const cardNumber = profile?.id ? `P-${String(profile.id).replace(/[^a-zA-Z0-9]/g, "").slice(-8).toUpperCase()}` : "—";
   const genderLabel = profile?.gender
     ? t(profile.gender === "male" ? "Male" : profile.gender === "female" ? "Female" : "Other")
@@ -106,7 +124,7 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
           <div className="flex-1 min-w-0 space-y-3">
             <div>
               <p className="text-[10px] text-muted-foreground">{t("Patient Name")}</p>
-              <p className="font-heading text-base sm:text-lg font-bold text-primary leading-tight">
+              <p className="font-heading text-base sm:text-lg font-bold text-primary leading-tight break-words">
                 {(lang === "ar" ? profile?.full_name_ar : "") || profile?.full_name || "—"}
               </p>
             </div>
@@ -134,23 +152,26 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
             </div>
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground">{t("AMedix ID")}</p>
-              <p className="text-[11px] font-semibold text-primary tracking-wide">{cardNumber}</p>
+              <span className="inline-block rounded-full bg-info/10 px-2 py-0.5 text-[11px] font-semibold text-primary tracking-wide">
+                {cardNumber}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap divide-x divide-border rounded-xl border border-border bg-background/60 rtl:divide-x-reverse">
+        <div className="mt-4 flex flex-wrap sm:flex-nowrap divide-x divide-border rounded-xl border border-border bg-background/60 rtl:divide-x-reverse">
           <StripCell
             icon={Droplet}
             label={t("Blood Group")}
             value={profile?.blood_type && profile.blood_type !== "Unknown" ? profile.blood_type : "—"}
           />
           <StripCell icon={Activity} label={t("Allergies")} value={allergyText || profile?.allergies || "—"} />
-          {conditionText ? (
+          {conditionLabels.length > 0 ? (
             <StripCell
               icon={HeartPulse}
               label={t("Chronic Conditions")}
-              value={conditionText}
+              value={conditionLabels[0]}
+              extra={conditionLabels.length - 1}
               onClick={() => setPickerOpen(true)}
             />
           ) : (
@@ -177,7 +198,7 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
 
       <ChronicConditionPicker
         patientId={profile?.id}
-        existing={conditions}
+        existing={cardConditions}
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onAdded={onConditionsChanged}
