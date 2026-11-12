@@ -32,11 +32,16 @@ export function ResolvedFileButton({ requestId, fileRef, className, children }) 
   const open = async () => {
     if (loading) return;
     setLoading(true);
+    // Opened inside the tap: a window opened after an await is blocked on iOS
+    // Safari and Android Chrome, so the signed URL fills the already-open tab.
+    const tab = window.open("", "_blank");
     try {
       const url = await resolveRadiologyFile(requestId, fileRef);
-      if (url) window.open(url, "_blank", "noopener");
-      else throw new Error("empty");
+      if (!url) throw new Error("empty");
+      if (tab) tab.location.href = url;
+      else window.open(url, "_blank", "noopener");
     } catch (err) {
+      if (tab) tab.close();
       // Never a blank screen: say what failed and leave the button ready to retry.
       toast({
         title: "This document could not be opened",

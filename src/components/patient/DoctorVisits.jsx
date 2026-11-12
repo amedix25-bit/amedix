@@ -124,10 +124,14 @@ function DoctorVisitDetail({ visit, onBack }) {
     // exposed to patients. The stored reference is private, so it is resolved
     // to a short-lived signed URL after the server verifies access.
     if (item.kind !== "document" || !item.pdf_url) return;
+    // Opened inside the tap so mobile browsers allow the new tab.
+    const tab = window.open("", "_blank");
     try {
       const url = await resolveClinicalFile("clinical_document", item.id, item.pdf_url);
-      window.open(url, "_blank", "noopener");
+      if (tab) tab.location.href = url;
+      else window.open(url, "_blank", "noopener");
     } catch (err) {
+      if (tab) tab.close();
       toast({
         title: t("This document could not be opened"),
         description:

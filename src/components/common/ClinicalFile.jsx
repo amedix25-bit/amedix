@@ -28,11 +28,17 @@ export function ClinicalFileButton({ kind, id, fileRef, className, children, onC
     if (loading || !fileRef) return;
     if (onClick) { onClick(e); }
     setLoading(true);
+    // The tab is opened inside the tap itself: iOS Safari and Android Chrome
+    // block a window opened after an await, so the signed URL is filled into
+    // the already-open tab once the server has authorized and signed it.
+    const tab = window.open("", "_blank");
     try {
       const url = await resolveClinicalFile(kind, id, fileRef);
-      if (url) window.open(url, "_blank", "noopener");
-      else throw new Error("empty");
+      if (!url) throw new Error("empty");
+      if (tab) tab.location.href = url;
+      else window.open(url, "_blank", "noopener");
     } catch (err) {
+      if (tab) tab.close();
       // Never a blank screen: say what failed and leave the button ready to retry.
       toast({
         title: "This document could not be opened",
