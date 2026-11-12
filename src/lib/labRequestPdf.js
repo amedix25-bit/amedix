@@ -36,7 +36,12 @@ export function generateLabRequestPdf(req) {
   const doc = new jsPDF();
   const logo = req.logo;
 
-  let y = drawRequestHeader(doc, { logo });
+  let y = drawRequestHeader(doc, {
+    logo,
+    title: "Medical Request",
+    subtitle: "Official Medical Document",
+    framed: true,
+  });
   y = drawPatientBlock(doc, req, y);
   y = drawDoctorBlock(doc, req, y);
   y = drawInvestigationsHeading(doc, y, req.priority);
@@ -104,15 +109,15 @@ export async function addRequestBarcode(doc, requestId) {
     canvas.height = img.naturalHeight;
     canvas.getContext("2d").drawImage(img, 0, 0);
 
-    // Bottom-right of the form, clear of the signature block. The QR encodes
-    // ONLY the unique request reference — no patient data.
-    const size = 19;
+    // Bottom-right of the sheet, between the signature block and the footer.
+    // The QR encodes ONLY the unique request reference — no patient data.
+    const size = 13;
     doc.setPage(doc.getNumberOfPages());
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", PDF_PAGE.right - size, 252, size, size);
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", 176, 251, size, size);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6);
+    doc.setFontSize(5.6);
     doc.setTextColor(...PDF_INK.muted);
-    doc.text("Scan to view this request", PDF_PAGE.right, 274, { align: "right" });
+    doc.text("Scan to view this request", 190, 267, { align: "right" });
   } catch (err) {
     console.warn("Request barcode could not be added:", err);
   }

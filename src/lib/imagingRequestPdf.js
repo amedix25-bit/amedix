@@ -36,7 +36,12 @@ export function generateImagingRequestPdf(req) {
   const { margin: M, right: R } = PDF_PAGE;
   const logo = req.logo;
 
-  let y = drawRequestHeader(doc, { logo });
+  let y = drawRequestHeader(doc, {
+    logo,
+    title: "Medical Request",
+    subtitle: "Official Medical Document",
+    framed: true,
+  });
   y = drawPatientBlock(doc, req, y);
   y = drawDoctorBlock(doc, req, y);
   y = drawInvestigationsHeading(doc, y, req.priority);
