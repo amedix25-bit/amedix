@@ -148,7 +148,7 @@ export function drawRequestHeader(doc, {
     }
     doc.setCharSpace(1.4);
     doc.setTextColor(...PDF_INK.navy);
-    doc.text(text, PDF_PAGE.right, 22, { align: "right" });
+    doc.text(text, PDF_PAGE.right - text.length * 1.4, 22);
     doc.setCharSpace(0);
     doc.setDrawColor(...PDF_INK.hair);
     doc.setLineWidth(0.5);
@@ -162,46 +162,48 @@ export function drawRequestHeader(doc, {
 
   // Mark tile
   doc.setFillColor(...PDF_INK.badge);
-  doc.roundedRect(M, HEADER_TOP, 11, 11, 1.9, 1.9, "F");
+  doc.roundedRect(M, HEADER_TOP, 15, 15, 2.4, 2.4, "F");
   if (logo?.dataUrl) {
     try {
-      const w = 7.4;
-      doc.addImage(logo.dataUrl, "PNG", M + (11 - w) / 2, HEADER_TOP + 1.9, w, w / (logo.ratio || 1.13), undefined, "FAST");
+      const w = 10.4;
+      doc.addImage(logo.dataUrl, "PNG", M + (15 - w) / 2, HEADER_TOP + 2.3, w, w / (logo.ratio || 1.13), undefined, "FAST");
     } catch (e) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+      doc.setFontSize(14);
       doc.setTextColor(...PDF_INK.navy);
-      doc.text("A", M + 5.5, HEADER_TOP + 7.4, { align: "center" });
+      doc.text("A", M + 7.5, HEADER_TOP + 10, { align: "center" });
     }
   } else {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(14);
     doc.setTextColor(...PDF_INK.navy);
-    doc.text("A", M + 5.5, HEADER_TOP + 7.4, { align: "center" });
+    doc.text("A", M + 7.5, HEADER_TOP + 10, { align: "center" });
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.4);
+  doc.setFontSize(11.6);
   doc.setTextColor(...PDF_INK.navy);
-  doc.text("AMEDIX", M + 14.5, HEADER_TOP + 5.2);
+  doc.text("AMEDIX", M + 19, HEADER_TOP + 6.4);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
+  doc.setFontSize(7);
   doc.setTextColor(...PDF_INK.muted);
-  doc.text("Connected Healthcare", M + 14.5, HEADER_TOP + 9.2);
+  doc.text("Connected Healthcare", M + 19, HEADER_TOP + 11);
 
-  // Document title, right aligned
+  // Document title, right aligned. Tracking is compensated so the letters
+  // finish exactly on the content edge instead of running past the frame.
   const heading = String(title || "MEDICAL REQUEST").toUpperCase();
   doc.setFont("helvetica", "bold");
   let size = 10.6;
   doc.setFontSize(size);
-  while (size > 7.5 && doc.getTextWidth(heading) + heading.length * 1.05 > 88) {
+  const tracking = 1.05;
+  while (size > 7.5 && doc.getTextWidth(heading) + heading.length * tracking > 84) {
     size -= 0.4;
     doc.setFontSize(size);
   }
-  doc.setCharSpace(1.05);
+  doc.setCharSpace(tracking);
   doc.setTextColor(...PDF_INK.navy);
-  doc.text(heading, R, HEADER_TOP + 4.8, { align: "right" });
+  doc.text(heading, R - heading.length * tracking, HEADER_TOP + 4.8);
   doc.setCharSpace(0);
 
   doc.setFont("helvetica", "normal");
@@ -235,11 +237,15 @@ export function ensureSignatureRoom(doc, y, logo, title) {
 
 // ===== Labels, dividers and fields =====
 export function drawSectionLabel(doc, text, y, x = M, align = "left") {
+  const label = String(text).toUpperCase();
+  const tracking = 1.1;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.6);
-  doc.setCharSpace(1.1);
+  doc.setCharSpace(tracking);
   doc.setTextColor(...PDF_INK.navy);
-  doc.text(String(text).toUpperCase(), x, y, { align });
+  // Tracking is compensated, so a right-aligned label ends on the content
+  // edge rather than hanging past the border.
+  doc.text(label, align === "right" ? x - label.length * tracking : x, y);
   doc.setCharSpace(0);
 }
 
