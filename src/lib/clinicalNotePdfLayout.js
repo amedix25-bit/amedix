@@ -1,9 +1,10 @@
 // Text and table primitives for the AMedix clinical-note sheet.
 //
 // Everything here is measured before it is printed: no line may run past the
-// right margin, no row is left hanging over a page edge, a heading is never
-// separated from the content it introduces, and every box drawn is reported to
-// the document audit that verifies the finished pages.
+// right margin, no row is left hanging over a page edge, and a section heading
+// is never separated from the content it introduces — the heading is held back
+// until the block beneath it is measured and both are placed together. Every
+// box drawn is reported to the document audit that verifies the finished pages.
 import {
   PDF_PAGE,
   PDF_INK,
@@ -38,6 +39,7 @@ const TYPE = {
   vitalLabel: 6.2,
   vitalValue: 8.8,
 };
+
 const LEAD = {
   label: 3.5,
   value: 4.35,
@@ -47,11 +49,13 @@ const LEAD = {
   vitalLabel: 3,
   vitalValue: 4.1,
 };
+
 // `before` is the breathing room above a heading — a heading must never touch
 // the last line of the block above it.
 const SPACE = { before: 3.4, heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6, captionBefore: 1.9 };
 
 const density = (doc) => documentDensity(doc);
+const valueWidth = (labelWidth = LABEL_W) => R - (M + labelWidth + VALUE_GAP);
 
 export function textWidth(doc, text, size, weight = "normal") {
   if (hasArabic(text)) return arabicWidth(text, size, weight);
@@ -86,14 +90,12 @@ function fitLines(doc, lines, width, size, weight = "normal") {
 export function wrap(doc, text, width, size, weight = "normal") {
   const raw = String(text ?? "");
   if (!raw.trim()) return [];
-  const lines = hasArabic(raw)
-    ? wrapArabicText(raw, width, size, weight)
-    : doc.splitTextToSize(raw, width);
+  const lines = hasArabic(raw) ? wrapArabicText(raw, width, size, weight) : doc.splitTextToSize(raw, width);
   return fitLines(doc, lines, width, size, weight);
 }
 
 // One line of text, clamped inside the content column and reported to the
-// audit. Right-aligned text is right-aligned to the column edge, never beyond it.
+// audit. Right-aligned text is right-aligned to the column edge, never past it.
 export function writeLine(doc, line, y, {
   size = TYPE.value,
   weight = "normal",
@@ -123,7 +125,7 @@ export function writeLine(doc, line, y, {
 }
 
 // A heading is tracked and upper-cased; its box is measured the same way it is
-// drawn (glyph by glyph), so the audit sees the true right edge.
+// drawn, so the audit sees the true right edge.
 function headingWidth(doc, text) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(TYPE.section);
@@ -152,6 +154,32 @@ function hairline(doc, y) {
   doc.line(M, y, R, y);
 }
 
+const headingRoom = (d) => TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
+
+// ===== Section headings =====
+// A heading is held back until the first block beneath it is measured, so the
+// two are always placed on the same page: nothing is printed by writeSection.
+export function writeSection(doc, title) {
+  doc.__pendingSection = String(title || "");
+  return doc.__pendingSection;
+}
+
+function flushSection(doc, y, artwork, noteTitle, blockHeight) {
+  const title = doc.__pendingSection;
+  if (!title) return y;
+  doc.__pendingSection = null;
+
+  const d = density(doc);
+  const room = headingRoom(d) + Math.min(Math.max(blockHeight, 6), PAGE.BOTTOM - 58);
+  let yy = y + SPACE.before * d;
+  if (yy + room - SPACE.before * d > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+
+  writeHeading(doc, title, yy);
+  yy += 2.6 * d;
+  drawDivider(doc, yy);
+  return yy + SPACE.heading * d;
+}
+
 // The document's own title across the head with its reference: a long title
 // wraps and the reference drops to its own line rather than running off the
 // sheet, and it is never left alone at the foot of a page.
@@ -159,7 +187,7 @@ export function writeDocumentHead(doc, title, reference, y) {
   const label = String(title || "Clinical Note").toUpperCase();
   const ref = String(reference || "").trim();
   let yy = y;
-  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc, null, title);
+  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc, null, "Clinical Note");
 
   if (!ref || headingWidth(doc, label) + headingWidth(doc, ref) + 8 <= W) {
     writeHeading(doc, label, yy);
@@ -175,140 +203,78 @@ export function writeDocumentHead(doc, title, reference, y) {
   return yy + 6;
 }
 
-// ===== Measuring the first block of a section =====
-// The room a section needs so its heading is never separated from its content:
-// the heading itself plus the first block that follows it, measured with the
-// same wrapping the block will use when it is drawn.
-const rowRoom = (doc, label, value, valueWidth) => {
+// ===== One labelled record row =====
+// The label in its own column, its findings beside it — the layout that keeps a
+// complete note inside a few pages instead of a long stack of stacked blocks.
+function rowMetrics(doc, label, value, opts = {}) {
   const d = density(doc);
-  const lines = String(value ?? "")
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .flatMap((line) => wrap(doc, line, valueWidth, TYPE.value));
-  const labelLines = wrap(doc, String(label || ""), LABEL_W, TYPE.label, "bold").length;
-  return Math.max(lines.length * LEAD.value * d, labelLines * LEAD.label * d) + SPACE.rowPad * d;
-};
-
-const captionRoom = (doc, text) =>
-  String(text || "").trim()
-    ? wrap(doc, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc) + 1.2
-    : 0;
-
-export function sectionNeed(doc, item) {
-  const d = density(doc);
-  const heading = TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
-  const valueWidth = R - (M + LABEL_W + VALUE_GAP);
-
-  if (item.vitals?.length > 0) {
-    const [label, value] = item.vitals[0];
-    const grid = parseVitals(value);
-    const measured =
-      grid.length > 0
-        ? 2 * LEAD.vitalLabel * d + 1.5 + LEAD.vitalValue * d + SPACE.cellPad * d
-        : rowRoom(doc, label, value, W);
-    return heading + captionRoom(doc, label) + measured;
-  }
-
-  if (item.groups?.length > 0) {
-    const [label, value] = item.groups[0];
-    const first = examinationBlocks(value)[0];
-    const finding = first?.items?.[0]
-      ? rowRoom(doc, first.items[0][0], first.items[0][1], valueWidth)
-      : LEAD.value * d;
-    return heading + captionRoom(doc, label) + LEAD.value * d + finding;
-  }
-
-  if (item.subs?.length > 0) {
-    return heading + captionRoom(doc, item.subs[0].label) + 2 * LEAD.cellValue * d;
-  }
-
-  if (item.entries?.length > 0) {
-    const first = item.entries[0];
-    const gridRow = 2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d;
-    const full = rowRoom(doc, first.label, first.value, valueWidth);
-    return heading + (item.entries.length === 1 ? full : Math.max(gridRow, full));
-  }
-
-  return heading + 8;
-}
-
-// A section heading with its rule. Room is reserved for the heading AND its
-// first block of content, so a heading can never sit at the foot of a page.
-export function writeSection(doc, title, y, artwork, noteTitle, need = 26) {
-  const d = density(doc);
-  let yy = y + SPACE.before * d;
-  if (yy + need > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
-  writeHeading(doc, title, yy);
-  yy += 2.6 * d;
-  drawDivider(doc, yy);
-  return yy + SPACE.heading * d;
-}
-
-// One aligned record row: the label in its own column, the value beside it.
-// This is what keeps a complete note inside a few pages instead of a long
-// stack of label-over-value blocks.
-export function writeRow(doc, label, value, y, artwork, opts = {}) {
-  const {
-    noteTitle = "Clinical Note",
-    labelWidth = LABEL_W,
-    size = TYPE.value,
-    labelSize = TYPE.label,
-    rule = true,
-    numbered = false,
-  } = opts;
-  const d = density(doc);
+  const labelWidth = opts.labelWidth ?? LABEL_W;
+  const size = opts.size ?? TYPE.value;
+  const labelSize = opts.labelSize ?? TYPE.label;
   const lineHeight = (opts.lineHeight ?? LEAD.value) * d;
 
   const paragraphs = String(value ?? "")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const rows = numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
-  if (rows.length === 0) return y;
-
-  const valueX = M + labelWidth + VALUE_GAP;
-  const valueW = R - valueX;
-  const valueLines = rows.flatMap((line) => wrap(doc, line, valueW, size));
+  const rows = opts.numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
+  const valueLines = rows.flatMap((line) => wrap(doc, line, valueWidth(labelWidth), size));
   const labelLines = wrap(doc, String(label || ""), labelWidth, labelSize, "bold");
   const labelLead = LEAD.label * d;
-  const height = Math.max(valueLines.length * lineHeight, labelLines.length * labelLead);
 
-  let yy = y;
+  return {
+    valueLines,
+    labelLines,
+    labelWidth,
+    size,
+    labelSize,
+    lineHeight,
+    labelLead,
+    height: Math.max(valueLines.length * lineHeight, labelLines.length * labelLead),
+  };
+}
+
+export function writeRow(doc, label, value, y, artwork, opts = {}) {
+  const { noteTitle = "Clinical Note", rule = true } = opts;
+  const metrics = rowMetrics(doc, label, value, opts);
+  if (metrics.valueLines.length === 0) return y;
+
+  const d = density(doc);
+  let yy = flushSection(doc, y, artwork, noteTitle, metrics.height);
   let continued = false;
-  if (yy + height > PAGE.BOTTOM && height <= PAGE.BOTTOM - 58) {
+  if (yy + metrics.height > PAGE.BOTTOM && metrics.height <= PAGE.BOTTOM - 58) {
     yy = nextPage(doc, artwork, noteTitle);
   }
 
-  labelLines.forEach((line, index) => {
-    writeLine(doc, line, yy + index * labelLead, {
-      size: labelSize,
+  metrics.labelLines.forEach((line, index) => {
+    writeLine(doc, line, yy + index * metrics.labelLead, {
+      size: metrics.labelSize,
       weight: "bold",
       color: PDF_INK.muted,
-      x: M,
-      width: labelWidth,
+      width: metrics.labelWidth,
       kind: "label",
     });
   });
 
   let valueY = yy;
-  valueLines.forEach((line) => {
+  metrics.valueLines.forEach((line) => {
     if (valueY > PAGE.BOTTOM) {
       valueY = nextPage(doc, artwork, noteTitle);
       continued = true;
     }
     writeLine(doc, line, valueY, {
-      size,
-      x: valueX,
-      width: valueW,
+      size: metrics.size,
+      x: M + metrics.labelWidth + VALUE_GAP,
+      width: valueWidth(metrics.labelWidth),
       align: hasArabic(line) ? "right" : "left",
     });
-    valueY += lineHeight;
+    valueY += metrics.lineHeight;
   });
 
   // The row ends most of a line pitch below its last baseline, so the next
   // label or finding always starts clear of the line above it.
-  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight * 0.25) + SPACE.rowPad * d;
+  const end = Math.max(metrics.labelLines.length * metrics.labelLead + yy, valueY - metrics.lineHeight * 0.25) +
+    SPACE.rowPad * d;
   if (rule && !continued) hairline(doc, end - 0.7);
   return end;
 }
@@ -379,6 +345,11 @@ export function writeCaption(doc, text, y, artwork, noteTitle) {
   return yy + lines.length * lead + 1.2;
 }
 
+const captionRoom = (doc, text) =>
+  String(text || "").trim()
+    ? wrap(doc, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc) + 1.2
+    : 0;
+
 export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "" } = {}) {
   const d = density(doc);
   const perRow = 4;
@@ -386,8 +357,8 @@ export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "
   const labelLead = LEAD.vitalLabel * d;
   const valueLead = LEAD.vitalValue * d;
 
-  // Rows are measured before anything is printed, so a caption always travels
-  // with the first row of measurements it introduces.
+  // Rows are measured before anything is printed, so the caption travels with
+  // the first row of measurements it introduces.
   const rows = [];
   for (let start = 0; start < vitals.length; start += perRow) {
     const cells = vitals.slice(start, start + perRow).map((item) => ({
@@ -399,18 +370,16 @@ export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "
     rows.push({
       cells,
       labelLines,
-      height: labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d,
+      height: labelLines * labelLead + 1.5 + valueLines * valueLead + SPACE.cellPad * d,
     });
   }
 
-  if (caption && rows.length > 0) {
-    const captionHeight = wrap(doc, caption, W, TYPE.caption, "bold").length * LEAD.caption * d;
-    if (y + SPACE.captionBefore * d + captionHeight + 1.2 + rows[0].height > PAGE.BOTTOM) {
-      y = nextPage(doc, artwork, noteTitle) - SPACE.captionBefore * d;
-    }
+  const firstRow = rows[0]?.height ?? 0;
+  let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, caption) + firstRow);
+  if (caption && yy + captionRoom(doc, caption) + firstRow > PAGE.BOTTOM) {
+    yy = nextPage(doc, artwork, noteTitle);
   }
-
-  let yy = writeCaption(doc, caption, y, artwork, noteTitle);
+  yy = writeCaption(doc, caption, yy, artwork, noteTitle);
 
   rows.forEach(({ cells, labelLines, height: rowHeight }) => {
     if (yy + rowHeight > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
@@ -462,6 +431,47 @@ export function examinationBlocks(text) {
     .filter((block) => block.heading || block.items.length > 0);
 }
 
+const examRow = (doc, itemLabel, value) =>
+  rowMetrics(doc, itemLabel, value, { size: TYPE.cellValue, lineHeight: LEAD.cellValue }).height;
+
+export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Examination" } = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return y;
+  if (!/^\s*•/m.test(raw)) return writeRow(doc, label, raw, y, artwork, { noteTitle });
+
+  const d = density(doc);
+  const blocks = examinationBlocks(raw);
+  const first = blocks[0];
+  const firstRoom =
+    (first?.heading ? LEAD.value * d : 0) + (first?.items?.[0] ? examRow(doc, first.items[0][0], first.items[0][1]) : 0);
+
+  let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, label) + firstRoom);
+  yy = writeCaption(doc, label, yy, artwork, noteTitle);
+
+  blocks.forEach((block) => {
+    // A system heading travels with its first finding, and never touches the
+    // last line of the system above it.
+    if (block.heading) yy += SPACE.before * d;
+    if (yy + SPACE.before * d + LEAD.value * d + 10 > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+    if (block.heading) {
+      wrap(doc, block.heading, W, TYPE.value, "bold").forEach((line) => {
+        writeLine(doc, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
+        yy += LEAD.value * d;
+      });
+    }
+    block.items.forEach(([itemLabel, value]) => {
+      yy = writeRow(doc, itemLabel, value, yy, artwork, {
+        noteTitle,
+        size: TYPE.cellValue,
+        lineHeight: LEAD.cellValue,
+        rule: false,
+      });
+    });
+    yy += 1.4 * d;
+  });
+  return yy;
+}
+
 // ===== Section field grid =====
 // A section's answered fields laid out in columns: short answers sit side by
 // side (three columns, two when the answers need more room), while a narrative
@@ -483,9 +493,6 @@ function gridCell(doc, entry, columnCount) {
 export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
   const list = (entries || []).filter((entry) => String(entry.value ?? "").trim());
   if (list.length === 0) return y;
-  if (list.length === 1) {
-    return writeRow(doc, list[0].label, list[0].value, y, artwork, { noteTitle, rule: false });
-  }
 
   const d = density(doc);
   const labelLead = LEAD.cellLabel * d;
@@ -493,17 +500,31 @@ export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
   const fitThree = list.filter((entry) => gridCell(doc, entry, 3)).length;
   const fitTwo = list.filter((entry) => gridCell(doc, entry, 2)).length;
   const columns = fitThree * 2 >= list.length ? 3 : fitTwo * 2 >= list.length ? 2 : 1;
+  const cellHeight = (cell) =>
+    cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d;
 
-  let yy = y;
+  // Room for the first row, so a heading above is never left on its own.
+  const firstRow = [];
+  if (columns > 1) {
+    for (const entry of list) {
+      const cell = gridCell(doc, entry, columns);
+      if (!cell) break;
+      firstRow.push(cell);
+      if (firstRow.length === columns) break;
+    }
+  }
+  const firstRoom = firstRow.length
+    ? Math.max(...firstRow.map(cellHeight))
+    : rowMetrics(doc, list[0].label, list[0].value).height;
+
+  let yy = flushSection(doc, y, artwork, noteTitle, firstRoom);
+  if (list.length === 1) return writeRow(doc, list[0].label, list[0].value, yy, artwork, { noteTitle, rule: false });
+
   let row = [];
 
   const flush = () => {
     if (row.length === 0) return;
-    const height = Math.max(
-      ...row.map(
-        (cell) => cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d
-      )
-    );
+    const height = Math.max(...row.map(cellHeight));
     if (yy + height > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
     row.forEach((cell, column) => {
       const x = M + column * (cell.colW + SPACE.cellGap);
@@ -547,48 +568,17 @@ export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
   return yy;
 }
 
-export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Examination" } = {}) {
-  const raw = String(text || "").trim();
-  if (!raw) return y;
-  if (!/^\s*•/m.test(raw)) return writeRow(doc, label, raw, y, artwork, { noteTitle });
-
-  const d = density(doc);
-  let yy = y;
-  examinationBlocks(raw).forEach((block) => {
-    // A system heading travels with at least its first finding, and never
-    // touches the last line of the system above it.
-    if (block.heading) yy += SPACE.before * d;
-    if (yy > PAGE.BOTTOM - 26) yy = nextPage(doc, artwork, noteTitle);
-    if (block.heading) {
-      wrap(doc, block.heading, W, TYPE.value, "bold").forEach((line) => {
-        writeLine(doc, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
-        yy += LEAD.value * d;
-      });
-    }
-    block.items.forEach(([itemLabel, value]) => {
-      yy = writeRow(doc, itemLabel, value, yy, artwork, {
-        noteTitle,
-        labelWidth: LABEL_W,
-        size: TYPE.cellValue,
-        lineHeight: LEAD.cellValue,
-        rule: false,
-      });
-    });
-    yy += 1.4 * d;
-  });
-  return yy;
-}
-
 // A labelled group of findings that must stay with its label: the caption and
 // the first row of the grid are reserved together before either is printed.
 export function writeSubBlock(doc, label, entries, y, artwork, noteTitle) {
   const list = (entries || []).filter((entry) => String(entry.value ?? "").trim());
   if (list.length === 0) return y;
   const d = density(doc);
-  const captionLines = wrap(doc, String(label || ""), W, TYPE.caption, "bold").length;
-  const needed = captionLines * LEAD.caption * d + 1.2 + 16;
-  let yy = y;
-  if (yy + needed > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  const firstRoom = Math.max(
+    2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d,
+    rowMetrics(doc, list[0].label, list[0].value).height
+  );
+  let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, label) + firstRoom);
   yy = writeCaption(doc, label, yy, artwork, noteTitle);
   return writeFieldGrid(doc, list, yy, artwork, noteTitle);
 }
