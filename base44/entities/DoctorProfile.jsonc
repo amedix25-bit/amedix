@@ -37,7 +37,8 @@
       "description": "All of the doctor's verified specialties from the predefined list. A doctor with more than one verified specialty selects the specialty they are practicing for each encounter \u2014 the selection is saved to that encounter and applies to all documents created during it. The active specialty is mirrored in `specialization`."
     },
     "license_number": {
-      "type": "string"
+      "type": "string",
+      "description": "Professional licence / registration number. Required for every doctor who registers through the document-verification flow; empty only for an account AMedix administration has explicitly exempted from verification."
     },
     "hospital": {
       "type": "string",
@@ -62,8 +63,7 @@
   "required": [
     "user_id",
     "full_name",
-    "specialization",
-    "license_number"
+    "specialization"
   ],
   "rls": {
     "read": {},

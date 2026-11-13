@@ -211,11 +211,14 @@ export default async function (req) {
       const specialization = clean(body.specialization, 160);
       let hospital = clean(body.hospital, 200);
       const phone = clean(body.phone, 60);
-      const licenseNumber = clean(body.license_number, 80);
+      // The one account AMedix administration exempted from document
+      // verification also registers without a licence number.
+      const licenceExempt = isVerificationExempt(email);
+      const licenseNumber = licenceExempt ? '' : clean(body.license_number, 80);
       if (!first || !last || !specialization) {
         return Response.json({ error: 'Your name and specialty are required.' }, { status: 400 });
       }
-      if (!licenseNumber) {
+      if (!licenseNumber && !licenceExempt) {
         return Response.json({ error: 'Your medical license number is required.' }, { status: 400 });
       }
 
