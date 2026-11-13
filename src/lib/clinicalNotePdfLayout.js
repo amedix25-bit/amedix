@@ -175,6 +175,64 @@ export function writeDocumentHead(doc, title, reference, y) {
   return yy + 6;
 }
 
+// ===== Measuring the first block of a section =====
+// The room a section needs so its heading is never separated from its content:
+// the heading itself plus the first block that follows it, measured with the
+// same wrapping the block will use when it is drawn.
+const rowRoom = (doc, label, value, valueWidth) => {
+  const d = density(doc);
+  const lines = String(value ?? "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => wrap(doc, line, valueWidth, TYPE.value));
+  const labelLines = wrap(doc, String(label || ""), LABEL_W, TYPE.label, "bold").length;
+  return Math.max(lines.length * LEAD.value * d, labelLines * LEAD.label * d) + SPACE.rowPad * d;
+};
+
+const captionRoom = (doc, text) =>
+  String(text || "").trim()
+    ? wrap(doc, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc) + 1.2
+    : 0;
+
+export function sectionNeed(doc, item) {
+  const d = density(doc);
+  const heading = TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
+  const valueWidth = R - (M + LABEL_W + VALUE_GAP);
+
+  if (item.vitals?.length > 0) {
+    const [label, value] = item.vitals[0];
+    const grid = parseVitals(value);
+    const measured =
+      grid.length > 0
+        ? 2 * LEAD.vitalLabel * d + 1.5 + LEAD.vitalValue * d + SPACE.cellPad * d
+        : rowRoom(doc, label, value, W);
+    return heading + captionRoom(doc, label) + measured;
+  }
+
+  if (item.groups?.length > 0) {
+    const [label, value] = item.groups[0];
+    const first = examinationBlocks(value)[0];
+    const finding = first?.items?.[0]
+      ? rowRoom(doc, first.items[0][0], first.items[0][1], valueWidth)
+      : LEAD.value * d;
+    return heading + captionRoom(doc, label) + LEAD.value * d + finding;
+  }
+
+  if (item.subs?.length > 0) {
+    return heading + captionRoom(doc, item.subs[0].label) + 2 * LEAD.cellValue * d;
+  }
+
+  if (item.entries?.length > 0) {
+    const first = item.entries[0];
+    const gridRow = 2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d;
+    const full = rowRoom(doc, first.label, first.value, valueWidth);
+    return heading + (item.entries.length === 1 ? full : Math.max(gridRow, full));
+  }
+
+  return heading + 8;
+}
+
 // A section heading with its rule. Room is reserved for the heading AND its
 // first block of content, so a heading can never sit at the foot of a page.
 export function writeSection(doc, title, y, artwork, noteTitle, need = 26) {

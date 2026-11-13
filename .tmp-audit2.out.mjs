@@ -39988,17 +39988,17 @@ function drawRequestHeader(doc3, {
   doc3.setFontSize(7);
   doc3.setTextColor(...PDF_INK.muted);
   doc3.text("Connected Healthcare", M + 19, HEADER_TOP + 11);
-  const heading = String(title || "MEDICAL REQUEST").toUpperCase();
+  const heading2 = String(title || "MEDICAL REQUEST").toUpperCase();
   doc3.setFont("helvetica", "bold");
   let size = 10.6;
   doc3.setFontSize(size);
   const tracking = 1.05;
-  while (size > 7.5 && doc3.getTextWidth(heading) + heading.length * tracking > 84) {
+  while (size > 7.5 && doc3.getTextWidth(heading2) + heading2.length * tracking > 84) {
     size -= 0.4;
     doc3.setFontSize(size);
   }
   doc3.setTextColor(...PDF_INK.navy);
-  drawTrackedText(doc3, heading, R, HEADER_TOP + 4.8, tracking, "right");
+  drawTrackedText(doc3, heading2, R, HEADER_TOP + 4.8, tracking, "right");
   doc3.setFont("helvetica", "normal");
   doc3.setFontSize(6.5);
   doc3.setTextColor(...PDF_INK.muted);
@@ -40070,9 +40070,9 @@ function drawPatientBlock(doc3, req, y) {
   drawDivider(doc3, rowY - 4);
   return rowY - 4;
 }
-function drawDoctorBlock(doc3, req, y, { heading = "Requesting Doctor & Hospital", doctorLabel = "Requesting doctor" } = {}) {
+function drawDoctorBlock(doc3, req, y, { heading: heading2 = "Requesting Doctor & Hospital", doctorLabel = "Requesting doctor" } = {}) {
   const top = y + 8;
-  drawSectionLabel(doc3, heading, top);
+  drawSectionLabel(doc3, heading2, top);
   let rowY = top + 9;
   drawTemplateField(doc3, doctorLabel, req.doctor_name, M, rowY, { width: 78 });
   drawTemplateField(doc3, "Specialty", req.doctor_specialization, COL2, rowY, { width: 80 });
@@ -81520,19 +81520,19 @@ function recordPdfBox(doc3, box) {
   doc3.__pdfBoxes.push({ page: doc3.getCurrentPageInfo().pageNumber, ...box });
 }
 function auditPdfLayout(doc3) {
-  const boxes = doc3.__pdfBoxes || [];
-  const issues2 = [];
+  const boxes2 = doc3.__pdfBoxes || [];
+  const issues = [];
   const left = PDF_PAGE.margin;
   const right = PDF_PAGE.right;
-  boxes.forEach((box) => {
+  boxes2.forEach((box) => {
     const where = `page ${box.page}: ${label(box)}`;
-    if (box.x < left - BOUND_TOL) issues2.push({ kind: "left-edge", page: box.page, detail: where });
-    if (box.x + box.width > right + BOUND_TOL) issues2.push({ kind: "right-edge", page: box.page, detail: where });
-    if (box.top < CONTENT_TOP) issues2.push({ kind: "top-edge", page: box.page, detail: where });
-    if (box.top + box.height > FLOW_BOTTOM + 1) issues2.push({ kind: "bottom-edge", page: box.page, detail: where });
+    if (box.x < left - BOUND_TOL) issues.push({ kind: "left-edge", page: box.page, detail: where });
+    if (box.x + box.width > right + BOUND_TOL) issues.push({ kind: "right-edge", page: box.page, detail: where });
+    if (box.top < CONTENT_TOP) issues.push({ kind: "top-edge", page: box.page, detail: where });
+    if (box.top + box.height > FLOW_BOTTOM + 1) issues.push({ kind: "bottom-edge", page: box.page, detail: where });
   });
   const pages = /* @__PURE__ */ new Map();
-  boxes.forEach((box) => {
+  boxes2.forEach((box) => {
     if (!pages.has(box.page)) pages.set(box.page, []);
     pages.get(box.page).push(box);
   });
@@ -81540,21 +81540,21 @@ function auditPdfLayout(doc3) {
     for (let i = 0; i < list5.length; i += 1) {
       for (let j = i + 1; j < list5.length; j += 1) {
         if (overlaps(list5[i], list5[j])) {
-          issues2.push({ kind: "overlap", page, detail: `page ${page}: ${label(list5[i])} over ${label(list5[j])}` });
+          issues.push({ kind: "overlap", page, detail: `page ${page}: ${label(list5[i])} over ${label(list5[j])}` });
         }
       }
     }
     const lowest = list5.reduce((bottom, box) => box.top > bottom.top ? box : bottom, list5[0]);
-    list5.filter((box) => box.kind === "heading" && box === lowest).forEach((box) => issues2.push({ kind: "orphan-heading", page, detail: `page ${page}: ${label(box)}` }));
+    list5.filter((box) => box.kind === "heading" && box === lowest).forEach((box) => issues.push({ kind: "orphan-heading", page, detail: `page ${page}: ${label(box)}` }));
   });
-  return issues2;
+  return issues;
 }
 async function renderAuditedDocument(build) {
   const first = await build(1);
-  const issues2 = auditPdfLayout(first);
-  if (issues2.length === 0) return first;
+  const issues = auditPdfLayout(first);
+  if (issues.length === 0) return first;
   const second = await build(0.94);
-  return auditPdfLayout(second).length <= issues2.length ? second : first;
+  return auditPdfLayout(second).length <= issues.length ? second : first;
 }
 var BOUND_TOL, OVERLAP_TOL, CONTENT_TOP, overlaps, label;
 var init_pdfLayoutAudit = __esm({
@@ -81666,10 +81666,10 @@ function writeDocumentHead(doc3, title, reference, y) {
   writeHeading(doc3, ref, yy, { x: R10, align: "right" });
   return yy + 6;
 }
-function writeSection(doc3, title, y, artwork, noteTitle) {
+function writeSection(doc3, title, y, artwork, noteTitle, need = 26) {
   const d = density(doc3);
   let yy = y + SPACE.before * d;
-  if (yy + 24 > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
+  if (yy + need > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
   writeHeading(doc3, title, yy);
   yy += 2.6 * d;
   drawDivider(doc3, yy);
@@ -81724,7 +81724,7 @@ function writeRow(doc3, label2, value, y, artwork, opts = {}) {
     });
     valueY += lineHeight;
   });
-  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight) + SPACE.rowPad * d;
+  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight * 0.25) + SPACE.rowPad * d;
   if (rule && !continued) hairline(doc3, end - 0.7);
   return end;
 }
@@ -81827,13 +81827,13 @@ function writeVitalGrid(doc3, vitals, y, artwork, noteTitle, { caption = "" } = 
 function examinationBlocks(text) {
   return String(text || "").split(/\n\s*\n/).map((block3) => {
     const lines = block3.split("\n").map((line) => line.trim()).filter(Boolean);
-    const heading = lines.shift() || "";
+    const heading2 = lines.shift() || "";
     const items = lines.map((line) => {
       const clean = line.replace(/^•\s*/, "");
       const index = clean.indexOf(":");
       return index > 0 ? [clean.slice(0, index).trim(), clean.slice(index + 1).trim()] : [clean, ""];
     });
-    return { heading, items };
+    return { heading: heading2, items };
   }).filter((block3) => block3.heading || block3.items.length > 0);
 }
 function gridCell(doc3, entry2, columnCount) {
@@ -81914,7 +81914,7 @@ function writeExamination(doc3, text, y, artwork, noteTitle, { label: label2 = "
   let yy = y;
   examinationBlocks(raw).forEach((block3) => {
     if (block3.heading) yy += SPACE.before * d;
-    if (yy > PAGE.BOTTOM - 20) yy = nextPage(doc3, artwork, noteTitle);
+    if (yy > PAGE.BOTTOM - 26) yy = nextPage(doc3, artwork, noteTitle);
     if (block3.heading) {
       wrap(doc3, block3.heading, W, TYPE.value, "bold").forEach((line) => {
         writeLine(doc3, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
@@ -82150,7 +82150,8 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
   [...blocks.values()].filter(
     (item) => item.entries.length > 0 || item.subs.length > 0 || item.groups.length > 0 || item.vitals.length > 0
   ).sort((a, b) => a.at - b.at || a.order - b.order).forEach((item) => {
-    y = writeSection(doc3, item.title, y, artwork, TITLE);
+    const roomy = item.vitals.length > 0 || item.groups.length > 0 || item.subs.length > 0;
+    y = writeSection(doc3, item.title, y, artwork, TITLE, roomy ? 42 : 26);
     item.vitals.forEach(([label2, value]) => {
       const grid = parseVitals(value);
       const caption = /^vital signs?$/i.test(String(label2).trim()) ? "" : label2;
@@ -82261,24 +82262,25 @@ var { auditPdfLayout: auditPdfLayout2 } = await Promise.resolve().then(() => (in
 var LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 var LONG = "The patient reports a progressive course over the preceding three weeks with intermittent symptoms that are worse on exertion and at night, partially relieved by rest, with no associated fever, weight loss or night sweats. Family history is notable for premature coronary disease in a first-degree relative.";
 var BULLETS = "\u2022 General appearance: Alert, comfortable at rest\n\u2022 Cardiovascular: S1 S2 heard, no murmur\n\u2022 Respiratory: Clear to auscultation bilaterally";
-var def = SPECIALTY_DOCUMENTS2.find((d) => d.key === "nsg_spine");
+var def = SPECIALTY_DOCUMENTS2.find((d) => d.key === "peds_consultation");
 var data = {};
 (def.fields || []).forEach((f, i) => {
-  let value = "Documented";
-  if (f.type === "vitals") value = "BP: 138/86 mmHg \xB7 Pulse: 92 bpm \xB7 Temp: 36.9\xB0C";
-  else if (i % 3 === 0) value = BULLETS;
-  else if (i % 2 === 0) value = LONG;
+  let value = i % 3 === 0 ? BULLETS : i % 2 === 0 ? LONG : "Documented";
+  if (f.type === "vitals") value = "BP: 138/86 mmHg \xB7 Pulse: 92 bpm \xB7 Temp: 36.9\xB0C \xB7 RR: 20 \xB7 SpO\u2082: 95% \xB7 Weight: 84 kg \xB7 Height: 172 cm \xB7 BMI: 28.4";
   data[f.key] = { label: f.label, value };
 });
 var doc2 = await generateClinicalNotePdf2(
   { document_type: def.key, document_type_label: def.label, patient_name: "A B", doctor_name: "Dr X", data },
   { logo: LOGO, profile: {} }
 );
-var issues = auditPdfLayout2(doc2);
-console.log("issues:", issues.length);
-["coronary disease in a first-", "The patient reports a progre"].forEach((l) => {
-  doc2.__pdfBoxes.filter((b) => b.label.startsWith(l)).forEach((b) => console.log(l, "p", b.page, "x", b.x.toFixed(1), "w", b.width.toFixed(1), "top", b.top.toFixed(1), "bot", (b.top + b.height).toFixed(1)));
-});
+console.log("audit:", JSON.stringify(auditPdfLayout2(doc2)));
+var boxes = doc2.__pdfBoxes;
+var heading = boxes.find((b) => b.label.startsWith("Measurements & examination"));
+if (heading) {
+  const after = boxes.filter((b) => b.page === heading.page && b.top > heading.top).sort((a, b) => a.top - b.top);
+  console.log("heading page", heading.page, "top", heading.top.toFixed(1));
+  after.slice(0, 6).forEach((b) => console.log("  next", b.kind, "top", b.top.toFixed(1), "bot", (b.top + b.height).toFixed(1), "x", b.x.toFixed(1), b.label.slice(0, 34)));
+}
 /*! Bundled license information:
 
 html2canvas/dist/html2canvas.js:

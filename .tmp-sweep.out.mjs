@@ -81666,6 +81666,33 @@ function writeDocumentHead(doc2, title, reference, y) {
   writeHeading(doc2, ref, yy, { x: R10, align: "right" });
   return yy + 6;
 }
+function sectionNeed(doc2, item) {
+  const d = density(doc2);
+  const heading = TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
+  const valueWidth = R10 - (M10 + LABEL_W + VALUE_GAP);
+  if (item.vitals?.length > 0) {
+    const [label2, value] = item.vitals[0];
+    const grid = parseVitals(value);
+    const measured = grid.length > 0 ? 2 * LEAD.vitalLabel * d + 1.5 + LEAD.vitalValue * d + SPACE.cellPad * d : rowRoom(doc2, label2, value, W);
+    return heading + captionRoom(doc2, label2) + measured;
+  }
+  if (item.groups?.length > 0) {
+    const [label2, value] = item.groups[0];
+    const first = examinationBlocks(value)[0];
+    const finding = first?.items?.[0] ? rowRoom(doc2, first.items[0][0], first.items[0][1], valueWidth) : LEAD.value * d;
+    return heading + captionRoom(doc2, label2) + LEAD.value * d + finding;
+  }
+  if (item.subs?.length > 0) {
+    return heading + captionRoom(doc2, item.subs[0].label) + 2 * LEAD.cellValue * d;
+  }
+  if (item.entries?.length > 0) {
+    const first = item.entries[0];
+    const gridRow = 2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d;
+    const full = rowRoom(doc2, first.label, first.value, valueWidth);
+    return heading + (item.entries.length === 1 ? full : Math.max(gridRow, full));
+  }
+  return heading + 8;
+}
 function writeSection(doc2, title, y, artwork, noteTitle, need = 26) {
   const d = density(doc2);
   let yy = y + SPACE.before * d;
@@ -81945,7 +81972,7 @@ function writeSubBlock(doc2, label2, entries, y, artwork, noteTitle) {
   yy = writeCaption(doc2, label2, yy, artwork, noteTitle);
   return writeFieldGrid(doc2, list5, yy, artwork, noteTitle);
 }
-var PAGE, M10, R10, W, LABEL_W, VALUE_GAP, TYPE, LEAD, SPACE, density, VITALS;
+var PAGE, M10, R10, W, LABEL_W, VALUE_GAP, TYPE, LEAD, SPACE, density, rowRoom, captionRoom, VITALS;
 var init_clinicalNotePdfLayout = __esm({
   "src/lib/clinicalNotePdfLayout.js"() {
     init_requestPdfLayout();
@@ -81981,6 +82008,13 @@ var init_clinicalNotePdfLayout = __esm({
     };
     SPACE = { before: 3.4, heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6, captionBefore: 1.9 };
     density = (doc2) => documentDensity(doc2);
+    rowRoom = (doc2, label2, value, valueWidth) => {
+      const d = density(doc2);
+      const lines = String(value ?? "").split(/\n+/).map((line) => line.trim()).filter(Boolean).flatMap((line) => wrap(doc2, line, valueWidth, TYPE.value));
+      const labelLines = wrap(doc2, String(label2 || ""), LABEL_W, TYPE.label, "bold").length;
+      return Math.max(lines.length * LEAD.value * d, labelLines * LEAD.label * d) + SPACE.rowPad * d;
+    };
+    captionRoom = (doc2, text) => String(text || "").trim() ? wrap(doc2, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc2) + 1.2 : 0;
     VITALS = [
       { label: "Blood Pressure", keys: ["blood pressure", "bp"] },
       { label: "Heart Rate", keys: ["heart rate", "pulse", "hr"] },
@@ -82150,8 +82184,7 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
   [...blocks.values()].filter(
     (item) => item.entries.length > 0 || item.subs.length > 0 || item.groups.length > 0 || item.vitals.length > 0
   ).sort((a, b) => a.at - b.at || a.order - b.order).forEach((item) => {
-    const roomy = item.vitals.length > 0 || item.groups.length > 0 || item.subs.length > 0;
-    y = writeSection(doc2, item.title, y, artwork, TITLE, roomy ? 42 : 26);
+    y = writeSection(doc2, item.title, y, artwork, TITLE, sectionNeed(doc2, item));
     item.vitals.forEach(([label2, value]) => {
       const grid = parseVitals(value);
       const caption = /^vital signs?$/i.test(String(label2).trim()) ? "" : label2;
@@ -82167,7 +82200,8 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
     y += 2;
   });
   if (sensitive.length > 0) {
-    y = writeSection(doc2, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE);
+    const block3 = { entries: sensitive, vitals: [], groups: [], subs: [] };
+    y = writeSection(doc2, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE, sectionNeed(doc2, block3));
     y = writeFieldGrid(doc2, sensitive, y, artwork, TITLE);
     y += 2;
   }

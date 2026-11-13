@@ -22,6 +22,7 @@ import {
   PAGE,
   writeDocumentHead,
   writeSection,
+  sectionNeed,
   writeFieldGrid,
   writeSubBlock,
   writeVitalGrid,
@@ -265,10 +266,9 @@ function renderNote(note, { artwork, profile, density = 1 }) {
     )
     .sort((a, b) => a.at - b.at || a.order - b.order)
     .forEach((item) => {
-      // A section reserves room for its heading plus the first block beneath it
-      // — a grid or a grouped examination needs more than a single row.
-      const roomy = item.vitals.length > 0 || item.groups.length > 0 || item.subs.length > 0;
-      y = writeSection(doc, item.title, y, artwork, TITLE, roomy ? 42 : 26);
+      // A section reserves exactly the room its heading and first block need, so
+      // a heading is never left alone at the foot of a page.
+      y = writeSection(doc, item.title, y, artwork, TITLE, sectionNeed(doc, item));
 
       item.vitals.forEach(([label, value]) => {
         const grid = parseVitals(value);
@@ -292,7 +292,8 @@ function renderNote(note, { artwork, profile, density = 1 }) {
 
   // ===== Sexual & reproductive history — its own clearly marked block =====
   if (sensitive.length > 0) {
-    y = writeSection(doc, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE);
+    const block = { entries: sensitive, vitals: [], groups: [], subs: [] };
+    y = writeSection(doc, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE, sectionNeed(doc, block));
     y = writeFieldGrid(doc, sensitive, y, artwork, TITLE);
     y += 2;
   }
