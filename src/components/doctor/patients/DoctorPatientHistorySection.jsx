@@ -20,6 +20,8 @@ const ICONS = {
 // laboratory results.
 export default function DoctorPatientHistorySection({ patient }) {
   const [events, setEvents] = useState(null);
+  // Significant medical events the patient reported at registration.
+  const [reportedEvents, setReportedEvents] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -30,6 +32,7 @@ export default function DoctorPatientHistorySection({ patient }) {
           base44.entities.Appointment.filter({ patient_id: patient.id }),
         ]);
         const history = recordData.data.medical_history || [];
+        setReportedEvents(recordData.data.medical_events || []);
         const imaging = recordData.data.imaging || [];
         const labs = recordData.data.lab_results || [];
         setEvents(
@@ -78,7 +81,7 @@ export default function DoctorPatientHistorySection({ patient }) {
 
   return (
     <div className="space-y-6">
-      <PatientHealth profile={patient} doctorView />
+      <PatientHealth profile={patient} doctorView registrationEvents={reportedEvents} />
 
       <div>
         <h4 className="font-semibold text-sm mb-3">Chronological History</h4>

@@ -15,10 +15,13 @@ const STATUSES = ["active", "resolved", "being_monitored", "unknown"];
 // My Health conditions section (points 2 "Known Case Of" and 4 "Past Medical
 // History"). Read-only for the patient; the doctor may add, edit or remove
 // entries during an active visit (check-in gated, recorded with their name).
-export default function ConditionsSection({ number, title, category, patient, emptyText, doctorView, editable }) {
+export default function ConditionsSection({ number, title, category, patient, emptyText, doctorView, editable, registrationEvents }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
   const [items, setItems] = useState([]);
+  // Significant medical events the patient reported during registration —
+  // shown with the past medical history so nothing the patient wrote is lost.
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(null);
@@ -34,12 +37,27 @@ export default function ConditionsSection({ number, title, category, patient, em
         "-date"
       );
       setItems(results);
+      if (category === "past_history") {
+        if (registrationEvents) {
+          setEvents(registrationEvents);
+        } else {
+          try {
+            const reported = await base44.entities.MedicalHistoryEvent.filter(
+              { patient_id: patient.id },
+              { sort: "-created_date", limit: 100 }
+            );
+            setEvents(reported?.items ? reported.items : reported || []);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [patient?.id, category]);
+  }, [patient?.id, category, registrationEvents]);
 
   useEffect(() => {
     load();
@@ -173,7 +191,7 @@ export default function ConditionsSection({ number, title, category, patient, em
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           {t("Loading...")}
         </div>
-      ) : items.length === 0 ? (
+      ) : items.length === 0 && events.length === 0 ? (
         <p className="text-sm text-muted-foreground">{emptyText}</p>
       ) : (
         <div className="space-y-3">
@@ -205,6 +223,19 @@ export default function ConditionsSection({ number, title, category, patient, em
                   </>
                 )}
               </div>
+            </div>
+          ))}
+          {events.map((event) => (
+            <div key={event.id} className="flex items-start justify-between gap-3 text-sm">
+              <div>
+                <p className="font-medium">{event.title || event.event_type}</p>
+                {event.treating_facility && (
+                  <p className="text-muted-foreground text-xs mt-0.5">{event.treating_facility}</p>
+                )}
+              </div>
+              {event.event_date && (
+                <span className="text-xs text-muted-foreground shrink-0">{event.event_date}</span>
+              )}
             </div>
           ))}
         </div>

@@ -19,7 +19,7 @@ import { Lock, Pencil, Loader2 } from "lucide-react";
 // except Lifestyle (from the Profile tab); the doctor may edit the medical
 // points during an active visit (check-in gated) and every edit is recorded
 // as "Dr. <name> edited <datetime>".
-export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
+export default function PatientHealth({ profile, onGoToProfile, doctorView, registrationEvents }) {
   const { t } = usePatientLanguage();
   const age = calcAge(profile?.date_of_birth);
   const [checkIn, setCheckIn] = useState(null);
@@ -98,6 +98,7 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView }) {
         emptyText={t("No past medical history was recorded at registration.")}
         doctorView={doctorView}
         editable={editable}
+        registrationEvents={registrationEvents}
       />
 
       <SurgicalSection number="5" patient={profile} doctorView={doctorView} editable={editable} />

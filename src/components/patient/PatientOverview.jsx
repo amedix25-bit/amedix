@@ -13,17 +13,22 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
   const { t, lang } = usePatientLanguage();
   const [showQr, setShowQr] = useState(false);
   const [showCard, setShowCard] = useState(false);
-  const [med, setMed] = useState({ conditions: [], medications: [], allergies: [] });
+  const [med, setMed] = useState({ conditions: [], pastHistory: [], events: [], medications: [], allergies: [] });
 
   const loadMedical = useCallback(async () => {
     if (!profile?.id) return;
     try {
-      const [conditions, medications, allergies] = await Promise.all([
+      const [conditions, pastHistory, events, medications, allergies] = await Promise.all([
         base44.entities.MedicalCondition.filter({ patient_id: profile.id, category: "known_case" }),
+        base44.entities.MedicalCondition.filter({ patient_id: profile.id, category: "past_history" }),
+        base44.entities.MedicalHistoryEvent
+          .filter({ patient_id: profile.id }, { sort: "-created_date", limit: 100 })
+          .then((page) => (page?.items ? page.items : page || []))
+          .catch(() => []),
         base44.entities.Medication.filter({ patient_id: profile.id }),
         base44.entities.Allergy.filter({ patient_id: profile.id }),
       ]);
-      setMed({ conditions, medications, allergies });
+      setMed({ conditions, pastHistory, events, medications, allergies });
     } catch (err) {
       console.error(err);
     }
@@ -50,6 +55,14 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
 
   const age = calcAge(profile?.date_of_birth);
   const knownCaseText = med.conditions.map((c) => c.name_ar || c.name).join(", ");
+  // Everything else the patient reported at registration — past medical
+  // history entries and significant medical events.
+  const pastHistoryText = [
+    ...med.pastHistory.map((c) => c.name_ar || c.name),
+    ...med.events.map((e) => e.title || e.event_type),
+  ]
+    .filter(Boolean)
+    .join(", ");
   const allergyText = med.allergies
     .map((a) => `${a.allergen}${a.severity ? ` (${t(capitalize(a.severity))})` : ""}`)
     .join(", ");
@@ -174,6 +187,7 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
           <h3 className="font-semibold text-sm mb-4">{t("Medical Information")}</h3>
           <div className="space-y-3">
             <InfoRow label={t("Known Case Of")} value={knownCaseText || null} />
+            <InfoRow label={t("Past Medical History")} value={pastHistoryText || null} />
             <div className="flex justify-between gap-4 text-sm">
               <span className="text-muted-foreground shrink-0">{t("Current Medication")}</span>
               <span className="font-medium text-end">

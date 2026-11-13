@@ -46,11 +46,12 @@ export default async function (req) {
     };
 
     const [
-      medical_history, conditions, surgical, family_history, allergies,
+      medical_history, medical_events, conditions, surgical, family_history, allergies,
       medications, examinations, notes, diagnoses, documents,
       clinical_documents_raw, encounters, consents, imaging, lab_results, lab_requests,
     ] = await Promise.all([
       pull(sr.entities.MedicalHistoryEntry, "-created_date", 300),
+      pull(sr.entities.MedicalHistoryEvent, "-created_date", 200),
       pull(sr.entities.MedicalCondition, "-created_date", 300),
       pull(sr.entities.SurgicalHistory, "-created_date", 200),
       pull(sr.entities.FamilyHistory, "-created_date", 200),
@@ -83,6 +84,7 @@ export default async function (req) {
         allergy_record_status: patient.allergy_record_status || "",
       },
       medical_history,
+      medical_events,
       conditions,
       surgical,
       family_history,

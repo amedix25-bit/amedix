@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { User, AlertTriangle, HeartPulse, Pill, Loader2 } from "lucide-react";
+import { User, AlertTriangle, HeartPulse, Pill, Stethoscope, Loader2 } from "lucide-react";
 import { medicationStatus, todayStr } from "@/lib/medicationUtils";
 import { useDoctorText } from "@/lib/doctorMedicalTranslations";
 
@@ -8,6 +8,9 @@ export default function DoctorPatientSummary({ patient }) {
   const doctorText = useDoctorText();
   const [allergies, setAllergies] = useState(null);
   const [conditions, setConditions] = useState(null);
+  // Past medical history the patient reported at registration — past-history
+  // conditions plus their significant medical events.
+  const [pastHistory, setPastHistory] = useState(null);
   const [meds, setMeds] = useState(null);
   // ICD-11 codes resolved from the TerminologyCode catalog — shown beside each
   // known condition (standards alignment, Phase 1).
@@ -16,6 +19,7 @@ export default function DoctorPatientSummary({ patient }) {
   useEffect(() => {
     setAllergies(null);
     setConditions(null);
+    setPastHistory(null);
     setMeds(null);
     setConditionCodes({});
     const load = async () => {
@@ -25,6 +29,12 @@ export default function DoctorPatientSummary({ patient }) {
         setAllergies(d.allergies || []);
         const known = (d.conditions || []).filter((c) => c.category === "known_case");
         setConditions(known);
+        setPastHistory([
+          ...(d.conditions || [])
+            .filter((c) => c.category === "past_history")
+            .map((c) => doctorText("MedicalCondition", c, "name", c.name)),
+          ...(d.medical_events || []).map((e) => e.title || e.event_type),
+        ].filter(Boolean));
         setMeds((d.medications || []).filter((m) => medicationStatus(m, todayStr()) === "active").map((m) => m.name));
         const names = [...new Set(known.map((c) => c.name).filter(Boolean))];
         if (names.length) {
@@ -99,6 +109,16 @@ export default function DoctorPatientSummary({ patient }) {
                 })
                 .filter(Boolean)
                 .join(", ")
+            : "None recorded",
+    },
+    {
+      icon: <Stethoscope className="w-4 h-4 text-primary shrink-0 mt-0.5" />,
+      label: "Past Medical History",
+      value:
+        pastHistory === null
+          ? null
+          : pastHistory.length > 0
+            ? pastHistory.join(", ")
             : "None recorded",
     },
     {
