@@ -23,8 +23,9 @@ import {
   PAGE,
   textWidth,
   wrap,
-  writeRow,
   writeSection,
+  writeFieldGrid,
+  writeCaption,
   writeVitalGrid,
   writeExamination,
   parseVitals,
@@ -53,7 +54,7 @@ const SECTIONS = [
 ];
 
 const RULES = [
-  { at: 0, test: /history|complaint|present|symptom|system|psychosocial|growth|development|nutrition|lifestyle|adolescent|safeguarding/i },
+  { at: 0, test: /history|complaint|present|symptom|system|psychosocial|growth|development|nutrition|lifestyle|adolescent|safeguarding|menstrual|obstetric|gynae|pregnan|contracept|menopause/i },
   { at: 1, test: /past|previous|background|medication|drug|allerg|immunis|vaccin|co-?morbid|social|family/i },
   { at: 4, test: /investigation|laborator|radiolog|imaging|ecg|echocardiogra|endoscop|biopsy|patholog|scan|panel|result/i },
   { at: 5, test: /diagnos|assessment|differential|reasoning|impression|icd/i },
@@ -68,13 +69,19 @@ const sectionFor = (text) => {
   return found ? found.at : 7;
 };
 
-// Every label/value the specialty document declares, keyed by field key, so a
-// stored field can find the section and type it was recorded under.
-function fieldMeta(note) {
+// The note's own template: every field the specialty declares, keyed by field
+// key, with the position it holds in that template. A stored field finds the
+// section and type it was recorded under, and the order its specialty wrote it
+// in, without reading the template twice.
+function fieldIndex(note) {
   const def = note.document_type ? getDocDef(note.document_type) : null;
-  const map = new Map();
-  (def?.fields || []).forEach((field) => map.set(field.key, field));
-  return map;
+  const meta = new Map();
+  const order = new Map();
+  (def?.fields || []).forEach((field, index) => {
+    if (!meta.has(field.key)) meta.set(field.key, field);
+    if (!order.has(field.key)) order.set(field.key, index);
+  });
+  return { meta, order };
 }
 
 // The note type across the head with its reference: a long type name wraps and
@@ -99,71 +106,132 @@ function writeDocHead(doc, title, reference, y) {
   return yy + 6;
 }
 
-// Gathers everything the note recorded into sections, once, so nothing is
-// printed twice and nothing is left out.
-function collect(note, meta) {
-  const items = [];
+// Gathers everything the note recorded into the headings it actually has: a
+// specialty field prints under the section its own template declares, and the
+// note's core fields (or a field whose template declares no section) print
+// under the clinical heading their label belongs to. One heading per section,
+// however many sub-options it holds, so nothing is printed twice and nothing of
+// the specialty's own structure is renamed, merged or dropped.
+function collect(note, meta, order) {
+  const blocks = new Map();
   const sensitive = [];
-  const vitals = [];
-  const examinations = [];
 
-  const add = (at, label, value) => {
-    const text = String(value ?? "").trim();
-    if (!text) return;
-    if (items.some((item) => item.label === label && item.value === text)) return;
-    items.push({ at, label, value: text });
+  const block = (title, at, position) => {
+    const key = String(title || SECTIONS[7]).trim() || SECTIONS[7];
+    if (!blocks.has(key)) {
+      blocks.set(key, {
+        title: key,
+        at: at ?? sectionFor(key),
+        order: position ?? 900,
+        entries: [],
+        subs: [],
+        groups: [],
+        vitals: [],
+      });
+    }
+    const found = blocks.get(key);
+    found.order = Math.min(found.order, position ?? 900);
+    return found;
   };
 
-  if (String(note.vital_signs || "").trim()) vitals.push(["Vital Signs", note.vital_signs]);
-  if (String(note.physical_examination || "").trim()) {
-    examinations.push(["Physical Examination", note.physical_examination]);
-  }
+  const addEntry = (target, label, value) => {
+    const text = String(value ?? "").trim();
+    if (!text) return;
+    if (target.entries.some((entry) => entry.label === label && entry.value === text)) return;
+    target.entries.push({ label, value: text });
+  };
+
+  const vitalsBlock = block(SECTIONS[2], 2, 0);
+  const examBlock = block(SECTIONS[3], 3, 0);
+  const addVital = (label, value) => {
+    const text = String(value ?? "").trim();
+    if (!text) return;
+    if (vitalsBlock.vitals.some(([, existing]) => existing === text)) return;
+    vitalsBlock.vitals.push([label, text]);
+  };
 
   // The encounter's own record leads its section; the specialty's fields follow.
-  add(0, "History", note.history);
-  add(1, "Allergies", note.allergies || "None recorded");
-  add(1, "Current Medications", (note.current_medications || []).join(", ") || "None recorded");
+  const core = (index, label, value) => addEntry(block(SECTIONS[index], index, 0), label, value);
+
+  addVital("Vital Signs", note.vital_signs);
+  if (String(note.physical_examination || "").trim()) {
+    examBlock.groups.push(["Physical Examination", note.physical_examination]);
+  }
+
+  core(0, "History", note.history);
+  core(1, "Allergies", note.allergies || "None recorded");
+  core(1, "Current Medications", (note.current_medications || []).join(", ") || "None recorded");
 
   const diagnoses = (Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
     ? note.provisional_diagnoses
     : [note.diagnosis]
   ).filter((item) => String(item || "").trim());
   if (diagnoses.length > 0) {
-    add(5, "Provisional Diagnosis", diagnoses.map((item) => `• ${String(item).trim()}`).join("\n"));
+    core(5, "Provisional Diagnosis", diagnoses.map((item) => `• ${String(item).trim()}`).join("\n"));
   }
 
-  add(4, "Biopsy", note.biopsy);
-  add(6, "Prescriptions", note.prescription);
-  add(6, "Interventions", note.interventions);
-  add(6, "Doctor's Recommendations", note.recommendations);
-  add(7, "Additional Notes", note.notes);
+  core(4, "Biopsy", note.biopsy);
+  core(6, "Prescriptions", note.prescription);
+  core(6, "Interventions", note.interventions);
+  core(6, "Doctor's Recommendations", note.recommendations);
+  core(7, "Additional Notes", note.notes);
 
-  Object.entries(note.data || {}).forEach(([key, field]) => {
+  Object.entries(note.data || {}).forEach(([key, field], index) => {
     if (!field) return;
-    const label = field.label || key;
+    const declared = meta.get(key) || {};
+    const label = field.label || declared.label || key;
     if (NOT_ON_DOCUMENT.test(`${key} ${label}`)) return;
     const value = formatStoredValue(field.value).trim();
     if (!value) return;
     if (key.startsWith("srh.")) {
-      sensitive.push([label, value]);
+      sensitive.push({ label, value });
       return;
     }
-    const declared = meta.get(key) || {};
-    const type = String(field.type || declared.type || "");
-    const group = `${declared.section || ""} ${label} ${type}`;
 
-    if (/vital/i.test(`${label} ${type}`)) {
-      if (!vitals.some(([, existing]) => existing.trim() === value)) vitals.push([label, value]);
+    const type = String(field.type || declared.type || "");
+    const position = order.has(key) ? order.get(key) : 900 + index;
+    const section = String(declared.section || "").trim();
+    // A structured examination keeps its own system groups inside its section.
+    const grouped = /^\s*•/m.test(value) && !/^\s*•/.test(value);
+
+    if (type === "examinations" || (/exam/i.test(`${section} ${label}`) && grouped)) {
+      block(section || SECTIONS[3], 3, position).groups.push([label, value]);
       return;
     }
-    if (/exam|physical/i.test(`${label} ${type} ${declared.section || ""}`)) {
-      if (!examinations.some(([, existing]) => existing.trim() === value)) examinations.push([label, value]);
+
+    // Vital signs print together as one grid, never as a vertical list.
+    if (type === "vitals" || (/^vital signs?\b/i.test(label) && parseVitals(value).length > 0)) {
+      addVital(label, value);
       return;
     }
-    add(sectionFor(group), label, value);
+
+    const at = section ? sectionFor(`${section} ${label}`) : sectionFor(`${label} ${type}`);
+    const target = block(section || SECTIONS[at], at, position);
+
+    // A bulleted list prints as its own labelled findings, one entry per
+    // bullet, under the label the clinician documented it as.
+    const lines = value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (lines.length > 1 && lines.every((line) => /^•/.test(line) && line.includes(":"))) {
+      const findings = lines
+        .map((line) => {
+          const clean = line.replace(/^•\s*/, "");
+          const colon = clean.indexOf(":");
+          return { label: clean.slice(0, colon).trim(), value: clean.slice(colon + 1).trim() };
+        })
+        .filter((entry) => entry.label && entry.value);
+      if (findings.length > 0) {
+        target.subs.push({ label, entries: findings });
+        return;
+      }
+    }
+
+    addEntry(target, label, value);
   });
 
-  return { items, sensitive, vitals, examinations };
+  return { blocks, sensitive };
 }
 
 export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
@@ -203,62 +271,45 @@ export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
   drawDivider(doc, y);
   y += 6;
 
-  const meta = fieldMeta(note);
-  const { items, sensitive, vitals, examinations } = collect(note, meta);
-  const at = (index) => items.filter((item) => item.at === index);
+  const { meta, order } = fieldIndex(note);
+  const { blocks, sensitive } = collect(note, meta, order);
 
-  // ===== History, then past history, medications and allergies =====
-  [0, 1].forEach((index) => {
-    const rows = at(index);
-    if (rows.length === 0) return;
-    y = writeSection(doc, SECTIONS[index], y, artwork, TITLE);
-    rows.forEach((row) => {
-      y = writeRow(doc, row.label, row.value, y, artwork, { noteTitle: TITLE });
-    });
-    y += 2;
-  });
+  // Every heading the note actually has, in the order a clinical record is read:
+  // each section printed once, its sub-options laid out beside each other.
+  [...blocks.values()]
+    .filter(
+      (item) =>
+        item.entries.length > 0 || item.subs.length > 0 || item.groups.length > 0 || item.vitals.length > 0
+    )
+    .sort((a, b) => a.at - b.at || a.order - b.order)
+    .forEach((item) => {
+      y = writeSection(doc, item.title, y, artwork, TITLE);
 
-  // ===== Vital signs — one compact grid =====
-  const vitalGroups = vitals
-    .map(([label, value]) => ({ label, grid: parseVitals(value), raw: value }))
-    .filter((group) => group.grid.length > 0 || String(group.raw).trim());
-  if (vitalGroups.length > 0) {
-    y = writeSection(doc, SECTIONS[2], y, artwork, TITLE);
-    vitalGroups.forEach((group) => {
-      y =
-        group.grid.length === 0
-          ? writeRow(doc, group.label, group.raw, y, artwork, { noteTitle: TITLE })
-          : writeVitalGrid(doc, group.grid, y, artwork, TITLE);
-    });
-    y += 2;
-  }
+      item.vitals.forEach(([label, value]) => {
+        const grid = parseVitals(value);
+        const caption = /^vital signs?$/i.test(String(label).trim()) ? "" : label;
+        y = grid.length > 0
+          ? writeVitalGrid(doc, grid, y, artwork, TITLE, { caption })
+          : writeFieldGrid(doc, [{ label, value }], y, artwork, TITLE);
+      });
 
-  // ===== Physical examination — grouped by system =====
-  if (examinations.length > 0) {
-    y = writeSection(doc, SECTIONS[3], y, artwork, TITLE);
-    examinations.forEach(([label, value]) => {
-      y = writeExamination(doc, value, y, artwork, TITLE, { label });
-    });
-    y += 2;
-  }
+      item.groups.forEach(([label, value]) => {
+        y = writeExamination(doc, value, y, artwork, TITLE, { label });
+      });
 
-  // ===== Investigations, assessment, management, additional documentation =====
-  [4, 5, 6, 7].forEach((index) => {
-    const rows = at(index);
-    if (rows.length === 0) return;
-    y = writeSection(doc, SECTIONS[index], y, artwork, TITLE);
-    rows.forEach((row) => {
-      y = writeRow(doc, row.label, row.value, y, artwork, { noteTitle: TITLE });
+      y = writeFieldGrid(doc, item.entries, y, artwork, TITLE);
+
+      item.subs.forEach((sub) => {
+        y = writeCaption(doc, sub.label, y, artwork, TITLE);
+        y = writeFieldGrid(doc, sub.entries, y, artwork, TITLE);
+      });
+      y += 2;
     });
-    y += 2;
-  });
 
   // ===== Sexual & reproductive history — its own clearly marked block =====
   if (sensitive.length > 0) {
     y = writeSection(doc, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE);
-    sensitive.forEach(([label, value]) => {
-      y = writeRow(doc, label, value, y, artwork, { noteTitle: TITLE });
-    });
+    y = writeFieldGrid(doc, sensitive, y, artwork, TITLE);
     y += 2;
   }
 

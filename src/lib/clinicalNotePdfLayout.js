@@ -201,10 +201,24 @@ export function parseVitals(value) {
   return grid;
 }
 
-export function writeVitalGrid(doc, vitals, y, artwork, noteTitle) {
+// A section's sub-heading: the label of the field whose findings follow, so a
+// structured block keeps the name it was documented under.
+export function writeCaption(doc, text, y, artwork, noteTitle) {
+  const label = String(text || "").trim();
+  if (!label) return y;
+  const lines = wrap(doc, label, W, 7.5, "bold");
+  let yy = y;
+  if (yy + lines.length * 3.7 > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  lines.forEach((line, index) =>
+    writeLine(doc, line, yy + index * 3.7, { size: 7.5, weight: "bold", color: PDF_INK.navy, width: W })
+  );
+  return yy + lines.length * 3.7 + 1.2;
+}
+
+export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "" } = {}) {
   const perRow = 4;
   const colW = W / perRow;
-  let yy = y;
+  let yy = writeCaption(doc, caption, y, artwork, noteTitle);
   for (let start = 0; start < vitals.length; start += perRow) {
     const cells = vitals.slice(start, start + perRow).map((item) => ({
       labels: wrap(doc, item.label, colW - 5, 6.2),
@@ -253,6 +267,102 @@ export function examinationBlocks(text) {
       return { heading, items };
     })
     .filter((block) => block.heading || block.items.length > 0);
+}
+
+// ===== Section field grid =====
+// A section's answered fields laid out in columns: short answers sit side by
+// side (three columns, two when the answers are longer), while a narrative
+// answer takes the full width. Each cell keeps its own label directly above its
+// own answer, so a label can never be read against the wrong finding.
+const CELL = {
+  gap: 8,
+  labelSize: 6.3,
+  labelLead: 3,
+  valueSize: 8.3,
+  valueLead: 4.15,
+  pad: 2.6,
+};
+
+function gridCell(doc, entry, columnCount) {
+  const colW = (W - CELL.gap * (columnCount - 1)) / columnCount;
+  const paragraphs = String(entry.value ?? "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (paragraphs.length > 1) return null;
+  const labels = wrap(doc, entry.label, colW, CELL.labelSize, "bold");
+  const values = wrap(doc, paragraphs[0], colW, CELL.valueSize);
+  if (labels.length > 2 || values.length > 2) return null;
+  return { labels, values, colW };
+}
+
+export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
+  const list = (entries || []).filter((entry) => String(entry.value ?? "").trim());
+  if (list.length === 0) return y;
+  if (list.length === 1) {
+    return writeRow(doc, list[0].label, list[0].value, y, artwork, { noteTitle, rule: false });
+  }
+
+  const fitThree = list.filter((entry) => gridCell(doc, entry, 3)).length;
+  const fitTwo = list.filter((entry) => gridCell(doc, entry, 2)).length;
+  const columns = fitThree * 2 >= list.length ? 3 : fitTwo * 2 >= list.length ? 2 : 1;
+
+  let yy = y;
+  let row = [];
+
+  const flush = () => {
+    if (row.length === 0) return;
+    const height = Math.max(
+      ...row.map(
+        (cell) => cell.labels.length * CELL.labelLead + 1.3 + cell.values.length * CELL.valueLead + CELL.pad
+      )
+    );
+    if (yy + height > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+    row.forEach((cell, column) => {
+      const x = M + column * (cell.colW + CELL.gap);
+      cell.labels.forEach((line, index) =>
+        writeLine(doc, line, yy + index * CELL.labelLead, {
+          size: CELL.labelSize,
+          weight: "bold",
+          color: PDF_INK.muted,
+          x,
+          width: cell.colW,
+        })
+      );
+      const base = yy + cell.labels.length * CELL.labelLead + 1.3;
+      cell.values.forEach((line, index) =>
+        writeLine(doc, line, base + index * CELL.valueLead, {
+          size: CELL.valueSize,
+          x,
+          width: cell.colW,
+          align: hasArabic(line) ? "right" : "left",
+        })
+      );
+    });
+    yy += height;
+    hairline(doc, yy - 1.7);
+    row = [];
+  };
+
+  list.forEach((entry) => {
+    const cell = columns > 1 ? gridCell(doc, entry, columns) : null;
+    if (cell) {
+      row.push(cell);
+      if (row.length === columns) flush();
+      return;
+    }
+    flush();
+    yy = writeRow(doc, entry.label, entry.value, yy, artwork, {
+      noteTitle,
+      rule: false,
+      labelWidth: 44,
+      size: 8.4,
+      lineHeight: 4.1,
+    });
+  });
+  flush();
+
+  return yy;
 }
 
 export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Examination" } = {}) {
