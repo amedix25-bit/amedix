@@ -23,7 +23,6 @@ import {
   PAGE,
   textWidth,
   wrap,
-  writeLine,
   writeRow,
   writeSection,
   writeVitalGrid,
@@ -111,6 +110,7 @@ function collect(note, meta) {
   const add = (at, label, value) => {
     const text = String(value ?? "").trim();
     if (!text) return;
+    if (items.some((item) => item.label === label && item.value === text)) return;
     items.push({ at, label, value: text });
   };
 
@@ -156,7 +156,7 @@ function collect(note, meta) {
       if (!vitals.some(([, existing]) => existing.trim() === value)) vitals.push([label, value]);
       return;
     }
-    if (/exam|physical/i.test(`${label} ${type}`) || /^\s*•/m.test(value)) {
+    if (/exam|physical/i.test(`${label} ${type} ${declared.section || ""}`)) {
       if (!examinations.some(([, existing]) => existing.trim() === value)) examinations.push([label, value]);
       return;
     }
