@@ -59,7 +59,7 @@ export default function GynaeObstetricHistoryForm({ value, onChange }) {
       </section>
 
       <section className="space-y-2 border-t border-border pt-4">
-        <h4 className="text-xs font-semibold text-primary">{t("Past Gynaecological History")}</h4>
+        <h4 className="text-xs font-semibold text-primary">{t("Gynaecological History")}</h4>
         <GynaePastHistoryFields value={value.past} onChange={update("past")} />
       </section>
     </div>

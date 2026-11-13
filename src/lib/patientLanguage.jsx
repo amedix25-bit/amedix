@@ -1092,6 +1092,7 @@ const AR = {
   "Current Pregnancy": "الحمل الحالي",
   "Menstrual History": "تاريخ الحيض",
   "Past Gynaecological History": "التاريخ النسائي السابق",
+  "Gynaecological History": "التاريخ النسائي",
   "Past Obstetric History": "التاريخ التوليدي السابق",
   "Menopause": "انقطاع الطمث (سن اليأس)",
   "Are you currently pregnant?": "هل أنت حامل حالياً؟",

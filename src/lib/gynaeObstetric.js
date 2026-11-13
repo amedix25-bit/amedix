@@ -147,7 +147,7 @@ export const GYNAE_SECTION_KEYS = ["menstrual", "past", "obstetric", "current_pr
 
 export const GYNAE_SECTION_LABELS = {
   menstrual: "Menstrual History",
-  past: "Past Gynaecological History",
+  past: "Gynaecological History",
   obstetric: "Past Obstetric History",
   current_pregnancy: "Current Pregnancy",
   menopause: "Menopause",

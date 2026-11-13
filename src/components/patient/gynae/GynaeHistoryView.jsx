@@ -121,7 +121,7 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
       )}
 
       <section className="space-y-2 border-t border-border pt-4">
-        <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Past Gynaecological History")}</h4>
+        <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Gynaecological History")}</h4>
         {stamp("past")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow
