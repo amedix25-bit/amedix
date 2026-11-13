@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Stethoscope, Plus, Copy, KeyRound } from "lucide-react";
+import { Loader2, Stethoscope, Plus, Copy, KeyRound, RefreshCw } from "lucide-react";
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 const isOnline = (ts) => !!ts && Date.now() - new Date(ts).getTime() < ONLINE_WINDOW_MS;
@@ -22,6 +22,8 @@ export default function HospitalDoctorsSection({ profile }) {
   const [doctors, setDoctors] = useState({});
   const [specialty, setSpecialty] = useState("all");
   const [code, setCode] = useState(profile.hospital_code || "");
+  const [codeStatus, setCodeStatus] = useState(profile.hospital_code_status || "active");
+  const [confirmCodeAction, setConfirmCodeAction] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
@@ -77,6 +79,32 @@ export default function HospitalDoctorsSection({ profile }) {
     }
   };
 
+  // Code lifecycle — the hospital generates, regenerates, deactivates and
+  // reactivates its own AMedix Hospital Code. Every change is decided
+  // server-side and recorded in the hospital's audit trail.
+  const manageCode = async (action) => {
+    setGenerating(true);
+    try {
+      const res = await base44.functions.invoke("generateHospitalCode", { action });
+      setCode(res.data.hospital_code);
+      setCodeStatus(res.data.hospital_code_status || "active");
+      setConfirmCodeAction(null);
+      toast({
+        title:
+          action === "regenerate"
+            ? t("Code regenerated")
+            : action === "deactivate"
+            ? t("Code deactivated")
+            : t("Code activated"),
+        description: action === "regenerate" ? t("The previous code no longer works.") : undefined,
+      });
+    } catch (err) {
+      fail(err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const copyCode = async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -111,8 +139,9 @@ export default function HospitalDoctorsSection({ profile }) {
     }
   };
 
-  // A doctor who joined with this hospital's code is PENDING until the hospital
-  // approves the affiliation. Decided server-side by hospitalDoctorAffiliation.
+  // Affiliations created with the hospital's active code are ACTIVE immediately.
+  // These controls stay for affiliations recorded as PENDING before fast-track
+  // registration existed — decided server-side by hospitalDoctorAffiliation.
   const decideAffiliation = async (a, decision) => {
     setBusyId(a.id);
     try {
@@ -161,9 +190,18 @@ export default function HospitalDoctorsSection({ profile }) {
 
       {showAdd && (
         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <KeyRound className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">{t("AMedix Hospital Code")}</h3>
+            {code && (
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  codeStatus === "active" ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {codeStatus === "active" ? t("Code Active") : t("Code Deactivated")}
+              </span>
+            )}
           </div>
           {code ? (
             <>
@@ -175,9 +213,50 @@ export default function HospitalDoctorsSection({ profile }) {
               </div>
               <p className="text-xs text-muted-foreground">
                 Give this code to the doctor you want to add. In their Doctor Portal they open My Hospitals, enter the
-                code, confirm your hospital and their department — they then appear in this list. A doctor can never
-                join by typing the hospital name.
+                code, confirm your hospital and their department — they are affiliated with your hospital immediately.
+                A doctor can never join by typing the hospital name, and their professional verification is reviewed
+                separately by AMedix administration.
               </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirmCodeAction("regenerate")}
+                  disabled={generating}
+                >
+                  <RefreshCw className="w-4 h-4 mr-1.5" /> {t("Regenerate Code")}
+                </Button>
+                {codeStatus === "active" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive"
+                    onClick={() => manageCode("deactivate")}
+                    disabled={generating}
+                  >
+                    {t("Deactivate Code")}
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => manageCode("activate")} disabled={generating}>
+                    {t("Activate Code")}
+                  </Button>
+                )}
+              </div>
+              {confirmCodeAction === "regenerate" && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                  <p className="text-xs text-muted-foreground flex-1">
+                    Regenerate the code? The current code stops working immediately — share the new code with the
+                    doctors you want to add.
+                  </p>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmCodeAction(null)}>
+                    {t("Cancel")}
+                  </Button>
+                  <Button size="sm" onClick={() => manageCode("regenerate")} disabled={generating}>
+                    {generating && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                    {t("Confirm")}
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -247,7 +326,16 @@ export default function HospitalDoctorsSection({ profile }) {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{a.specialization}</p>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                        <span>{a.specialization}</span>
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            d?.is_verified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {d?.is_verified ? t("Verified by AMedix") : t("Verification pending")}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -287,21 +375,22 @@ export default function HospitalDoctorsSection({ profile }) {
                       </Button>
                     )}
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmRemoveId(a.id)}>
-                      {t("Remove Doctor")}
+                      {t("Revoke Affiliation")}
                     </Button>
                   </div>
                 </div>
                 {confirmRemoveId === a.id && (
                   <div className="flex items-center gap-2 border-t border-border mt-3 pt-3">
                     <p className="text-xs text-muted-foreground flex-1">
-                      Remove this doctor's access to your hospital? Their overall AMedix account is kept — they lose
-                      access to this hospital's patients and information immediately.
+                      Revoke this doctor's affiliation with your hospital? Their AMedix account, records and patients
+                      are kept — they lose access to this hospital's patients and information immediately, and the
+                      revocation is recorded in the audit trail.
                     </p>
                     <Button size="sm" variant="outline" onClick={() => setConfirmRemoveId(null)}>
                       {t("Cancel")}
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => updateAssociation(a, "remove")}>
-                      {t("Confirm Remove")}
+                      {t("Confirm Revoke")}
                     </Button>
                   </div>
                 )}

@@ -74,8 +74,9 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
     setBusy(true);
     try {
       const res = await base44.functions.invoke("doctorJoinHospital", { code: code.trim(), department: department.trim() });
-      // The hospital must approve the affiliation before clinical access here is
-      // activated — the code alone only creates the request.
+      // A valid, active hospital code activates the affiliation immediately —
+      // there is no hospital approval wait. Professional verification stays a
+      // separate AMedix administration step.
       toast({
         title: res.data.status === "pending" ? "Affiliation request sent" : "Joined hospital",
         description:

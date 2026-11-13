@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { isActivated, loadAuthorization } from '../../shared/hospitalAuthorization.ts';
+import { auditEntry, isActivated, loadAuthorization, withAudit } from '../../shared/hospitalAuthorization.ts';
 import { normalizeCode } from '../../shared/registrationCodes.ts';
 
 // Doctor registration that can be started, interrupted and resumed.
@@ -229,6 +229,9 @@ export default async function (req) {
       if (!verifiedHospital || verifiedHospital.status === 'suspended') {
         return Response.json({ error: 'This hospital code is not valid. Please check it with your hospital.' }, { status: 401 });
       }
+      if (verifiedHospital.hospital_code_status === 'deactivated') {
+        return Response.json({ error: 'This hospital code has been deactivated by the hospital. Please ask the hospital administrator for an active code.' }, { status: 403 });
+      }
       const hospitalAuthorization = await loadAuthorization(base44, verifiedHospital.id);
       if (!isActivated(hospitalAuthorization)) {
         return Response.json({ error: 'This hospital has not completed AMedix administrative authorization yet, so its code cannot be used.' }, { status: 403 });
@@ -257,9 +260,10 @@ export default async function (req) {
         specialization,
         specialties: [specialization],
         license_number: licenseNumber,
-        // The working hospital is only set once the hospital approves the
-        // affiliation — registration alone grants no clinical access.
-        hospital: '',
+        // The verified code activates the affiliation immediately, so the
+        // hospital it belongs to is the doctor's working hospital from the
+        // start. Professional verification stays a separate AMedix step.
+        hospital: verifiedHospital.hospital_name,
         phone,
         is_verified: false,
       });
@@ -275,23 +279,26 @@ export default async function (req) {
         // the profile itself is never rolled back for a link failure
       }
 
-      // Affiliation request to the hospital whose code was used. It stays
-      // PENDING until that hospital's administrator approves it — the code only
-      // authorises the request, never clinical access.
+      // FAST-TRACK AFFILIATION: a valid, active AMedix Hospital Code activates
+      // the hospital association immediately — the doctor never waits for the
+      // hospital administrator. The security comes from the code itself, which
+      // only an AMedix-authorized hospital can issue, and the affiliation stays
+      // revocable by that hospital. Professional verification remains a separate
+      // AMedix administration decision (the profile is created unverified).
       try {
         const existingAssoc = rows(await base44.asServiceRole.entities.HospitalDoctor.filter({
           hospital_id: verifiedHospital.id,
           doctor_id: profile.id,
         }));
         const assocPatch = {
-          status: 'pending',
+          status: 'active',
           specialization,
           doctor_name: profile.full_name,
           doctor_photo_url: profile.photo_url || '',
           joined_datetime: now,
-          decided_datetime: '',
-          decided_by_name: '',
-          decision_note: '',
+          decided_datetime: now,
+          decided_by_name: 'AMedix Hospital Code',
+          decision_note: "Activated automatically with the hospital's AMedix Hospital Code",
         };
         if (existingAssoc[0]) {
           await base44.asServiceRole.entities.HospitalDoctor.update(existingAssoc[0].id, assocPatch);
@@ -305,6 +312,18 @@ export default async function (req) {
             doctor_user_id: user.id,
           });
         }
+        // Registration event and affiliation in the hospital's audit trail.
+        await base44.asServiceRole.entities.HospitalAuthorization.update(hospitalAuthorization.id, {
+          audit: withAudit(
+            hospitalAuthorization,
+            auditEntry({
+              action: 'doctor_affiliated',
+              actionLabel: 'Doctor affiliated with the hospital',
+              actor: { user_id: user.id, name: profile.full_name, role: 'doctor' },
+              detail: 'Affiliation activated immediately with the hospital code — professional verification pending with AMedix administration',
+            })
+          ),
+        });
       } catch (err) {
         // the profile and the request record are authoritative
       }

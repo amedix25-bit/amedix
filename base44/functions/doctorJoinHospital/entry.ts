@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { isActivated, loadAuthorization } from "../../shared/hospitalAuthorization.ts";
+import { auditEntry, isActivated, loadAuthorization, withAudit } from "../../shared/hospitalAuthorization.ts";
 
 // Doctor-side hospital join. A doctor can ONLY join a hospital with that
 // hospital's unique AMedix Hospital Code — never by typing a hospital name.
@@ -35,6 +35,12 @@ export default async function(req) {
     if (hospital.status === "suspended") {
       return Response.json({ error: "This hospital account is currently suspended." }, { status: 403 });
     }
+    if (hospital.hospital_code_status === "deactivated") {
+      return Response.json(
+        { error: "This hospital code has been deactivated by the hospital. Please ask the hospital administrator for an active code." },
+        { status: 403 }
+      );
+    }
 
     // A Hospital Code only carries weight once the institution passed AMedix
     // administrative authorization. The check reads the server-owned
@@ -58,57 +64,75 @@ export default async function(req) {
 
     const department = String(body.department || "").trim() || doctor.specialization || "";
 
+    const stamp = new Date().toISOString();
     const existing = await base44.asServiceRole.entities.HospitalDoctor.filter({
       hospital_id: hospital.id,
       doctor_id: doctor.id,
     });
-    if (existing.length > 0) {
-      const assoc = existing[0];
-      if (assoc.status === "active") {
-        return Response.json({ error: "You are already associated with this hospital." }, { status: 409 });
-      }
-      if (assoc.status === "pending") {
-        return Response.json({
-          status: "pending",
-          hospital_name: hospital.hospital_name,
-          message: "Your affiliation request is already waiting for the hospital's approval.",
-        });
-      }
-      // A previously deactivated / rejected association is requested again with
-      // the code — it returns to PENDING for the hospital to approve.
-      await base44.asServiceRole.entities.HospitalDoctor.update(assoc.id, {
-        status: "pending",
-        specialization: department,
-        doctor_name: doctor.full_name,
-        doctor_photo_url: doctor.photo_url || "",
-        joined_datetime: new Date().toISOString(),
-        decided_datetime: "",
-        decided_by_name: "",
-        decision_note: "",
-      });
+    const assoc = existing[0] || null;
+    if (assoc && assoc.status === "active") {
+      return Response.json({ error: "You are already associated with this hospital." }, { status: 409 });
+    }
+    // The hospital decides whether a doctor it deactivated, rejected or removed
+    // comes back — the code never overrides a hospital's own decision.
+    if (assoc && ["deactivated", "rejected", "removed"].includes(assoc.status)) {
+      return Response.json(
+        {
+          error: `Your affiliation with this hospital was ended by the hospital. Please ask the ${hospital.hospital_name} administrator to reactivate it.`,
+        },
+        { status: 403 }
+      );
+    }
+
+    // FAST-TRACK AFFILIATION: a valid, active AMedix Hospital Code activates the
+    // association immediately, with no hospital approval wait. The professional
+    // verification of the doctor remains a separate AMedix administration step.
+    const patch = {
+      status: "active",
+      specialization: department,
+      doctor_name: doctor.full_name,
+      doctor_photo_url: doctor.photo_url || "",
+      joined_datetime: stamp,
+      decided_datetime: stamp,
+      decided_by_name: "AMedix Hospital Code",
+      decision_note: "Activated automatically with the hospital's AMedix Hospital Code",
+    };
+    if (assoc) {
+      await base44.asServiceRole.entities.HospitalDoctor.update(assoc.id, patch);
     } else {
       await base44.asServiceRole.entities.HospitalDoctor.create({
+        ...patch,
         hospital_id: hospital.id,
         hospital_name: hospital.hospital_name,
         hospital_user_id: hospital.user_id,
         doctor_id: doctor.id,
         doctor_user_id: user.id,
-        doctor_name: doctor.full_name,
-        doctor_photo_url: doctor.photo_url || "",
-        specialization: department,
-        status: "pending",
-        joined_datetime: new Date().toISOString(),
       });
     }
 
-    // A valid code only CREATES the request. Clinical access at this hospital —
-    // and the working-hospital selection — needs the hospital's approval, which
-    // hospitalDoctorAffiliation records server-side.
+    // The affiliation and its code activation are recorded in the hospital's
+    // audit trail.
+    try {
+      await base44.asServiceRole.entities.HospitalAuthorization.update(authorization.id, {
+        audit: withAudit(
+          authorization,
+          auditEntry({
+            action: "doctor_affiliated",
+            actionLabel: "Doctor affiliated with the hospital",
+            actor: { user_id: user.id, name: doctor.full_name, role: "doctor" },
+            detail: `Affiliation activated immediately with the hospital code (${department || "department not set"})`,
+          })
+        ),
+      });
+    } catch (err) {
+      /* the affiliation record itself is authoritative */
+    }
+
     return Response.json({
-      status: "pending",
+      status: "active",
       hospital_name: hospital.hospital_name,
       specialization: department,
-      message: `Affiliation request sent. ${hospital.hospital_name} must approve it before you can work at this hospital.`,
+      message: `You are now affiliated with ${hospital.hospital_name}. Your professional verification is completed separately by AMedix administration.`,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

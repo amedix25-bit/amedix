@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 
-// Hospital review of a doctor's affiliation request. A doctor who registers (or
-// joins an additional hospital) with the hospital's AMedix Hospital Code is
-// placed in PENDING: the hospital administrator approves or rejects the
-// affiliation, and only an approved affiliation activates clinical access at
+// Hospital review of a doctor's affiliation. A doctor who registers (or joins
+// an additional hospital) with the hospital's active AMedix Hospital Code is now
+// affiliated IMMEDIATELY (fast-track), so this review handles the affiliations
+// recorded as PENDING before that change: the hospital administrator approves or
+// rejects one, and only an approved affiliation activates clinical access at
 // that hospital. Writes are service-role only, so a doctor can never approve
 // their own affiliation.
 export default async function (req) {

@@ -561,6 +561,27 @@ const AR = {
   "Activity & access trail": "سجل النشاط والوصول",
   "No messages from your doctors yet": "لا توجد رسائل من أطبائك بعد",
   "Select a message": "اختر رسالة",
+
+  // ─── Hospital access codes & fast-track doctor affiliation ───
+  "Your hospital affiliation is activated immediately when you submit your registration. AMedix administration verifies your professional credentials separately.":
+    "يُفعَّل ارتباطك بالمستشفى فوراً عند إرسال تسجيلك. تتحقق إدارة AMedix من مؤهلاتك المهنية بشكل منفصل.",
+  "A doctor can only join AMedix through an AMedix-authorized hospital. Enter the AMedix Hospital Code provided by your hospital administrator — it is verified here and affiliates you with the hospital immediately.":
+    "لا يمكن للطبيب الانضمام إلى AMedix إلا عبر مستشفى معتمد من AMedix. أدخل رمز المستشفى الذي زوّدك به مسؤول المستشفى — يُتحقق منه هنا ويتم ارتباطك بالمستشفى فوراً.",
+  "Code Active": "الرمز فعّال",
+  "Code Deactivated": "الرمز معطّل",
+  "Regenerate Code": "إعادة إنشاء الرمز",
+  "Deactivate Code": "تعطيل الرمز",
+  "Activate Code": "تفعيل الرمز",
+  "Code regenerated": "تم إعادة إنشاء الرمز",
+  "Code deactivated": "تم تعطيل الرمز",
+  "Code activated": "تم تفعيل الرمز",
+  "The previous code no longer works.": "الرمز السابق لم يعد يعمل.",
+  "Verified by AMedix": "موثّق من AMedix",
+  "Verification pending": "التحقق قيد المراجعة",
+  "Revoke Affiliation": "إلغاء الارتباط",
+  "Confirm Revoke": "تأكيد الإلغاء",
+  "Confirm": "تأكيد",
+  "Cancel": "إلغاء",
 };
 
 const AppLanguageContext = createContext(null);

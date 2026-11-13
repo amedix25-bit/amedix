@@ -74,7 +74,7 @@ export default function DoctorHospitalCodeGate({ onValidated }) {
           </span>
         </div>
         <p className="text-center text-xs text-muted-foreground">
-          {t("Your affiliation request will be sent to this hospital for approval after you submit your professional information.")}
+          {t("Your hospital affiliation is activated immediately when you submit your registration. AMedix administration verifies your professional credentials separately.")}
         </p>
         <Button className="h-12 w-full font-medium" onClick={proceed}>
           {t("Continue to Email Verification")}
@@ -98,7 +98,7 @@ export default function DoctorHospitalCodeGate({ onValidated }) {
       <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-accent p-3">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">
-          {t("A doctor can only join AMedix through an approved hospital. Enter the AMedix Hospital Code provided by your hospital administrator — it is verified before an account can be created.")}
+          {t("A doctor can only join AMedix through an AMedix-authorized hospital. Enter the AMedix Hospital Code provided by your hospital administrator — it is verified here and affiliates you with the hospital immediately.")}
         </p>
       </div>
       <div className="space-y-2">

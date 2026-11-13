@@ -31,6 +31,12 @@ export default async function (req) {
     if (hospital.status === 'suspended') {
       return Response.json({ error: 'This hospital account is currently suspended. Please contact the hospital.' }, { status: 403 });
     }
+    if (hospital.hospital_code_status === 'deactivated') {
+      return Response.json(
+        { error: 'This hospital code has been deactivated by the hospital. Please ask the hospital administrator for an active code.' },
+        { status: 403 }
+      );
+    }
 
     const authorization = await loadAuthorization(base44, hospital.id);
     if (!isActivated(authorization)) {
