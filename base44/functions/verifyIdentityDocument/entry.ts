@@ -7,7 +7,7 @@ import { maskDocumentNumber, scrubAutoCheck, retentionFields } from '../../share
 import { NUMBER_PROFILES, validateFormat } from '../../shared/documentOcrProfiles.ts';
 import { recogniseDocument, OCR_ENGINE_VERSION, type Side } from '../../shared/documentOcrEngine.ts';
 import { createRenderToken } from '../../shared/documentRenderToken.ts';
-import { decodeImage, isPng, assessQuality, detectBands, estimateSkew } from '../../shared/documentImageOps.ts';
+import { decodeDocument, assessQuality, detectBands, estimateSkew } from '../../shared/documentImageOps.ts';
 
 // AMedix automated document-number verification (multi-pass engine).
 //
@@ -113,9 +113,9 @@ export default async function (req: any) {
       const res = await fetch(front.url, { signal: AbortSignal.timeout(15000) });
       if (res.ok) {
         const bytes = new Uint8Array(await res.arrayBuffer());
-        const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
-        if (isPng(bytes) || isJpeg) {
-          const raster = await decodeImage(bytes);
+        const pages = await decodeDocument(bytes);
+        if (pages.length) {
+          const raster = pages[0];
           analysis = { quality: assessQuality(raster), bands: detectBands(raster), skew: estimateSkew(raster) };
         }
       }

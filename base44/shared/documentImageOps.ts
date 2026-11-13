@@ -386,13 +386,39 @@ export function resizeGray(src: Float32Array, sw: number, sh: number, dw: number
   return out;
 }
 
+// Gentle shadow / glare flattening: the local background is divided out, then
+// blended back with the original so the paper texture and the true stroke
+// shapes survive. Aggressive flattening invents edges, which is exactly what
+// must never happen to digits.
 function flattenLighting(gray: Float32Array, w: number, h: number): Float32Array {
-  const radius = Math.max(8, Math.round(Math.max(w, h) / 40));
+  const radius = Math.max(12, Math.round(Math.max(w, h) / 30));
   const background = boxBlur(gray, w, h, radius);
   const out = new Float32Array(w * h);
   for (let i = 0; i < gray.length; i++) {
-    const bg = background[i] < 12 ? 12 : background[i];
-    out[i] = Math.max(0, Math.min(255, (gray[i] / bg) * 190));
+    const bg = background[i] < 24 ? 24 : background[i];
+    const flattened = Math.max(0, Math.min(255, (gray[i] / bg) * 205));
+    out[i] = 0.55 * flattened + 0.45 * gray[i];
+  }
+  return out;
+}
+
+// Global contrast stretch between the 2nd and 98th percentile — monotonic, so
+// every pixel keeps its relative position and no character shape changes.
+function contrastStretch(gray: Float32Array): Float32Array {
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < gray.length; i++) hist[Math.max(0, Math.min(255, Math.round(gray[i])))]++;
+  let low = 0;
+  let high = 255;
+  const target = gray.length * 0.02;
+  let acc = 0;
+  for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= target) { low = i; break; } }
+  acc = 0;
+  for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= target) { high = i; break; } }
+  if (high - low < 24) return gray.slice();
+  const scale = 255 / (high - low);
+  const out = new Float32Array(gray.length);
+  for (let i = 0; i < gray.length; i++) {
+    out[i] = Math.max(0, Math.min(255, (gray[i] - low) * scale));
   }
   return out;
 }
@@ -430,8 +456,11 @@ export function enhance(raster: Raster, mode: EnhanceMode = 'enhanced', targetWi
   const skew = estimateSkew(raster);
   const straightened = rotateGray(working.gray, working.width, working.height, skew);
   const flat = flattenLighting(straightened.gray, straightened.width, straightened.height);
-  const local = clahe(flat, straightened.width, straightened.height, 8, 2.5);
-  const sharpened = unsharp(local, straightened.width, straightened.height, mode === 'binary' ? 1.4 : 1.15);
+  const stretched = contrastStretch(flat);
+  // Local contrast equalisation is kept for the binarised variant only: on a
+  // photographed page it exaggerates paper grain and blurs small digits.
+  const local = mode === 'binary' ? clahe(stretched, straightened.width, straightened.height, 8, 2.0) : stretched;
+  const sharpened = unsharp(local, straightened.width, straightened.height, mode === 'binary' ? 1.2 : 0.55);
   const sourceW = straightened.width;
   const sourceH = straightened.height;
   const scale = sourceW >= targetWidth ? 1 : Math.min(2.5, targetWidth / sourceW);
