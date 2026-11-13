@@ -24,18 +24,10 @@ import SleepPatternFields from "@/components/patient/lifestyle/SleepPatternField
 import LivingSituationFields from "@/components/patient/lifestyle/LivingSituationFields";
 import VaccinationStatusFields from "@/components/patient/lifestyle/VaccinationStatusFields";
 import { vaccinationMapToRecords } from "@/lib/lifestyleOptions";
+import GynaeObstetricHistoryForm from "@/components/patient/gynae/GynaeObstetricHistoryForm";
+import { emptyGynaeHistory, legacyGynaeFields } from "@/lib/gynaeObstetric";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
-
-// Pregnancy-history counters — selection-only questions with predefined
-// number options, answered by married female patients during registration.
-const PREGNANCY_COUNTS = [
-  { key: "gravida", label: "Number of pregnancies (Gravida)" },
-  { key: "para", label: "Number of births (Para)" },
-  { key: "living_children", label: "Number of living children" },
-  { key: "miscarriages", label: "Number of miscarriages/abortions" },
-  { key: "stillbirths", label: "Number of stillbirths" },
-];
 
 export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const { lang, t, setLang } = usePatientLanguage();
@@ -91,11 +83,12 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     // Vaccination status and the per-vaccine history (map keyed by vaccine).
     vaccination_status: "", vaccination_records: {},
     marital_status: "",
-    pregnancy_status: "", gestational_age: "", estimated_due_date: "",
-    pregnancy_complications: "", menstrual_history: "", contraception_history: "",
-    fertility_history: "", gynecological_history: "", urological_history: "",
-    gravida: "", para: "", living_children: "", miscarriages: "", stillbirths: "",
+    urological_history: "",
   });
+  // The one Gynaecological & Obstetric History of a female patient — see
+  // src/lib/gynaeObstetric.js for its structure. Unanswered questions are
+  // saved as unknown, never as a negative history.
+  const [gynae, setGynae] = useState(emptyGynaeHistory());
   const [uploadingVaxDoc, setUploadingVaxDoc] = useState(false);
 
   const isFemale = form.gender === "female";
@@ -141,17 +134,16 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const allergyAnswered = allergyRecord !== "" || medical.allergies.length > 0;
   const step1Valid = ["familyHistory", "pastHistory", "medicalEvents", "surgeries"].every(sectionAnswered);
   const step2Valid = sectionAnswered("medications") && allergyAnswered;
-  const pregnancyCountsAnswered = PREGNANCY_COUNTS.every(({ key }) => lifestyle[key] !== "");
+  // Female patients answer the current-pregnancy question and, unless they are
+  // pregnant, the menopause question. "Unknown" is a valid answer — the question
+  // may never be left unanswered, so it is never assumed negative.
+  const gynaeAnswered =
+    !!gynae.current_pregnancy.status &&
+    (gynae.current_pregnancy.status === "pregnant" || !!gynae.menopause.status);
   const step3Valid =
     !!lifestyle.smoking_status &&
     !!lifestyle.alcohol_use &&
-    (!isFemale ||
-      (!!lifestyle.marital_status &&
-        (lifestyle.marital_status !== "married" ||
-          (!!lifestyle.pregnancy_status &&
-            pregnancyCountsAnswered &&
-            (lifestyle.pregnancy_status !== "pregnant" ||
-              (!!lifestyle.gestational_age && !!lifestyle.estimated_due_date))))));
+    (!isFemale || (!!lifestyle.marital_status && gynaeAnswered));
 
   const switchLang = (v) => {
     setLang(v);
