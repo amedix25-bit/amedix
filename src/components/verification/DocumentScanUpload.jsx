@@ -65,23 +65,13 @@ export default function DocumentScanUpload({
         file: new File([pending.blob], pending.name, { type: "application/pdf" }), // stored privately
       });
 
-      let original = null;
-      if (pending.original) {
-        setStage("original");
-        try {
-          const res = await base44.integrations.Core.UploadPrivateFile({ file: pending.original }); // stored privately
-          original = { uri: res.file_uri, name: pending.original.name };
-        } catch (originalError) {
-          // the processed document is what matters — the original is a safeguard
-          original = null;
-        }
-      }
-
+      // Zero retention: the unedited original is never uploaded at all, and the
+      // prepared copy exists only so the number on it can be read once.
       onFile({
         uri: file_uri,
         name: pending.name,
-        original_uri: original?.uri || "",
-        original_name: original?.name || "",
+        original_uri: "",
+        original_name: "",
         source: pending.source,
         page_count: pending.pageCount,
         size: pending.blob.size,
@@ -216,7 +206,7 @@ export default function DocumentScanUpload({
   }
 
   const stageRow = (key, label) => {
-    const order = ["prepare", "upload", "original", "done"];
+    const order = ["prepare", "upload", "done"];
     const done = order.indexOf(stage) > order.indexOf(key);
     const activeRow = stage === key;
     return (
@@ -277,8 +267,7 @@ export default function DocumentScanUpload({
       {(busy || stage) && (
         <div className="space-y-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
           {stageRow("prepare", t("Preparing document"))}
-          {stageRow("upload", t("Uploading securely"))}
-          {stageRow("original", t("Saving the original"))}
+          {stageRow("upload", t("Checking the document"))}
         </div>
       )}
 

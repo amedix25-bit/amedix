@@ -25,27 +25,44 @@
         "medical_license",
         "professional_card"
       ],
-      "description": "Selected verification document \u2014 Passport, Driver's Licence or Birth Certificate for identity (one is enough), Personal Card for legacy records, Medical License / Professional identification card for doctor credentials. The selected document decides which number the automated engine reads and compares."
+      "description": "Document category used for verification \u2014 Passport, Driver's Licence, Birth Certificate, National ID, Medical License or Professional identification card. The category is kept after verification; the document itself never is."
+    },
+    "document_retained": {
+      "type": "boolean",
+      "default": false,
+      "description": "Always false under the AMedix Zero-Retention Document Verification Policy. A submitted document exists only long enough to read the number printed on it; this record never carries the document, an image, a PDF, a storage reference or a copy of its contents."
+    },
+    "retention_policy": {
+      "type": "string",
+      "description": "Retention policy the record was written under, e.g. zero_retention_v1"
+    },
+    "retention_method": {
+      "type": "string",
+      "description": "How verification was performed, e.g. automated_document_number_matching. Recorded instead of the document"
+    },
+    "document_purged_datetime": {
+      "type": "string",
+      "description": "Date and time every trace of the submitted document was removed from this record (ISO datetime)"
     },
     "file_uri": {
       "type": "string",
-      "description": "Private storage URI of the submitted document \u2014 never public; read inside the verification function through a short-lived signed link"
+      "description": "LEGACY \u2014 never written by the current engine and cleared from older records by the zero-retention sweep. Storage reference of a document submitted before the policy existed"
     },
     "file_name": {
       "type": "string",
-      "description": "Name of the submitted document"
+      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
     },
     "file_mime": {
       "type": "string",
-      "description": "MIME type of the submitted document"
+      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
     },
     "file_size": {
       "type": "number",
-      "description": "Size of the submitted document in bytes"
+      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
     },
     "page_count": {
       "type": "integer",
-      "description": "Number of pages in the submitted document \u2014 a two-sided document is submitted as two pages of one PDF"
+      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
     },
     "source": {
       "type": "string",
@@ -54,70 +71,71 @@
         "gallery",
         "pdf"
       ],
-      "description": "How the document was acquired: CAMERA (photographed in the integrated scanner), GALLERY (an existing photo chosen from the device) or PDF (an existing PDF uploaded as it is)"
+      "description": "How the document was acquired: CAMERA (photographed in the integrated scanner), GALLERY (an existing photo chosen from the device) or PDF (an existing PDF uploaded as it is). Acquisition metadata only \u2014 no part of the document is kept"
     },
     "original_file_uri": {
       "type": "string",
-      "description": "Private storage URI of the original, unedited image or PDF exactly as the user provided it \u2014 preserved alongside the processed document so nothing is lost by cropping or enhancement"
+      "description": "LEGACY \u2014 the unedited original is no longer uploaded at all; cleared from older records by the zero-retention sweep"
     },
     "original_file_name": {
-      "type": "string"
+      "type": "string",
+      "description": "LEGACY \u2014 the unedited original is no longer uploaded at all; cleared by the zero-retention sweep"
     },
     "file_uri_back": {
       "type": "string",
-      "description": "Private storage URI of the back side photo of a two-sided document uploaded as a separate photo \u2014 empty when a single PDF contains both sides"
+      "description": "LEGACY \u2014 a two-sided document is submitted as one PDF and nothing is stored; cleared by the zero-retention sweep"
     },
     "file_name_back": {
       "type": "string",
-      "description": "Original name of the back side file"
+      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
     },
     "expected_date_of_birth": {
       "type": "string",
-      "description": "Date of birth as entered by the user \u2014 recorded with the automated comparison"
+      "description": "LEGACY \u2014 cleared by the zero-retention sweep; the comparison result is kept instead"
     },
     "extracted_date_of_birth": {
       "type": "string",
-      "description": "Date of birth as read from the uploaded document by OCR"
+      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
     },
     "expected_national_id_number": {
       "type": "string",
-      "description": "National ID / certificate number as entered by the user \u2014 compared automatically against the document"
+      "description": "National ID / certificate number, MASKED to its last four characters \u2014 enough to show the user what was compared, never a complete identifier"
     },
     "extracted_national_id_number": {
       "type": "string",
-      "description": "National ID / certificate number as read from the uploaded document by OCR"
+      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
     },
     "expected_license_number": {
       "type": "string",
-      "description": "Medical licence / professional number as entered by the user \u2014 compared automatically against the document"
+      "description": "Medical licence / professional number, MASKED to its last four characters"
     },
     "extracted_license_number": {
       "type": "string",
-      "description": "Licence number as read from the uploaded document by OCR"
+      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
     },
     "expected_full_name": {
       "type": "string",
-      "description": "Full name as entered by the user \u2014 recorded with the automated comparison"
+      "description": "LEGACY \u2014 cleared by the zero-retention sweep; the name lives on the patient or doctor profile, never here"
     },
     "extracted_full_name": {
       "type": "string",
-      "description": "Full name as read from the uploaded document by OCR"
+      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
     },
     "expected_personal_card_number": {
       "type": "string",
-      "description": "Personal card number as entered by the user \u2014 compared automatically against the document"
+      "description": "Personal card number, MASKED to its last four characters"
     },
     "extracted_personal_card_number": {
       "type": "string",
-      "description": "Personal card number as read from the uploaded document by OCR"
+      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
     },
     "expected_passport_number": {
       "type": "string",
-      "description": "Passport number as entered by the user \u2014 compared automatically against the document"
+      "description": "Passport number, MASKED to its last four characters"
     },
     "extracted_passport_number": {
       "type": "string",
-      "description": "Passport number as read from the uploaded document by OCR"
+      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
     },
     "status": {
       "type": "string",
@@ -165,7 +183,7 @@
     "auto_check": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Automated document-number verification produced at submission time: { outcome: match | mismatch | unreadable, checked_datetime, engine, number_field, number_label, entered_number, read_number, normalized_entered, normalized_read, sides_read, checks: [{ field, label, entered, read, matched, decisive }], note }. The decisive check is the document number."
+      "description": "Record of the automated comparison, with every number masked: { outcome, checked_datetime, engine, number_field, number_label, entered_number (masked), read_number (masked), sides_read, checks: [{ field, label, entered (masked), read (masked), matched, decisive }], note }. No full number, and nothing else the document said, is ever written here"
     },
     "review_reason": {
       "type": "string",
@@ -217,7 +235,7 @@
     },
     "document_access_log": {
       "type": "array",
-      "description": "Legacy audit trail of document openings from the former manual review process \u2014 kept unchanged; the automated engine never exposes documents to a person",
+      "description": "Legacy audit trail of document openings from the former manual review process \u2014 kept unchanged; the automated engine never exposes documents to a person and no document exists to open",
       "items": {
         "type": "object",
         "properties": {
@@ -249,11 +267,11 @@
     },
     "patient_id": {
       "type": "string",
-      "description": "PatientProfile id the verification documents are attached to"
+      "description": "PatientProfile id the verification belongs to"
     },
     "doctor_id": {
       "type": "string",
-      "description": "DoctorProfile id the verification documents are attached to"
+      "description": "DoctorProfile id the verification belongs to"
     }
   },
   "required": [

@@ -220,7 +220,7 @@ export default function DocumentVerificationCard({
             )}
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            {t("The number on your document is read and compared with the number you entered, automatically. Your document is stored privately.")}
+            {t("The number on your document is read and compared with the number you entered, automatically. No copy of the document is kept — only the result and the masked number.")}
           </p>
         </div>
       )}

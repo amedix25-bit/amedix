@@ -3,6 +3,7 @@ import {
   DOCUMENTS, PROFILE_DOCUMENTS, TWO_SIDED, ENGINE_VERSION, OUTCOME, FIELD_LABELS,
   normalizeDocumentNumber, evaluateDocumentNumber, advisoryMatches, documentNumberLabel,
 } from '../../shared/documentNumberVerification.ts';
+import { maskDocumentNumber, scrubAutoCheck, retentionFields } from '../../shared/documentRetention.ts';
 
 // AMedix automated document-number verification.
 //
@@ -19,6 +20,12 @@ import {
 //
 // The decision means one thing only: the number on the document equals the
 // number entered. It is not a claim that the document was genuinely issued.
+//
+// ZERO RETENTION: the document is read and then dropped. The record created
+// here carries no file, no storage reference, no copy of what the document
+// said and no complete number — only the decision, the document category, the
+// time, the masked number and this record's own id. Nothing else in the
+// platform keeps a link to the submitted file.
 
 const str = (v, max = 200) => (typeof v === 'string' && v.length <= max ? v : '');
 
@@ -132,35 +139,25 @@ export default async function (req) {
         : `We could not read the ${spec.numberLabel.toLowerCase()} from this document. Upload a clearer photograph or a PDF and try again.`;
 
     const readRecord = {};
-    const extractedRecord = {};
     requiredFields.forEach((key) => {
-      const value = readValues[key] === undefined || readValues[key] === null ? '' : String(readValues[key]);
-      readRecord[key] = value;
-      extractedRecord[`extracted_${key}`] = value;
+      readRecord[key] = readValues[key] === undefined || readValues[key] === null ? '' : String(readValues[key]);
     });
 
+    // Only the masked number is written down — the value that was read is
+    // returned to the user in this response and then dropped.
     const expectedRecord = {};
     requiredFields.forEach((key) => {
-      expectedRecord[`expected_${key}`] = typeof expected[key] === 'string' ? expected[key] : '';
+      expectedRecord[`expected_${key}`] = maskDocumentNumber(typeof expected[key] === 'string' ? expected[key] : '');
     });
 
     const record = await base44.asServiceRole.entities.IdentityVerification.create({
       user_id: user.id,
       profile_type,
       document_type,
-      file_uri,
-      file_name: str(file_name),
-      file_mime: str(body.file_mime, 100),
-      file_size: typeof body.file_size === 'number' && body.file_size >= 0 ? body.file_size : 0,
-      page_count: typeof body.page_count === 'number' && body.page_count > 0 && body.page_count <= 20 ? Math.round(body.page_count) : 1,
       source: ['camera', 'gallery', 'pdf'].includes(body.source) ? body.source : 'gallery',
-      original_file_uri: str(body.original_file_uri, 500),
-      original_file_name: str(body.original_file_name),
-      file_uri_back,
-      file_name_back: str(file_name_back),
       attempted_datetime: submittedAt,
       ...expectedRecord,
-      ...extractedRecord,
+      ...retentionFields(submittedAt),
       status,
       verification_outcome: compared.outcome,
       auto_verified: compared.outcome === OUTCOME.match,
@@ -169,7 +166,7 @@ export default async function (req) {
       // No administrator is involved: the reason text is what the user is shown.
       review_reason: compared.outcome === OUTCOME.match ? '' : message,
       verified_datetime: compared.outcome === OUTCOME.match ? submittedAt : '',
-      auto_check: {
+      auto_check: scrubAutoCheck({
         outcome: compared.outcome,
         checked_datetime: submittedAt,
         engine: ENGINE_VERSION,
@@ -177,12 +174,10 @@ export default async function (req) {
         number_label: spec.numberLabel,
         entered_number: enteredNumber,
         read_number: readRecord[numberField] || '',
-        normalized_entered: compared.expected,
-        normalized_read: compared.read,
         sides_read: tried,
         checks,
         note: message,
-      },
+      }),
       // Automated audit trail — the outcome, the document type and the time.
       review_history: [
         {
@@ -200,6 +195,7 @@ export default async function (req) {
       outcome: compared.outcome,
       verification_id: record.id,
       submitted_datetime: submittedAt,
+      document_retained: false,
       document_type,
       number_label: documentNumberLabel(document_type),
       entered_number: enteredNumber,
