@@ -10,13 +10,13 @@ export default function AdminOverview() {
 
   const load = async () => {
     try {
-      const [users, doctors, patients] = await Promise.all([
-        base44.entities.User.list(),
+      const [directory, doctors, patients] = await Promise.all([
+        base44.functions.invoke("adminAccountGovernance", { action: "userDirectory" }),
         base44.entities.DoctorProfile.list(),
         base44.entities.PatientProfile.list(),
       ]);
       setStats({
-        users: users.length,
+        users: directory.data?.total || 0,
         doctors: doctors.length,
         patients: patients.length,
         pendingDoctors: doctors.filter((d) => !d.is_verified).length,

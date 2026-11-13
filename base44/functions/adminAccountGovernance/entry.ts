@@ -103,6 +103,28 @@ export default async function (req: Request): Promise<Response> {
       });
     }
 
+    // The administrator's user directory. Read server-side with the service role
+    // so the browser never has to list the built-in User entity itself.
+    if (action === 'userDirectory') {
+      let users: any[] = [];
+      try {
+        users = pageItems(await base44.asServiceRole.entities.User.list({ limit: 5000, sort: '-created_date' }));
+      } catch (err) {
+        const rows = await base44.asServiceRole.entities.User.list();
+        users = Array.isArray(rows) ? rows : [];
+      }
+      return Response.json({
+        total: users.length,
+        users: users.map((u: any) => ({
+          id: u.id,
+          full_name: u.full_name || '',
+          email: u.email || '',
+          role: u.role || 'user',
+          created_date: u.created_date || '',
+        })),
+      });
+    }
+
     const userId = String(body.user_id || '');
     if (!userId) return Response.json({ error: 'An account is required.' }, { status: 400 });
     if (userId === user.id && action !== 'classify') {

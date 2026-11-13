@@ -10,8 +10,8 @@ export default function AdminUsers() {
 
   const load = async () => {
     try {
-      const data = await base44.entities.User.list();
-      setUsers(data);
+      const res = await base44.functions.invoke("adminAccountGovernance", { action: "userDirectory" });
+      setUsers(res.data?.users || []);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
