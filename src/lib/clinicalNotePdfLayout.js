@@ -449,6 +449,11 @@ export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Ex
     (block?.items?.[0] ? examRow(doc, block.items[0][0], block.items[0][1]) : 0);
 
   let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, label) + blockRoom(blocks[0]));
+  // The caption keeps its first system on the same page, even when the section
+  // heading above it was already placed by an earlier block.
+  if (yy + captionRoom(doc, label) + blockRoom(blocks[0]) > PAGE.BOTTOM) {
+    yy = nextPage(doc, artwork, noteTitle);
+  }
   yy = writeCaption(doc, label, yy, artwork, noteTitle);
 
   blocks.forEach((block) => {

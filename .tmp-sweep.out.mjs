@@ -81854,13 +81854,11 @@ function writeExamination(doc2, text, y, artwork, noteTitle, { label: label2 = "
   if (!/^\s*•/m.test(raw)) return writeRow(doc2, label2, raw, y, artwork, { noteTitle });
   const d = density(doc2);
   const blocks = examinationBlocks(raw);
-  const first = blocks[0];
-  const firstRoom = (first?.heading ? LEAD.value * d : 0) + (first?.items?.[0] ? examRow(doc2, first.items[0][0], first.items[0][1]) : 0);
-  let yy = flushSection(doc2, y, artwork, noteTitle, captionRoom(doc2, label2) + firstRoom);
+  const blockRoom = (block3) => (block3?.heading ? (SPACE.before + LEAD.value) * d : 0) + (block3?.items?.[0] ? examRow(doc2, block3.items[0][0], block3.items[0][1]) : 0);
+  let yy = flushSection(doc2, y, artwork, noteTitle, captionRoom(doc2, label2) + blockRoom(blocks[0]));
   yy = writeCaption(doc2, label2, yy, artwork, noteTitle);
   blocks.forEach((block3) => {
-    const room = (block3.heading ? (SPACE.before + LEAD.value) * d : 0) + (block3.items[0] ? examRow(doc2, block3.items[0][0], block3.items[0][1]) : 0);
-    if (yy + room > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
+    if (yy + blockRoom(block3) > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
     else if (block3.heading) yy += SPACE.before * d;
     if (block3.heading) {
       wrap(doc2, block3.heading, W, TYPE.value, "bold").forEach((line) => {
@@ -82023,7 +82021,7 @@ var init_clinicalNotePdfLayout = __esm({
       { label: "Blood Glucose", keys: ["blood glucose", "glucose"] },
       { label: "Urine Output", keys: ["urine output"] }
     ];
-    captionRoom = (doc2, text) => String(text || "").trim() ? wrap(doc2, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc2) + 1.2 : 0;
+    captionRoom = (doc2, text) => String(text || "").trim() ? SPACE.captionBefore * density(doc2) + wrap(doc2, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc2) + 1.2 : 0;
     examRow = (doc2, itemLabel, value) => rowMetrics(doc2, itemLabel, value, { size: TYPE.cellValue, lineHeight: LEAD.cellValue }).height;
   }
 });
