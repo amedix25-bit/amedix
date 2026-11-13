@@ -17,6 +17,17 @@ import {
   drawSignatureInline,
   drawRequestFooter,
 } from "@/lib/requestPdfLayout";
+import {
+  drawHeader,
+  drawCard,
+  drawBox,
+  drawVitals,
+  drawFollowUp,
+  drawSignatureRow,
+  drawFooters,
+  rowsToLines,
+  examToLines,
+} from "@/lib/clinicalNoteTemplate";
 import { getSpecialtyLabel, getDocDef } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import {
@@ -166,118 +177,103 @@ function collect(note, meta) {
   return { items, sensitive, vitals, examinations };
 }
 
+const CHIEF = /chief|presenting complaint|reason for (visit|consultation)|^complaint/i;
+const FOLLOW = /follow.?up|return precaution|safety.?net|review in|next visit/i;
+
 export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
   const artwork = logo || (await loadRequestLogo());
   const doc = new jsPDF();
+  const ref = note.note_reference ? `Reference: ${note.note_reference}` : "";
+  const when = note.encounter_datetime || note.date;
+  const whenText = when && !Number.isNaN(new Date(when).getTime()) ? new Date(when).toLocaleString("en-GB") : "";
+  const specialty = note.specialty ? getSpecialtyLabel(note.specialty) : "";
 
-  let y = drawRequestHeader(doc, { logo: artwork, title: TITLE, subtitle: SUBTITLE, framed: true });
+  let y = drawHeader(doc, artwork, ref);
 
-  y = drawPatientBlock(
+  y = drawCard(
     doc,
-    {
-      patient_name: note.patient_name,
-      patient_cin: note.patient_cin,
-      patient_dob: note.patient_dob,
-      patient_gender: profile?.gender,
-      patient_blood_type: profile?.blood_type,
-    },
-    y
-  );
-
-  y = drawDoctorBlock(
-    doc,
-    {
-      doctor_name: note.doctor_name,
-      doctor_specialization: note.specialty ? getSpecialtyLabel(note.specialty) : "",
-      doctor_hospital: note.hospital,
-      date_requested: note.encounter_datetime || note.date,
-    },
+    "PATIENT INFORMATION",
+    [
+      { label: "Full name", value: note.patient_name, big: true },
+      { label: "CIN / National ID", value: note.patient_cin, big: true },
+      { value: `Date of birth: ${note.patient_dob || "—"}` },
+      { value: `Sex: ${profile?.gender || "—"}  |  Blood type: ${profile?.blood_type || "—"}` },
+    ],
     y,
-    { heading: "Treating Doctor & Hospital", doctorLabel: "Treating doctor" }
+    { tinted: true }
   );
-
-  // ===== Note type & reference =====
-  y += 7;
-  if (y > PAGE.BOTTOM - 24) y = nextPage(doc, artwork, TITLE);
-  y = writeDocHead(doc, note.document_type_label || "Clinical Note", note.note_reference ? `Reference: ${note.note_reference}` : "", y);
-  drawDivider(doc, y);
-  y += 6;
+  y = drawCard(
+    doc,
+    "ENCOUNTER DETAILS",
+    [
+      { value: `Date / time: ${whenText || "—"}` },
+      { value: `Note type: ${note.document_type_label || "Clinical Note"}` },
+      { value: `Treating doctor: ${note.doctor_name || "—"}${specialty ? `  (${specialty})` : ""}` },
+      { value: `Hospital: ${note.hospital || "—"}` },
+    ],
+    y,
+    { tinted: false }
+  );
 
   const meta = fieldMeta(note);
   const { items, sensitive, vitals, examinations } = collect(note, meta);
-  const at = (index) => items.filter((item) => item.at === index);
+  const rowsAt = (index, keep = () => true) =>
+    items.filter((item) => item.at === index && keep(item)).map(({ label, value }) => ({ label, value }));
 
-  // ===== History, then past history, medications and allergies =====
-  [0, 1].forEach((index) => {
-    const rows = at(index);
-    if (rows.length === 0) return;
-    y = writeSection(doc, SECTIONS[index], y, artwork, TITLE);
-    rows.forEach((row) => {
-      y = writeRow(doc, row.label, row.value, y, artwork, { noteTitle: TITLE });
-    });
-    y += 2;
-  });
+  const chiefRows = items.filter((item) => item.at === 0 && CHIEF.test(item.label)).map(({ label, value }) => ({ label, value }));
+  const followRows = items.filter((item) => item.at === 6 && FOLLOW.test(item.label));
+  const section = (title, hint, rows) => {
+    if (rows.length > 0) y = drawBox(doc, title, hint, rowsToLines(doc, rows), y, ref);
+  };
 
-  // ===== Vital signs — one compact grid =====
+  section("Chief Complaint", "", chiefRows);
+  section("History of Present Illness (HPI)", "", rowsAt(0, (item) => !CHIEF.test(item.label)));
+  section("Relevant History", "PMH  |  PSH  |  Medications  |  Allergies", rowsAt(1));
+
   const vitalGroups = vitals
-    .map(([label, value]) => ({ label, grid: parseVitals(value), raw: value }))
-    .filter((group) => group.grid.length > 0 || String(group.raw).trim());
-  if (vitalGroups.length > 0) {
-    y = writeSection(doc, SECTIONS[2], y, artwork, TITLE);
-    vitalGroups.forEach((group) => {
-      y =
-        group.grid.length === 0
-          ? writeRow(doc, group.label, group.raw, y, artwork, { noteTitle: TITLE })
-          : writeVitalGrid(doc, group.grid, y, artwork, TITLE);
-    });
-    y += 2;
-  }
+    .map(([label, value]) => {
+      const grid = parseVitals(value);
+      return grid.length > 0 ? grid : [{ label, value }];
+    })
+    .filter((group) => group.length > 0);
+  if (vitalGroups.length > 0) y = drawVitals(doc, vitalGroups, y, ref);
 
-  // ===== Physical examination — grouped by system =====
   if (examinations.length > 0) {
-    y = writeSection(doc, SECTIONS[3], y, artwork, TITLE);
-    examinations.forEach(([label, value]) => {
-      y = writeExamination(doc, value, y, artwork, TITLE, { label });
-    });
-    y += 2;
+    const lines = examinations.flatMap(([label, value], i) => [
+      ...(i > 0 ? [{ gap: true, h: 2 }] : []),
+      ...examToLines(doc, label, value),
+    ]);
+    y = drawBox(doc, "Review of Systems & Physical Examination", "", lines, y, ref);
   }
 
-  // ===== Investigations, assessment, management, additional documentation =====
-  [4, 5, 6, 7].forEach((index) => {
-    const rows = at(index);
-    if (rows.length === 0) return;
-    y = writeSection(doc, SECTIONS[index], y, artwork, TITLE);
-    rows.forEach((row) => {
-      y = writeRow(doc, row.label, row.value, y, artwork, { noteTitle: TITLE });
-    });
-    y += 2;
-  });
-
-  // ===== Sexual & reproductive history — its own clearly marked block =====
-  if (sensitive.length > 0) {
-    y = writeSection(doc, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE);
-    sensitive.forEach(([label, value]) => {
-      y = writeRow(doc, label, value, y, artwork, { noteTitle: TITLE });
-    });
-    y += 2;
+  section("Investigations & Results", "", rowsAt(4));
+  section("Assessment / Diagnosis", "Include differential when relevant", rowsAt(5));
+  section(
+    "Plan & Management",
+    "Treatment  |  Investigations  |  Referrals  |  Advice",
+    rowsAt(6, (item) => !FOLLOW.test(item.label))
+  );
+  if (followRows.length > 0) {
+    y = drawFollowUp(doc, followRows.map((r) => r.value).join("\n"), y, ref);
   }
-
-  // ===== Signature at the end of the record =====
-  if (y + 44 > PAGE.BOTTOM) y = nextPage(doc, artwork, TITLE);
-  drawSignatureInline(
-    doc,
-    {
-      doctorName: note.signed_by_name || note.doctor_name,
-      detail: [note.specialty ? getSpecialtyLabel(note.specialty) : "", note.hospital].filter(Boolean).join("  ·  "),
-      note: note.signed_datetime
-        ? `Electronically signed ${new Date(note.signed_datetime).toLocaleString("en-GB")}`
-        : "Electronically signed",
-    },
-    y,
-    artwork,
-    TITLE
+  section("Additional Clinical Documentation", "", rowsAt(7));
+  section(
+    "Sexual & Reproductive History (Sensitive)",
+    "",
+    sensitive.map(([label, value]) => ({ label, value }))
   );
 
-  drawRequestFooter(doc, note.note_reference || note.id);
+  y = drawSignatureRow(
+    doc,
+    {
+      physician: [note.signed_by_name || note.doctor_name, specialty].filter(Boolean).join(" / "),
+      license: note.signed_by_license || note.doctor_license,
+      signedAt: note.signed_datetime ? new Date(note.signed_datetime).toLocaleString("en-GB") : "",
+    },
+    y + 2,
+    ref
+  );
+
+  drawFooters(doc);
   return doc;
 }
