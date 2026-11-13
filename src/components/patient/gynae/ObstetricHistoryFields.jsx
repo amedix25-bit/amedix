@@ -1,20 +1,17 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SelectItem } from "@/components/ui/select";
-import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SelectItem, Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, Plus, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import ObstetricEntryDialog, { pregnancyEntryLabel } from "./ObstetricEntryDialog";
-import { gpaText, obstetricTotalWarning } from "@/lib/gynaeObstetric";
+import { calculatedGravida } from "@/lib/gynaeObstetric";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-// G (pregnancies) / P (births after 24 weeks) / A (abortions before 24 weeks),
-// plus the detailed counters. Each pregnancy is entered once in the list below
-// and is never merged with, or overwritten by, another pregnancy.
+// The counters recorded for every patient, whichever her pregnancy and
+// menopause status. Gravida is deliberately absent: it is never asked of the
+// patient — it is calculated and shown only while she is currently pregnant.
 const COUNTERS = [
-  { key: "gravida", label: "Number of pregnancies (Gravida)" },
   { key: "para", label: "Number of births after 24 weeks (Para)" },
-  { key: "abortions", label: "Number of abortions (before 24 weeks)" },
   { key: "term_deliveries", label: "Term deliveries" },
   { key: "preterm_deliveries", label: "Preterm deliveries" },
   { key: "miscarriages", label: "Miscarriages" },
@@ -24,12 +21,12 @@ const COUNTERS = [
   { key: "living_children", label: "Living children" },
 ];
 
-export default function ObstetricHistoryFields({ value, onChange }) {
+export default function ObstetricHistoryFields({ value, onChange, pregnant, postmenopausal }) {
   const { t } = usePatientLanguage();
   const [open, setOpen] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const pregnancies = value.pregnancies || [];
-  const warning = obstetricTotalWarning(value);
+  const gravida = calculatedGravida(value, pregnant ? "pregnant" : "not_pregnant");
 
   const saveEntry = (entry) => {
     const next = [...pregnancies];
@@ -41,9 +38,23 @@ export default function ObstetricHistoryFields({ value, onChange }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-muted-foreground">
-        {t("Gravida counts every pregnancy. Para counts births from 24 weeks onwards. Abortions counts pregnancies that ended before 24 weeks. Each pregnancy is counted once.")}
-      </p>
+      {pregnant ? (
+        <div className="rounded-lg border border-primary/30 bg-accent/50 px-3 py-2 space-y-0.5">
+          <p className="text-sm font-semibold text-primary">
+            {t("Gravida (G)")}: {gravida ?? "—"}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            {t("Calculated from all your pregnancies, including the current one — you never count it yourself.")}
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {postmenopausal
+            ? t("Gravida is not shown after menopause — only your previous pregnancy outcomes are recorded below.")
+            : t("Gravida is not shown because you are not currently pregnant — your previous pregnancy outcomes are recorded below.")}
+        </p>
+      )}
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {COUNTERS.map(({ key, label }) => (
           <div key={key} className="space-y-1.5">
@@ -67,10 +78,9 @@ export default function ObstetricHistoryFields({ value, onChange }) {
         ))}
       </div>
 
-      {gpaText(value) && (
-        <p className="text-sm font-medium text-primary">{gpaText(value)}</p>
-      )}
-      {warning && <p className="text-xs text-destructive">{t(warning)}</p>}
+      <p className="text-[11px] text-muted-foreground">
+        {t("Para counts births from 24 weeks onwards, including stillbirths, which are also recorded separately so no pregnancy is counted twice. Living children are never used to calculate Gravida.")}
+      </p>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
@@ -121,11 +131,6 @@ export default function ObstetricHistoryFields({ value, onChange }) {
             </div>
           </div>
         ))}
-        {pregnancies.length > 0 && value.gravida !== "" && Number(value.gravida) < pregnancies.length && (
-          <p className="text-xs text-destructive">
-            {t("You entered more pregnancy details than the number of pregnancies.")}
-          </p>
-        )}
       </div>
 
       <ObstetricEntryDialog

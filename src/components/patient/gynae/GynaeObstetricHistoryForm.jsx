@@ -7,13 +7,15 @@ import MenopauseFields from "./MenopauseFields";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 // The one Gynaecological & Obstetric History section of the female patient.
-// Its four parts stay logically connected: the current pregnancy is asked
-// first, the obstetric counters feed the G/P/A shown with it, and a pregnant
-// patient can never be recorded as postmenopausal.
+// The order follows the clinical questions: pregnancy status first, then the
+// previous pregnancy outcomes it depends on — so Gravida can be calculated and
+// shown only while she is pregnant. A pregnant patient can never be recorded as
+// postmenopausal.
 export default function GynaeObstetricHistoryForm({ value, onChange }) {
   const { t } = usePatientLanguage();
   const update = (key) => (patch) => onChange({ ...value, [key]: { ...value[key], ...patch } });
   const pregnant = value.current_pregnancy.status === "pregnant";
+  const postmenopausal = value.menopause.status === "postmenopausal" && !pregnant;
 
   return (
     <div className="space-y-4 rounded-xl border border-border bg-card p-5">
@@ -28,10 +30,16 @@ export default function GynaeObstetricHistoryForm({ value, onChange }) {
 
       <section className="space-y-2">
         <h4 className="text-xs font-semibold text-primary">{t("Current Pregnancy")}</h4>
-        <CurrentPregnancyFields
-          value={value.current_pregnancy}
-          onChange={update("current_pregnancy")}
-          obstetric={value.obstetric}
+        <CurrentPregnancyFields value={value.current_pregnancy} onChange={update("current_pregnancy")} />
+      </section>
+
+      <section className="space-y-2 border-t border-border pt-4">
+        <h4 className="text-xs font-semibold text-primary">{t("Past Obstetric History")}</h4>
+        <ObstetricHistoryFields
+          value={value.obstetric}
+          onChange={update("obstetric")}
+          pregnant={pregnant}
+          postmenopausal={postmenopausal}
         />
       </section>
 
@@ -43,11 +51,6 @@ export default function GynaeObstetricHistoryForm({ value, onChange }) {
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary">{t("Past Gynaecological History")}</h4>
         <GynaePastHistoryFields value={value.past} onChange={update("past")} />
-      </section>
-
-      <section className="space-y-2 border-t border-border pt-4">
-        <h4 className="text-xs font-semibold text-primary">{t("Past Obstetric History")}</h4>
-        <ObstetricHistoryFields value={value.obstetric} onChange={update("obstetric")} />
       </section>
 
       <section className="space-y-2 border-t border-border pt-4">

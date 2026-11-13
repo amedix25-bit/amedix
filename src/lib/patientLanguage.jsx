@@ -1144,6 +1144,22 @@ const AR = {
   "Gravida counts every pregnancy. Para counts births from 24 weeks onwards. Abortions counts pregnancies that ended before 24 weeks. Each pregnancy is counted once.":
     "Gravida هو عدد مرات الحمل. Para هو عدد الولادات من الأسبوع 24 فما بعد. Abortions هو عدد الأحمال التي انتهت قبل الأسبوع 24. يُحسب كل حمل مرة واحدة فقط.",
   "Number of pregnancies (Gravida)": "عدد مرات الحمل (Gravida)",
+  "Gravida (G)": "عدد مرات الحمل (G)",
+  "Para (P)": "عدد الولادات (P)",
+  "Calculated from all your pregnancies, including the current one — you never count it yourself.":
+    "يُحسب من جميع أحمالك بما في ذلك حملك الحالي — لا تحتاجين إلى حسابه بنفسك.",
+  "Gravida is not shown after menopause — only your previous pregnancy outcomes are recorded below.":
+    "لا يُعرض عدد مرات الحمل بعد انقطاع الطمث — تُسجَّل نتائج حمولك السابقة فقط أدناه.",
+  "Gravida is not shown because you are not currently pregnant — your previous pregnancy outcomes are recorded below.":
+    "لا يُعرض عدد مرات الحمل لأنك لست حاملًا حاليًا — تُسجَّل نتائج حمولك السابقة أدناه.",
+  "Para counts births from 24 weeks onwards, including stillbirths, which are also recorded separately so no pregnancy is counted twice. Living children are never used to calculate Gravida.":
+    "Para هو عدد الولادات من الأسبوع 24 فما بعد، بما فيها حالات موت الجنين التي تُسجَّل منفصلة أيضًا حتى لا يُحسب أي حمل مرتين. لا يُستخدم عدد الأبناء الأحياء في حساب Gravida.",
+  "Your previous pregnancies are recorded next, and Gravida is calculated for you.":
+    "تُسجَّل حمولك السابقة تاليًا، ويُحسب Gravida لك تلقائيًا.",
+  "Recorded as Not pregnant. Your previous pregnancy outcomes are recorded next.":
+    "سُجِّلتِ كغير حامل. تُسجَّل نتائج حمولك السابقة تاليًا.",
+  "Gravida (G) counts every pregnancy once, including the current one.":
+    "يحسب Gravida (G) كل حمل مرة واحدة، بما في ذلك الحمل الحالي.",
   "Number of births after 24 weeks (Para)": "عدد الولادات بعد الأسبوع 24 (Para)",
   "Number of abortions (before 24 weeks)": "عدد الإجهاضات (قبل الأسبوع 24)",
   "Term deliveries": "ولادات مكتملة (37 أسبوعاً أو أكثر)",

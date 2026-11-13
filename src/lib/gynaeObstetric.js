@@ -218,10 +218,21 @@ export function buildGynaeSave(previous, next, actor = {}, options = {}) {
     if (key && !conditions.includes(key)) conditions.push(key);
   });
 
+  // Gravida and the abortion total are derived from the answers at every save —
+  // never typed by the patient. Gravida is stored only while she is pregnant;
+  // otherwise it is left empty so it can never be displayed out of context.
+  const obstetricAnswers = { ...incoming.obstetric, pregnancies };
+  const gravida = calculatedGravida(obstetricAnswers, incoming.current_pregnancy.status);
+  const abortions = abortionCount(obstetricAnswers);
+
   const sections = {
     menstrual: { ...incoming.menstrual },
     past: { ...incoming.past, conditions },
-    obstetric: { ...incoming.obstetric, pregnancies },
+    obstetric: {
+      ...obstetricAnswers,
+      gravida: gravida === null ? "" : String(gravida),
+      abortions: abortions === null ? "" : String(abortions),
+    },
     current_pregnancy: { ...incoming.current_pregnancy },
     menopause: { ...incoming.menopause },
   };
@@ -270,23 +281,44 @@ export const toCount = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// Derived G/P/A text, e.g. "G3 P2 A1".
-export const gpaText = (obstetric = {}) => {
-  const g = toCount(obstetric.gravida);
-  const p = toCount(obstetric.para);
-  const a = toCount(obstetric.abortions);
-  if (g === null && p === null && a === null) return "";
-  return `G${g ?? "?"} P${p ?? "?"} A${a ?? "?"}`;
+// The number of PREVIOUS pregnancies implied by the answers. Every previous
+// pregnancy ended once: as a birth from 24 weeks (Para — a stillbirth is one of
+// those and is recorded separately, so it is never added a second time), a
+// miscarriage, an induced abortion or an ectopic pregnancy. Living children are
+// never added: children are not pregnancies, and one pregnancy can produce more
+// than one child. `null` means nothing about previous pregnancies is answered yet.
+export const previousPregnancyCount = (obstetric = {}) => {
+  const para = toCount(obstetric.para);
+  const stillbirths = toCount(obstetric.stillbirths);
+  const miscarriages = toCount(obstetric.miscarriages);
+  const induced = toCount(obstetric.induced_abortions);
+  const ectopic = toCount(obstetric.ectopic_pregnancies);
+  const entries = Array.isArray(obstetric.pregnancies) ? obstetric.pregnancies.length : 0;
+  const answered =
+    entries > 0 || [para, stillbirths, miscarriages, induced, ectopic].some((v) => v !== null);
+  if (!answered) return null;
+  const births = para === null ? stillbirths ?? 0 : para;
+  return Math.max(entries, births + (miscarriages ?? 0) + (induced ?? 0) + (ectopic ?? 0));
 };
 
-// Parity + abortions can never add up to more pregnancies than the patient
-// reported: the same pregnancy is never counted twice.
-export const obstetricTotalWarning = (obstetric = {}) => {
-  const g = toCount(obstetric.gravida);
-  const p = toCount(obstetric.para);
-  const a = toCount(obstetric.abortions);
-  if (g === null || p === null || a === null) return "";
-  return p + a > g ? "Para and abortions together cannot exceed the number of pregnancies." : "";
+// Gravida is always CALCULATED, never asked of the patient: the total number of
+// pregnancies, including the current one. It exists only while the patient is
+// currently pregnant — a patient who is not pregnant, and any postmenopausal
+// patient, is never shown a Gravida value.
+export const calculatedGravida = (obstetric = {}, currentPregnancyStatus = "") => {
+  if (currentPregnancyStatus !== "pregnant") return null;
+  const previous = previousPregnancyCount(obstetric);
+  return (previous ?? 0) + 1;
+};
+
+// The losses before 24 weeks, added up here so the patient is never asked to
+// total them herself. Keeps a legacy entry when nothing newer was answered.
+export const abortionCount = (obstetric = {}) => {
+  const parts = [obstetric.miscarriages, obstetric.induced_abortions, obstetric.ectopic_pregnancies].map(
+    toCount
+  );
+  if (parts.every((v) => v === null)) return toCount(obstetric.abortions);
+  return parts.reduce((total, v) => total + (v ?? 0), 0);
 };
 
 // The legacy flat PatientProfile summaries are kept in sync so every existing
@@ -361,9 +393,12 @@ export function legacyGynaeFields(gynae, isFemale) {
     })
     .join(" | ");
 
-  const summary = gpaText(o);
+  // Gravida is the calculated value only, and it exists only while she is
+  // pregnant — it is never shown for a non-pregnant or postmenopausal patient.
+  const gravida = calculatedGravida(o, g.current_pregnancy.status);
+  const para = toCount(o.para);
   const history = [
-    summary,
+    gravida !== null ? `G${gravida} P${para ?? "?"}` : para !== null ? `P${para}` : "",
     toCount(o.living_children) !== null ? `${o.living_children} living children` : "",
     toCount(o.stillbirths) !== null ? `${o.stillbirths} stillbirths` : "",
     pregnancies,
@@ -378,10 +413,10 @@ export function legacyGynaeFields(gynae, isFemale) {
   // as 0, which would turn an unanswered question into a negative history.
   const counts = {};
   [
-    ["gravida", o.gravida],
+    ["gravida", gravida],
     ["para", o.para],
     ["living_children", o.living_children],
-    ["miscarriages_abortions", o.abortions],
+    ["miscarriages_abortions", abortionCount(o)],
     ["stillbirths", o.stillbirths],
   ].forEach(([field, raw]) => {
     const n = toCount(raw);

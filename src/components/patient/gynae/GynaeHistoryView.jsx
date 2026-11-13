@@ -4,7 +4,7 @@ import {
   normalizeGynaeHistory,
   labelFor,
   conditionLabel,
-  gpaText,
+  calculatedGravida,
   CYCLE_REGULARITY,
   MENSTRUAL_FLOW,
   DYSMENORRHOEA,
@@ -52,7 +52,9 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
       ? profile.pregnancy_status
       : g.current_pregnancy.status;
   const pregnant = pregnancyStatus === "pregnant";
-  const summary = gpaText(g.obstetric);
+  // Gravida exists only while she is pregnant: it is calculated from all her
+  // pregnancies, including the current one. Never shown otherwise.
+  const gravida = calculatedGravida(g.obstetric, pregnancyStatus);
 
   return (
     <div className="space-y-5">
@@ -79,7 +81,6 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
                     : notRecorded
             }
           />
-          {summary && <InfoRow label="G / P / A" value={summary} />}
           {pregnant && (
             <>
               <InfoRow
@@ -144,7 +145,8 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Past Obstetric History")}</h4>
         {stamp("obstetric")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-          <InfoRow label={t("Pregnancies / births / abortions")} value={summary || notRecorded} />
+          {pregnant && <InfoRow label={t("Gravida (G)")} value={gravida !== null ? String(gravida) : notRecorded} />}
+          <InfoRow label={t("Para (P)")} value={value(g.obstetric.para)} />
           <InfoRow label={t("Term deliveries")} value={value(g.obstetric.term_deliveries)} />
           <InfoRow label={t("Preterm deliveries")} value={value(g.obstetric.preterm_deliveries)} />
           <InfoRow label={t("Miscarriages")} value={value(g.obstetric.miscarriages)} />
@@ -153,6 +155,11 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
           <InfoRow label={t("Stillbirths")} value={value(g.obstetric.stillbirths)} />
           <InfoRow label={t("Living children")} value={value(g.obstetric.living_children)} />
         </div>
+        {pregnant && (
+          <p className="text-[11px] text-muted-foreground">
+            {t("Gravida (G) counts every pregnancy once, including the current one.")}
+          </p>
+        )}
         {(g.obstetric.pregnancies || []).length > 0 && (
           <div className="space-y-2 pt-1">
             {(g.obstetric.pregnancies || []).map((entry, index) => (
