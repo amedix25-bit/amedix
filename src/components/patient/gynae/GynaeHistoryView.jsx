@@ -55,6 +55,11 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
   // Gravida exists only while she is pregnant: it is calculated from all her
   // pregnancies, including the current one. Never shown otherwise.
   const gravida = calculatedGravida(g.obstetric, pregnancyStatus);
+  // A postmenopausal patient is never asked about her cycle, so when she left it
+  // blank the whole Menstrual History part is left out instead of being shown as
+  // a list of "Not recorded" lines.
+  const postmenopausal = g.menopause.status === "postmenopausal";
+  const showMenstrual = !postmenopausal || sectionHasAnswers("menstrual", g.menstrual);
 
   return (
     <div className="space-y-5">
@@ -97,21 +102,23 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
         </div>
       </section>
 
-      <section className="space-y-2 border-t border-border pt-4">
-        <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Menstrual History")}</h4>
-        {stamp("menstrual")}
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-          <InfoRow label={t("Last menstrual period (LMP)")} value={value(g.menstrual.lmp)} />
-          <InfoRow label={t("Age at menarche")} value={value(g.menstrual.age_at_menarche)} />
-          <InfoRow label={t("Cycle regularity")} value={value(labelFor(CYCLE_REGULARITY, g.menstrual.cycle_regularity))} />
-          <InfoRow label={t("Cycle length (days)")} value={value(g.menstrual.cycle_length)} />
-          <InfoRow label={t("Bleeding duration (days)")} value={value(g.menstrual.bleeding_duration)} />
-          <InfoRow label={t("Menstrual flow")} value={value(labelFor(MENSTRUAL_FLOW, g.menstrual.flow))} />
-          <InfoRow label={t("Dysmenorrhoea (period pain)")} value={value(labelFor(DYSMENORRHOEA, g.menstrual.dysmenorrhoea))} />
-          <InfoRow label={t("Abnormal uterine bleeding")} value={yesNo(g.menstrual.abnormal_uterine_bleeding)} />
-        </div>
-        {g.menstrual.details && <p className="text-sm">{g.menstrual.details}</p>}
-      </section>
+      {showMenstrual && (
+        <section className="space-y-2 border-t border-border pt-4">
+          <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Menstrual History")}</h4>
+          {stamp("menstrual")}
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+            <InfoRow label={t("Last menstrual period (LMP)")} value={value(g.menstrual.lmp)} />
+            <InfoRow label={t("Age at menarche")} value={value(g.menstrual.age_at_menarche)} />
+            <InfoRow label={t("Cycle regularity")} value={value(labelFor(CYCLE_REGULARITY, g.menstrual.cycle_regularity))} />
+            <InfoRow label={t("Cycle length (days)")} value={value(g.menstrual.cycle_length)} />
+            <InfoRow label={t("Bleeding duration (days)")} value={value(g.menstrual.bleeding_duration)} />
+            <InfoRow label={t("Menstrual flow")} value={value(labelFor(MENSTRUAL_FLOW, g.menstrual.flow))} />
+            <InfoRow label={t("Dysmenorrhoea (period pain)")} value={value(labelFor(DYSMENORRHOEA, g.menstrual.dysmenorrhoea))} />
+            <InfoRow label={t("Abnormal uterine bleeding")} value={yesNo(g.menstrual.abnormal_uterine_bleeding)} />
+          </div>
+          {g.menstrual.details && <p className="text-sm">{g.menstrual.details}</p>}
+        </section>
+      )}
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Past Gynaecological History")}</h4>
