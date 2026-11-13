@@ -588,6 +588,9 @@ export function writeSubBlock(doc, label, entries, y, artwork, noteTitle) {
     rowMetrics(doc, list[0].label, list[0].value).height
   );
   let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, label) + firstRoom);
+  // The caption keeps its first row on the same page, even when the section
+  // heading above it was already placed by an earlier block.
+  if (yy + captionRoom(doc, label) + firstRoom > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
   yy = writeCaption(doc, label, yy, artwork, noteTitle);
   return writeFieldGrid(doc, list, yy, artwork, noteTitle);
 }
