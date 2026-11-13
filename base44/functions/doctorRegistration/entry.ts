@@ -149,8 +149,8 @@ export default async function (req) {
         restores: {
           fields: formOf(draft),
           step: draft.step || 'details',
-          identity: identity ? { status: identity.status, verification_id: identity.id, method: identity.document_type } : null,
-          license: license ? { status: license.status, verification_id: license.id } : null,
+          identity: identity ? { status: identity.status, auto_check: identity.auto_check || null, verification_id: identity.id, method: identity.document_type } : null,
+          license: license ? { status: license.status, auto_check: license.auto_check || null, verification_id: license.id } : null,
         },
       });
     }

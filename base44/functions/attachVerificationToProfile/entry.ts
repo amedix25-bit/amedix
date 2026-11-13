@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { isDocumentVerificationAccepted } from '../../shared/documentNumberVerification.ts';
 
 // Links already-created verification records to the newly created profile.
 // The records are looked up with the app-user token (Row Level Security keeps
@@ -25,7 +26,9 @@ export default async function(req) {
     }
 
     const records = await base44.entities.IdentityVerification.filter({ id: { $in: record_ids } });
-    const ownedIds = records.map((r) => r.id);
+    // Only a document whose number the automated engine matched may be linked
+    // to a profile — a mismatch or an unreadable document is never attached.
+    const ownedIds = records.filter((r) => isDocumentVerificationAccepted(r)).map((r) => r.id);
     if (ownedIds.length === 0) {
       return Response.json({ error: 'No matching records' }, { status: 404 });
     }

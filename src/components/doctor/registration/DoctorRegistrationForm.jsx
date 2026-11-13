@@ -21,10 +21,10 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
   const [doctorForm, setDoctorForm] = useState({ ...EMPTY_DOCTOR_FORM, ...(restores?.fields || {}) });
   const [doctorVerification, setDoctorVerification] = useState({
     identity: restores?.identity
-      ? { status: restores.identity.status || "verified", verification_id: restores.identity.verification_id, document_type: restores.identity.method }
+      ? { status: restores.identity.status || "", auto_check: restores.identity.auto_check || null, verification_id: restores.identity.verification_id, document_type: restores.identity.method }
       : null,
     medical_license: restores?.license
-      ? { status: restores.license.status || "verified", verification_id: restores.license.verification_id }
+      ? { status: restores.license.status || "", auto_check: restores.license.auto_check || null, verification_id: restores.license.verification_id }
       : null,
   });
   // The AMedix Hospital Code verified at the start of registration (or entered
