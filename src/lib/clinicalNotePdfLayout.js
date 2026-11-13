@@ -1,8 +1,9 @@
 // Text and table primitives for the AMedix clinical-note sheet.
 //
 // Everything here is measured before it is printed: no line may run past the
-// right margin, no row is left hanging over a page edge, and a row that would
-// not fit moves to the next page whole unless it is taller than a page.
+// right margin, no row is left hanging over a page edge, a heading is never
+// separated from the content it introduces, and every box drawn is reported to
+// the document audit that verifies the finished pages.
 import {
   PDF_PAGE,
   PDF_INK,
@@ -12,6 +13,7 @@ import {
   drawDivider,
 } from "@/lib/requestPdfLayout";
 import { hasArabic, wrapArabicText, drawArabicLine, arabicWidth } from "@/lib/pdfText";
+import { recordPdfBox, documentDensity, textBox } from "@/lib/pdfLayoutAudit";
 
 export const PAGE = {
   M: PDF_PAGE.margin,
@@ -23,6 +25,31 @@ export const PAGE = {
 const { M, R, W } = PAGE;
 export const LABEL_W = 46;
 const VALUE_GAP = 6;
+
+// One type scale and one spacing rhythm for the whole record. The corrective
+// pass tightens spacing (density) — type sizes never shrink below these.
+const TYPE = {
+  section: 7.6,
+  label: 7,
+  value: 8.8,
+  caption: 7.5,
+  cellLabel: 6.3,
+  cellValue: 8.3,
+  vitalLabel: 6.2,
+  vitalValue: 8.8,
+};
+const LEAD = {
+  label: 3.5,
+  value: 4.35,
+  caption: 3.7,
+  cellLabel: 3,
+  cellValue: 4.15,
+  vitalLabel: 3,
+  vitalValue: 4.1,
+};
+const SPACE = { heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6 };
+
+const density = (doc) => documentDensity(doc);
 
 export function textWidth(doc, text, size, weight = "normal") {
   if (hasArabic(text)) return arabicWidth(text, size, weight);
@@ -63,15 +90,54 @@ export function wrap(doc, text, width, size, weight = "normal") {
   return fitLines(doc, lines, width, size, weight);
 }
 
-export function writeLine(doc, line, y, { size = 8.8, weight = "normal", color = PDF_INK.ink, x = M, width = W, align = "left" } = {}) {
-  if (hasArabic(line)) {
-    drawArabicLine(doc, line, x, y, { size, weight, color, width, align });
-    return;
+// One line of text, clamped inside the content column and reported to the
+// audit. Right-aligned text is right-aligned to the column edge, never beyond it.
+export function writeLine(doc, line, y, {
+  size = TYPE.value,
+  weight = "normal",
+  color = PDF_INK.ink,
+  x = M,
+  width = W,
+  align = "left",
+  kind = "text",
+} = {}) {
+  const text = String(line ?? "");
+  if (!text.trim()) return;
+
+  const left = Math.max(M, Math.min(x, R - 1));
+  const boxWidth = Math.max(1, Math.min(width, R - left));
+
+  if (hasArabic(text)) {
+    drawArabicLine(doc, text, left, y, { size, weight, color, width: boxWidth, align });
+  } else {
+    doc.setFont("helvetica", weight);
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    if (align === "right") doc.text(text, left + boxWidth, y, { align: "right" });
+    else doc.text(text, left, y);
   }
-  doc.setFont("helvetica", weight);
-  doc.setFontSize(size);
-  doc.setTextColor(...color);
-  doc.text(String(line), x, y, align === "right" ? { align: "right" } : undefined);
+
+  recordPdfBox(doc, { kind, x: left, width: boxWidth, ...textBox(y, size), label: text });
+}
+
+// A heading is tracked and upper-cased; its box is measured the same way it is
+// drawn (glyph by glyph), so the audit sees the true right edge.
+function headingWidth(doc, text) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(TYPE.section);
+  return doc.getTextWidth(String(text).toUpperCase()) + String(text).length * 1.1;
+}
+
+function writeHeading(doc, text, y, { x = M, align = "left" } = {}) {
+  drawSectionLabel(doc, text, y, x, align);
+  const width = Math.min(W, headingWidth(doc, text));
+  recordPdfBox(doc, {
+    kind: "heading",
+    x: align === "right" ? Math.max(M, x - width) : x,
+    width,
+    ...textBox(y, TYPE.section),
+    label: text,
+  });
 }
 
 export function nextPage(doc, artwork, title) {
@@ -84,13 +150,39 @@ function hairline(doc, y) {
   doc.line(M, y, R, y);
 }
 
-// A section heading with its rule — the one hierarchy level every note uses.
+// The document's own title across the head with its reference: a long title
+// wraps and the reference drops to its own line rather than running off the
+// sheet, and it is never left alone at the foot of a page.
+export function writeDocumentHead(doc, title, reference, y) {
+  const label = String(title || "Clinical Note").toUpperCase();
+  const ref = String(reference || "").trim();
+  let yy = y;
+  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc, null, title);
+
+  if (!ref || headingWidth(doc, label) + headingWidth(doc, ref) + 8 <= W) {
+    writeHeading(doc, label, yy);
+    if (ref) writeHeading(doc, ref, yy, { x: R, align: "right" });
+    return yy + 6;
+  }
+
+  wrap(doc, label, W, TYPE.section, "bold").forEach((line) => {
+    writeHeading(doc, line, yy);
+    yy += 5.2;
+  });
+  writeHeading(doc, ref, yy, { x: R, align: "right" });
+  return yy + 6;
+}
+
+// A section heading with its rule. Room is reserved for the heading AND its
+// first block of content, so a heading can never sit at the foot of a page.
 export function writeSection(doc, title, y, artwork, noteTitle) {
-  if (y > PAGE.BOTTOM - 26) y = nextPage(doc, artwork, noteTitle);
-  drawSectionLabel(doc, title, y);
-  y += 2.6;
-  drawDivider(doc, y);
-  return y + 6.2;
+  const d = density(doc);
+  let yy = y;
+  if (yy + 24 > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  writeHeading(doc, title, yy);
+  yy += 2.6 * d;
+  drawDivider(doc, yy);
+  return yy + SPACE.heading * d;
 }
 
 // One aligned record row: the label in its own column, the value beside it.
@@ -100,26 +192,27 @@ export function writeRow(doc, label, value, y, artwork, opts = {}) {
   const {
     noteTitle = "Clinical Note",
     labelWidth = LABEL_W,
-    size = 8.8,
-    lineHeight = 4.35,
-    labelSize = 7,
-    indent = 0,
+    size = TYPE.value,
+    labelSize = TYPE.label,
     rule = true,
     numbered = false,
   } = opts;
+  const d = density(doc);
+  const lineHeight = (opts.lineHeight ?? LEAD.value) * d;
 
-  const paragraphLines = String(value ?? "")
+  const paragraphs = String(value ?? "")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const rows = numbered ? paragraphLines.map((line, i) => `${i + 1}. ${line}`) : paragraphLines;
+  const rows = numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
   if (rows.length === 0) return y;
 
-  const valueX = M + labelWidth + VALUE_GAP + indent;
+  const valueX = M + labelWidth + VALUE_GAP;
   const valueW = R - valueX;
   const valueLines = rows.flatMap((line) => wrap(doc, line, valueW, size));
   const labelLines = wrap(doc, String(label || ""), labelWidth, labelSize, "bold");
-  const height = Math.max(valueLines.length * lineHeight, labelLines.length * 3.5);
+  const labelLead = LEAD.label * d;
+  const height = Math.max(valueLines.length * lineHeight, labelLines.length * labelLead);
 
   let yy = y;
   let continued = false;
@@ -128,12 +221,13 @@ export function writeRow(doc, label, value, y, artwork, opts = {}) {
   }
 
   labelLines.forEach((line, index) => {
-    writeLine(doc, line, yy + index * 3.5, {
+    writeLine(doc, line, yy + index * labelLead, {
       size: labelSize,
       weight: "bold",
       color: PDF_INK.muted,
-      x: M + indent,
+      x: M,
       width: labelWidth,
+      kind: "label",
     });
   });
 
@@ -152,7 +246,7 @@ export function writeRow(doc, label, value, y, artwork, opts = {}) {
     valueY += lineHeight;
   });
 
-  const end = Math.max(labelLines.length * 3.5 + yy, valueY - lineHeight) + 1.9;
+  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight) + SPACE.rowPad * d;
   if (rule && !continued) hairline(doc, end - 0.7);
   return end;
 }
@@ -206,37 +300,56 @@ export function parseVitals(value) {
 export function writeCaption(doc, text, y, artwork, noteTitle) {
   const label = String(text || "").trim();
   if (!label) return y;
-  const lines = wrap(doc, label, W, 7.5, "bold");
+  const d = density(doc);
+  const lead = LEAD.caption * d;
+  const lines = wrap(doc, label, W, TYPE.caption, "bold");
   let yy = y;
-  if (yy + lines.length * 3.7 > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  if (yy + lines.length * lead > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
   lines.forEach((line, index) =>
-    writeLine(doc, line, yy + index * 3.7, { size: 7.5, weight: "bold", color: PDF_INK.navy, width: W })
+    writeLine(doc, line, yy + index * lead, {
+      size: TYPE.caption,
+      weight: "bold",
+      color: PDF_INK.navy,
+      width: W,
+      kind: "heading",
+    })
   );
-  return yy + lines.length * 3.7 + 1.2;
+  return yy + lines.length * lead + 1.2;
 }
 
 export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "" } = {}) {
+  const d = density(doc);
   const perRow = 4;
   const colW = W / perRow;
+  const labelLead = LEAD.vitalLabel * d;
+  const valueLead = LEAD.vitalValue * d;
   let yy = writeCaption(doc, caption, y, artwork, noteTitle);
+
   for (let start = 0; start < vitals.length; start += perRow) {
     const cells = vitals.slice(start, start + perRow).map((item) => ({
-      labels: wrap(doc, item.label, colW - 5, 6.2),
-      values: wrap(doc, item.value, colW - 5, 8.8, "bold"),
+      labels: wrap(doc, item.label, colW - 5, TYPE.vitalLabel),
+      values: wrap(doc, item.value, colW - 5, TYPE.vitalValue, "bold"),
     }));
     const labelLines = Math.max(...cells.map((cell) => cell.labels.length));
     const valueLines = Math.max(...cells.map((cell) => cell.values.length));
-    const rowHeight = labelLines * 2.9 + 1.5 + valueLines * 4.1 + 3.2;
+    const rowHeight = labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d;
     if (yy + rowHeight > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
 
     cells.forEach((cell, column) => {
       const x = M + column * colW;
       cell.labels.forEach((line, index) =>
-        writeLine(doc, line, yy + index * 2.9, { size: 6.2, color: PDF_INK.muted, x, width: colW - 4 })
+        writeLine(doc, line, yy + index * labelLead, {
+          size: TYPE.vitalLabel,
+          color: PDF_INK.muted,
+          x,
+          width: colW - 4,
+          kind: "label",
+        })
       );
+      const base = yy + labelLines * labelLead + 1.5;
       cell.values.forEach((line, index) =>
-        writeLine(doc, line, yy + labelLines * 2.9 + 1.5 + index * 4.1, {
-          size: 8.8,
+        writeLine(doc, line, base + index * valueLead, {
+          size: TYPE.vitalValue,
           weight: "bold",
           x,
           width: colW - 4,
@@ -271,27 +384,18 @@ export function examinationBlocks(text) {
 
 // ===== Section field grid =====
 // A section's answered fields laid out in columns: short answers sit side by
-// side (three columns, two when the answers are longer), while a narrative
+// side (three columns, two when the answers need more room), while a narrative
 // answer takes the full width. Each cell keeps its own label directly above its
 // own answer, so a label can never be read against the wrong finding.
-const CELL = {
-  gap: 8,
-  labelSize: 6.3,
-  labelLead: 3,
-  valueSize: 8.3,
-  valueLead: 4.15,
-  pad: 2.6,
-};
-
 function gridCell(doc, entry, columnCount) {
-  const colW = (W - CELL.gap * (columnCount - 1)) / columnCount;
+  const colW = (W - SPACE.cellGap * (columnCount - 1)) / columnCount;
   const paragraphs = String(entry.value ?? "")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
   if (paragraphs.length > 1) return null;
-  const labels = wrap(doc, entry.label, colW, CELL.labelSize, "bold");
-  const values = wrap(doc, paragraphs[0], colW, CELL.valueSize);
+  const labels = wrap(doc, entry.label, colW, TYPE.cellLabel, "bold");
+  const values = wrap(doc, paragraphs[0], colW, TYPE.cellValue);
   if (labels.length > 2 || values.length > 2) return null;
   return { labels, values, colW };
 }
@@ -303,6 +407,9 @@ export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
     return writeRow(doc, list[0].label, list[0].value, y, artwork, { noteTitle, rule: false });
   }
 
+  const d = density(doc);
+  const labelLead = LEAD.cellLabel * d;
+  const valueLead = LEAD.cellValue * d;
   const fitThree = list.filter((entry) => gridCell(doc, entry, 3)).length;
   const fitTwo = list.filter((entry) => gridCell(doc, entry, 2)).length;
   const columns = fitThree * 2 >= list.length ? 3 : fitTwo * 2 >= list.length ? 2 : 1;
@@ -314,25 +421,26 @@ export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
     if (row.length === 0) return;
     const height = Math.max(
       ...row.map(
-        (cell) => cell.labels.length * CELL.labelLead + 1.3 + cell.values.length * CELL.valueLead + CELL.pad
+        (cell) => cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d
       )
     );
     if (yy + height > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
     row.forEach((cell, column) => {
-      const x = M + column * (cell.colW + CELL.gap);
+      const x = M + column * (cell.colW + SPACE.cellGap);
       cell.labels.forEach((line, index) =>
-        writeLine(doc, line, yy + index * CELL.labelLead, {
-          size: CELL.labelSize,
+        writeLine(doc, line, yy + index * labelLead, {
+          size: TYPE.cellLabel,
           weight: "bold",
           color: PDF_INK.muted,
           x,
           width: cell.colW,
+          kind: "label",
         })
       );
-      const base = yy + cell.labels.length * CELL.labelLead + 1.3;
+      const base = yy + cell.labels.length * labelLead + 1.3;
       cell.values.forEach((line, index) =>
-        writeLine(doc, line, base + index * CELL.valueLead, {
-          size: CELL.valueSize,
+        writeLine(doc, line, base + index * valueLead, {
+          size: TYPE.cellValue,
           x,
           width: cell.colW,
           align: hasArabic(line) ? "right" : "left",
@@ -352,13 +460,7 @@ export function writeFieldGrid(doc, entries, y, artwork, noteTitle) {
       return;
     }
     flush();
-    yy = writeRow(doc, entry.label, entry.value, yy, artwork, {
-      noteTitle,
-      rule: false,
-      labelWidth: 44,
-      size: 8.4,
-      lineHeight: 4.1,
-    });
+    yy = writeRow(doc, entry.label, entry.value, yy, artwork, { noteTitle, rule: false });
   });
   flush();
 
@@ -370,26 +472,41 @@ export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Ex
   if (!raw) return y;
   if (!/^\s*•/m.test(raw)) return writeRow(doc, label, raw, y, artwork, { noteTitle });
 
+  const d = density(doc);
   let yy = y;
   examinationBlocks(raw).forEach((block) => {
-    if (yy > PAGE.BOTTOM - 18) yy = nextPage(doc, artwork, noteTitle);
+    // A system heading travels with at least its first finding.
+    if (yy > PAGE.BOTTOM - 20) yy = nextPage(doc, artwork, noteTitle);
     if (block.heading) {
-      wrap(doc, block.heading, W, 8.4, "bold").forEach((line) => {
-        writeLine(doc, line, yy, { size: 8.4, weight: "bold", color: PDF_INK.navy });
-        yy += 4.1;
+      wrap(doc, block.heading, W, TYPE.value, "bold").forEach((line) => {
+        writeLine(doc, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
+        yy += LEAD.value * d;
       });
     }
     block.items.forEach(([itemLabel, value]) => {
       yy = writeRow(doc, itemLabel, value, yy, artwork, {
         noteTitle,
-        labelWidth: 54,
-        indent: 5,
-        size: 8.3,
-        lineHeight: 4.05,
+        labelWidth: LABEL_W,
+        size: TYPE.cellValue,
+        lineHeight: LEAD.cellValue,
         rule: false,
       });
     });
-    yy += 1.4;
+    yy += 1.4 * d;
   });
   return yy;
+}
+
+// A labelled group of findings that must stay with its label: the caption and
+// the first row of the grid are reserved together before either is printed.
+export function writeSubBlock(doc, label, entries, y, artwork, noteTitle) {
+  const list = (entries || []).filter((entry) => String(entry.value ?? "").trim());
+  if (list.length === 0) return y;
+  const d = density(doc);
+  const captionLines = wrap(doc, String(label || ""), W, TYPE.caption, "bold").length;
+  const needed = captionLines * LEAD.caption * d + 1.2 + 12;
+  let yy = y;
+  if (yy + needed > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  yy = writeCaption(doc, label, yy, artwork, noteTitle);
+  return writeFieldGrid(doc, list, yy, artwork, noteTitle);
 }

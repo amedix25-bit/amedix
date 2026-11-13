@@ -12,7 +12,6 @@ import {
   drawRequestHeader,
   drawPatientBlock,
   drawDoctorBlock,
-  drawSectionLabel,
   drawDivider,
   drawSignatureInline,
   drawRequestFooter,
@@ -21,20 +20,19 @@ import { getSpecialtyLabel, getDocDef } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import {
   PAGE,
-  textWidth,
-  wrap,
+  writeDocumentHead,
   writeSection,
   writeFieldGrid,
-  writeCaption,
+  writeSubBlock,
   writeVitalGrid,
   writeExamination,
   parseVitals,
   nextPage,
 } from "@/lib/clinicalNotePdfLayout";
+import { renderAuditedDocument, setDocumentDensity } from "@/lib/pdfLayoutAudit";
 
 const TITLE = "Clinical Note";
 const SUBTITLE = "Official Medical Document";
-const { W } = PAGE;
 
 // Documentation aids kept with the note (its evidence base and reference
 // register) are never printed on the patient's document.
@@ -82,28 +80,6 @@ function fieldIndex(note) {
     if (!order.has(field.key)) order.set(field.key, index);
   });
   return { meta, order };
-}
-
-// The note type across the head with its reference: a long type name wraps and
-// the reference drops to its own line rather than running off the sheet.
-function writeDocHead(doc, title, reference, y) {
-  const label = String(title || "Clinical Note").toUpperCase();
-  const ref = String(reference || "").trim();
-  const labelWidth = textWidth(doc, label, 7.6, "bold") + label.length * 1.1;
-  const refWidth = ref ? textWidth(doc, ref, 7.6, "bold") + ref.length * 1.1 : 0;
-  let yy = y;
-
-  if (!ref || labelWidth + refWidth + 8 <= W) {
-    drawSectionLabel(doc, label, yy);
-    if (ref) drawSectionLabel(doc, ref, yy, PAGE.R, "right");
-    return yy + 6;
-  }
-  wrap(doc, label, W, 7.6, "bold").forEach((line) => {
-    drawSectionLabel(doc, line, yy);
-    yy += 5.2;
-  });
-  drawSectionLabel(doc, ref, yy, PAGE.R, "right");
-  return yy + 6;
 }
 
 // Gathers everything the note recorded into the headings it actually has: a
@@ -234,9 +210,10 @@ function collect(note, meta, order) {
   return { blocks, sensitive };
 }
 
-export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
-  const artwork = logo || (await loadRequestLogo());
+// One complete render of the record at a given spacing density.
+function renderNote(note, { artwork, profile, density = 1 }) {
   const doc = new jsPDF();
+  setDocumentDensity(doc, density);
 
   let y = drawRequestHeader(doc, { logo: artwork, title: TITLE, subtitle: SUBTITLE, framed: true });
 
@@ -267,7 +244,12 @@ export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
   // ===== Note type & reference =====
   y += 7;
   if (y > PAGE.BOTTOM - 24) y = nextPage(doc, artwork, TITLE);
-  y = writeDocHead(doc, note.document_type_label || "Clinical Note", note.note_reference ? `Reference: ${note.note_reference}` : "", y);
+  y = writeDocumentHead(
+    doc,
+    note.document_type_label || "Clinical Note",
+    note.note_reference ? `Reference: ${note.note_reference}` : "",
+    y
+  );
   drawDivider(doc, y);
   y += 6;
 
@@ -300,8 +282,7 @@ export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
       y = writeFieldGrid(doc, item.entries, y, artwork, TITLE);
 
       item.subs.forEach((sub) => {
-        y = writeCaption(doc, sub.label, y, artwork, TITLE);
-        y = writeFieldGrid(doc, sub.entries, y, artwork, TITLE);
+        y = writeSubBlock(doc, sub.label, sub.entries, y, artwork, TITLE);
       });
       y += 2;
     });
@@ -331,4 +312,13 @@ export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
 
   drawRequestFooter(doc, note.note_reference || note.id);
   return doc;
+}
+
+// A clinical record is issued only once its pages pass the layout audit: the
+// sheet is rendered, every page checked for clipped, overlapping or orphaned
+// content, and re-rendered with tighter spacing when the first pass is not
+// clean — never with smaller type.
+export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
+  const artwork = logo || (await loadRequestLogo());
+  return renderAuditedDocument((density) => renderNote(note, { artwork, profile, density }));
 }
