@@ -12950,9 +12950,9 @@ var require_html2canvas = __commonJS({
         }
       };
       var CAPITALIZE = /(^|\s|:|-|\(|\))([a-z])/g;
-      var capitalize = function(m, p1, p2) {
+      var capitalize = function(m, p12, p22) {
         if (m.length > 0) {
-          return p1 + p2.toUpperCase();
+          return p12 + p22.toUpperCase();
         }
         return m;
       };
@@ -20510,9 +20510,9 @@ var require_regenerator = __commonJS({
             if (o4 || r4 > 1) return a;
             throw y = true, n4;
           }
-          return function(o4, p2, l) {
+          return function(o4, p3, l) {
             if (f2 > 1) throw TypeError("Generator is already running");
-            for (y && 1 === p2 && d(p2, l), c3 = p2, u3 = l; (t = c3 < 2 ? e : u3) || !y; ) {
+            for (y && 1 === p3 && d(p3, l), c3 = p3, u3 = l; (t = c3 < 2 ? e : u3) || !y; ) {
               i3 || (c3 ? c3 < 3 ? (c3 > 1 && (G.n = -1), d(c3, u3)) : G.n = u3 : G.v = u3);
               try {
                 if (f2 = 2, i3) {
@@ -23723,7 +23723,7 @@ var require_SVGPathData = __commonJS({
         a2 = Math.abs(t2.rX), i2 = Math.abs(t2.rY);
         var h2 = n([(r2 - o2) / 2, (e2 - u2) / 2], -t2.xRot / 180 * s), c2 = h2[0], m2 = h2[1], y2 = Math.pow(c2, 2) / Math.pow(a2, 2) + Math.pow(m2, 2) / Math.pow(i2, 2);
         1 < y2 && (a2 *= Math.sqrt(y2), i2 *= Math.sqrt(y2)), t2.rX = a2, t2.rY = i2;
-        var p2 = Math.pow(a2, 2) * Math.pow(m2, 2) + Math.pow(i2, 2) * Math.pow(c2, 2), f2 = (t2.lArcFlag !== t2.sweepFlag ? 1 : -1) * Math.sqrt(Math.max(0, (Math.pow(a2, 2) * Math.pow(i2, 2) - p2) / p2)), T36 = a2 * m2 / i2 * f2, O2 = -i2 * c2 / a2 * f2, l2 = n([T36, O2], t2.xRot / 180 * s);
+        var p3 = Math.pow(a2, 2) * Math.pow(m2, 2) + Math.pow(i2, 2) * Math.pow(c2, 2), f2 = (t2.lArcFlag !== t2.sweepFlag ? 1 : -1) * Math.sqrt(Math.max(0, (Math.pow(a2, 2) * Math.pow(i2, 2) - p3) / p3)), T36 = a2 * m2 / i2 * f2, O2 = -i2 * c2 / a2 * f2, l2 = n([T36, O2], t2.xRot / 180 * s);
         t2.cX = l2[0] + (r2 + o2) / 2, t2.cY = l2[1] + (e2 + u2) / 2, t2.phi1 = Math.atan2((m2 - O2) / i2, (c2 - T36) / a2), t2.phi2 = Math.atan2((-m2 - O2) / i2, (-c2 - T36) / a2), 0 === t2.sweepFlag && t2.phi2 > t2.phi1 && (t2.phi2 -= 2 * s), 1 === t2.sweepFlag && t2.phi2 < t2.phi1 && (t2.phi2 += 2 * s), t2.phi1 *= 180 / s, t2.phi2 *= 180 / s;
       }
       function h(t2, r2, e2) {
@@ -23789,11 +23789,11 @@ var require_SVGPathData = __commonJS({
         }
         function s2(t3, r3, e3, a3, n2, s3) {
           return o(t3, r3, e3, a3, n2, s3), i2((function(i3, o2, u2, h2) {
-            var c2 = i3.x1, m2 = i3.x2, y2 = i3.relative && !isNaN(h2), p2 = void 0 !== i3.x ? i3.x : y2 ? 0 : o2, f2 = void 0 !== i3.y ? i3.y : y2 ? 0 : u2;
+            var c2 = i3.x1, m2 = i3.x2, y2 = i3.relative && !isNaN(h2), p3 = void 0 !== i3.x ? i3.x : y2 ? 0 : o2, f2 = void 0 !== i3.y ? i3.y : y2 ? 0 : u2;
             function T37(t4) {
               return t4 * t4;
             }
-            i3.type & N23.HORIZ_LINE_TO && 0 !== r3 && (i3.type = N23.LINE_TO, i3.y = i3.relative ? 0 : u2), i3.type & N23.VERT_LINE_TO && 0 !== e3 && (i3.type = N23.LINE_TO, i3.x = i3.relative ? 0 : o2), void 0 !== i3.x && (i3.x = i3.x * t3 + f2 * e3 + (y2 ? 0 : n2)), void 0 !== i3.y && (i3.y = p2 * r3 + i3.y * a3 + (y2 ? 0 : s3)), void 0 !== i3.x1 && (i3.x1 = i3.x1 * t3 + i3.y1 * e3 + (y2 ? 0 : n2)), void 0 !== i3.y1 && (i3.y1 = c2 * r3 + i3.y1 * a3 + (y2 ? 0 : s3)), void 0 !== i3.x2 && (i3.x2 = i3.x2 * t3 + i3.y2 * e3 + (y2 ? 0 : n2)), void 0 !== i3.y2 && (i3.y2 = m2 * r3 + i3.y2 * a3 + (y2 ? 0 : s3));
+            i3.type & N23.HORIZ_LINE_TO && 0 !== r3 && (i3.type = N23.LINE_TO, i3.y = i3.relative ? 0 : u2), i3.type & N23.VERT_LINE_TO && 0 !== e3 && (i3.type = N23.LINE_TO, i3.x = i3.relative ? 0 : o2), void 0 !== i3.x && (i3.x = i3.x * t3 + f2 * e3 + (y2 ? 0 : n2)), void 0 !== i3.y && (i3.y = p3 * r3 + i3.y * a3 + (y2 ? 0 : s3)), void 0 !== i3.x1 && (i3.x1 = i3.x1 * t3 + i3.y1 * e3 + (y2 ? 0 : n2)), void 0 !== i3.y1 && (i3.y1 = c2 * r3 + i3.y1 * a3 + (y2 ? 0 : s3)), void 0 !== i3.x2 && (i3.x2 = i3.x2 * t3 + i3.y2 * e3 + (y2 ? 0 : n2)), void 0 !== i3.y2 && (i3.y2 = m2 * r3 + i3.y2 * a3 + (y2 ? 0 : s3));
             var O2 = t3 * a3 - r3 * e3;
             if (void 0 !== i3.xRot && (1 !== t3 || 0 !== r3 || 0 !== e3 || 1 !== a3)) if (0 === O2) delete i3.rX, delete i3.rY, delete i3.xRot, delete i3.lArcFlag, delete i3.sweepFlag, i3.type = N23.LINE_TO;
             else {
@@ -23830,12 +23830,12 @@ var require_SVGPathData = __commonJS({
           void 0 === t3 && (t3 = 0), o(t3);
           var r3 = NaN, e3 = NaN, a3 = NaN, n2 = NaN;
           return i2((function(i3, o2, s3, u2, h2) {
-            var c2 = Math.abs, m2 = false, y2 = 0, p2 = 0;
-            if (i3.type & N23.SMOOTH_CURVE_TO && (y2 = isNaN(r3) ? 0 : o2 - r3, p2 = isNaN(e3) ? 0 : s3 - e3), i3.type & (N23.CURVE_TO | N23.SMOOTH_CURVE_TO) ? (r3 = i3.relative ? o2 + i3.x2 : i3.x2, e3 = i3.relative ? s3 + i3.y2 : i3.y2) : (r3 = NaN, e3 = NaN), i3.type & N23.SMOOTH_QUAD_TO ? (a3 = isNaN(a3) ? o2 : 2 * o2 - a3, n2 = isNaN(n2) ? s3 : 2 * s3 - n2) : i3.type & N23.QUAD_TO ? (a3 = i3.relative ? o2 + i3.x1 : i3.x1, n2 = i3.relative ? s3 + i3.y1 : i3.y2) : (a3 = NaN, n2 = NaN), i3.type & N23.LINE_COMMANDS || i3.type & N23.ARC && (0 === i3.rX || 0 === i3.rY || !i3.lArcFlag) || i3.type & N23.CURVE_TO || i3.type & N23.SMOOTH_CURVE_TO || i3.type & N23.QUAD_TO || i3.type & N23.SMOOTH_QUAD_TO) {
+            var c2 = Math.abs, m2 = false, y2 = 0, p3 = 0;
+            if (i3.type & N23.SMOOTH_CURVE_TO && (y2 = isNaN(r3) ? 0 : o2 - r3, p3 = isNaN(e3) ? 0 : s3 - e3), i3.type & (N23.CURVE_TO | N23.SMOOTH_CURVE_TO) ? (r3 = i3.relative ? o2 + i3.x2 : i3.x2, e3 = i3.relative ? s3 + i3.y2 : i3.y2) : (r3 = NaN, e3 = NaN), i3.type & N23.SMOOTH_QUAD_TO ? (a3 = isNaN(a3) ? o2 : 2 * o2 - a3, n2 = isNaN(n2) ? s3 : 2 * s3 - n2) : i3.type & N23.QUAD_TO ? (a3 = i3.relative ? o2 + i3.x1 : i3.x1, n2 = i3.relative ? s3 + i3.y1 : i3.y2) : (a3 = NaN, n2 = NaN), i3.type & N23.LINE_COMMANDS || i3.type & N23.ARC && (0 === i3.rX || 0 === i3.rY || !i3.lArcFlag) || i3.type & N23.CURVE_TO || i3.type & N23.SMOOTH_CURVE_TO || i3.type & N23.QUAD_TO || i3.type & N23.SMOOTH_QUAD_TO) {
               var f2 = void 0 === i3.x ? 0 : i3.relative ? i3.x : i3.x - o2, T37 = void 0 === i3.y ? 0 : i3.relative ? i3.y : i3.y - s3;
-              y2 = isNaN(a3) ? void 0 === i3.x1 ? y2 : i3.relative ? i3.x : i3.x1 - o2 : a3 - o2, p2 = isNaN(n2) ? void 0 === i3.y1 ? p2 : i3.relative ? i3.y : i3.y1 - s3 : n2 - s3;
+              y2 = isNaN(a3) ? void 0 === i3.x1 ? y2 : i3.relative ? i3.x : i3.x1 - o2 : a3 - o2, p3 = isNaN(n2) ? void 0 === i3.y1 ? p3 : i3.relative ? i3.y : i3.y1 - s3 : n2 - s3;
               var O2 = void 0 === i3.x2 ? 0 : i3.relative ? i3.x : i3.x2 - o2, l2 = void 0 === i3.y2 ? 0 : i3.relative ? i3.y : i3.y2 - s3;
-              c2(f2) <= t3 && c2(T37) <= t3 && c2(y2) <= t3 && c2(p2) <= t3 && c2(O2) <= t3 && c2(l2) <= t3 && (m2 = true);
+              c2(f2) <= t3 && c2(T37) <= t3 && c2(y2) <= t3 && c2(p3) <= t3 && c2(O2) <= t3 && c2(l2) <= t3 && (m2 = true);
             }
             return i3.type & N23.CLOSE_PATH && c2(o2 - u2) <= t3 && c2(s3 - h2) <= t3 && (m2 = true), m2 ? [] : i3;
           }));
@@ -23860,8 +23860,8 @@ var require_SVGPathData = __commonJS({
             return N23.ARC === t3.type ? (function(t4, r4, e4) {
               var a3, i3, o2, s3;
               t4.cX || u(t4, r4, e4);
-              for (var h2 = Math.min(t4.phi1, t4.phi2), y2 = Math.max(t4.phi1, t4.phi2) - h2, p2 = Math.ceil(y2 / 90), f2 = new Array(p2), T37 = r4, O2 = e4, l2 = 0; l2 < p2; l2++) {
-                var v2 = m(t4.phi1, t4.phi2, l2 / p2), _2 = m(t4.phi1, t4.phi2, (l2 + 1) / p2), d2 = _2 - v2, x = 4 / 3 * Math.tan(d2 * c / 4), A = [Math.cos(v2 * c) - x * Math.sin(v2 * c), Math.sin(v2 * c) + x * Math.cos(v2 * c)], E = A[0], C3 = A[1], M11 = [Math.cos(_2 * c), Math.sin(_2 * c)], R11 = M11[0], S32 = M11[1], g = [R11 + x * Math.sin(_2 * c), S32 - x * Math.cos(_2 * c)], I25 = g[0], V = g[1];
+              for (var h2 = Math.min(t4.phi1, t4.phi2), y2 = Math.max(t4.phi1, t4.phi2) - h2, p3 = Math.ceil(y2 / 90), f2 = new Array(p3), T37 = r4, O2 = e4, l2 = 0; l2 < p3; l2++) {
+                var v2 = m(t4.phi1, t4.phi2, l2 / p3), _2 = m(t4.phi1, t4.phi2, (l2 + 1) / p3), d2 = _2 - v2, x = 4 / 3 * Math.tan(d2 * c / 4), A = [Math.cos(v2 * c) - x * Math.sin(v2 * c), Math.sin(v2 * c) + x * Math.cos(v2 * c)], E = A[0], C3 = A[1], M11 = [Math.cos(_2 * c), Math.sin(_2 * c)], R11 = M11[0], S32 = M11[1], g = [R11 + x * Math.sin(_2 * c), S32 - x * Math.cos(_2 * c)], I25 = g[0], V = g[1];
                 f2[l2] = { relative: t4.relative, type: N23.CURVE_TO };
                 var D3 = function(r5, e5) {
                   var a4 = n([r5 * t4.rX, e5 * t4.rY], t4.xRot), i4 = a4[0], o3 = a4[1];
@@ -27095,15 +27095,15 @@ var require_lib2 = __commonJS({
         }
       }, {
         key: "sumCubic",
-        value: function sumCubic(t, p0, p1, p2, p3) {
-          return Math.pow(1 - t, 3) * p0 + 3 * Math.pow(1 - t, 2) * t * p1 + 3 * (1 - t) * Math.pow(t, 2) * p2 + Math.pow(t, 3) * p3;
+        value: function sumCubic(t, p0, p12, p22, p3) {
+          return Math.pow(1 - t, 3) * p0 + 3 * Math.pow(1 - t, 2) * t * p12 + 3 * (1 - t) * Math.pow(t, 2) * p22 + Math.pow(t, 3) * p3;
         }
       }, {
         key: "bezierCurveAdd",
-        value: function bezierCurveAdd(forX, p0, p1, p2, p3) {
-          var b = 6 * p0 - 12 * p1 + 6 * p2;
-          var a = -3 * p0 + 9 * p1 - 9 * p2 + 3 * p3;
-          var c2 = 3 * p1 - 3 * p0;
+        value: function bezierCurveAdd(forX, p0, p12, p22, p3) {
+          var b = 6 * p0 - 12 * p12 + 6 * p22;
+          var a = -3 * p0 + 9 * p12 - 9 * p22 + 3 * p3;
+          var c2 = 3 * p12 - 3 * p0;
           if (a === 0) {
             if (b === 0) {
               return;
@@ -27111,9 +27111,9 @@ var require_lib2 = __commonJS({
             var t = -c2 / b;
             if (0 < t && t < 1) {
               if (forX) {
-                this.addX(this.sumCubic(t, p0, p1, p2, p3));
+                this.addX(this.sumCubic(t, p0, p12, p22, p3));
               } else {
-                this.addY(this.sumCubic(t, p0, p1, p2, p3));
+                this.addY(this.sumCubic(t, p0, p12, p22, p3));
               }
             }
             return;
@@ -27125,17 +27125,17 @@ var require_lib2 = __commonJS({
           var t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
           if (0 < t1 && t1 < 1) {
             if (forX) {
-              this.addX(this.sumCubic(t1, p0, p1, p2, p3));
+              this.addX(this.sumCubic(t1, p0, p12, p22, p3));
             } else {
-              this.addY(this.sumCubic(t1, p0, p1, p2, p3));
+              this.addY(this.sumCubic(t1, p0, p12, p22, p3));
             }
           }
           var t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
           if (0 < t2 && t2 < 1) {
             if (forX) {
-              this.addX(this.sumCubic(t2, p0, p1, p2, p3));
+              this.addX(this.sumCubic(t2, p0, p12, p22, p3));
             } else {
-              this.addY(this.sumCubic(t2, p0, p1, p2, p3));
+              this.addY(this.sumCubic(t2, p0, p12, p22, p3));
             }
           }
         }
@@ -28884,9 +28884,9 @@ var require_lib2 = __commonJS({
       }, {
         key: "getMarkers",
         value: function getMarkers() {
-          var _this$getPoints3 = this.getPoints(), _this$getPoints4 = _slicedToArray__default["default"](_this$getPoints3, 2), p0 = _this$getPoints4[0], p1 = _this$getPoints4[1];
-          var a = p0.angleTo(p1);
-          return [[p0, a], [p1, a]];
+          var _this$getPoints3 = this.getPoints(), _this$getPoints4 = _slicedToArray__default["default"](_this$getPoints3, 2), p0 = _this$getPoints4[0], p12 = _this$getPoints4[1];
+          var a = p0.angleTo(p12);
+          return [[p0, a], [p12, a]];
         }
       }]);
       return LineElement2;
@@ -30320,7 +30320,7 @@ var require_lib2 = __commonJS({
             ctx.beginPath();
           }
           glyphInfo.forEach(function(glyph, i) {
-            var p0 = glyph.p0, p1 = glyph.p1, rotation = glyph.rotation, partialText = glyph.text;
+            var p0 = glyph.p0, p12 = glyph.p1, rotation = glyph.rotation, partialText = glyph.text;
             ctx.save();
             ctx.translate(p0.x, p0.y);
             ctx.rotate(rotation);
@@ -30335,7 +30335,7 @@ var require_lib2 = __commonJS({
               if (i === 0) {
                 ctx.moveTo(p0.x, p0.y + fontSize / 8);
               }
-              ctx.lineTo(p1.x, p1.y + fontSize / 5);
+              ctx.lineTo(p12.x, p12.y + fontSize / 5);
             }
           });
           if (textDecoration === "underline") {
@@ -30365,12 +30365,12 @@ var require_lib2 = __commonJS({
           }
           var splineStep = this.textHeight / 20;
           var p0 = this.getEquidistantPointOnPath(offset, splineStep, 0);
-          var p1 = this.getEquidistantPointOnPath(offset + glyphWidth, splineStep, 0);
+          var p12 = this.getEquidistantPointOnPath(offset + glyphWidth, splineStep, 0);
           var segment = {
             p0,
-            p1
+            p1: p12
           };
-          var rotation = p0 && p1 ? Math.atan2(p1.y - p0.y, p1.x - p0.x) : 0;
+          var rotation = p0 && p12 ? Math.atan2(p12.y - p0.y, p12.x - p0.x) : 0;
           if (dy) {
             var dyX = Math.cos(Math.PI / 2 + rotation) * dy;
             var dyY = Math.cos(-rotation) * dy;
@@ -30378,9 +30378,9 @@ var require_lib2 = __commonJS({
               x: p0.x + dyX,
               y: p0.y + dyY
             });
-            segment.p1 = _objectSpread$2(_objectSpread$2({}, p1), {}, {
-              x: p1.x + dyX,
-              y: p1.y + dyY
+            segment.p1 = _objectSpread$2(_objectSpread$2({}, p12), {}, {
+              x: p12.x + dyX,
+              y: p12.y + dyY
             });
           }
           offset += glyphWidth;
@@ -30608,28 +30608,28 @@ var require_lib2 = __commonJS({
         key: "calcLength",
         value: function calcLength(x, y, commandType, points) {
           var len = 0;
-          var p1 = null;
-          var p2 = null;
+          var p12 = null;
+          var p22 = null;
           var t = 0;
           switch (commandType) {
             case PathParser.LINE_TO:
               return this.getLineLength(x, y, points[0], points[1]);
             case PathParser.CURVE_TO:
               len = 0;
-              p1 = this.getPointOnCubicBezier(0, x, y, points[0], points[1], points[2], points[3], points[4], points[5]);
+              p12 = this.getPointOnCubicBezier(0, x, y, points[0], points[1], points[2], points[3], points[4], points[5]);
               for (t = 0.01; t <= 1; t += 0.01) {
-                p2 = this.getPointOnCubicBezier(t, x, y, points[0], points[1], points[2], points[3], points[4], points[5]);
-                len += this.getLineLength(p1.x, p1.y, p2.x, p2.y);
-                p1 = p2;
+                p22 = this.getPointOnCubicBezier(t, x, y, points[0], points[1], points[2], points[3], points[4], points[5]);
+                len += this.getLineLength(p12.x, p12.y, p22.x, p22.y);
+                p12 = p22;
               }
               return len;
             case PathParser.QUAD_TO:
               len = 0;
-              p1 = this.getPointOnQuadraticBezier(0, x, y, points[0], points[1], points[2], points[3]);
+              p12 = this.getPointOnQuadraticBezier(0, x, y, points[0], points[1], points[2], points[3]);
               for (t = 0.01; t <= 1; t += 0.01) {
-                p2 = this.getPointOnQuadraticBezier(t, x, y, points[0], points[1], points[2], points[3]);
-                len += this.getLineLength(p1.x, p1.y, p2.x, p2.y);
-                p1 = p2;
+                p22 = this.getPointOnQuadraticBezier(t, x, y, points[0], points[1], points[2], points[3]);
+                len += this.getLineLength(p12.x, p12.y, p22.x, p22.y);
+                p12 = p22;
               }
               return len;
             case PathParser.ARC: {
@@ -30641,22 +30641,22 @@ var require_lib2 = __commonJS({
               if (Math.abs(start - end) < inc) {
                 inc = Math.abs(start - end);
               }
-              p1 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], start, 0);
+              p12 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], start, 0);
               if (dTheta < 0) {
                 for (t = start - inc; t > end; t -= inc) {
-                  p2 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], t, 0);
-                  len += this.getLineLength(p1.x, p1.y, p2.x, p2.y);
-                  p1 = p2;
+                  p22 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], t, 0);
+                  len += this.getLineLength(p12.x, p12.y, p22.x, p22.y);
+                  p12 = p22;
                 }
               } else {
                 for (t = start + inc; t < end; t += inc) {
-                  p2 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], t, 0);
-                  len += this.getLineLength(p1.x, p1.y, p2.x, p2.y);
-                  p1 = p2;
+                  p22 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], t, 0);
+                  len += this.getLineLength(p12.x, p12.y, p22.x, p22.y);
+                  p12 = p22;
                 }
               }
-              p2 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], end, 0);
-              len += this.getLineLength(p1.x, p1.y, p2.x, p2.y);
+              p22 = this.getPointOnEllipticalArc(points[0], points[1], points[2], points[3], end, 0);
+              len += this.getLineLength(p12.x, p12.y, p22.x, p22.y);
               return len;
             }
           }
@@ -30837,11 +30837,11 @@ var require_lib2 = __commonJS({
             var s = 0;
             for (var l = 0; l <= fullLen; l += precision) {
               var p0 = this.getPointOnPath(l);
-              var p1 = this.getPointOnPath(l + precision);
-              if (!p0 || !p1) {
+              var p12 = this.getPointOnPath(l + precision);
+              if (!p0 || !p12) {
                 continue;
               }
-              s += this.getLineLength(p0.x, p0.y, p1.x, p1.y);
+              s += this.getLineLength(p0.x, p0.y, p12.x, p12.y);
               if (s >= step) {
                 this.equidistantCache.points.push({
                   x: p0.x,
@@ -32577,9 +32577,9 @@ var require_jspdf_node_min = __commonJS({
         }
         r2 = t2, n2 = s2;
       } else s2 = n2;
-      var h2 = e2.length, f2 = 0, d2 = 0, p2 = "";
-      for (c2 = 0; c2 < h2; c2++) d2 = (d2 + (l2 = s2[f2 = (f2 + 1) % 256])) % 256, s2[f2] = s2[d2], s2[d2] = l2, o2 = s2[(s2[f2] + s2[d2]) % 256], p2 += String.fromCharCode(e2.charCodeAt(c2) ^ o2);
-      return p2;
+      var h2 = e2.length, f2 = 0, d2 = 0, p3 = "";
+      for (c2 = 0; c2 < h2; c2++) d2 = (d2 + (l2 = s2[f2 = (f2 + 1) % 256])) % 256, s2[f2] = s2[d2], s2[d2] = l2, o2 = s2[(s2[f2] + s2[d2]) % 256], p3 += String.fromCharCode(e2.charCodeAt(c2) ^ o2);
+      return p3;
     }
     var x = { print: 4, modify: 8, copy: 16, "annot-forms": 32 };
     function A(t2, e2, r2, n2) {
@@ -32647,8 +32647,8 @@ var require_jspdf_node_min = __commonJS({
       this.boundingBox = t2, this.xStep = e2, this.yStep = r2, this.stream = "", this.cloneIndex = 0, k.call(this, n2, i2);
     }
     function C3(t2) {
-      var e2, i2 = "string" == typeof arguments[0] ? arguments[0] : "p", o2 = arguments[1], c2 = arguments[2], u2 = arguments[3], l2 = [], h2 = 1, f2 = 16, d2 = "S", p2 = null;
-      "object" == typeof (t2 = t2 || {}) && (i2 = t2.orientation, o2 = t2.unit || o2, c2 = t2.format || c2, u2 = t2.compress || t2.compressPdf || u2, null !== (p2 = t2.encryption || null) && (p2.userPassword = p2.userPassword || "", p2.ownerPassword = p2.ownerPassword || "", p2.userPermissions = p2.userPermissions || []), h2 = "number" == typeof t2.userUnit ? Math.abs(t2.userUnit) : 1, void 0 !== t2.precision && (e2 = t2.precision), void 0 !== t2.floatPrecision && (f2 = t2.floatPrecision), d2 = t2.defaultPathOperation || "S"), l2 = t2.filters || (true === u2 ? ["FlateEncode"] : l2), o2 = o2 || "mm", i2 = ("" + (i2 || "P")).toLowerCase();
+      var e2, i2 = "string" == typeof arguments[0] ? arguments[0] : "p", o2 = arguments[1], c2 = arguments[2], u2 = arguments[3], l2 = [], h2 = 1, f2 = 16, d2 = "S", p3 = null;
+      "object" == typeof (t2 = t2 || {}) && (i2 = t2.orientation, o2 = t2.unit || o2, c2 = t2.format || c2, u2 = t2.compress || t2.compressPdf || u2, null !== (p3 = t2.encryption || null) && (p3.userPassword = p3.userPassword || "", p3.ownerPassword = p3.ownerPassword || "", p3.userPermissions = p3.userPermissions || []), h2 = "number" == typeof t2.userUnit ? Math.abs(t2.userUnit) : 1, void 0 !== t2.precision && (e2 = t2.precision), void 0 !== t2.floatPrecision && (f2 = t2.floatPrecision), d2 = t2.defaultPathOperation || "S"), l2 = t2.filters || (true === u2 ? ["FlateEncode"] : l2), o2 = o2 || "mm", i2 = ("" + (i2 || "P")).toLowerCase();
       var g2 = t2.putOnlyUsedFonts || false, m2 = {}, v2 = { internal: {}, __private__: {} };
       v2.__private__.PubSub = _;
       var b2 = "1.3", y2 = v2.__private__.getPdfVersion = function() {
@@ -32724,7 +32724,7 @@ var require_jspdf_node_min = __commonJS({
       }, V2 = v2.__private__.setFileId = function(t3) {
         return H2 = void 0 !== t3 && /^[a-fA-F0-9]{32}$/.test(t3) ? t3.toUpperCase() : H2.split("").map(function() {
           return "ABCDEF0123456789".charAt(Math.floor(16 * Math.random()));
-        }).join(""), null !== p2 && (Ce = new A(p2.userPermissions, p2.userPassword, p2.ownerPassword, H2)), H2;
+        }).join(""), null !== p3 && (Ce = new A(p3.userPermissions, p3.userPassword, p3.ownerPassword, H2)), H2;
       };
       v2.setFileId = function(t3) {
         return V2(t3), this;
@@ -32978,8 +32978,8 @@ var require_jspdf_node_min = __commonJS({
         var e3 = (t3 = t3 || {}).data || "", r2 = t3.filters || ee2(), n2 = t3.alreadyAppliedFilters || [], i3 = t3.addLength1 || false, a2 = e3.length, o3 = t3.objectId, s2 = function(t4) {
           return t4;
         };
-        if (null !== p2 && void 0 === o3) throw new Error("ObjectId must be passed to putStream for file encryption");
-        null !== p2 && (s2 = Ce.encryptor(o3, 0));
+        if (null !== p3 && void 0 === o3) throw new Error("ObjectId must be passed to putStream for file encryption");
+        null !== p3 && (s2 = Ce.encryptor(o3, 0));
         var c3 = {};
         true === r2 && (r2 = ["FlateEncode"]);
         var u3 = t3.additionalKeyValues || [], l3 = (c3 = void 0 !== C3.API.processDataByFilters ? C3.API.processDataByFilters(e3, r2) : { data: e3, reverseChain: [] }).reverseChain + (Array.isArray(n2) ? n2.join(" ") : n2.toString());
@@ -33121,7 +33121,7 @@ var require_jspdf_node_min = __commonJS({
         var t3 = Yt2(), e3 = function(t4) {
           return t4;
         };
-        for (var r2 in null !== p2 && (e3 = Ce.encryptor(t3, 0)), ct2("<<"), ct2("/Producer (" + de2(e3("jsPDF " + C3.version)) + ")"), Nt2) Nt2.hasOwnProperty(r2) && Nt2[r2] && ct2("/" + r2.substr(0, 1).toUpperCase() + r2.substr(1) + " (" + de2(e3(Nt2[r2])) + ")");
+        for (var r2 in null !== p3 && (e3 = Ce.encryptor(t3, 0)), ct2("<<"), ct2("/Producer (" + de2(e3("jsPDF " + C3.version)) + ")"), Nt2) Nt2.hasOwnProperty(r2) && Nt2[r2] && ct2("/" + r2.substr(0, 1).toUpperCase() + r2.substr(1) + " (" + de2(e3(Nt2[r2])) + ")");
         ct2("/CreationDate (" + de2(e3(U2)) + ")"), ct2(">>"), ct2("endobj");
       }, Ne2 = v2.__private__.putCatalog = function(t3) {
         var e3 = (t3 = t3 || {}).rootDictionaryObjId || $t2;
@@ -33158,7 +33158,7 @@ var require_jspdf_node_min = __commonJS({
         }
         mt2 && ct2("/PageMode /" + mt2), Et2.publish("putCatalog"), ct2(">>"), ct2("endobj");
       }, Le2 = v2.__private__.putTrailer = function() {
-        ct2("trailer"), ct2("<<"), ct2("/Size " + (Q2 + 1)), ct2("/Root " + Q2 + " 0 R"), ct2("/Info " + (Q2 - 1) + " 0 R"), null !== p2 && ct2("/Encrypt " + Ce.oid + " 0 R"), ct2("/ID [ <" + H2 + "> <" + H2 + "> ]"), ct2(">>");
+        ct2("trailer"), ct2("<<"), ct2("/Size " + (Q2 + 1)), ct2("/Root " + Q2 + " 0 R"), ct2("/Info " + (Q2 - 1) + " 0 R"), null !== p3 && ct2("/Encrypt " + Ce.oid + " 0 R"), ct2("/ID [ <" + H2 + "> <" + H2 + "> ]"), ct2(">>");
       }, xe2 = v2.__private__.putHeader = function() {
         ct2("%PDF-" + b2), ct2("%\xBA\xDF\xAC\xE0");
       }, Ae2 = v2.__private__.putXRef = function() {
@@ -33184,7 +33184,7 @@ var require_jspdf_node_min = __commonJS({
         })(), (function(t4) {
           var e4;
           for (e4 in It2) It2.hasOwnProperty(e4) && (It2[e4] instanceof F6 ? se2(It2[e4]) : It2[e4] instanceof I25 && ce2(It2[e4], t4));
-        })(t3), Et2.publish("putResources"), t3.forEach(le2), le2({ resourcesOid: Zt2, objectOid: Number.MAX_SAFE_INTEGER }), Et2.publish("postPutResources"), null !== p2 && (Ce.oid = Yt2(), ct2("<<"), ct2("/Filter /Standard"), ct2("/V " + Ce.v), ct2("/R " + Ce.r), ct2("/U <" + Ce.toHexString(Ce.U) + ">"), ct2("/O <" + Ce.toHexString(Ce.O) + ">"), ct2("/P " + Ce.P), ct2(">>"), ct2("endobj")), we2(), Ne2();
+        })(t3), Et2.publish("putResources"), t3.forEach(le2), le2({ resourcesOid: Zt2, objectOid: Number.MAX_SAFE_INTEGER }), Et2.publish("postPutResources"), null !== p3 && (Ce.oid = Yt2(), ct2("<<"), ct2("/Filter /Standard"), ct2("/V " + Ce.v), ct2("/R " + Ce.r), ct2("/U <" + Ce.toHexString(Ce.U) + ">"), ct2("/O <" + Ce.toHexString(Ce.O) + ">"), ct2("/P " + Ce.P), ct2(">>"), ct2("endobj")), we2(), Ne2();
         var e3 = rt2;
         return Ae2(), Le2(), ct2("startxref"), ct2("" + e3), ct2("%%EOF"), st2(it2[K2]), et2.join("\n");
       }, _e = v2.__private__.getBlob = function(t3) {
@@ -33235,14 +33235,14 @@ var require_jspdf_node_min = __commonJS({
             throw new Error("The option pdfobjectnewwindow just works in a browser-environment.");
           case "pdfjsnewwindow":
             if ("[object Window]" === Object.prototype.toString.call(r)) {
-              var d3 = e3.pdfJsUrl || "examples/PDF.js/web/viewer.html", p3 = r.open();
-              if (null !== p3) {
-                var g3 = ke(p3), m3 = g3.document.createElement("iframe"), b3 = -1 === d3.indexOf("?") ? "?" : "&";
+              var d3 = e3.pdfJsUrl || "examples/PDF.js/web/viewer.html", p4 = r.open();
+              if (null !== p4) {
+                var g3 = ke(p4), m3 = g3.document.createElement("iframe"), b3 = -1 === d3.indexOf("?") ? "?" : "&";
                 f3 = this, m3.id = "pdfViewer", m3.width = "500px", m3.height = "400px", m3.src = d3 + b3 + "file=&downloadName=" + encodeURIComponent(e3.filename), m3.onload = function() {
-                  p3.document.title = e3.filename, m3.contentWindow.PDFViewerApplication.open(f3.output("bloburl"));
+                  p4.document.title = e3.filename, m3.contentWindow.PDFViewerApplication.open(f3.output("bloburl"));
                 }, g3.body.appendChild(m3);
               }
-              return p3;
+              return p4;
             }
             throw new Error("The option pdfjsnewwindow just works in a browser-environment.");
           case "dataurlnewwindow":
@@ -33333,14 +33333,14 @@ var require_jspdf_node_min = __commonJS({
       }, v2.deletePage = function() {
         return me2.apply(this, arguments), this;
       }, v2.__private__.text = v2.text = function(t3, e3, r2, n2, i3) {
-        var a2, o3, s2, c3, u3, l3, h3, f3, d3, p3 = (n2 = n2 || {}).scope || this;
+        var a2, o3, s2, c3, u3, l3, h3, f3, d3, p4 = (n2 = n2 || {}).scope || this;
         if ("number" == typeof t3 && "number" == typeof e3 && ("string" == typeof r2 || Array.isArray(r2))) {
           var g3 = r2;
           r2 = e3, e3 = t3, t3 = g3;
         }
         if (arguments[3] instanceof Ut2 == 0 ? (s2 = arguments[4], c3 = arguments[5], "object" == typeof (h3 = arguments[3]) && null !== h3 || ("string" == typeof s2 && (c3 = s2, s2 = null), "string" == typeof h3 && (c3 = h3, h3 = null), "number" == typeof h3 && (s2 = h3, h3 = null), n2 = { flags: h3, angle: s2, align: c3 })) : (M12("The transform parameter of text() with a Matrix value"), d3 = i3), isNaN(e3) || isNaN(r2) || null == t3) throw new Error("Invalid arguments passed to jsPDF.text");
-        if (0 === t3.length) return p3;
-        var v3, b3 = "", y3 = "number" == typeof n2.lineHeightFactor ? n2.lineHeightFactor : Je, w3 = p3.internal.scaleFactor;
+        if (0 === t3.length) return p4;
+        var v3, b3 = "", y3 = "number" == typeof n2.lineHeightFactor ? n2.lineHeightFactor : Je, w3 = p4.internal.scaleFactor;
         function N25(t4) {
           return t4 = t4.split("	").join(Array(n2.TabLen || 9).join(" ")), de2(t4, h3);
         }
@@ -33367,7 +33367,7 @@ var require_jspdf_node_min = __commonJS({
         }
         if (false === S33) throw new Error('Type of text must be string or Array. "' + t3 + '" is not recognized.');
         "string" == typeof t3 && (t3 = t3.match(/[\r?\n]/) ? t3.split(/\r\n|\r|\n/g) : [t3]);
-        var C4 = ft2 / p3.internal.scaleFactor, j3 = C4 * (y3 - 1);
+        var C4 = ft2 / p4.internal.scaleFactor, j3 = C4 * (y3 - 1);
         switch (n2.baseline) {
           case "bottom":
             r2 -= j3;
@@ -33381,15 +33381,15 @@ var require_jspdf_node_min = __commonJS({
           case "middle":
             r2 += C4 / 2 - j3;
         }
-        if ((l3 = n2.maxWidth || 0) > 0 && ("string" == typeof t3 ? t3 = p3.splitTextToSize(t3, l3) : "[object Array]" === Object.prototype.toString.call(t3) && (t3 = t3.reduce(function(t4, e4) {
-          return t4.concat(p3.splitTextToSize(e4, l3));
+        if ((l3 = n2.maxWidth || 0) > 0 && ("string" == typeof t3 ? t3 = p4.splitTextToSize(t3, l3) : "[object Array]" === Object.prototype.toString.call(t3) && (t3 = t3.reduce(function(t4, e4) {
+          return t4.concat(p4.splitTextToSize(e4, l3));
         }, []))), a2 = { text: t3, x: e3, y: r2, options: n2, mutex: { pdfEscape: de2, activeFontKey: Lt2, fonts: Pt2, activeFontSize: ft2 } }, Et2.publish("preProcessText", a2), t3 = a2.text, s2 = (n2 = a2.options).angle, d3 instanceof Ut2 == 0 && s2 && "number" == typeof s2) {
           s2 *= Math.PI / 180, 0 === n2.rotationDirection && (s2 = -s2), k2 === x2 && (s2 = -s2);
           var O3 = Math.cos(s2), B3 = Math.sin(s2);
           d3 = new Ut2(O3, B3, -B3, O3, 0, 0);
         } else s2 && s2 instanceof Ut2 && (d3 = s2);
         k2 !== x2 || d3 || (d3 = Wt2), void 0 !== (u3 = n2.charSpace || ur) && (b3 += q2(T36(u3)) + " Tc\n", this.setCharSpace(this.getCharSpace() || 0)), void 0 !== (f3 = n2.horizontalScale) && (b3 += q2(100 * f3) + " Tz\n"), n2.lang;
-        var E3 = -1, R13 = void 0 !== n2.renderingMode ? n2.renderingMode : n2.stroke, D5 = p3.internal.getCurrentPageInfo().pageContext;
+        var E3 = -1, R13 = void 0 !== n2.renderingMode ? n2.renderingMode : n2.stroke, D5 = p4.internal.getCurrentPageInfo().pageContext;
         switch (R13) {
           case 0:
           case false:
@@ -33427,10 +33427,10 @@ var require_jspdf_node_min = __commonJS({
         }
         var z3 = void 0 !== D5.usedRenderingMode ? D5.usedRenderingMode : -1;
         -1 !== E3 ? b3 += E3 + " Tr\n" : -1 !== z3 && (b3 += "0 Tr\n"), -1 !== E3 && (D5.usedRenderingMode = E3), c3 = n2.align || "left";
-        var U3, H3 = ft2 * y3, W4 = p3.internal.pageSize.getWidth(), V3 = Pt2[Lt2];
+        var U3, H3 = ft2 * y3, W4 = p4.internal.pageSize.getWidth(), V3 = Pt2[Lt2];
         u3 = n2.charSpace || ur, l3 = n2.maxWidth || 0, h3 = Object.assign({ autoencode: true, noBOM: true }, n2.flags);
         var G3 = [], Y3 = function(t4) {
-          return p3.getStringUnitWidth(t4, { font: V3, charSpace: u3, fontSize: ft2, doKerning: false }) * ft2 / w3;
+          return p4.getStringUnitWidth(t4, { font: V3, charSpace: u3, fontSize: ft2, doKerning: false }) * ft2 / w3;
         };
         if ("[object Array]" === Object.prototype.toString.call(t3)) {
           var J3;
@@ -33488,7 +33488,7 @@ var require_jspdf_node_min = __commonJS({
         }
         t3 = 0 === at3 ? t3.join(" Tj\nT* ") : t3.join(" Tj\n"), t3 += " Tj\n";
         var lt3 = "BT\n/";
-        return lt3 += Lt2 + " " + ft2 + " Tf\n", lt3 += q2(ft2 * y3) + " TL\n", lt3 += sr + "\n", lt3 += b3, lt3 += t3, ct2(lt3 += "ET"), m2[Lt2] = true, p3;
+        return lt3 += Lt2 + " " + ft2 + " Tf\n", lt3 += q2(ft2 * y3) + " TL\n", lt3 += sr + "\n", lt3 += b3, lt3 += t3, ct2(lt3 += "ET"), m2[Lt2] = true, p4;
       };
       var qe = v2.__private__.clip = v2.clip = function(t3) {
         return ct2("evenodd" === t3 ? "W*" : "W"), this;
@@ -33583,9 +33583,9 @@ var require_jspdf_node_min = __commonJS({
         if (isNaN(t3) || isNaN(e3) || isNaN(r2) || isNaN(n2) || !Me(i3)) throw new Error("Invalid arguments passed to jsPDF.line");
         return k2 === L2 ? this.lines([[r2 - t3, n2 - e3]], t3, e3, [1, 1], i3 || "S") : this.lines([[r2 - t3, n2 - e3]], t3, e3, [1, 1]).stroke();
       }, v2.__private__.lines = v2.lines = function(t3, e3, r2, n2, i3, a2) {
-        var o3, s2, c3, u3, l3, h3, f3, d3, p3, g3, m3, v3;
+        var o3, s2, c3, u3, l3, h3, f3, d3, p4, g3, m3, v3;
         if ("number" == typeof t3 && (v3 = r2, r2 = e3, e3 = t3, t3 = v3), n2 = n2 || [1, 1], a2 = a2 || false, isNaN(e3) || isNaN(r2) || !Array.isArray(t3) || !Array.isArray(n2) || !Me(i3) || "boolean" != typeof a2) throw new Error("Invalid arguments passed to jsPDF.lines");
-        for (We(e3, r2), o3 = n2[0], s2 = n2[1], u3 = t3.length, g3 = e3, m3 = r2, c3 = 0; c3 < u3; c3++) 2 === (l3 = t3[c3]).length ? (g3 = l3[0] * o3 + g3, m3 = l3[1] * s2 + m3, Ve(g3, m3)) : (h3 = l3[0] * o3 + g3, f3 = l3[1] * s2 + m3, d3 = l3[2] * o3 + g3, p3 = l3[3] * s2 + m3, g3 = l3[4] * o3 + g3, m3 = l3[5] * s2 + m3, Ge(h3, f3, d3, p3, g3, m3));
+        for (We(e3, r2), o3 = n2[0], s2 = n2[1], u3 = t3.length, g3 = e3, m3 = r2, c3 = 0; c3 < u3; c3++) 2 === (l3 = t3[c3]).length ? (g3 = l3[0] * o3 + g3, m3 = l3[1] * s2 + m3, Ve(g3, m3)) : (h3 = l3[0] * o3 + g3, f3 = l3[1] * s2 + m3, d3 = l3[2] * o3 + g3, p4 = l3[3] * s2 + m3, g3 = l3[4] * o3 + g3, m3 = l3[5] * s2 + m3, Ge(h3, f3, d3, p4, g3, m3));
         return a2 && Re(), Te(i3), this;
       }, v2.path = function(t3) {
         for (var e3 = 0; e3 < t3.length; e3++) {
@@ -33837,8 +33837,8 @@ var require_jspdf_node_min = __commonJS({
         return Sr(K2);
       }, setHeight: function(t3) {
         _r(K2, t3);
-      } }, encryptionOptions: p2, encryption: Ce, getEncryptor: function(t3) {
-        return null !== p2 ? Ce.encryptor(t3, 0) : function(t4) {
+      } }, encryptionOptions: p3, encryption: Ce, getEncryptor: function(t3) {
+        return null !== p3 ? Ce.encryptor(t3, 0) : function(t4) {
           return t4;
         };
       }, output: Fe, getNumberOfPages: be2, get pages() {
@@ -33974,7 +33974,7 @@ var require_jspdf_node_min = __commonJS({
       a2++;
       t: for (; a2 > 0; ) {
         e2 = "", a2--;
-        var u2, l2, h2 = $("3", t2, a2).height, f2 = t2.multiline ? o2 - a2 : (o2 - h2) / 2, d2 = f2 += 2, p2 = 0, g2 = 0, m2 = 0;
+        var u2, l2, h2 = $("3", t2, a2).height, f2 = t2.multiline ? o2 - a2 : (o2 - h2) / 2, d2 = f2 += 2, p3 = 0, g2 = 0, m2 = 0;
         if (a2 <= 0) {
           e2 = "(...) Tj\n", e2 += "% Width of Text: " + $(e2, t2, a2 = 12).width + ", FieldWidth:" + s2 + "\n";
           break;
@@ -34001,14 +34001,14 @@ var require_jspdf_node_min = __commonJS({
               g2 = w2;
             }
           }
-          for (var x2 = "", A2 = p2; A2 <= g2; A2++) {
+          for (var x2 = "", A2 = p3; A2 <= g2; A2++) {
             var S33 = i2[A2];
             if (t2.multiline) {
               if (A2 === g2) {
                 x2 += S33[m2] + " ", m2 = (m2 + 1) % S33.length;
                 continue;
               }
-              if (A2 === p2) {
+              if (A2 === p3) {
                 x2 += S33[S33.length - 1] + " ";
                 continue;
               }
@@ -34025,7 +34025,7 @@ var require_jspdf_node_min = __commonJS({
             default:
               u2 = 2;
           }
-          e2 += E(u2) + " " + E(d2) + " Td\n", e2 += "(" + B(x2) + ") Tj\n", e2 += -E(u2) + " 0 Td\n", d2 = -(a2 + 2), l2 = 0, p2 = r3 ? g2 : g2 + 1, b2++, v2 = "";
+          e2 += E(u2) + " " + E(d2) + " Td\n", e2 += "(" + B(x2) + ") Tj\n", e2 += -E(u2) + " 0 Td\n", d2 = -(a2 + 2), l2 = 0, p3 = r3 ? g2 : g2 + 1, b2++, v2 = "";
           continue e;
         }
         break;
@@ -34266,11 +34266,11 @@ var require_jspdf_node_min = __commonJS({
       } }), Object.defineProperty(this, "Subtype", { enumerable: true, configurable: false, get: function() {
         return this.hasAnnotation ? "/Widget" : null;
       } });
-      var d2, p2 = false;
+      var d2, p3 = false;
       Object.defineProperty(this, "hasAppearanceStream", { enumerable: true, configurable: true, get: function() {
-        return p2;
+        return p3;
       }, set: function(t3) {
-        t3 = Boolean(t3), p2 = t3;
+        t3 = Boolean(t3), p3 = t3;
       } }), Object.defineProperty(this, "page", { enumerable: true, configurable: true, get: function() {
         if (d2) return d2;
       }, set: function(t3) {
@@ -34759,7 +34759,7 @@ var require_jspdf_node_min = __commonJS({
         return "function" == typeof t2["process" + e3.toUpperCase()];
       }, d2 = function(t3) {
         return "object" == typeof t3 && 1 === t3.nodeType;
-      }, p2 = function(e3, r3) {
+      }, p3 = function(e3, r3) {
         if ("IMG" === e3.nodeName && e3.hasAttribute("src")) {
           var n3 = "" + e3.getAttribute("src");
           if (0 === n3.indexOf("data:image/")) return i(unescape(n3).split("base64,").pop());
@@ -34794,9 +34794,9 @@ var require_jspdf_node_min = __commonJS({
           a3 *= Math.PI / 180;
           var h3 = Math.cos(a3), f3 = Math.sin(a3), d3 = function(t4) {
             return t4.toFixed(4);
-          }, p3 = [d3(h3), d3(f3), d3(-1 * f3), d3(h3), 0, 0, "cm"];
+          }, p4 = [d3(h3), d3(f3), d3(-1 * f3), d3(h3), 0, 0, "cm"];
         }
-        this.internal.write("q"), a3 ? (this.internal.write([1, "0", "0", 1, s3(t3), c3(e3 + n3), "cm"].join(" ")), this.internal.write(p3.join(" ")), this.internal.write([s3(r3), "0", "0", s3(n3), "0", "0", "cm"].join(" "))) : this.internal.write([s3(r3), "0", "0", s3(n3), s3(t3), c3(e3 + n3), "cm"].join(" ")), this.isAdvancedAPI() && this.internal.write([1, 0, 0, -1, 0, 0, "cm"].join(" ")), this.internal.write("/I" + i2.index + " Do"), this.internal.write("Q");
+        this.internal.write("q"), a3 ? (this.internal.write([1, "0", "0", 1, s3(t3), c3(e3 + n3), "cm"].join(" ")), this.internal.write(p4.join(" ")), this.internal.write([s3(r3), "0", "0", s3(n3), "0", "0", "cm"].join(" "))) : this.internal.write([s3(r3), "0", "0", s3(n3), s3(t3), c3(e3 + n3), "cm"].join(" ")), this.isAdvancedAPI() && this.internal.write([1, 0, 0, -1, 0, 0, "cm"].join(" ")), this.internal.write("/I" + i2.index + " Do"), this.internal.write("Q");
       }, b2 = t2.color_spaces = { DEVICE_RGB: "DeviceRGB", DEVICE_GRAY: "DeviceGray", DEVICE_CMYK: "DeviceCMYK", CAL_GREY: "CalGray", CAL_RGB: "CalRGB", LAB: "Lab", ICC_BASED: "ICCBased", INDEXED: "Indexed", PATTERN: "Pattern", SEPARATION: "Separation", DEVICE_N: "DeviceN" };
       t2.decode = { DCT_DECODE: "DCTDecode", FLATE_DECODE: "FlateDecode", LZW_DECODE: "LZWDecode", JPX_DECODE: "JPXDecode", JBIG2_DECODE: "JBIG2Decode", ASCII85_DECODE: "ASCII85Decode", ASCII_HEX_DECODE: "ASCIIHexDecode", RUN_LENGTH_DECODE: "RunLengthDecode", CCITT_FAX_DECODE: "CCITTFaxDecode" };
       var y2 = t2.image_compression = { NONE: "NONE", FAST: "FAST", MEDIUM: "MEDIUM", SLOW: "SLOW" }, w2 = t2.__addimage__.sHashCode = function(t3) {
@@ -34835,8 +34835,8 @@ var require_jspdf_node_min = __commonJS({
         var f3 = this.internal.getFilters();
         if (void 0 === c3 && -1 !== f3.indexOf("FlateEncode") && (c3 = "SLOW"), isNaN(n3) || isNaN(i2)) throw new Error("Invalid coordinates passed to jsPDF.addImage");
         u2.call(this);
-        var p3 = _2.call(this, t3, e3, s3, c3);
-        return v2.call(this, n3, i2, a3, o3, p3, l3), this;
+        var p4 = _2.call(this, t3, e3, s3, c3);
+        return v2.call(this, n3, i2, a3, o3, p4, l3), this;
       };
       var _2 = function(e3, n3, i2, o3) {
         var s3, c3, u3;
@@ -34845,7 +34845,7 @@ var require_jspdf_node_min = __commonJS({
           var l3 = P2(e3, false);
           ("" !== l3 || void 0 !== (l3 = t2.loadFile(e3, true))) && (e3 = l3);
         }
-        if (d2(e3) && (e3 = p2(e3, n3)), n3 = a2(e3, n3), !f2(n3)) throw new Error("addImage does not support files of type '" + n3 + "', please ensure that a plugin for '" + n3 + "' support is added.");
+        if (d2(e3) && (e3 = p3(e3, n3)), n3 = a2(e3, n3), !f2(n3)) throw new Error("addImage does not support files of type '" + n3 + "', please ensure that a plugin for '" + n3 + "' support is added.");
         if ((null == (u3 = i2) || 0 === u3.length) && (i2 = (function(t3) {
           return "string" == typeof t3 || x2(t3) ? w2(t3) : x2(t3.data) ? w2(t3.data) : null;
         })(e3)), (s3 = g2.call(this, i2)) || (e3 instanceof Uint8Array || "RGBA" === n3 || (c3 = e3, e3 = A2(e3)), s3 = this["process" + n3.toUpperCase()](e3, h2.call(this), i2, (function(e4) {
@@ -34867,7 +34867,7 @@ var require_jspdf_node_min = __commonJS({
       };
       t2.getImageProperties = function(e3) {
         var n3, i2, o3 = "";
-        if (d2(e3) && (e3 = p2(e3)), "string" == typeof e3 && a2(e3) === r2 && ("" === (o3 = P2(e3, false)) && (o3 = t2.loadFile(e3) || ""), e3 = o3), i2 = a2(e3), !f2(i2)) throw new Error("addImage does not support files of type '" + i2 + "', please ensure that a plugin for '" + i2 + "' support is added.");
+        if (d2(e3) && (e3 = p3(e3)), "string" == typeof e3 && a2(e3) === r2 && ("" === (o3 = P2(e3, false)) && (o3 = t2.loadFile(e3) || ""), e3 = o3), i2 = a2(e3), !f2(i2)) throw new Error("addImage does not support files of type '" + i2 + "', please ensure that a plugin for '" + i2 + "' support is added.");
         if (e3 instanceof Uint8Array || (e3 = A2(e3)), !(n3 = this["process" + i2.toUpperCase()](e3))) throw new Error("An unknown error occurred whilst processing the image");
         return n3.fileType = i2, n3;
       };
@@ -34904,10 +34904,10 @@ var require_jspdf_node_min = __commonJS({
                 this.internal.write(" " + r2.object.objId + " 0 R ");
                 break;
               case "text":
-                var p2 = this.internal.newAdditionalObject(), g2 = this.internal.newAdditionalObject(), m2 = this.internal.getEncryptor(p2.objId), v2 = r2.title || "Note";
-                i2 = "<</Type /Annot /Subtype /Text " + (n2 = "/Rect [" + a2(r2.bounds.x) + " " + o2(r2.bounds.y + r2.bounds.h) + " " + a2(r2.bounds.x + r2.bounds.w) + " " + o2(r2.bounds.y) + "] ") + "/Contents (" + f2(m2(r2.contents)) + ")", i2 += " /Popup " + g2.objId + " 0 R", i2 += " /P " + s2.objId + " 0 R", i2 += " /T (" + f2(m2(v2)) + ") >>", p2.content = i2;
-                var b2 = p2.objId + " 0 R";
-                i2 = "<</Type /Annot /Subtype /Popup " + (n2 = "/Rect [" + a2(r2.bounds.x + 30) + " " + o2(r2.bounds.y + r2.bounds.h) + " " + a2(r2.bounds.x + r2.bounds.w + 30) + " " + o2(r2.bounds.y) + "] ") + " /Parent " + b2, r2.open && (i2 += " /Open true"), i2 += " >>", g2.content = i2, this.internal.write(p2.objId, "0 R", g2.objId, "0 R");
+                var p3 = this.internal.newAdditionalObject(), g2 = this.internal.newAdditionalObject(), m2 = this.internal.getEncryptor(p3.objId), v2 = r2.title || "Note";
+                i2 = "<</Type /Annot /Subtype /Text " + (n2 = "/Rect [" + a2(r2.bounds.x) + " " + o2(r2.bounds.y + r2.bounds.h) + " " + a2(r2.bounds.x + r2.bounds.w) + " " + o2(r2.bounds.y) + "] ") + "/Contents (" + f2(m2(r2.contents)) + ")", i2 += " /Popup " + g2.objId + " 0 R", i2 += " /P " + s2.objId + " 0 R", i2 += " /T (" + f2(m2(v2)) + ") >>", p3.content = i2;
+                var b2 = p3.objId + " 0 R";
+                i2 = "<</Type /Annot /Subtype /Popup " + (n2 = "/Rect [" + a2(r2.bounds.x + 30) + " " + o2(r2.bounds.y + r2.bounds.h) + " " + a2(r2.bounds.x + r2.bounds.w + 30) + " " + o2(r2.bounds.y) + "] ") + " /Parent " + b2, r2.open && (i2 += " /Open true"), i2 += " >>", g2.content = i2, this.internal.write(p3.objId, "0 R", g2.objId, "0 R");
                 break;
               case "freetext":
                 n2 = "/Rect [" + a2(r2.bounds.x) + " " + o2(r2.bounds.y) + " " + a2(r2.bounds.x + r2.bounds.w) + " " + o2(r2.bounds.y + r2.bounds.h) + "] ";
@@ -35012,7 +35012,7 @@ var require_jspdf_node_min = __commonJS({
           l3[r3] = h2(l3[r3]);
         }
         return l3.join(" ");
-      }, p2 = t2.__arabicParser__.processArabic = t2.processArabic = function() {
+      }, p3 = t2.__arabicParser__.processArabic = t2.processArabic = function() {
         var t3, e3 = "string" == typeof arguments[0] ? arguments[0] : arguments[0].text, r3 = [];
         if (Array.isArray(e3)) {
           var n3 = 0;
@@ -35021,7 +35021,7 @@ var require_jspdf_node_min = __commonJS({
         } else t3 = d2(e3);
         return "string" == typeof arguments[0] ? t3 : (arguments[0].text = t3, arguments[0]);
       };
-      t2.events.push(["preProcessText", p2]);
+      t2.events.push(["preProcessText", p3]);
     })(C3.API), C3.API.autoPrint = function(t2) {
       var e2;
       return (t2 = t2 || {}).variant = t2.variant || "non-conform", "javascript" === t2.variant ? this.addJS("print({});") : (this.internal.events.subscribe("postPutResources", function() {
@@ -35190,7 +35190,7 @@ var require_jspdf_node_min = __commonJS({
       };
       t2.table = function(t3, r3, c2, u2, l2) {
         if (n2.call(this), !c2) throw new Error("No data for PDF table.");
-        var h2, f2, d2, p2, g2 = [], m2 = [], v2 = [], b2 = {}, y2 = {}, w2 = [], N24 = [], L2 = (l2 = l2 || {}).autoSize || false, x2 = false !== l2.printHeaders, A2 = l2.css && void 0 !== l2.css["font-size"] ? 16 * l2.css["font-size"] : l2.fontSize || 12, S33 = l2.margins || Object.assign({ width: this.getPageWidth() }, e2), _2 = "number" == typeof l2.padding ? l2.padding : 3, P2 = l2.headerBackgroundColor || "#c8c8c8", k2 = l2.headerTextColor || "#000";
+        var h2, f2, d2, p3, g2 = [], m2 = [], v2 = [], b2 = {}, y2 = {}, w2 = [], N24 = [], L2 = (l2 = l2 || {}).autoSize || false, x2 = false !== l2.printHeaders, A2 = l2.css && void 0 !== l2.css["font-size"] ? 16 * l2.css["font-size"] : l2.fontSize || 12, S33 = l2.margins || Object.assign({ width: this.getPageWidth() }, e2), _2 = "number" == typeof l2.padding ? l2.padding : 3, P2 = l2.headerBackgroundColor || "#c8c8c8", k2 = l2.headerTextColor || "#000";
         if (i2.call(this), this.internal.__cell__.printHeaders = x2, this.internal.__cell__.margins = S33, this.internal.__cell__.table_font_size = A2, this.internal.__cell__.padding = _2, this.internal.__cell__.headerBackgroundColor = P2, this.internal.__cell__.headerTextColor = k2, this.setFontSize(A2), null == u2) m2 = g2 = Object.keys(c2[0]), v2 = g2.map(function() {
           return "left";
         });
@@ -35205,10 +35205,10 @@ var require_jspdf_node_min = __commonJS({
           return "left";
         }));
         if (L2 || Array.isArray(u2) && "string" == typeof u2[0]) for (h2 = 0; h2 < g2.length; h2 += 1) {
-          for (b2[p2 = g2[h2]] = c2.map(function(t4) {
-            return t4[p2];
-          }), this.setFont(void 0, "bold"), w2.push(this.getTextDimensions(m2[h2], { fontSize: this.internal.__cell__.table_font_size, scaleFactor: this.internal.scaleFactor }).w), f2 = b2[p2], this.setFont(void 0, "normal"), d2 = 0; d2 < f2.length; d2 += 1) w2.push(this.getTextDimensions(f2[d2], { fontSize: this.internal.__cell__.table_font_size, scaleFactor: this.internal.scaleFactor }).w);
-          y2[p2] = Math.max.apply(null, w2) + _2 + _2, w2 = [];
+          for (b2[p3 = g2[h2]] = c2.map(function(t4) {
+            return t4[p3];
+          }), this.setFont(void 0, "bold"), w2.push(this.getTextDimensions(m2[h2], { fontSize: this.internal.__cell__.table_font_size, scaleFactor: this.internal.scaleFactor }).w), f2 = b2[p3], this.setFont(void 0, "normal"), d2 = 0; d2 < f2.length; d2 += 1) w2.push(this.getTextDimensions(f2[d2], { fontSize: this.internal.__cell__.table_font_size, scaleFactor: this.internal.scaleFactor }).w);
+          y2[p3] = Math.max.apply(null, w2) + _2 + _2, w2 = [];
         }
         if (x2) {
           var F7 = {};
@@ -35411,12 +35411,12 @@ var require_jspdf_node_min = __commonJS({
       t2[e2++], t2[e2++];
       var s2 = null, c2 = null;
       a2 && (s2 = e2, c2 = o2, e2 += 3 * o2);
-      var u2 = true, l2 = [], h2 = 0, f2 = null, d2 = 0, p2 = null;
+      var u2 = true, l2 = [], h2 = 0, f2 = null, d2 = 0, p3 = null;
       for (this.width = r2, this.height = n2; u2 && e2 < t2.length; ) switch (t2[e2++]) {
         case 33:
           switch (t2[e2++]) {
             case 255:
-              if (11 !== t2[e2] || 78 == t2[e2 + 1] && 69 == t2[e2 + 2] && 84 == t2[e2 + 3] && 83 == t2[e2 + 4] && 67 == t2[e2 + 5] && 65 == t2[e2 + 6] && 80 == t2[e2 + 7] && 69 == t2[e2 + 8] && 50 == t2[e2 + 9] && 46 == t2[e2 + 10] && 48 == t2[e2 + 11] && 3 == t2[e2 + 12] && 1 == t2[e2 + 13] && 0 == t2[e2 + 16]) e2 += 14, p2 = t2[e2++] | t2[e2++] << 8, e2++;
+              if (11 !== t2[e2] || 78 == t2[e2 + 1] && 69 == t2[e2 + 2] && 84 == t2[e2 + 3] && 83 == t2[e2 + 4] && 67 == t2[e2 + 5] && 65 == t2[e2 + 6] && 80 == t2[e2 + 7] && 69 == t2[e2 + 8] && 50 == t2[e2 + 9] && 46 == t2[e2 + 10] && 48 == t2[e2 + 11] && 3 == t2[e2 + 12] && 1 == t2[e2 + 13] && 0 == t2[e2 + 16]) e2 += 14, p3 = t2[e2++] | t2[e2++] << 8, e2++;
               else for (e2 += 12; ; ) {
                 if (!((P2 = t2[e2++]) >= 0)) throw Error("Invalid block size");
                 if (0 === P2) break;
@@ -35460,7 +35460,7 @@ var require_jspdf_node_min = __commonJS({
       this.numFrames = function() {
         return l2.length;
       }, this.loopCount = function() {
-        return p2;
+        return p3;
       }, this.frameInfo = function(t3) {
         if (t3 < 0 || t3 >= l2.length) throw new Error("Frame index out of range.");
         return l2[t3];
@@ -35471,14 +35471,14 @@ var require_jspdf_node_min = __commonJS({
         Zt(t2, i3.data_offset, o3, a3);
         var s3 = i3.palette_offset, c3 = i3.transparent_index;
         null === c3 && (c3 = 256);
-        var u3 = i3.width, l3 = r2 - u3, h3 = u3, f3 = 4 * (i3.y * r2 + i3.x), d3 = 4 * ((i3.y + i3.height) * r2 + i3.x), p3 = f3, g3 = 4 * l3;
+        var u3 = i3.width, l3 = r2 - u3, h3 = u3, f3 = 4 * (i3.y * r2 + i3.x), d3 = 4 * ((i3.y + i3.height) * r2 + i3.x), p4 = f3, g3 = 4 * l3;
         true === i3.interlaced && (g3 += 4 * r2 * 7);
         for (var m3 = 8, v3 = 0, b3 = o3.length; v3 < b3; ++v3) {
           var y3 = o3[v3];
-          if (0 === h3 && (h3 = u3, (p3 += g3) >= d3 && (g3 = 4 * l3 + 4 * r2 * (m3 - 1), p3 = f3 + (u3 + l3) * (m3 << 1), m3 >>= 1)), y3 === c3) p3 += 4;
+          if (0 === h3 && (h3 = u3, (p4 += g3) >= d3 && (g3 = 4 * l3 + 4 * r2 * (m3 - 1), p4 = f3 + (u3 + l3) * (m3 << 1), m3 >>= 1)), y3 === c3) p4 += 4;
           else {
             var w3 = t2[s3 + 3 * y3], N25 = t2[s3 + 3 * y3 + 1], L3 = t2[s3 + 3 * y3 + 2];
-            n3[p3++] = L3, n3[p3++] = N25, n3[p3++] = w3, n3[p3++] = 255;
+            n3[p4++] = L3, n3[p4++] = N25, n3[p4++] = w3, n3[p4++] = 255;
           }
           --h3;
         }
@@ -35489,22 +35489,22 @@ var require_jspdf_node_min = __commonJS({
         Zt(t2, i3.data_offset, o3, a3);
         var s3 = i3.palette_offset, c3 = i3.transparent_index;
         null === c3 && (c3 = 256);
-        var u3 = i3.width, l3 = r2 - u3, h3 = u3, f3 = 4 * (i3.y * r2 + i3.x), d3 = 4 * ((i3.y + i3.height) * r2 + i3.x), p3 = f3, g3 = 4 * l3;
+        var u3 = i3.width, l3 = r2 - u3, h3 = u3, f3 = 4 * (i3.y * r2 + i3.x), d3 = 4 * ((i3.y + i3.height) * r2 + i3.x), p4 = f3, g3 = 4 * l3;
         true === i3.interlaced && (g3 += 4 * r2 * 7);
         for (var m3 = 8, v3 = 0, b3 = o3.length; v3 < b3; ++v3) {
           var y3 = o3[v3];
-          if (0 === h3 && (h3 = u3, (p3 += g3) >= d3 && (g3 = 4 * l3 + 4 * r2 * (m3 - 1), p3 = f3 + (u3 + l3) * (m3 << 1), m3 >>= 1)), y3 === c3) p3 += 4;
+          if (0 === h3 && (h3 = u3, (p4 += g3) >= d3 && (g3 = 4 * l3 + 4 * r2 * (m3 - 1), p4 = f3 + (u3 + l3) * (m3 << 1), m3 >>= 1)), y3 === c3) p4 += 4;
           else {
             var w3 = t2[s3 + 3 * y3], N25 = t2[s3 + 3 * y3 + 1], L3 = t2[s3 + 3 * y3 + 2];
-            n3[p3++] = w3, n3[p3++] = N25, n3[p3++] = L3, n3[p3++] = 255;
+            n3[p4++] = w3, n3[p4++] = N25, n3[p4++] = L3, n3[p4++] = 255;
           }
           --h3;
         }
       };
     }
     function Zt(t2, e2, r2, n2) {
-      for (var i2 = t2[e2++], a2 = 1 << i2, o2 = a2 + 1, c2 = o2 + 1, u2 = i2 + 1, l2 = (1 << u2) - 1, h2 = 0, f2 = 0, d2 = 0, p2 = t2[e2++], g2 = new Int32Array(4096), m2 = null; ; ) {
-        for (; h2 < 16 && 0 !== p2; ) f2 |= t2[e2++] << h2, h2 += 8, 1 === p2 ? p2 = t2[e2++] : --p2;
+      for (var i2 = t2[e2++], a2 = 1 << i2, o2 = a2 + 1, c2 = o2 + 1, u2 = i2 + 1, l2 = (1 << u2) - 1, h2 = 0, f2 = 0, d2 = 0, p3 = t2[e2++], g2 = new Int32Array(4096), m2 = null; ; ) {
+        for (; h2 < 16 && 0 !== p3; ) f2 |= t2[e2++] << h2, h2 += 8, 1 === p3 ? p3 = t2[e2++] : --p3;
         if (h2 < u2) break;
         var v2 = f2 & l2;
         if (f2 >>= u2, h2 -= u2, v2 !== a2) {
@@ -35521,7 +35521,7 @@ var require_jspdf_node_min = __commonJS({
       return d2 !== n2 && s.log("Warning, gif stream shorter than expected."), r2;
     }
     function Qt(t2) {
-      var e2, r2, n2, i2, a2, o2 = Math.floor, s2 = new Array(64), c2 = new Array(64), u2 = new Array(64), l2 = new Array(64), h2 = new Array(65535), f2 = new Array(65535), d2 = new Array(64), p2 = new Array(64), g2 = [], m2 = 0, v2 = 7, b2 = new Array(64), y2 = new Array(64), w2 = new Array(64), N24 = new Array(256), L2 = new Array(2048), x2 = [0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53, 10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63], A2 = [0, 0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0], S33 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], _2 = [0, 0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 125], P2 = [1, 2, 3, 0, 4, 17, 5, 18, 33, 49, 65, 6, 19, 81, 97, 7, 34, 113, 20, 50, 129, 145, 161, 8, 35, 66, 177, 193, 21, 82, 209, 240, 36, 51, 98, 114, 130, 9, 10, 22, 23, 24, 25, 26, 37, 38, 39, 40, 41, 42, 52, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250], k2 = [0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0], F7 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], I26 = [0, 0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 119], C4 = [0, 1, 2, 3, 17, 4, 5, 33, 49, 6, 18, 65, 81, 7, 97, 113, 19, 34, 50, 129, 8, 20, 66, 145, 161, 177, 193, 9, 35, 51, 82, 240, 21, 98, 114, 209, 10, 22, 36, 52, 225, 37, 241, 23, 24, 25, 26, 38, 39, 40, 41, 42, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 130, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 226, 227, 228, 229, 230, 231, 232, 233, 234, 242, 243, 244, 245, 246, 247, 248, 249, 250];
+      var e2, r2, n2, i2, a2, o2 = Math.floor, s2 = new Array(64), c2 = new Array(64), u2 = new Array(64), l2 = new Array(64), h2 = new Array(65535), f2 = new Array(65535), d2 = new Array(64), p3 = new Array(64), g2 = [], m2 = 0, v2 = 7, b2 = new Array(64), y2 = new Array(64), w2 = new Array(64), N24 = new Array(256), L2 = new Array(2048), x2 = [0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53, 10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63], A2 = [0, 0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0], S33 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], _2 = [0, 0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 125], P2 = [1, 2, 3, 0, 4, 17, 5, 18, 33, 49, 65, 6, 19, 81, 97, 7, 34, 113, 20, 50, 129, 145, 161, 8, 35, 66, 177, 193, 21, 82, 209, 240, 36, 51, 98, 114, 130, 9, 10, 22, 23, 24, 25, 26, 37, 38, 39, 40, 41, 42, 52, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250], k2 = [0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0], F7 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], I26 = [0, 0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 119], C4 = [0, 1, 2, 3, 17, 4, 5, 33, 49, 6, 18, 65, 81, 7, 97, 113, 19, 34, 50, 129, 8, 20, 66, 145, 161, 177, 193, 9, 35, 51, 82, 240, 21, 98, 114, 209, 10, 22, 36, 52, 225, 37, 241, 23, 24, 25, 26, 38, 39, 40, 41, 42, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 130, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 226, 227, 228, 229, 230, 231, 232, 233, 234, 242, 243, 244, 245, 246, 247, 248, 249, 250];
       function j2(t3, e3) {
         for (var r3 = 0, n3 = 0, i3 = new Array(), a3 = 1; a3 <= 16; a3++) {
           for (var o3 = 1; o3 <= t3[a3]; o3++) i3[e3[n3]] = [], i3[e3[n3]][0] = r3, i3[e3[n3]][1] = a3, n3++, r3++;
@@ -35543,7 +35543,7 @@ var require_jspdf_node_min = __commonJS({
           var r4, n4, i4, a4, o4, s4, c4, u4, l4, h3, f3 = 0;
           for (l4 = 0; l4 < 8; ++l4) {
             r4 = t4[f3], n4 = t4[f3 + 1], i4 = t4[f3 + 2], a4 = t4[f3 + 3], o4 = t4[f3 + 4], s4 = t4[f3 + 5], c4 = t4[f3 + 6];
-            var p3 = r4 + (u4 = t4[f3 + 7]), g4 = r4 - u4, m4 = n4 + c4, v4 = n4 - c4, b4 = i4 + s4, y4 = i4 - s4, w4 = a4 + o4, N25 = a4 - o4, L3 = p3 + w4, x3 = p3 - w4, A3 = m4 + b4, S34 = m4 - b4;
+            var p4 = r4 + (u4 = t4[f3 + 7]), g4 = r4 - u4, m4 = n4 + c4, v4 = n4 - c4, b4 = i4 + s4, y4 = i4 - s4, w4 = a4 + o4, N25 = a4 - o4, L3 = p4 + w4, x3 = p4 - w4, A3 = m4 + b4, S34 = m4 - b4;
             t4[f3] = L3 + A3, t4[f3 + 4] = L3 - A3;
             var _3 = 0.707106781 * (S34 + x3);
             t4[f3 + 2] = x3 + _3, t4[f3 + 6] = x3 - _3;
@@ -35561,20 +35561,20 @@ var require_jspdf_node_min = __commonJS({
           }
           for (l4 = 0; l4 < 64; ++l4) h3 = t4[l4] * e4[l4], d2[l4] = h3 > 0 ? h3 + 0.5 | 0 : h3 - 0.5 | 0;
           return d2;
-        })(t3, e3), u3 = 0; u3 < 64; ++u3) p2[x2[u3]] = c3[u3];
-        var l3 = p2[0] - r3;
-        r3 = p2[0], 0 == l3 ? O2(n3[0]) : (O2(n3[f2[a3 = 32767 + l3]]), O2(h2[a3]));
-        for (var g3 = 63; g3 > 0 && 0 == p2[g3]; ) g3--;
+        })(t3, e3), u3 = 0; u3 < 64; ++u3) p3[x2[u3]] = c3[u3];
+        var l3 = p3[0] - r3;
+        r3 = p3[0], 0 == l3 ? O2(n3[0]) : (O2(n3[f2[a3 = 32767 + l3]]), O2(h2[a3]));
+        for (var g3 = 63; g3 > 0 && 0 == p3[g3]; ) g3--;
         if (0 == g3) return O2(o3), r3;
         for (var m3, v3 = 1; v3 <= g3; ) {
-          for (var b3 = v3; 0 == p2[v3] && v3 <= g3; ) ++v3;
+          for (var b3 = v3; 0 == p3[v3] && v3 <= g3; ) ++v3;
           var y3 = v3 - b3;
           if (y3 >= 16) {
             m3 = y3 >> 4;
             for (var w3 = 1; w3 <= m3; ++w3) O2(s3);
             y3 &= 15;
           }
-          a3 = 32767 + p2[v3], O2(i3[(y3 << 4) + f2[a3]]), O2(h2[a3]), v3++;
+          a3 = 32767 + p3[v3], O2(i3[(y3 << 4) + f2[a3]]), O2(h2[a3]), v3++;
         }
         return 63 != g3 && O2(o3), r3;
       }
@@ -35588,7 +35588,7 @@ var require_jspdf_node_min = __commonJS({
             var h3 = o2((i3[a3] * t4 + 50) / 100);
             h3 = Math.min(Math.max(h3, 1), 255), c2[x2[a3]] = h3;
           }
-          for (var f3 = [1, 1.387039845, 1.306562965, 1.175875602, 1, 0.785694958, 0.5411961, 0.275899379], d3 = 0, p3 = 0; p3 < 8; p3++) for (var g3 = 0; g3 < 8; g3++) u2[d3] = 1 / (s2[x2[d3]] * f3[p3] * f3[g3] * 8), l2[d3] = 1 / (c2[x2[d3]] * f3[p3] * f3[g3] * 8), d3++;
+          for (var f3 = [1, 1.387039845, 1.306562965, 1.175875602, 1, 0.785694958, 0.5411961, 0.275899379], d3 = 0, p4 = 0; p4 < 8; p4++) for (var g3 = 0; g3 < 8; g3++) u2[d3] = 1 / (s2[x2[d3]] * f3[p4] * f3[g3] * 8), l2[d3] = 1 / (c2[x2[d3]] * f3[p4] * f3[g3] * 8), d3++;
         })(t3 < 50 ? Math.floor(5e3 / t3) : Math.floor(200 - 2 * t3)), a2 = t3);
       }
       this.encode = function(t3, a3) {
@@ -35615,9 +35615,9 @@ var require_jspdf_node_min = __commonJS({
         })(), q2(65498), q2(12), B2(3), B2(1), B2(0), B2(2), B2(17), B2(3), B2(17), B2(0), B2(63), B2(0);
         var o3 = 0, h3 = 0, f3 = 0;
         m2 = 0, v2 = 7, this.encode.displayName = "_encode_";
-        for (var d3, p3, N25, x3, j3, R12, D4, T36, z2, U2 = t3.data, H2 = t3.width, W3 = t3.height, V2 = 4 * H2, G2 = 0; G2 < W3; ) {
+        for (var d3, p4, N25, x3, j3, R12, D4, T36, z2, U2 = t3.data, H2 = t3.width, W3 = t3.height, V2 = 4 * H2, G2 = 0; G2 < W3; ) {
           for (d3 = 0; d3 < V2; ) {
-            for (j3 = V2 * G2 + d3, D4 = -1, T36 = 0, z2 = 0; z2 < 64; z2++) R12 = j3 + (T36 = z2 >> 3) * V2 + (D4 = 4 * (7 & z2)), G2 + T36 >= W3 && (R12 -= V2 * (G2 + 1 + T36 - W3)), d3 + D4 >= V2 && (R12 -= d3 + D4 - V2 + 4), p3 = U2[R12++], N25 = U2[R12++], x3 = U2[R12++], b2[z2] = (L2[p3] + L2[N25 + 256 | 0] + L2[x3 + 512 | 0] >> 16) - 128, y2[z2] = (L2[p3 + 768 | 0] + L2[N25 + 1024 | 0] + L2[x3 + 1280 | 0] >> 16) - 128, w2[z2] = (L2[p3 + 1280 | 0] + L2[N25 + 1536 | 0] + L2[x3 + 1792 | 0] >> 16) - 128;
+            for (j3 = V2 * G2 + d3, D4 = -1, T36 = 0, z2 = 0; z2 < 64; z2++) R12 = j3 + (T36 = z2 >> 3) * V2 + (D4 = 4 * (7 & z2)), G2 + T36 >= W3 && (R12 -= V2 * (G2 + 1 + T36 - W3)), d3 + D4 >= V2 && (R12 -= d3 + D4 - V2 + 4), p4 = U2[R12++], N25 = U2[R12++], x3 = U2[R12++], b2[z2] = (L2[p4] + L2[N25 + 256 | 0] + L2[x3 + 512 | 0] >> 16) - 128, y2[z2] = (L2[p4 + 768 | 0] + L2[N25 + 1024 | 0] + L2[x3 + 1280 | 0] >> 16) - 128, w2[z2] = (L2[p4 + 1280 | 0] + L2[N25 + 1536 | 0] + L2[x3 + 1792 | 0] >> 16) - 128;
             o3 = M12(b2, u2, o3, e2, n2), h3 = M12(y2, l2, h3, r2, i2), f3 = M12(w2, l2, f3, r2, i2), d3 += 32;
           }
           G2 += 8;
@@ -35686,7 +35686,7 @@ var require_jspdf_node_min = __commonJS({
           if (e2(2328 >= o3), 512 >= o3) var s3 = a2(512);
           else if (null == (s3 = a2(o3))) return 0;
           return (function(t5, r4, n4, i4, o4, s4) {
-            var l4, f4, d4 = r4, p4 = 1 << n4, g4 = a2(16), m4 = a2(16);
+            var l4, f4, d4 = r4, p5 = 1 << n4, g4 = a2(16), m4 = a2(16);
             for (e2(0 != o4), e2(null != i4), e2(null != t5), e2(0 < n4), f4 = 0; f4 < o4; ++f4) {
               if (15 < i4[f4]) return 0;
               ++g4[i4[f4]];
@@ -35697,8 +35697,8 @@ var require_jspdf_node_min = __commonJS({
               m4[l4 + 1] = m4[l4] + g4[l4];
             }
             for (f4 = 0; f4 < o4; ++f4) l4 = i4[f4], 0 < i4[f4] && (s4[m4[l4]++] = f4);
-            if (1 == m4[15]) return (i4 = new h3()).g = 0, i4.value = s4[0], u3(t5, d4, 1, p4, i4), p4;
-            var v4, b4 = -1, y4 = p4 - 1, w4 = 0, N26 = 1, L4 = 1, x4 = 1 << n4;
+            if (1 == m4[15]) return (i4 = new h3()).g = 0, i4.value = s4[0], u3(t5, d4, 1, p5, i4), p5;
+            var v4, b4 = -1, y4 = p5 - 1, w4 = 0, N26 = 1, L4 = 1, x4 = 1 << n4;
             for (f4 = 0, l4 = 1, o4 = 2; l4 <= n4; ++l4, o4 <<= 1) {
               if (N26 += L4 <<= 1, 0 > (L4 -= g4[l4])) return 0;
               for (; 0 < g4[l4]; --g4[l4]) (i4 = new h3()).g = l4, i4.value = s4[f4++], u3(t5, d4 + w4, o4, x4, i4), w4 = c3(w4, l4);
@@ -35708,12 +35708,12 @@ var require_jspdf_node_min = __commonJS({
               for (; 0 < g4[l4]; --g4[l4]) {
                 if (i4 = new h3(), (w4 & y4) != b4) {
                   for (d4 += x4, v4 = 1 << (b4 = l4) - n4; 15 > b4 && !(0 >= (v4 -= g4[b4])); ) ++b4, v4 <<= 1;
-                  p4 += x4 = 1 << (v4 = b4 - n4), t5[r4 + (b4 = w4 & y4)].g = v4 + n4, t5[r4 + b4].value = d4 - r4 - b4;
+                  p5 += x4 = 1 << (v4 = b4 - n4), t5[r4 + (b4 = w4 & y4)].g = v4 + n4, t5[r4 + b4].value = d4 - r4 - b4;
                 }
                 i4.g = l4 - n4, i4.value = s4[f4++], u3(t5, d4 + (w4 >> n4), o4, x4, i4), w4 = c3(w4, l4);
               }
             }
-            return N26 != 2 * m4[15] - 1 ? 0 : p4;
+            return N26 != 2 * m4[15] - 1 ? 0 : p5;
           })(t4, r3, n3, i3, o3, s3);
         }
         function h3() {
@@ -35725,7 +35725,7 @@ var require_jspdf_node_min = __commonJS({
         function d3() {
           this.G = o2(5, h3), this.H = a2(5), this.jc = this.Qb = this.qb = this.nd = 0, this.pd = o2(Er, f3);
         }
-        function p3(t4, r3, n3, i3) {
+        function p4(t4, r3, n3, i3) {
           e2(null != t4), e2(null != r3), e2(2147483648 > i3), t4.Ca = 254, t4.I = 0, t4.b = -8, t4.Ka = 0, t4.oa = r3, t4.pa = n3, t4.Jd = r3, t4.Yc = n3 + i3, t4.Zc = 4 <= i3 ? n3 + i3 - 4 + 1 : n3, _2(t4);
         }
         function g3(t4, e3) {
@@ -35864,12 +35864,12 @@ var require_jspdf_node_min = __commonJS({
           t3[r3] = function(t4, e4, r4, n4, o3, s3, c4, u4, l4) {
             for (n4 = c4; n4 < u4; ++n4) for (c4 = 0; c4 < l4; ++c4) o3[s3++] = a3(r4[i3(t4[e4++])]);
           }, t3[e3] = function(e4, r4, o3, s3, c4, u4, l4) {
-            var h4 = 8 >> e4.b, f4 = e4.Ea, d4 = e4.K[0], p4 = e4.w;
-            if (8 > h4) for (e4 = (1 << e4.b) - 1, p4 = (1 << h4) - 1; r4 < o3; ++r4) {
+            var h4 = 8 >> e4.b, f4 = e4.Ea, d4 = e4.K[0], p5 = e4.w;
+            if (8 > h4) for (e4 = (1 << e4.b) - 1, p5 = (1 << h4) - 1; r4 < o3; ++r4) {
               var g4, m4 = 0;
-              for (g4 = 0; g4 < f4; ++g4) g4 & e4 || (m4 = i3(s3[c4++])), u4[l4++] = a3(d4[m4 & p4]), m4 >>= h4;
+              for (g4 = 0; g4 < f4; ++g4) g4 & e4 || (m4 = i3(s3[c4++])), u4[l4++] = a3(d4[m4 & p5]), m4 >>= h4;
             }
-            else t3["VP8LMapColor" + n3](s3, c4, d4, p4, u4, l4, r4, o3, f4);
+            else t3["VP8LMapColor" + n3](s3, c4, d4, p5, u4, l4, r4, o3, f4);
           };
         }
         function K2(t4, e3, r3, n3, i3) {
@@ -35931,8 +35931,8 @@ var require_jspdf_node_min = __commonJS({
           return alert("todo:WebPSamplerProcessPlane"), t4.T;
         }
         function lt2(t4, e3) {
-          var r3 = t4.T, i3 = e3.ba.f.RGBA, a3 = i3.eb, o3 = i3.fb + t4.ka * i3.A, s3 = mi[e3.ba.S], c4 = t4.y, u4 = t4.O, l4 = t4.f, h4 = t4.N, f4 = t4.ea, d4 = t4.W, p4 = e3.cc, g4 = e3.dc, m4 = e3.Mc, v4 = e3.Nc, b4 = t4.ka, y4 = t4.ka + t4.T, w4 = t4.U, N26 = w4 + 1 >> 1;
-          for (0 == b4 ? s3(c4, u4, null, null, l4, h4, f4, d4, l4, h4, f4, d4, a3, o3, null, null, w4) : (s3(e3.ec, e3.fc, c4, u4, p4, g4, m4, v4, l4, h4, f4, d4, a3, o3 - i3.A, a3, o3, w4), ++r3); b4 + 2 < y4; b4 += 2) p4 = l4, g4 = h4, m4 = f4, v4 = d4, h4 += t4.Rc, d4 += t4.Rc, o3 += 2 * i3.A, s3(c4, (u4 += 2 * t4.fa) - t4.fa, c4, u4, p4, g4, m4, v4, l4, h4, f4, d4, a3, o3 - i3.A, a3, o3, w4);
+          var r3 = t4.T, i3 = e3.ba.f.RGBA, a3 = i3.eb, o3 = i3.fb + t4.ka * i3.A, s3 = mi[e3.ba.S], c4 = t4.y, u4 = t4.O, l4 = t4.f, h4 = t4.N, f4 = t4.ea, d4 = t4.W, p5 = e3.cc, g4 = e3.dc, m4 = e3.Mc, v4 = e3.Nc, b4 = t4.ka, y4 = t4.ka + t4.T, w4 = t4.U, N26 = w4 + 1 >> 1;
+          for (0 == b4 ? s3(c4, u4, null, null, l4, h4, f4, d4, l4, h4, f4, d4, a3, o3, null, null, w4) : (s3(e3.ec, e3.fc, c4, u4, p5, g4, m4, v4, l4, h4, f4, d4, a3, o3 - i3.A, a3, o3, w4), ++r3); b4 + 2 < y4; b4 += 2) p5 = l4, g4 = h4, m4 = f4, v4 = d4, h4 += t4.Rc, d4 += t4.Rc, o3 += 2 * i3.A, s3(c4, (u4 += 2 * t4.fa) - t4.fa, c4, u4, p5, g4, m4, v4, l4, h4, f4, d4, a3, o3 - i3.A, a3, o3, w4);
           return u4 += t4.fa, t4.j + y4 < t4.o ? (n2(e3.ec, e3.fc, c4, u4, w4), n2(e3.cc, e3.dc, l4, h4, N26), n2(e3.Mc, e3.Nc, f4, d4, N26), r3--) : 1 & y4 || s3(c4, u4, null, null, l4, h4, f4, d4, l4, h4, f4, d4, a3, o3 + i3.A, null, null, w4), r3;
         }
         function ht2(t4, r3, n3) {
@@ -36002,36 +36002,36 @@ var require_jspdf_node_min = __commonJS({
           r3 = c4 + r3;
           var u4 = i3, l4 = a3;
           for (a3 = t4.Ta, i3 = t4.Ua; 0 < o3--; ) {
-            var h4 = t4.gc[o3], f4 = c4, d4 = r3, p4 = u4, g4 = l4, m4 = (l4 = a3, u4 = i3, h4.Ea);
+            var h4 = t4.gc[o3], f4 = c4, d4 = r3, p5 = u4, g4 = l4, m4 = (l4 = a3, u4 = i3, h4.Ea);
             switch (e2(f4 < d4), e2(d4 <= h4.nc), h4.hc) {
               case 2:
-                Vr(p4, g4, (d4 - f4) * m4, l4, u4);
+                Vr(p5, g4, (d4 - f4) * m4, l4, u4);
                 break;
               case 0:
                 var v4 = f4, b4 = d4, y4 = l4, w4 = u4, N26 = (_3 = h4).Ea;
-                0 == v4 && (Hr(p4, g4, null, null, 1, y4, w4), V2(p4, g4 + 1, 0, 0, N26 - 1, y4, w4 + 1), g4 += N26, w4 += N26, ++v4);
+                0 == v4 && (Hr(p5, g4, null, null, 1, y4, w4), V2(p5, g4 + 1, 0, 0, N26 - 1, y4, w4 + 1), g4 += N26, w4 += N26, ++v4);
                 for (var L4 = 1 << _3.b, x4 = L4 - 1, A4 = E2(N26, _3.b), S34 = _3.K, _3 = _3.w + (v4 >> _3.b) * A4; v4 < b4; ) {
                   var P3 = S34, k3 = _3, F8 = 1;
-                  for (Wr(p4, g4, y4, w4 - N26, 1, y4, w4); F8 < N26; ) {
+                  for (Wr(p5, g4, y4, w4 - N26, 1, y4, w4); F8 < N26; ) {
                     var I27 = (F8 & ~x4) + L4;
-                    I27 > N26 && (I27 = N26), (0, Kr[P3[k3++] >> 8 & 15])(p4, g4 + +F8, y4, w4 + F8 - N26, I27 - F8, y4, w4 + F8), F8 = I27;
+                    I27 > N26 && (I27 = N26), (0, Kr[P3[k3++] >> 8 & 15])(p5, g4 + +F8, y4, w4 + F8 - N26, I27 - F8, y4, w4 + F8), F8 = I27;
                   }
                   g4 += N26, w4 += N26, ++v4 & x4 || (_3 += A4);
                 }
                 d4 != h4.nc && n2(l4, u4 - m4, l4, u4 + (d4 - f4 - 1) * m4, m4);
                 break;
               case 1:
-                for (m4 = p4, b4 = g4, N26 = (p4 = h4.Ea) - (w4 = p4 & ~(y4 = (g4 = 1 << h4.b) - 1)), v4 = E2(p4, h4.b), L4 = h4.K, h4 = h4.w + (f4 >> h4.b) * v4; f4 < d4; ) {
-                  for (x4 = L4, A4 = h4, S34 = new T36(), _3 = b4 + w4, P3 = b4 + p4; b4 < _3; ) Y2(x4[A4++], S34), $r(S34, m4, b4, g4, l4, u4), b4 += g4, u4 += g4;
+                for (m4 = p5, b4 = g4, N26 = (p5 = h4.Ea) - (w4 = p5 & ~(y4 = (g4 = 1 << h4.b) - 1)), v4 = E2(p5, h4.b), L4 = h4.K, h4 = h4.w + (f4 >> h4.b) * v4; f4 < d4; ) {
+                  for (x4 = L4, A4 = h4, S34 = new T36(), _3 = b4 + w4, P3 = b4 + p5; b4 < _3; ) Y2(x4[A4++], S34), $r(S34, m4, b4, g4, l4, u4), b4 += g4, u4 += g4;
                   b4 < P3 && (Y2(x4[A4++], S34), $r(S34, m4, b4, N26, l4, u4), b4 += N26, u4 += N26), ++f4 & y4 || (h4 += v4);
                 }
                 break;
               case 3:
-                if (p4 == l4 && g4 == u4 && 0 < h4.b) {
-                  for (b4 = l4, p4 = m4 = u4 + (d4 - f4) * m4 - (w4 = (d4 - f4) * E2(h4.Ea, h4.b)), g4 = l4, y4 = u4, v4 = [], w4 = (N26 = w4) - 1; 0 <= w4; --w4) v4[w4] = g4[y4 + w4];
-                  for (w4 = N26 - 1; 0 <= w4; --w4) b4[p4 + w4] = v4[w4];
+                if (p5 == l4 && g4 == u4 && 0 < h4.b) {
+                  for (b4 = l4, p5 = m4 = u4 + (d4 - f4) * m4 - (w4 = (d4 - f4) * E2(h4.Ea, h4.b)), g4 = l4, y4 = u4, v4 = [], w4 = (N26 = w4) - 1; 0 <= w4; --w4) v4[w4] = g4[y4 + w4];
+                  for (w4 = N26 - 1; 0 <= w4; --w4) b4[p5 + w4] = v4[w4];
                   Gr(h4, f4, d4, l4, m4, l4, u4);
-                } else Gr(h4, f4, d4, p4, g4, l4, u4);
+                } else Gr(h4, f4, d4, p5, g4, l4, u4);
             }
             u4 = a3, l4 = i3;
           }
@@ -36049,40 +36049,40 @@ var require_jspdf_node_min = __commonJS({
               if (c4 = c4[0], 11 > (n3 = t4.ca).S) {
                 var h4 = n3.f.RGBA, f4 = (i3 = n3.S, a3 = o3.U, o3 = o3.T, l4 = h4.eb, h4.A), d4 = o3;
                 for (h4 = h4.fb + t4.Ma * h4.A; 0 < d4--; ) {
-                  var p4 = s3, g4 = c4, m4 = a3, v4 = l4, b4 = h4;
+                  var p5 = s3, g4 = c4, m4 = a3, v4 = l4, b4 = h4;
                   switch (i3) {
                     case qn:
-                      Zr(p4, g4, m4, v4, b4);
+                      Zr(p5, g4, m4, v4, b4);
                       break;
                     case Mn:
-                      Qr(p4, g4, m4, v4, b4);
+                      Qr(p5, g4, m4, v4, b4);
                       break;
                     case Un:
-                      Qr(p4, g4, m4, v4, b4), Ln(v4, b4, 0, m4, 1, 0);
+                      Qr(p5, g4, m4, v4, b4), Ln(v4, b4, 0, m4, 1, 0);
                       break;
                     case En:
-                      rn(p4, g4, m4, v4, b4);
+                      rn(p5, g4, m4, v4, b4);
                       break;
                     case Rn:
-                      et2(p4, g4, m4, v4, b4, 1);
+                      et2(p5, g4, m4, v4, b4, 1);
                       break;
                     case Hn:
-                      et2(p4, g4, m4, v4, b4, 1), Ln(v4, b4, 0, m4, 1, 0);
+                      et2(p5, g4, m4, v4, b4, 1), Ln(v4, b4, 0, m4, 1, 0);
                       break;
                     case Dn:
-                      et2(p4, g4, m4, v4, b4, 0);
+                      et2(p5, g4, m4, v4, b4, 0);
                       break;
                     case Wn:
-                      et2(p4, g4, m4, v4, b4, 0), Ln(v4, b4, 1, m4, 1, 0);
+                      et2(p5, g4, m4, v4, b4, 0), Ln(v4, b4, 1, m4, 1, 0);
                       break;
                     case Tn:
-                      tn(p4, g4, m4, v4, b4);
+                      tn(p5, g4, m4, v4, b4);
                       break;
                     case Vn:
-                      tn(p4, g4, m4, v4, b4), xn(v4, b4, m4, 1, 0);
+                      tn(p5, g4, m4, v4, b4), xn(v4, b4, m4, 1, 0);
                       break;
                     case zn:
-                      en(p4, g4, m4, v4, b4);
+                      en(p5, g4, m4, v4, b4);
                       break;
                     default:
                       e2(0);
@@ -36123,11 +36123,11 @@ var require_jspdf_node_min = __commonJS({
         function _t2(t4, r3, n3, i3, a3, o3, s3) {
           var c4 = t4.$ / i3, u4 = t4.$ % i3, l4 = t4.m, h4 = t4.s, f4 = n3 + t4.$, d4 = f4;
           a3 = n3 + i3 * a3;
-          var p4 = n3 + i3 * o3, g4 = 280 + h4.ua, m4 = t4.Pb ? c4 : 16777216, v4 = 0 < h4.ua ? h4.Wa : null, b4 = h4.wc, y4 = f4 < p4 ? wt2(h4, u4, c4) : null;
-          e2(t4.C < o3), e2(p4 <= a3);
+          var p5 = n3 + i3 * o3, g4 = 280 + h4.ua, m4 = t4.Pb ? c4 : 16777216, v4 = 0 < h4.ua ? h4.Wa : null, b4 = h4.wc, y4 = f4 < p5 ? wt2(h4, u4, c4) : null;
+          e2(t4.C < o3), e2(p5 <= a3);
           var w4 = false;
           t: for (; ; ) {
-            for (; w4 || f4 < p4; ) {
+            for (; w4 || f4 < p5; ) {
               var N26 = 0;
               if (c4 >= m4) {
                 var _3 = f4 - n3;
@@ -36178,10 +36178,10 @@ var require_jspdf_node_min = __commonJS({
           return null == e3 ? null : (e3.a = 0, e3.xb = pi, rt2("Predictor", "VP8LPredictors"), rt2("Predictor", "VP8LPredictors_C"), rt2("PredictorAdd", "VP8LPredictorsAdd"), rt2("PredictorAdd", "VP8LPredictorsAdd_C"), Vr = G2, $r = J2, Zr = K2, Qr = $2, tn = Z2, en = Q2, rn = tt2, t3.VP8LMapColor32b = Yr, t3.VP8LMapColor8b = Xr, e3);
         }
         function Ft2(t4, r3, n3, s3, c4) {
-          var u4 = 1, f4 = [t4], p4 = [r3], g4 = s3.m, m4 = s3.s, v4 = null, b4 = 0;
+          var u4 = 1, f4 = [t4], p5 = [r3], g4 = s3.m, m4 = s3.s, v4 = null, b4 = 0;
           t: for (; ; ) {
             if (n3) for (; u4 && y3(g4, 1); ) {
-              var w4 = f4, N26 = p4, x4 = s3, _3 = 1, P3 = x4.m, k3 = x4.gc[x4.ab], F8 = y3(P3, 2);
+              var w4 = f4, N26 = p5, x4 = s3, _3 = 1, P3 = x4.m, k3 = x4.gc[x4.ab], F8 = y3(P3, 2);
               if (x4.Oc & 1 << F8) u4 = 0;
               else {
                 switch (x4.Oc |= 1 << F8, k3.hc = F8, k3.Ea = w4[0], k3.nc = N26[0], k3.K = [null], ++x4.ab, e2(4 >= x4.ab), F8) {
@@ -36211,13 +36211,13 @@ var require_jspdf_node_min = __commonJS({
                 u4 = _3;
               }
             }
-            if (f4 = f4[0], p4 = p4[0], u4 && y3(g4, 1) && !(u4 = 1 <= (b4 = y3(g4, 4)) && 11 >= b4)) {
+            if (f4 = f4[0], p5 = p5[0], u4 && y3(g4, 1) && !(u4 = 1 <= (b4 = y3(g4, 4)) && 11 >= b4)) {
               s3.a = 3;
               break t;
             }
             var H3;
             if (H3 = u4) e: {
-              var W4, V3, G3, Y3 = s3, J3 = f4, X4 = p4, K3 = b4, $3 = n3, Z3 = Y3.m, Q3 = Y3.s, tt3 = [null], et3 = 1, rt3 = 0, nt3 = Zn[K3];
+              var W4, V3, G3, Y3 = s3, J3 = f4, X4 = p5, K3 = b4, $3 = n3, Z3 = Y3.m, Q3 = Y3.s, tt3 = [null], et3 = 1, rt3 = 0, nt3 = Zn[K3];
               r: for (; ; ) {
                 if ($3 && y3(Z3, 1)) {
                   var it3 = y3(Z3, 3) + 2, at3 = E2(J3, it3), ot3 = E2(X4, it3), st3 = at3 * ot3;
@@ -36314,16 +36314,16 @@ var require_jspdf_node_min = __commonJS({
                 break t;
               }
             } else m4.ua = 0;
-            var de3 = s3, pe3 = f4, ge3 = p4, me3 = de3.s, ve3 = me3.xc;
+            var de3 = s3, pe3 = f4, ge3 = p5, me3 = de3.s, ve3 = me3.xc;
             if (de3.c = pe3, de3.i = ge3, me3.md = E2(pe3, ve3), me3.wc = 0 == ve3 ? -1 : (1 << ve3) - 1, n3) {
               s3.xb = di;
               break t;
             }
-            if (null == (v4 = a2(f4 * p4))) {
+            if (null == (v4 = a2(f4 * p5))) {
               s3.a = 1, u4 = 0;
               break t;
             }
-            u4 = (u4 = _t2(s3, v4, 0, f4, p4, p4, null)) && !g4.h;
+            u4 = (u4 = _t2(s3, v4, 0, f4, p5, p5, null)) && !g4.h;
             break t;
           }
           return u4 ? (null != c4 ? c4[0] = v4 : (e2(null == v4), e2(n3)), s3.$ = 0, n3 || Pt2(m4)) : Pt2(m4), u4;
@@ -36335,8 +36335,8 @@ var require_jspdf_node_min = __commonJS({
         function Ct2(t4, r3) {
           var n3 = t4.C, i3 = r3 - n3, a3 = t4.V, o3 = t4.Ba + t4.c * n3;
           for (e2(r3 <= t4.l.o); 0 < i3; ) {
-            var s3 = 16 < i3 ? 16 : i3, c4 = t4.l.ma, u4 = t4.l.width, l4 = u4 * s3, h4 = c4.ca, f4 = c4.tb + u4 * n3, d4 = t4.Ta, p4 = t4.Ua;
-            Nt2(t4, s3, a3, o3), Sn(d4, p4, h4, f4, l4), At2(c4, n3, n3 + s3, h4, f4, u4), i3 -= s3, a3 += s3 * t4.c, n3 += s3;
+            var s3 = 16 < i3 ? 16 : i3, c4 = t4.l.ma, u4 = t4.l.width, l4 = u4 * s3, h4 = c4.ca, f4 = c4.tb + u4 * n3, d4 = t4.Ta, p5 = t4.Ua;
+            Nt2(t4, s3, a3, o3), Sn(d4, p5, h4, f4, l4), At2(c4, n3, n3 + s3, h4, f4, u4), i3 -= s3, a3 += s3 * t4.c, n3 += s3;
           }
           e2(n3 == r3), t4.C = t4.Ma = r3;
         }
@@ -36416,7 +36416,7 @@ var require_jspdf_node_min = __commonJS({
             u4.c = 16383 & (n3[a3 + 4] << 8 | n3[a3 + 3]), u4.Td = n3[a3 + 4] >> 6, u4.i = 16383 & (n3[a3 + 6] << 8 | n3[a3 + 5]), u4.Ud = n3[a3 + 6] >> 6, a3 += 7, o3 -= 7, t4.za = u4.c + 15 >> 4, t4.Ub = u4.i + 15 >> 4, r3.width = u4.c, r3.height = u4.i, r3.Da = 0, r3.j = 0, r3.v = 0, r3.va = r3.width, r3.o = r3.height, r3.da = 0, r3.ib = r3.width, r3.hb = r3.height, r3.U = r3.width, r3.T = r3.height, i2((s3 = t4.Pa).jb, 0, 255, s3.jb.length), e2(null != (s3 = t4.Qa)), s3.Cb = 0, s3.Bb = 0, s3.Fb = 1, i2(s3.Zb, 0, 0, s3.Zb.length), i2(s3.Lb, 0, 0, s3.Lb);
           }
           if (c4.ub > o3) return Jt2(t4, 7, "bad partition length");
-          p3(s3 = t4.m, n3, a3, c4.ub), a3 += c4.ub, o3 -= c4.ub, c4.Rb && (u4.Ld = P2(s3), u4.Kd = P2(s3)), u4 = t4.Qa;
+          p4(s3 = t4.m, n3, a3, c4.ub), a3 += c4.ub, o3 -= c4.ub, c4.Rb && (u4.Ld = P2(s3), u4.Kd = P2(s3)), u4 = t4.Qa;
           var l4, h4 = t4.Pa;
           if (e2(null != s3), e2(null != u4), u4.Cb = P2(s3), u4.Cb) {
             if (u4.Bb = P2(s3), P2(s3)) {
@@ -36436,9 +36436,9 @@ var require_jspdf_node_min = __commonJS({
           else {
             for (l4 += 3 * h4, u4 -= 3 * h4, f4 = 0; f4 < h4; ++f4) {
               var d4 = n3[o3 + 0] | n3[o3 + 1] << 8 | n3[o3 + 2] << 16;
-              d4 > u4 && (d4 = u4), p3(t4.Jc[+f4], n3, l4, d4), l4 += d4, u4 -= d4, o3 += 3;
+              d4 > u4 && (d4 = u4), p4(t4.Jc[+f4], n3, l4, d4), l4 += d4, u4 -= d4, o3 += 3;
             }
-            p3(t4.Jc[+h4], n3, l4, u4), n3 = l4 < a3 ? 0 : 5;
+            p4(t4.Jc[+h4], n3, l4, u4), n3 = l4 < a3 ? 0 : 5;
           }
           if (0 != n3) return Jt2(t4, n3, "cannot parse partitions");
           for (n3 = g3(l4 = t4.m, 7), o3 = P2(l4) ? m3(l4, 4) : 0, a3 = P2(l4) ? m3(l4, 4) : 0, u4 = P2(l4) ? m3(l4, 4) : 0, h4 = P2(l4) ? m3(l4, 4) : 0, l4 = P2(l4) ? m3(l4, 4) : 0, f4 = t4.Qa, d4 = 0; 4 > d4; ++d4) {
@@ -36681,8 +36681,8 @@ var require_jspdf_node_min = __commonJS({
           for (a3 = 2 * a3 + 1; 0 < i3--; ) {
             if (Te(t4, e3, r3, a3, o3)) if (Re(t4, e3, r3, s3)) Ee(t4, e3, r3);
             else {
-              var c4 = t4, u4 = e3, l4 = r3, h4 = c4[u4 - 2 * l4], f4 = c4[u4 - l4], d4 = c4[u4 + 0], p4 = c4[u4 + l4], g4 = c4[u4 + 2 * l4], m4 = 27 * (b4 = Cn[1020 + 3 * (d4 - f4) + Cn[1020 + h4 - p4]]) + 63 >> 7, v4 = 18 * b4 + 63 >> 7, b4 = 9 * b4 + 63 >> 7;
-              c4[u4 - 3 * l4] = On[255 + c4[u4 - 3 * l4] + b4], c4[u4 - 2 * l4] = On[255 + h4 + v4], c4[u4 - l4] = On[255 + f4 + m4], c4[u4 + 0] = On[255 + d4 - m4], c4[u4 + l4] = On[255 + p4 - v4], c4[u4 + 2 * l4] = On[255 + g4 - b4];
+              var c4 = t4, u4 = e3, l4 = r3, h4 = c4[u4 - 2 * l4], f4 = c4[u4 - l4], d4 = c4[u4 + 0], p5 = c4[u4 + l4], g4 = c4[u4 + 2 * l4], m4 = 27 * (b4 = Cn[1020 + 3 * (d4 - f4) + Cn[1020 + h4 - p5]]) + 63 >> 7, v4 = 18 * b4 + 63 >> 7, b4 = 9 * b4 + 63 >> 7;
+              c4[u4 - 3 * l4] = On[255 + c4[u4 - 3 * l4] + b4], c4[u4 - 2 * l4] = On[255 + h4 + v4], c4[u4 - l4] = On[255 + f4 + m4], c4[u4 + 0] = On[255 + d4 - m4], c4[u4 + l4] = On[255 + p5 - v4], c4[u4 + 2 * l4] = On[255 + g4 - b4];
             }
             e3 += n3;
           }
@@ -36691,8 +36691,8 @@ var require_jspdf_node_min = __commonJS({
           for (a3 = 2 * a3 + 1; 0 < i3--; ) {
             if (Te(t4, e3, r3, a3, o3)) if (Re(t4, e3, r3, s3)) Ee(t4, e3, r3);
             else {
-              var c4 = t4, u4 = e3, l4 = r3, h4 = c4[u4 - l4], f4 = c4[u4 + 0], d4 = c4[u4 + l4], p4 = jn[112 + (4 + (g4 = 3 * (f4 - h4)) >> 3)], g4 = jn[112 + (g4 + 3 >> 3)], m4 = p4 + 1 >> 1;
-              c4[u4 - 2 * l4] = On[255 + c4[u4 - 2 * l4] + m4], c4[u4 - l4] = On[255 + h4 + g4], c4[u4 + 0] = On[255 + f4 - p4], c4[u4 + l4] = On[255 + d4 - m4];
+              var c4 = t4, u4 = e3, l4 = r3, h4 = c4[u4 - l4], f4 = c4[u4 + 0], d4 = c4[u4 + l4], p5 = jn[112 + (4 + (g4 = 3 * (f4 - h4)) >> 3)], g4 = jn[112 + (g4 + 3 >> 3)], m4 = p5 + 1 >> 1;
+              c4[u4 - 2 * l4] = On[255 + c4[u4 - 2 * l4] + m4], c4[u4 - l4] = On[255 + h4 + g4], c4[u4 + 0] = On[255 + f4 - p5], c4[u4 + l4] = On[255 + d4 - m4];
             }
             e3 += n3;
           }
@@ -36764,8 +36764,8 @@ var require_jspdf_node_min = __commonJS({
               var u4;
               if (t4.ga = new or(), (u4 = null == t4.ga) || (u4 = r3.width * r3.o, e2(0 == t4.Gb.length), t4.Gb = a2(u4), t4.Uc = 0, null == t4.Gb ? u4 = 0 : (t4.mb = t4.Gb, t4.nb = t4.Uc, t4.rc = null, u4 = 1), u4 = !u4), !u4) {
                 u4 = t4.ga;
-                var l4 = t4.Fa, h4 = t4.P, f4 = t4.qc, d4 = t4.mb, p4 = t4.nb, g4 = h4 + 1, m4 = f4 - 1, b4 = u4.l;
-                if (e2(null != l4 && null != d4 && null != r3), gi[0] = null, gi[1] = sr, gi[2] = cr, gi[3] = ur, u4.ca = d4, u4.tb = p4, u4.c = r3.width, u4.i = r3.height, e2(0 < u4.c && 0 < u4.i), 1 >= f4) r3 = 0;
+                var l4 = t4.Fa, h4 = t4.P, f4 = t4.qc, d4 = t4.mb, p5 = t4.nb, g4 = h4 + 1, m4 = f4 - 1, b4 = u4.l;
+                if (e2(null != l4 && null != d4 && null != r3), gi[0] = null, gi[1] = sr, gi[2] = cr, gi[3] = ur, u4.ca = d4, u4.tb = p5, u4.c = r3.width, u4.i = r3.height, e2(0 < u4.c && 0 < u4.i), 1 >= f4) r3 = 0;
                 else if (u4.$a = 3 & l4[h4 + 0], u4.Z = l4[h4 + 0] >> 2 & 3, u4.Lc = l4[h4 + 0] >> 4 & 3, h4 = l4[h4 + 0] >> 6 & 3, 0 > u4.$a || 1 < u4.$a || 4 <= u4.Z || 1 < u4.Lc || h4) r3 = 0;
                 else if (b4.put = dt2, b4.ac = ft2, b4.bc = pt2, b4.ma = u4, b4.width = r3.width, b4.height = r3.height, b4.Da = r3.Da, b4.v = r3.v, b4.va = r3.va, b4.j = r3.j, b4.o = r3.o, u4.$a) t: {
                   e2(1 == u4.$a), r3 = kt2();
@@ -36797,11 +36797,11 @@ var require_jspdf_node_min = __commonJS({
                 if (e2(null != l4.mc), r3 = i3 + o3, e2(null != (u4 = l4.mc)), e2(r3 <= u4.i), u4.C >= r3) r3 = 1;
                 else if (l4.ic || gr(), l4.ic) {
                   l4 = u4.V, g4 = u4.Ba, m4 = u4.c;
-                  var y4 = u4.i, w4 = (b4 = 1, h4 = u4.$ / m4, f4 = u4.$ % m4, d4 = u4.m, p4 = u4.s, u4.$), N26 = m4 * y4, L4 = m4 * r3, A4 = p4.wc, _3 = w4 < L4 ? wt2(p4, f4, h4) : null;
-                  e2(w4 <= N26), e2(r3 <= y4), e2(xt2(p4));
+                  var y4 = u4.i, w4 = (b4 = 1, h4 = u4.$ / m4, f4 = u4.$ % m4, d4 = u4.m, p5 = u4.s, u4.$), N26 = m4 * y4, L4 = m4 * r3, A4 = p5.wc, _3 = w4 < L4 ? wt2(p5, f4, h4) : null;
+                  e2(w4 <= N26), e2(r3 <= y4), e2(xt2(p5));
                   e: for (; ; ) {
                     for (; !d4.h && w4 < L4; ) {
-                      if (f4 & A4 || (_3 = wt2(p4, f4, h4)), e2(null != _3), S33(d4), 256 > (y4 = bt2(_3.G[0], _3.H[0], d4))) l4[g4 + w4] = y4, ++w4, ++f4 >= m4 && (f4 = 0, ++h4 <= r3 && !(h4 % 16) && St2(u4, h4));
+                      if (f4 & A4 || (_3 = wt2(p5, f4, h4)), e2(null != _3), S33(d4), 256 > (y4 = bt2(_3.G[0], _3.H[0], d4))) l4[g4 + w4] = y4, ++w4, ++f4 >= m4 && (f4 = 0, ++h4 <= r3 && !(h4 % 16) && St2(u4, h4));
                       else {
                         if (!(280 > y4)) {
                           b4 = 0;
@@ -36815,7 +36815,7 @@ var require_jspdf_node_min = __commonJS({
                         }
                         for (P3 = 0; P3 < y4; ++P3) l4[g4 + w4 + P3] = l4[g4 + w4 + P3 - k3];
                         for (w4 += y4, f4 += y4; f4 >= m4; ) f4 -= m4, ++h4 <= r3 && !(h4 % 16) && St2(u4, h4);
-                        w4 < L4 && f4 & A4 && (_3 = wt2(p4, f4, h4));
+                        w4 < L4 && f4 & A4 && (_3 = wt2(p5, f4, h4));
                       }
                       e2(d4.h == x3(d4));
                     }
@@ -36875,12 +36875,12 @@ var require_jspdf_node_min = __commonJS({
           Ln = hr, xn = fr, An = dr, Sn = pr;
         }
         function mr(r3, n3, i3) {
-          t3[r3] = function(t4, r4, a3, o3, s3, c4, u4, l4, h4, f4, d4, p4, g4, m4, v4, b4, y4) {
-            var w4, N26 = y4 - 1 >> 1, L4 = s3[c4 + 0] | u4[l4 + 0] << 16, x4 = h4[f4 + 0] | d4[p4 + 0] << 16;
+          t3[r3] = function(t4, r4, a3, o3, s3, c4, u4, l4, h4, f4, d4, p5, g4, m4, v4, b4, y4) {
+            var w4, N26 = y4 - 1 >> 1, L4 = s3[c4 + 0] | u4[l4 + 0] << 16, x4 = h4[f4 + 0] | d4[p5 + 0] << 16;
             e2(null != t4);
             var A4 = 3 * L4 + x4 + 131074 >> 2;
             for (n3(t4[r4 + 0], 255 & A4, A4 >> 16, g4, m4), null != a3 && (A4 = 3 * x4 + L4 + 131074 >> 2, n3(a3[o3 + 0], 255 & A4, A4 >> 16, v4, b4)), w4 = 1; w4 <= N26; ++w4) {
-              var S34 = s3[c4 + w4] | u4[l4 + w4] << 16, _3 = h4[f4 + w4] | d4[p4 + w4] << 16, P3 = L4 + S34 + x4 + _3 + 524296, k3 = P3 + 2 * (S34 + x4) >> 3;
+              var S34 = s3[c4 + w4] | u4[l4 + w4] << 16, _3 = h4[f4 + w4] | d4[p5 + w4] << 16, P3 = L4 + S34 + x4 + _3 + 524296, k3 = P3 + 2 * (S34 + x4) >> 3;
               A4 = k3 + L4 >> 1, L4 = (P3 = P3 + 2 * (L4 + _3) >> 3) + S34 >> 1, n3(t4[r4 + 2 * w4 - 1], 255 & A4, A4 >> 16, g4, m4 + (2 * w4 - 1) * i3), n3(t4[r4 + 2 * w4 - 0], 255 & L4, L4 >> 16, g4, m4 + (2 * w4 - 0) * i3), null != a3 && (A4 = P3 + x4 >> 1, L4 = k3 + _3 >> 1, n3(a3[o3 + 2 * w4 - 1], 255 & A4, A4 >> 16, v4, b4 + (2 * w4 - 1) * i3), n3(a3[o3 + 2 * w4 + 0], 255 & L4, L4 >> 16, v4, b4 + (2 * w4 + 0) * i3)), L4 = S34, x4 = _3;
             }
             1 & y4 || (A4 = 3 * L4 + x4 + 131074 >> 2, n3(t4[r4 + y4 - 1], 255 & A4, A4 >> 16, g4, m4 + (y4 - 1) * i3), null != a3 && (A4 = 3 * x4 + L4 + 131074 >> 2, n3(a3[o3 + y4 - 1], 255 & A4, A4 >> 16, v4, b4 + (y4 - 1) * i3)));
@@ -36950,23 +36950,23 @@ var require_jspdf_node_min = __commonJS({
           for (r3 = 0; 16 > r3; ++r3) c4[u4 + 32 * r3 - 1] = 129;
           for (r3 = 0; 8 > r3; ++r3) l4[h4 + 32 * r3 - 1] = 129, f4[d4 + 32 * r3 - 1] = 129;
           for (0 < o3 ? c4[u4 - 1 - 32] = l4[h4 - 1 - 32] = f4[d4 - 1 - 32] = 129 : (i2(c4, u4 - 32 - 1, 127, 21), i2(l4, h4 - 32 - 1, 127, 9), i2(f4, d4 - 32 - 1, 127, 9)), a3 = 0; a3 < t4.za; ++a3) {
-            var p4 = e3.ya[e3.aa + a3];
+            var p5 = e3.ya[e3.aa + a3];
             if (0 < a3) {
               for (r3 = -1; 16 > r3; ++r3) n2(c4, u4 + 32 * r3 - 4, c4, u4 + 32 * r3 + 12, 4);
               for (r3 = -1; 8 > r3; ++r3) n2(l4, h4 + 32 * r3 - 4, l4, h4 + 32 * r3 + 4, 4), n2(f4, d4 + 32 * r3 - 4, f4, d4 + 32 * r3 + 4, 4);
             }
-            var g4 = t4.Gd, m4 = t4.Hd + a3, v4 = p4.ad, b4 = p4.Hc;
-            if (0 < o3 && (n2(c4, u4 - 32, g4[m4].y, 0, 16), n2(l4, h4 - 32, g4[m4].f, 0, 8), n2(f4, d4 - 32, g4[m4].ea, 0, 8)), p4.Za) {
+            var g4 = t4.Gd, m4 = t4.Hd + a3, v4 = p5.ad, b4 = p5.Hc;
+            if (0 < o3 && (n2(c4, u4 - 32, g4[m4].y, 0, 16), n2(l4, h4 - 32, g4[m4].f, 0, 8), n2(f4, d4 - 32, g4[m4].ea, 0, 8)), p5.Za) {
               var y4 = c4, w4 = u4 - 32 + 16;
               for (0 < o3 && (a3 >= t4.za - 1 ? i2(y4, w4, g4[m4].y[15], 4) : n2(y4, w4, g4[m4 + 1].y, 0, 4)), r3 = 0; 4 > r3; r3++) y4[w4 + 128 + r3] = y4[w4 + 256 + r3] = y4[w4 + 384 + r3] = y4[w4 + 0 + r3];
-              for (r3 = 0; 16 > r3; ++r3, b4 <<= 2) y4 = c4, w4 = u4 + Ei[r3], hi[p4.Ob[r3]](y4, w4), Cr(b4, v4, 16 * +r3, y4, w4);
-            } else if (y4 = Ir(a3, o3, p4.Ob[0]), li[y4](c4, u4), 0 != b4) for (r3 = 0; 16 > r3; ++r3, b4 <<= 2) Cr(b4, v4, 16 * +r3, c4, u4 + Ei[r3]);
-            for (r3 = p4.Gc, y4 = Ir(a3, o3, p4.Dd), fi[y4](l4, h4), fi[y4](f4, d4), b4 = v4, y4 = l4, w4 = h4, 255 & (p4 = 0 | r3) && (170 & p4 ? sn(b4, 256, y4, w4) : un(b4, 256, y4, w4)), p4 = f4, b4 = d4, 255 & (r3 >>= 8) && (170 & r3 ? sn(v4, 320, p4, b4) : un(v4, 320, p4, b4)), o3 < t4.Ub - 1 && (n2(g4[m4].y, 0, c4, u4 + 480, 16), n2(g4[m4].f, 0, l4, h4 + 224, 8), n2(g4[m4].ea, 0, f4, d4 + 224, 8)), r3 = 8 * s3 * t4.B, g4 = t4.sa, m4 = t4.ta + 16 * a3 + 16 * s3 * t4.R, v4 = t4.qa, p4 = t4.ra + 8 * a3 + r3, b4 = t4.Ha, y4 = t4.Ia + 8 * a3 + r3, r3 = 0; 16 > r3; ++r3) n2(g4, m4 + r3 * t4.R, c4, u4 + 32 * r3, 16);
-            for (r3 = 0; 8 > r3; ++r3) n2(v4, p4 + r3 * t4.B, l4, h4 + 32 * r3, 8), n2(b4, y4 + r3 * t4.B, f4, d4 + 32 * r3, 8);
+              for (r3 = 0; 16 > r3; ++r3, b4 <<= 2) y4 = c4, w4 = u4 + Ei[r3], hi[p5.Ob[r3]](y4, w4), Cr(b4, v4, 16 * +r3, y4, w4);
+            } else if (y4 = Ir(a3, o3, p5.Ob[0]), li[y4](c4, u4), 0 != b4) for (r3 = 0; 16 > r3; ++r3, b4 <<= 2) Cr(b4, v4, 16 * +r3, c4, u4 + Ei[r3]);
+            for (r3 = p5.Gc, y4 = Ir(a3, o3, p5.Dd), fi[y4](l4, h4), fi[y4](f4, d4), b4 = v4, y4 = l4, w4 = h4, 255 & (p5 = 0 | r3) && (170 & p5 ? sn(b4, 256, y4, w4) : un(b4, 256, y4, w4)), p5 = f4, b4 = d4, 255 & (r3 >>= 8) && (170 & r3 ? sn(v4, 320, p5, b4) : un(v4, 320, p5, b4)), o3 < t4.Ub - 1 && (n2(g4[m4].y, 0, c4, u4 + 480, 16), n2(g4[m4].f, 0, l4, h4 + 224, 8), n2(g4[m4].ea, 0, f4, d4 + 224, 8)), r3 = 8 * s3 * t4.B, g4 = t4.sa, m4 = t4.ta + 16 * a3 + 16 * s3 * t4.R, v4 = t4.qa, p5 = t4.ra + 8 * a3 + r3, b4 = t4.Ha, y4 = t4.Ia + 8 * a3 + r3, r3 = 0; 16 > r3; ++r3) n2(g4, m4 + r3 * t4.R, c4, u4 + 32 * r3, 16);
+            for (r3 = 0; 8 > r3; ++r3) n2(v4, p5 + r3 * t4.B, l4, h4 + 32 * r3, 8), n2(b4, y4 + r3 * t4.B, f4, d4 + 32 * r3, 8);
           }
         }
         function Or(t4, n3, i3, a3, o3, s3, c4, u4, l4) {
-          var h4 = [0], f4 = [0], d4 = 0, p4 = null != l4 ? l4.kd : 0, g4 = null != l4 ? l4 : new rr();
+          var h4 = [0], f4 = [0], d4 = 0, p5 = null != l4 ? l4.kd : 0, g4 = null != l4 ? l4 : new rr();
           if (null == t4 || 12 > i3) return 7;
           g4.data = t4, g4.w = n3, g4.ha = i3, n3 = [n3], i3 = [i3], g4.gb = [g4.gb];
           t: {
@@ -36981,7 +36981,7 @@ var require_jspdf_node_min = __commonJS({
                 y4 = 3;
                 break t;
               }
-              if (p4 && w4 > b4[0] - 8) {
+              if (p5 && w4 > b4[0] - 8) {
                 y4 = 7;
                 break t;
               }
@@ -37069,7 +37069,7 @@ var require_jspdf_node_min = __commonJS({
                   y4 = 3;
                   break t;
                 }
-                if (p4 && k3 > w4[0] - 8) {
+                if (p5 && k3 > w4[0] - 8) {
                   y4 = 7;
                   break t;
                 }
@@ -37084,13 +37084,13 @@ var require_jspdf_node_min = __commonJS({
                 y4 = 7;
                 break;
               }
-              u4 = c4, p4 = m4, b4 = s3, null == t4 || 5 > i3 ? t4 = 0 : 5 <= i3 && 47 == t4[n3 + 0] && !(t4[n3 + 4] >> 5) ? (w4 = [0], k3 = [0], x4 = [0], v3(A4 = new N25(), t4, n3, i3), gt2(A4, w4, k3, x4) ? (null != u4 && (u4[0] = w4[0]), null != p4 && (p4[0] = k3[0]), null != b4 && (b4[0] = x4[0]), t4 = 1) : t4 = 0) : t4 = 0;
+              u4 = c4, p5 = m4, b4 = s3, null == t4 || 5 > i3 ? t4 = 0 : 5 <= i3 && 47 == t4[n3 + 0] && !(t4[n3 + 4] >> 5) ? (w4 = [0], k3 = [0], x4 = [0], v3(A4 = new N25(), t4, n3, i3), gt2(A4, w4, k3, x4) ? (null != u4 && (u4[0] = w4[0]), null != p5 && (p5[0] = k3[0]), null != b4 && (b4[0] = x4[0]), t4 = 1) : t4 = 0) : t4 = 0;
             } else {
               if (10 > i3) {
                 y4 = 7;
                 break;
               }
-              u4 = m4, null == t4 || 10 > i3 || !Xt2(t4, n3 + 3, i3 - 3) ? t4 = 0 : (p4 = t4[n3 + 0] | t4[n3 + 1] << 8 | t4[n3 + 2] << 16, b4 = 16383 & (t4[n3 + 7] << 8 | t4[n3 + 6]), t4 = 16383 & (t4[n3 + 9] << 8 | t4[n3 + 8]), 1 & p4 || 3 < (p4 >> 1 & 7) || !(p4 >> 4 & 1) || p4 >> 5 >= g4.Ja || !b4 || !t4 ? t4 = 0 : (c4 && (c4[0] = b4), u4 && (u4[0] = t4), t4 = 1));
+              u4 = m4, null == t4 || 10 > i3 || !Xt2(t4, n3 + 3, i3 - 3) ? t4 = 0 : (p5 = t4[n3 + 0] | t4[n3 + 1] << 8 | t4[n3 + 2] << 16, b4 = 16383 & (t4[n3 + 7] << 8 | t4[n3 + 6]), t4 = 16383 & (t4[n3 + 9] << 8 | t4[n3 + 8]), 1 & p5 || 3 < (p5 >> 1 & 7) || !(p5 >> 4 & 1) || p5 >> 5 >= g4.Ja || !b4 || !t4 ? t4 = 0 : (c4 && (c4[0] = b4), u4 && (u4[0] = t4), t4 = 1));
             }
             if (!t4) return 3;
             if (c4 = c4[0], m4 = m4[0], d4 && (h4[0] != c4 || f4[0] != m4)) return 3;
@@ -37146,8 +37146,8 @@ var require_jspdf_node_min = __commonJS({
               if (e3 = 1, i3 = n3.S, o3 = n3.width, s3 = n3.height, i3 >= qn && 13 > i3) if (11 > i3) t4 = n3.f.RGBA, e3 &= (c4 = Math.abs(t4.A)) * (s3 - 1) + o3 <= t4.size, e3 &= c4 >= o3 * zi[i3], e3 &= null != t4.eb;
               else {
                 t4 = n3.f.kb, c4 = (o3 + 1) / 2, h4 = (s3 + 1) / 2, u4 = Math.abs(t4.fa), l4 = Math.abs(t4.Ab);
-                var f4 = Math.abs(t4.Db), d4 = Math.abs(t4.lb), p4 = d4 * (s3 - 1) + o3;
-                e3 &= u4 * (s3 - 1) + o3 <= t4.Fd, e3 &= l4 * (h4 - 1) + c4 <= t4.Cd, e3 = (e3 &= f4 * (h4 - 1) + c4 <= t4.Ed) & u4 >= o3 & l4 >= c4 & f4 >= c4, e3 &= null != t4.y, e3 &= null != t4.f, e3 &= null != t4.ea, 12 == i3 && (e3 &= d4 >= o3, e3 &= p4 <= t4.Tc, e3 &= null != t4.F);
+                var f4 = Math.abs(t4.Db), d4 = Math.abs(t4.lb), p5 = d4 * (s3 - 1) + o3;
+                e3 &= u4 * (s3 - 1) + o3 <= t4.Fd, e3 &= l4 * (h4 - 1) + c4 <= t4.Cd, e3 = (e3 &= f4 * (h4 - 1) + c4 <= t4.Ed) & u4 >= o3 & l4 >= c4 & f4 >= c4, e3 &= null != t4.y, e3 &= null != t4.f, e3 &= null != t4.ea, 12 == i3 && (e3 &= d4 >= o3, e3 &= p5 <= t4.Tc, e3 &= null != t4.F);
               }
               else e3 = 0;
               t4 = e3 ? 0 : 2;
@@ -37210,10 +37210,10 @@ var require_jspdf_node_min = __commonJS({
         this.WebPDecodeRGBA = function(t4, r3, s3, c4, u4) {
           var l4 = Mn, h4 = new er(), f4 = new ot2();
           h4.ba = f4, f4.S = l4, f4.width = [f4.width], f4.height = [f4.height];
-          var d4 = f4.width, p4 = f4.height, g4 = new st2();
+          var d4 = f4.width, p5 = f4.height, g4 = new st2();
           if (null == g4 || null == t4) var m4 = 2;
           else e2(null != g4), m4 = Or(t4, r3, s3, g4.width, g4.height, g4.Pd, g4.Qd, g4.format, null);
-          if (0 != m4 ? d4 = 0 : (null != d4 && (d4[0] = g4.width[0]), null != p4 && (p4[0] = g4.height[0]), d4 = 1), d4) {
+          if (0 != m4 ? d4 = 0 : (null != d4 && (d4[0] = g4.width[0]), null != p5 && (p5[0] = g4.height[0]), d4 = 1), d4) {
             f4.width = f4.width[0], f4.height = f4.height[0], null != c4 && (c4[0] = f4.width), null != u4 && (u4[0] = f4.height);
             t: {
               if (c4 = new Gt2(), (u4 = new rr()).data = t4, u4.w = r3, u4.ha = s3, u4.kd = 1, r3 = [0], e2(null != u4), (0 == (t4 = Or(u4.data, u4.w, u4.ha, null, null, null, r3, null, u4)) || 7 == t4) && r3[0] && (t4 = 4), 0 == (r3 = t4)) {
@@ -37276,7 +37276,7 @@ var require_jspdf_node_min = __commonJS({
                     if (0 == (r3 = Mr(c4.width, c4.height, h4.Oa, h4.ba))) {
                       if (t4.Aa = 0, s3 = h4.Oa, e2(null != (u4 = t4)), null != s3) {
                         if (0 < (d4 = 0 > (d4 = s3.Md) ? 0 : 100 < d4 ? 255 : 255 * d4 / 100)) {
-                          for (p4 = g4 = 0; 4 > p4; ++p4) 12 > (m4 = u4.pb[p4]).lc && (m4.ia = d4 * Di[0 > m4.lc ? 0 : m4.lc] >> 3), g4 |= m4.ia;
+                          for (p5 = g4 = 0; 4 > p5; ++p5) 12 > (m4 = u4.pb[p5]).lc && (m4.ia = d4 * Di[0 > m4.lc ? 0 : m4.lc] >> 3), g4 |= m4.ia;
                           g4 && (alert("todo:VP8InitRandom"), u4.ia = 1);
                         }
                         u4.Ga = s3.Id, 100 < u4.Ga ? u4.Ga = 100 : 0 > u4.Ga && (u4.Ga = 0);
@@ -37313,8 +37313,8 @@ var require_jspdf_node_min = __commonJS({
                             t5.$c = 0, 0 < t5.Aa || (t5.Ic = Ti);
                             e: {
                               s4 = t5.Ic, c5 = 4 * (d5 = t5.za);
-                              var p5 = 32 * d5, g5 = d5 + 1, m5 = 0 < t5.L ? d5 * (0 < t5.Aa ? 2 : 1) : 0, v4 = (2 == t5.Aa ? 2 : 1) * d5;
-                              if ((h5 = c5 + 832 + (u5 = 3 * (16 * s4 + Ri[t5.L]) / 2 * p5) + (l5 = null != t5.Fa && 0 < t5.Fa.length ? t5.Kc.c * t5.Kc.i : 0)) != h5) s4 = 0;
+                              var p6 = 32 * d5, g5 = d5 + 1, m5 = 0 < t5.L ? d5 * (0 < t5.Aa ? 2 : 1) : 0, v4 = (2 == t5.Aa ? 2 : 1) * d5;
+                              if ((h5 = c5 + 832 + (u5 = 3 * (16 * s4 + Ri[t5.L]) / 2 * p6) + (l5 = null != t5.Fa && 0 < t5.Fa.length ? t5.Kc.c * t5.Kc.i : 0)) != h5) s4 = 0;
                               else {
                                 if (h5 > t5.Vb) {
                                   if (t5.Vb = 0, t5.Ec = a2(h5), t5.Fc = 0, null == t5.Ec) {
@@ -37323,7 +37323,7 @@ var require_jspdf_node_min = __commonJS({
                                   }
                                   t5.Vb = h5;
                                 }
-                                h5 = t5.Ec, f5 = t5.Fc, t5.Ac = h5, t5.Bc = f5, f5 += c5, t5.Gd = o2(p5, Ht2), t5.Hd = 0, t5.rb = o2(g5 + 1, Dt2), t5.sb = 1, t5.wa = m5 ? o2(m5, Rt2) : null, t5.Y = 0, t5.D.Nb = 0, t5.D.wa = t5.wa, t5.D.Y = t5.Y, 0 < t5.Aa && (t5.D.Y += d5), e2(true), t5.oc = h5, t5.pc = f5, f5 += 832, t5.ya = o2(v4, zt2), t5.aa = 0, t5.D.ya = t5.ya, t5.D.aa = t5.aa, 2 == t5.Aa && (t5.D.aa += d5), t5.R = 16 * d5, t5.B = 8 * d5, d5 = (p5 = Ri[t5.L]) * t5.R, p5 = p5 / 2 * t5.B, t5.sa = h5, t5.ta = f5 + d5, t5.qa = t5.sa, t5.ra = t5.ta + 16 * s4 * t5.R + p5, t5.Ha = t5.qa, t5.Ia = t5.ra + 8 * s4 * t5.B + p5, t5.$c = 0, f5 += u5, t5.mb = l5 ? h5 : null, t5.nb = l5 ? f5 : null, e2(f5 + l5 <= t5.Fc + t5.Vb), Zt2(t5), i2(t5.Ac, t5.Bc, 0, c5), s4 = 1;
+                                h5 = t5.Ec, f5 = t5.Fc, t5.Ac = h5, t5.Bc = f5, f5 += c5, t5.Gd = o2(p6, Ht2), t5.Hd = 0, t5.rb = o2(g5 + 1, Dt2), t5.sb = 1, t5.wa = m5 ? o2(m5, Rt2) : null, t5.Y = 0, t5.D.Nb = 0, t5.D.wa = t5.wa, t5.D.Y = t5.Y, 0 < t5.Aa && (t5.D.Y += d5), e2(true), t5.oc = h5, t5.pc = f5, f5 += 832, t5.ya = o2(v4, zt2), t5.aa = 0, t5.D.ya = t5.ya, t5.D.aa = t5.aa, 2 == t5.Aa && (t5.D.aa += d5), t5.R = 16 * d5, t5.B = 8 * d5, d5 = (p6 = Ri[t5.L]) * t5.R, p6 = p6 / 2 * t5.B, t5.sa = h5, t5.ta = f5 + d5, t5.qa = t5.sa, t5.ra = t5.ta + 16 * s4 * t5.R + p6, t5.Ha = t5.qa, t5.Ia = t5.ra + 8 * s4 * t5.B + p6, t5.$c = 0, f5 += u5, t5.mb = l5 ? h5 : null, t5.nb = l5 ? f5 : null, e2(f5 + l5 <= t5.Fc + t5.Vb), Zt2(t5), i2(t5.Ac, t5.Bc, 0, c5), s4 = 1;
                               }
                             }
                             if (s4) {
@@ -37341,19 +37341,19 @@ var require_jspdf_node_min = __commonJS({
                             for (t6.M = 0; t6.M < t6.Va; ++t6.M) {
                               var o3, s5 = t6.Jc[t6.M & t6.Xb], c6 = t6.m, u6 = t6;
                               for (o3 = 0; o3 < u6.za; ++o3) {
-                                var l6 = c6, h6 = u6, f6 = h6.Ac, d6 = h6.Bc + 4 * o3, p6 = h6.zc, g6 = h6.ya[h6.aa + o3];
+                                var l6 = c6, h6 = u6, f6 = h6.Ac, d6 = h6.Bc + 4 * o3, p7 = h6.zc, g6 = h6.ya[h6.aa + o3];
                                 if (h6.Qa.Bb ? g6.$b = k2(l6, h6.Pa.jb[0]) ? 2 + k2(l6, h6.Pa.jb[2]) : k2(l6, h6.Pa.jb[1]) : g6.$b = 0, h6.kc && (g6.Ad = k2(l6, h6.Bd)), g6.Za = !k2(l6, 145) + 0, g6.Za) {
                                   var m6 = g6.Ob, v5 = 0;
                                   for (h6 = 0; 4 > h6; ++h6) {
-                                    var b4, y4 = p6[0 + h6];
+                                    var b4, y4 = p7[0 + h6];
                                     for (b4 = 0; 4 > b4; ++b4) {
                                       y4 = si[f6[d6 + b4]][y4];
                                       for (var w4 = ai[k2(l6, y4[0])]; 0 < w4; ) w4 = ai[2 * w4 + k2(l6, y4[w4])];
                                       y4 = -w4, f6[d6 + b4] = y4;
                                     }
-                                    n2(m6, v5, f6, d6, 4), v5 += 4, p6[0 + h6] = y4;
+                                    n2(m6, v5, f6, d6, 4), v5 += 4, p7[0 + h6] = y4;
                                   }
-                                } else y4 = k2(l6, 156) ? k2(l6, 128) ? 1 : 3 : k2(l6, 163) ? 2 : 0, g6.Ob[0] = y4, i2(f6, d6, y4, 4), i2(p6, 0, y4, 4);
+                                } else y4 = k2(l6, 156) ? k2(l6, 128) ? 1 : 3 : k2(l6, 163) ? 2 : 0, g6.Ob[0] = y4, i2(f6, d6, y4, 4), i2(p7, 0, y4, 4);
                                 g6.Dd = k2(l6, 142) ? k2(l6, 114) ? k2(l6, 183) ? 1 : 3 : 2 : 0;
                               }
                               if (u6.m.Ka) return Jt2(t6, 7, "Premature end-of-partition0 encountered.");
@@ -37361,7 +37361,7 @@ var require_jspdf_node_min = __commonJS({
                                 if (u6 = s5, l6 = (c6 = t6).rb[c6.sb - 1], f6 = c6.rb[c6.sb + c6.ja], o3 = c6.ya[c6.aa + c6.ja], d6 = c6.kc ? o3.Ad : 0) l6.la = f6.la = 0, o3.Za || (l6.Na = f6.Na = 0), o3.Hc = 0, o3.Gc = 0, o3.ia = 0;
                                 else {
                                   var N26, L4;
-                                  if (l6 = f6, f6 = u6, d6 = c6.Pa.Xc, p6 = c6.ya[c6.aa + c6.ja], g6 = c6.pb[p6.$b], h6 = p6.ad, m6 = 0, v5 = c6.rb[c6.sb - 1], y4 = b4 = 0, i2(h6, m6, 0, 384), p6.Za) var x4 = 0, A4 = d6[3];
+                                  if (l6 = f6, f6 = u6, d6 = c6.Pa.Xc, p7 = c6.ya[c6.aa + c6.ja], g6 = c6.pb[p7.$b], h6 = p7.ad, m6 = 0, v5 = c6.rb[c6.sb - 1], y4 = b4 = 0, i2(h6, m6, 0, 384), p7.Za) var x4 = 0, A4 = d6[3];
                                   else {
                                     w4 = a2(16);
                                     var S34 = l6.Na + v5.Na;
@@ -37385,12 +37385,12 @@ var require_jspdf_node_min = __commonJS({
                                     }
                                     y4 |= L4 << 4 * N26, A4 |= P3 << 4 << N26, x4 |= (240 & F8) << N26;
                                   }
-                                  l6.la = A4, v5.la = x4, p6.Hc = b4, p6.Gc = y4, p6.ia = 43690 & y4 ? 0 : g6.ia, d6 = !(b4 | y4);
+                                  l6.la = A4, v5.la = x4, p7.Hc = b4, p7.Gc = y4, p7.ia = 43690 & y4 ? 0 : g6.ia, d6 = !(b4 | y4);
                                 }
                                 if (0 < c6.L && (c6.wa[c6.Y + c6.ja] = c6.gd[o3.$b][o3.Za], c6.wa[c6.Y + c6.ja].La |= !d6), u6.Ka) return Jt2(t6, 7, "Premature end-of-file encountered.");
                               }
                               if (Zt2(t6), c6 = r5, u6 = 1, o3 = (s5 = t6).D, l6 = 0 < s5.L && s5.M >= s5.zb && s5.M <= s5.Va, 0 == s5.Aa) e: {
-                                if (o3.M = s5.M, o3.uc = l6, jr(s5, o3), u6 = 1, o3 = (L4 = s5.D).Nb, l6 = (y4 = Ri[s5.L]) * s5.R, f6 = y4 / 2 * s5.B, w4 = 16 * o3 * s5.R, _3 = 8 * o3 * s5.B, d6 = s5.sa, p6 = s5.ta - l6 + w4, g6 = s5.qa, h6 = s5.ra - f6 + _3, m6 = s5.Ha, v5 = s5.Ia - f6 + _3, F8 = 0 == (P3 = L4.M), b4 = P3 >= s5.Va - 1, 2 == s5.Aa && jr(s5, L4), L4.uc) for (I27 = (S34 = s5).D.M, e2(S34.D.uc), L4 = S34.yb; L4 < S34.Hb; ++L4) {
+                                if (o3.M = s5.M, o3.uc = l6, jr(s5, o3), u6 = 1, o3 = (L4 = s5.D).Nb, l6 = (y4 = Ri[s5.L]) * s5.R, f6 = y4 / 2 * s5.B, w4 = 16 * o3 * s5.R, _3 = 8 * o3 * s5.B, d6 = s5.sa, p7 = s5.ta - l6 + w4, g6 = s5.qa, h6 = s5.ra - f6 + _3, m6 = s5.Ha, v5 = s5.Ia - f6 + _3, F8 = 0 == (P3 = L4.M), b4 = P3 >= s5.Va - 1, 2 == s5.Aa && jr(s5, L4), L4.uc) for (I27 = (S34 = s5).D.M, e2(S34.D.uc), L4 = S34.yb; L4 < S34.Hb; ++L4) {
                                   x4 = L4, A4 = I27;
                                   var C5 = (j3 = (z3 = S34).D).Nb;
                                   N26 = z3.R;
@@ -37402,13 +37402,13 @@ var require_jspdf_node_min = __commonJS({
                                   }
                                 }
                                 if (s5.ia && alert("todo:DitherRow"), null != c6.put) {
-                                  if (L4 = 16 * P3, P3 = 16 * (P3 + 1), F8 ? (c6.y = s5.sa, c6.O = s5.ta + w4, c6.f = s5.qa, c6.N = s5.ra + _3, c6.ea = s5.Ha, c6.W = s5.Ia + _3) : (L4 -= y4, c6.y = d6, c6.O = p6, c6.f = g6, c6.N = h6, c6.ea = m6, c6.W = v5), b4 || (P3 -= y4), P3 > c6.o && (P3 = c6.o), c6.F = null, c6.J = null, null != s5.Fa && 0 < s5.Fa.length && L4 < P3 && (c6.J = lr(s5, c6, L4, P3 - L4), c6.F = s5.mb, null == c6.F && 0 == c6.F.length)) {
+                                  if (L4 = 16 * P3, P3 = 16 * (P3 + 1), F8 ? (c6.y = s5.sa, c6.O = s5.ta + w4, c6.f = s5.qa, c6.N = s5.ra + _3, c6.ea = s5.Ha, c6.W = s5.Ia + _3) : (L4 -= y4, c6.y = d6, c6.O = p7, c6.f = g6, c6.N = h6, c6.ea = m6, c6.W = v5), b4 || (P3 -= y4), P3 > c6.o && (P3 = c6.o), c6.F = null, c6.J = null, null != s5.Fa && 0 < s5.Fa.length && L4 < P3 && (c6.J = lr(s5, c6, L4, P3 - L4), c6.F = s5.mb, null == c6.F && 0 == c6.F.length)) {
                                     u6 = Jt2(s5, 3, "Could not decode alpha data.");
                                     break e;
                                   }
                                   L4 < c6.j && (y4 = c6.j - L4, L4 = c6.j, e2(!(1 & y4)), c6.O += s5.R * y4, c6.N += s5.B * (y4 >> 1), c6.W += s5.B * (y4 >> 1), null != c6.F && (c6.J += c6.width * y4)), L4 < P3 && (c6.O += c6.v, c6.N += c6.v >> 1, c6.W += c6.v >> 1, null != c6.F && (c6.J += c6.v), c6.ka = L4 - c6.j, c6.U = c6.va - c6.v, c6.T = P3 - L4, u6 = c6.put(c6));
                                 }
-                                o3 + 1 != s5.Ic || b4 || (n2(s5.sa, s5.ta - l6, d6, p6 + 16 * s5.R, l6), n2(s5.qa, s5.ra - f6, g6, h6 + 8 * s5.B, f6), n2(s5.Ha, s5.Ia - f6, m6, v5 + 8 * s5.B, f6));
+                                o3 + 1 != s5.Ic || b4 || (n2(s5.sa, s5.ta - l6, d6, p7 + 16 * s5.R, l6), n2(s5.qa, s5.ra - f6, g6, h6 + 8 * s5.B, f6), n2(s5.Ha, s5.Ia - f6, m6, v5 + 8 * s5.B, f6));
                               }
                               if (!u6) return Jt2(t6, 6, "Output aborted.");
                             }
@@ -37444,7 +37444,7 @@ var require_jspdf_node_min = __commonJS({
         return (t3[e3 + 0] | t3[e3 + 1] << 8 | t3[e3 + 2] << 16 | t3[e3 + 3] << 24) >>> 0;
       }
       new c2();
-      var d2 = [0], p2 = [0], g2 = [], m2 = new c2(), v2 = t2, b2 = (function(t3, e3) {
+      var d2 = [0], p3 = [0], g2 = [], m2 = new c2(), v2 = t2, b2 = (function(t3, e3) {
         var r3 = {}, n3 = 0, i3 = false, a3 = 0, o3 = 0;
         if (r3.frames = [], !/** @license
            * Copyright (c) 2017 Dominik Homberger
@@ -37473,14 +37473,14 @@ var require_jspdf_node_min = __commonJS({
                 break;
               case "VP8X":
                 (m3 = r3.header = {}).feature_flags = t3[e3];
-                var p3 = e3 + 4;
-                m3.canvas_width = 1 + h2(t3, p3), p3 += 3, m3.canvas_height = 1 + h2(t3, p3), p3 += 3;
+                var p4 = e3 + 4;
+                m3.canvas_width = 1 + h2(t3, p4), p4 += 3, m3.canvas_height = 1 + h2(t3, p4), p4 += 3;
                 break;
               case "ALPH":
                 i3 = true, a3 = d3 + 8, o3 = e3 - 8;
                 break;
               case "ANIM":
-                (m3 = r3.header).bgcolor = f2(t3, e3), p3 = e3 + 4, m3.loop_count = l2(t3, p3), p3 += 2;
+                (m3 = r3.header).bgcolor = f2(t3, e3), p4 = e3 + 4, m3.loop_count = l2(t3, p4), p4 += 2;
                 break;
               case "ANMF":
                 var g3, m3;
@@ -37494,13 +37494,13 @@ var require_jspdf_node_min = __commonJS({
       b2.response = v2, b2.rgbaoutput = true, b2.dataurl = false;
       var y2 = b2.header ? b2.header : null, w2 = b2.frames ? b2.frames : null;
       if (y2) {
-        y2.loop_counter = y2.loop_count, d2 = [y2.canvas_height], p2 = [y2.canvas_width];
+        y2.loop_counter = y2.loop_count, d2 = [y2.canvas_height], p3 = [y2.canvas_width];
         for (var N24 = 0; N24 < w2.length && 0 != w2[N24].blend; N24++) ;
       }
-      var L2 = w2[0], x2 = m2.WebPDecodeRGBA(v2, L2.src_off, L2.src_size, p2, d2);
-      L2.rgba = x2, L2.imgwidth = p2[0], L2.imgheight = d2[0];
-      for (var A2 = 0; A2 < p2[0] * d2[0] * 4; A2++) g2[A2] = x2[A2];
-      return this.width = p2, this.height = d2, this.data = g2, this;
+      var L2 = w2[0], x2 = m2.WebPDecodeRGBA(v2, L2.src_off, L2.src_size, p3, d2);
+      L2.rgba = x2, L2.imgwidth = p3[0], L2.imgheight = d2[0];
+      for (var A2 = 0; A2 < p3[0] * d2[0] * 4; A2++) g2[A2] = x2[A2];
+      return this.width = p3, this.height = d2, this.data = g2, this;
     }
     function re() {
       const t2 = this.internal.__metadata__.metadata, e2 = unescape(encodeURIComponent(t2));
@@ -37594,11 +37594,11 @@ var require_jspdf_node_min = __commonJS({
           return this.ctx.fillStyle;
         }, set: function(t4) {
           var e4;
-          e4 = p2(t4), this.ctx.fillStyle = e4.style, this.ctx.isFillTransparent = 0 === e4.a, this.ctx.fillOpacity = e4.a, this.pdf.setFillColor(e4.r, e4.g, e4.b, { a: e4.a }), this.pdf.setTextColor(e4.r, e4.g, e4.b, { a: e4.a });
+          e4 = p3(t4), this.ctx.fillStyle = e4.style, this.ctx.isFillTransparent = 0 === e4.a, this.ctx.fillOpacity = e4.a, this.pdf.setFillColor(e4.r, e4.g, e4.b, { a: e4.a }), this.pdf.setTextColor(e4.r, e4.g, e4.b, { a: e4.a });
         } }), Object.defineProperty(this, "strokeStyle", { get: function() {
           return this.ctx.strokeStyle;
         }, set: function(t4) {
-          var e4 = p2(t4);
+          var e4 = p3(t4);
           this.ctx.strokeStyle = e4.style, this.ctx.isStrokeTransparent = 0 === e4.a, this.ctx.strokeOpacity = e4.a, 0 === e4.a ? this.pdf.setDrawColor(255, 255, 255) : (e4.a, this.pdf.setDrawColor(e4.r, e4.g, e4.b));
         } }), Object.defineProperty(this, "lineCap", { get: function() {
           return this.ctx.lineCap;
@@ -37728,24 +37728,24 @@ var require_jspdf_node_min = __commonJS({
             } else {
               var f3 = "";
               ("bold" === n3 || parseInt(n3, 10) >= 700 || "bold" === r4) && (f3 = "bold"), "italic" === r4 && (f3 += "italic"), 0 === f3.length && (f3 = "normal");
-              for (var p3 = "", g4 = { arial: "Helvetica", Arial: "Helvetica", verdana: "Helvetica", Verdana: "Helvetica", helvetica: "Helvetica", Helvetica: "Helvetica", "sans-serif": "Helvetica", fixed: "Courier", monospace: "Courier", terminal: "Courier", cursive: "Times", fantasy: "Times", serif: "Times" }, m3 = 0; m3 < s3.length; m3++) {
+              for (var p4 = "", g4 = { arial: "Helvetica", Arial: "Helvetica", verdana: "Helvetica", Verdana: "Helvetica", helvetica: "Helvetica", Helvetica: "Helvetica", "sans-serif": "Helvetica", fixed: "Courier", monospace: "Courier", terminal: "Courier", cursive: "Times", fantasy: "Times", serif: "Times" }, m3 = 0; m3 < s3.length; m3++) {
                 if (void 0 !== this.pdf.internal.getFont(s3[m3], f3, { noFallback: true, disableWarning: true })) {
-                  p3 = s3[m3];
+                  p4 = s3[m3];
                   break;
                 }
-                if ("bolditalic" === f3 && void 0 !== this.pdf.internal.getFont(s3[m3], "bold", { noFallback: true, disableWarning: true })) p3 = s3[m3], f3 = "bold";
+                if ("bolditalic" === f3 && void 0 !== this.pdf.internal.getFont(s3[m3], "bold", { noFallback: true, disableWarning: true })) p4 = s3[m3], f3 = "bold";
                 else if (void 0 !== this.pdf.internal.getFont(s3[m3], "normal", { noFallback: true, disableWarning: true })) {
-                  p3 = s3[m3], f3 = "normal";
+                  p4 = s3[m3], f3 = "normal";
                   break;
                 }
               }
-              if ("" === p3) {
+              if ("" === p4) {
                 for (var v3 = 0; v3 < s3.length; v3++) if (g4[s3[v3]]) {
-                  p3 = g4[s3[v3]];
+                  p4 = g4[s3[v3]];
                   break;
                 }
               }
-              p3 = "" === p3 ? "Times" : p3, this.pdf.setFont(p3, f3);
+              p4 = "" === p4 ? "Times" : p4, this.pdf.setFont(p4, f3);
             }
           }
         } }), Object.defineProperty(this, "globalCompositeOperation", { get: function() {
@@ -37846,7 +37846,7 @@ var require_jspdf_node_min = __commonJS({
       }, d2.prototype.toDataURL = function() {
         throw new Error("toDataUrl not implemented.");
       };
-      var p2 = function(t3) {
+      var p3 = function(t3) {
         var e3, r3, i3, a3;
         if (true === t3.isCanvasGradient && (t3 = t3.getColor()), !t3) return { r: 0, g: 0, b: 0, a: 0, style: t3 };
         if (/transparent|rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*0+\s*\)/.test(t3)) e3 = 0, r3 = 0, i3 = 0, a3 = 0;
@@ -37913,9 +37913,9 @@ var require_jspdf_node_min = __commonJS({
         return this.margin[0] > 0 || this.margin[1] > 0 || this.margin[2] > 0 || this.margin[3] > 0;
       };
       d2.prototype.drawImage = function(t3, e3, r3, n2, i3, a3, o3, s2, c3) {
-        var h3 = this.pdf.getImageProperties(t3), f3 = 1, d3 = 1, p3 = 1, g3 = 1;
-        void 0 !== n2 && void 0 !== s2 && (p3 = s2 / n2, g3 = c3 / i3, f3 = h3.width / n2 * s2 / n2, d3 = h3.height / i3 * c3 / i3), void 0 === a3 && (a3 = e3, o3 = r3, e3 = 0, r3 = 0), void 0 !== n2 && void 0 === s2 && (s2 = n2, c3 = i3), void 0 === n2 && void 0 === s2 && (s2 = h3.width, c3 = h3.height);
-        var m3 = this.ctx.transform.decompose(), y3 = M12(m3.rotate.shx), L3 = new l2(), A3 = (L3 = (L3 = (L3 = L3.multiply(m3.translate)).multiply(m3.skew)).multiply(m3.scale)).applyToRectangle(new u2(a3 - e3 * p3, o3 - r3 * g3, n2 * f3, i3 * d3));
+        var h3 = this.pdf.getImageProperties(t3), f3 = 1, d3 = 1, p4 = 1, g3 = 1;
+        void 0 !== n2 && void 0 !== s2 && (p4 = s2 / n2, g3 = c3 / i3, f3 = h3.width / n2 * s2 / n2, d3 = h3.height / i3 * c3 / i3), void 0 === a3 && (a3 = e3, o3 = r3, e3 = 0, r3 = 0), void 0 !== n2 && void 0 === s2 && (s2 = n2, c3 = i3), void 0 === n2 && void 0 === s2 && (s2 = h3.width, c3 = h3.height);
+        var m3 = this.ctx.transform.decompose(), y3 = M12(m3.rotate.shx), L3 = new l2(), A3 = (L3 = (L3 = (L3 = L3.multiply(m3.translate)).multiply(m3.skew)).multiply(m3.scale)).applyToRectangle(new u2(a3 - e3 * p4, o3 - r3 * g3, n2 * f3, i3 * d3));
         if (this.autoPaging) {
           for (var S34, _3 = b2.call(this, A3), P3 = [], k3 = 0; k3 < _3.length; k3 += 1) -1 === P3.indexOf(_3[k3]) && P3.push(_3[k3]);
           N24(P3);
@@ -37979,7 +37979,7 @@ var require_jspdf_node_min = __commonJS({
       }, L2 = function(t3, e3) {
         var r3 = this.fillStyle, n2 = this.strokeStyle, i3 = this.lineCap, a3 = this.lineWidth, o3 = Math.abs(a3 * this.ctx.transform.scaleX), s2 = this.lineJoin;
         if (this.autoPaging) {
-          for (var c3, u3, l3 = JSON.parse(JSON.stringify(this.path)), h3 = JSON.parse(JSON.stringify(this.path)), f3 = [], d3 = 0; d3 < h3.length; d3++) if (void 0 !== h3[d3].x) for (var p3 = b2.call(this, h3[d3]), g3 = 0; g3 < p3.length; g3 += 1) -1 === f3.indexOf(p3[g3]) && f3.push(p3[g3]);
+          for (var c3, u3, l3 = JSON.parse(JSON.stringify(this.path)), h3 = JSON.parse(JSON.stringify(this.path)), f3 = [], d3 = 0; d3 < h3.length; d3++) if (void 0 !== h3[d3].x) for (var p4 = b2.call(this, h3[d3]), g3 = 0; g3 < p4.length; g3 += 1) -1 === f3.indexOf(p4[g3]) && f3.push(p4[g3]);
           for (var m3 = 0; m3 < f3.length; m3++) for (; this.pdf.internal.getNumberOfPages() < f3[m3]; ) y2.call(this);
           N24(f3);
           for (var L3 = f3[0], A3 = f3[f3.length - 1], S34 = L3; S34 < A3 + 1; S34++) {
@@ -38024,8 +38024,8 @@ var require_jspdf_node_min = __commonJS({
                 r3 = [s2.x1 - a3[o3 - 1].x, s2.y1 - a3[o3 - 1].y, s2.x2 - a3[o3 - 1].x, s2.y2 - a3[o3 - 1].y, s2.x - a3[o3 - 1].x, s2.y - a3[o3 - 1].y], i3[i3.length - 1].deltas.push(r3);
                 break;
               case "qct":
-                var u3 = a3[o3 - 1].x + 2 / 3 * (s2.x1 - a3[o3 - 1].x), l3 = a3[o3 - 1].y + 2 / 3 * (s2.y1 - a3[o3 - 1].y), h3 = s2.x + 2 / 3 * (s2.x1 - s2.x), f3 = s2.y + 2 / 3 * (s2.y1 - s2.y), d3 = s2.x, p3 = s2.y;
-                r3 = [u3 - a3[o3 - 1].x, l3 - a3[o3 - 1].y, h3 - a3[o3 - 1].x, f3 - a3[o3 - 1].y, d3 - a3[o3 - 1].x, p3 - a3[o3 - 1].y], i3[i3.length - 1].deltas.push(r3);
+                var u3 = a3[o3 - 1].x + 2 / 3 * (s2.x1 - a3[o3 - 1].x), l3 = a3[o3 - 1].y + 2 / 3 * (s2.y1 - a3[o3 - 1].y), h3 = s2.x + 2 / 3 * (s2.x1 - s2.x), f3 = s2.y + 2 / 3 * (s2.y1 - s2.y), d3 = s2.x, p4 = s2.y;
+                r3 = [u3 - a3[o3 - 1].x, l3 - a3[o3 - 1].y, h3 - a3[o3 - 1].x, f3 - a3[o3 - 1].y, d3 - a3[o3 - 1].x, p4 - a3[o3 - 1].y], i3[i3.length - 1].deltas.push(r3);
                 break;
               case "arc":
                 i3.push({ deltas: [], abs: [], arc: true }), Array.isArray(i3[i3.length - 1].abs) && i3[i3.length - 1].abs.push(s2);
@@ -38108,7 +38108,7 @@ var require_jspdf_node_min = __commonJS({
         if (this.autoPaging) {
           var f3 = this.ctx.transform.decompose(), d3 = new l2();
           d3 = (d3 = (d3 = d3.multiply(f3.translate)).multiply(f3.skew)).multiply(f3.scale);
-          for (var p3 = this.ctx.transform.applyToRectangle(new u2(t3.x, o3, a3.w, a3.h)), g3 = d3.applyToRectangle(new u2(t3.x, s2, a3.w, a3.h)), m3 = b2.call(this, g3), y3 = [], L3 = 0; L3 < m3.length; L3 += 1) -1 === y3.indexOf(m3[L3]) && y3.push(m3[L3]);
+          for (var p4 = this.ctx.transform.applyToRectangle(new u2(t3.x, o3, a3.w, a3.h)), g3 = d3.applyToRectangle(new u2(t3.x, s2, a3.w, a3.h)), m3 = b2.call(this, g3), y3 = [], L3 = 0; L3 < m3.length; L3 += 1) -1 === y3.indexOf(m3[L3]) && y3.push(m3[L3]);
           N24(y3);
           for (var _3 = y3[0], P3 = y3[y3.length - 1], k3 = _3; k3 < P3 + 1; k3++) {
             this.pdf.setPage(k3);
@@ -38122,7 +38122,7 @@ var require_jspdf_node_min = __commonJS({
             var R13 = "text" !== this.autoPaging;
             if (R13 || E3.y + E3.h <= C5) {
               if (R13 || E3.y >= F8 && E3.x <= O3) {
-                var D5 = R13 ? t3.text : this.pdf.splitTextToSize(t3.text, t3.maxWidth || O3 - E3.x)[0], T36 = w2([JSON.parse(JSON.stringify(p3))], this.posX + this.margin[3], -q3 + F8 + this.ctx.prevPageLastElemOffset)[0];
+                var D5 = R13 ? t3.text : this.pdf.splitTextToSize(t3.text, t3.maxWidth || O3 - E3.x)[0], T36 = w2([JSON.parse(JSON.stringify(p4))], this.posX + this.margin[3], -q3 + F8 + this.ctx.prevPageLastElemOffset)[0];
                 const r4 = R13 && (k3 > _3 || k3 < P3) && v2.call(this);
                 r4 && (this.pdf.saveGraphicsState(), this.pdf.rect(this.margin[3], this.margin[0], B3, j3, null).clip().discardPath()), this.pdf.text(D5, T36.x, T36.y, { angle: t3.angle, align: e3, renderingMode: t3.renderingMode }), r4 && this.pdf.restoreGraphicsState();
               }
@@ -38146,16 +38146,16 @@ var require_jspdf_node_min = __commonJS({
         }
         return s2;
       }, q2 = function(t3, e3, r3) {
-        var n2 = (r3 - e3) / 2, i3 = t3 * Math.cos(n2), a3 = t3 * Math.sin(n2), o3 = i3, s2 = -a3, c3 = o3 * o3 + s2 * s2, u3 = c3 + o3 * i3 + s2 * a3, l3 = 4 / 3 * (Math.sqrt(2 * c3 * u3) - u3) / (o3 * a3 - s2 * i3), h3 = o3 - l3 * s2, f3 = s2 + l3 * o3, d3 = h3, p3 = -f3, g3 = n2 + e3, m3 = Math.cos(g3), v3 = Math.sin(g3);
-        return { x1: t3 * Math.cos(e3), y1: t3 * Math.sin(e3), x2: h3 * m3 - f3 * v3, y2: h3 * v3 + f3 * m3, x3: d3 * m3 - p3 * v3, y3: d3 * v3 + p3 * m3, x4: t3 * Math.cos(r3), y4: t3 * Math.sin(r3) };
+        var n2 = (r3 - e3) / 2, i3 = t3 * Math.cos(n2), a3 = t3 * Math.sin(n2), o3 = i3, s2 = -a3, c3 = o3 * o3 + s2 * s2, u3 = c3 + o3 * i3 + s2 * a3, l3 = 4 / 3 * (Math.sqrt(2 * c3 * u3) - u3) / (o3 * a3 - s2 * i3), h3 = o3 - l3 * s2, f3 = s2 + l3 * o3, d3 = h3, p4 = -f3, g3 = n2 + e3, m3 = Math.cos(g3), v3 = Math.sin(g3);
+        return { x1: t3 * Math.cos(e3), y1: t3 * Math.sin(e3), x2: h3 * m3 - f3 * v3, y2: h3 * v3 + f3 * m3, x3: d3 * m3 - p4 * v3, y3: d3 * v3 + p4 * m3, x4: t3 * Math.cos(r3), y4: t3 * Math.sin(r3) };
       }, M12 = function(t3) {
         return 180 * t3 / Math.PI;
       }, E2 = function(t3, e3, r3, n2, i3, a3) {
-        var o3 = t3 + 0.5 * (r3 - t3), s2 = e3 + 0.5 * (n2 - e3), c3 = i3 + 0.5 * (r3 - i3), l3 = a3 + 0.5 * (n2 - a3), h3 = Math.min(t3, i3, o3, c3), f3 = Math.max(t3, i3, o3, c3), d3 = Math.min(e3, a3, s2, l3), p3 = Math.max(e3, a3, s2, l3);
-        return new u2(h3, d3, f3 - h3, p3 - d3);
+        var o3 = t3 + 0.5 * (r3 - t3), s2 = e3 + 0.5 * (n2 - e3), c3 = i3 + 0.5 * (r3 - i3), l3 = a3 + 0.5 * (n2 - a3), h3 = Math.min(t3, i3, o3, c3), f3 = Math.max(t3, i3, o3, c3), d3 = Math.min(e3, a3, s2, l3), p4 = Math.max(e3, a3, s2, l3);
+        return new u2(h3, d3, f3 - h3, p4 - d3);
       }, R12 = function(t3, e3, r3, n2, i3, a3, o3, s2) {
-        var c3, l3, h3, f3, d3, p3, g3, m3, v3, b3, y3, w3, N25, L3, x3 = r3 - t3, A3 = n2 - e3, S34 = i3 - r3, _3 = a3 - n2, P3 = o3 - i3, k3 = s2 - a3;
-        for (l3 = 0; l3 < 41; l3++) v3 = (g3 = (h3 = t3 + (c3 = l3 / 40) * x3) + c3 * ((d3 = r3 + c3 * S34) - h3)) + c3 * (d3 + c3 * (i3 + c3 * P3 - d3) - g3), b3 = (m3 = (f3 = e3 + c3 * A3) + c3 * ((p3 = n2 + c3 * _3) - f3)) + c3 * (p3 + c3 * (a3 + c3 * k3 - p3) - m3), 0 == l3 ? (y3 = v3, w3 = b3, N25 = v3, L3 = b3) : (y3 = Math.min(y3, v3), w3 = Math.min(w3, b3), N25 = Math.max(N25, v3), L3 = Math.max(L3, b3));
+        var c3, l3, h3, f3, d3, p4, g3, m3, v3, b3, y3, w3, N25, L3, x3 = r3 - t3, A3 = n2 - e3, S34 = i3 - r3, _3 = a3 - n2, P3 = o3 - i3, k3 = s2 - a3;
+        for (l3 = 0; l3 < 41; l3++) v3 = (g3 = (h3 = t3 + (c3 = l3 / 40) * x3) + c3 * ((d3 = r3 + c3 * S34) - h3)) + c3 * (d3 + c3 * (i3 + c3 * P3 - d3) - g3), b3 = (m3 = (f3 = e3 + c3 * A3) + c3 * ((p4 = n2 + c3 * _3) - f3)) + c3 * (p4 + c3 * (a3 + c3 * k3 - p4) - m3), 0 == l3 ? (y3 = v3, w3 = b3, N25 = v3, L3 = b3) : (y3 = Math.min(y3, v3), w3 = Math.min(w3, b3), N25 = Math.max(N25, v3), L3 = Math.max(L3, b3));
         return new u2(Math.round(y3), Math.round(w3), Math.round(N25 - y3), Math.round(L3 - w3));
       }, D4 = function() {
         if (!this.prevLineDash && !this.ctx.lineDash.length && !this.ctx.lineDashOffset) return;
@@ -38772,7 +38772,7 @@ var require_jspdf_node_min = __commonJS({
         } else 0 === h3 && (u3 = void 0);
         return { colorSpace: "Indexed", colorsPerPixel: 1, sMaskBitsPerComponent: s3 ? 8 : void 0, colorBytes: n3, alphaBytes: o3, needSMask: s3, palette: c3, mask: u3 };
       })(o2) : 2 === u2 || 4 === u2 ? (function(t2) {
-        const { data: e2, width: r3, height: n3, channels: i3, depth: a3 } = t2, o3 = 2 === i3 ? "DeviceGray" : "DeviceRGB", s3 = i3 - 1, c3 = r3 * n3, u3 = s3, l3 = c3 * u3, h3 = 1 * c3, f3 = Math.ceil(l3 * a3 / 8), d3 = Math.ceil(h3 * a3 / 8), p3 = new Uint8Array(f3), g3 = new Uint8Array(d3), m3 = new DataView(e2.buffer), v3 = new DataView(p3.buffer), b3 = new DataView(g3.buffer);
+        const { data: e2, width: r3, height: n3, channels: i3, depth: a3 } = t2, o3 = 2 === i3 ? "DeviceGray" : "DeviceRGB", s3 = i3 - 1, c3 = r3 * n3, u3 = s3, l3 = c3 * u3, h3 = 1 * c3, f3 = Math.ceil(l3 * a3 / 8), d3 = Math.ceil(h3 * a3 / 8), p4 = new Uint8Array(f3), g3 = new Uint8Array(d3), m3 = new DataView(e2.buffer), v3 = new DataView(p4.buffer), b3 = new DataView(g3.buffer);
         let y3 = false;
         for (let w3 = 0; w3 < c3; w3++) {
           const t3 = w3 * i3;
@@ -38780,7 +38780,7 @@ var require_jspdf_node_min = __commonJS({
           const e3 = Jt(m3, t3 + u3, a3);
           e3 < (1 << a3) - 1 && (y3 = true), Xt(b3, e3, 1 * w3, a3);
         }
-        return { colorSpace: o3, colorsPerPixel: s3, sMaskBitsPerComponent: y3 ? a3 : void 0, colorBytes: p3, alphaBytes: g3, needSMask: y3 };
+        return { colorSpace: o3, colorsPerPixel: s3, sMaskBitsPerComponent: y3 ? a3 : void 0, colorBytes: p4, alphaBytes: g3, needSMask: y3 };
       })(o2) : (function(t2) {
         const { data: e2, channels: r3 } = t2, n3 = 1 === r3 ? "DeviceGray" : "DeviceRGB", i3 = "DeviceGray" === n3 ? 1 : 3;
         let a3;
@@ -38790,7 +38790,7 @@ var require_jspdf_node_min = __commonJS({
           return r4;
         })(e2) : e2, { colorSpace: n3, colorsPerPixel: i3, colorBytes: a3, needSMask: false };
       })(o2);
-      const { colorSpace: d2, colorsPerPixel: p2, sMaskBitsPerComponent: g2, colorBytes: m2, alphaBytes: v2, needSMask: b2, palette: y2, mask: w2 } = f2;
+      const { colorSpace: d2, colorsPerPixel: p3, sMaskBitsPerComponent: g2, colorBytes: m2, alphaBytes: v2, needSMask: b2, palette: y2, mask: w2 } = f2;
       let N24, L2, x2, A2 = null;
       return a2 !== C3.API.image_compression.NONE && "function" == typeof t.zlibSync ? (A2 = (function(t2) {
         let e2;
@@ -38808,7 +38808,7 @@ var require_jspdf_node_min = __commonJS({
             e2 = 12;
         }
         return e2;
-      })(a2), N24 = this.decode.FLATE_DECODE, L2 = `/Predictor ${A2} /Colors ${p2} /BitsPerComponent ${h2} /Columns ${s2}`, r2 = Tt(m2, Math.ceil(s2 * p2 * h2 / 8), p2, h2, a2), b2 && (x2 = Tt(v2, Math.ceil(s2 * g2 / 8), 1, g2, a2))) : (N24 = void 0, L2 = void 0, r2 = m2, b2 && (x2 = v2)), (this.__addimage__.isArrayBuffer(r2) || this.__addimage__.isArrayBufferView(r2)) && (r2 = this.__addimage__.arrayBufferToBinaryString(r2)), (x2 && this.__addimage__.isArrayBuffer(x2) || this.__addimage__.isArrayBufferView(x2)) && (x2 = this.__addimage__.arrayBufferToBinaryString(x2)), { alias: i2, data: r2, index: n2, filter: N24, decodeParameters: L2, transparency: w2, palette: y2, sMask: x2, predictor: A2, width: s2, height: c2, bitsPerComponent: h2, sMaskBitsPerComponent: g2, colorSpace: d2 };
+      })(a2), N24 = this.decode.FLATE_DECODE, L2 = `/Predictor ${A2} /Colors ${p3} /BitsPerComponent ${h2} /Columns ${s2}`, r2 = Tt(m2, Math.ceil(s2 * p3 * h2 / 8), p3, h2, a2), b2 && (x2 = Tt(v2, Math.ceil(s2 * g2 / 8), 1, g2, a2))) : (N24 = void 0, L2 = void 0, r2 = m2, b2 && (x2 = v2)), (this.__addimage__.isArrayBuffer(r2) || this.__addimage__.isArrayBufferView(r2)) && (r2 = this.__addimage__.arrayBufferToBinaryString(r2)), (x2 && this.__addimage__.isArrayBuffer(x2) || this.__addimage__.isArrayBufferView(x2)) && (x2 = this.__addimage__.arrayBufferToBinaryString(x2)), { alias: i2, data: r2, index: n2, filter: N24, decodeParameters: L2, transparency: w2, palette: y2, sMask: x2, predictor: A2, width: s2, height: c2, bitsPerComponent: h2, sMaskBitsPerComponent: g2, colorSpace: d2 };
     }, (function(t2) {
       t2.processGIF89A = function(e2, r2, n2, i2) {
         var a2 = new $t(e2), o2 = a2.width, s2 = a2.height, c2 = [];
@@ -38931,8 +38931,8 @@ var require_jspdf_node_min = __commonJS({
         var l2 = n2[u2], h2 = n2[u2 + 1], f2 = n2[u2 + 2], d2 = n2[u2 + 3];
         a2[s2++] = l2, a2[s2++] = h2, a2[s2++] = f2, o2[c2++] = d2;
       }
-      var p2 = this.__addimage__.arrayBufferToBinaryString(a2);
-      return { alpha: this.__addimage__.arrayBufferToBinaryString(o2), data: p2, index: e2, alias: r2, colorSpace: "DeviceRGB", bitsPerComponent: 8, width: t2.width, height: t2.height };
+      var p3 = this.__addimage__.arrayBufferToBinaryString(a2);
+      return { alpha: this.__addimage__.arrayBufferToBinaryString(o2), data: p3, index: e2, alias: r2, colorSpace: "DeviceRGB", bitsPerComponent: 8, width: t2.width, height: t2.height };
     }, C3.API.setLanguage = function(t2) {
       return void 0 === this.internal.languageSettings && (this.internal.languageSettings = {}, this.internal.languageSettings.isSubscribed = false), void 0 !== { af: "Afrikaans", sq: "Albanian", ar: "Arabic (Standard)", "ar-DZ": "Arabic (Algeria)", "ar-BH": "Arabic (Bahrain)", "ar-EG": "Arabic (Egypt)", "ar-IQ": "Arabic (Iraq)", "ar-JO": "Arabic (Jordan)", "ar-KW": "Arabic (Kuwait)", "ar-LB": "Arabic (Lebanon)", "ar-LY": "Arabic (Libya)", "ar-MA": "Arabic (Morocco)", "ar-OM": "Arabic (Oman)", "ar-QA": "Arabic (Qatar)", "ar-SA": "Arabic (Saudi Arabia)", "ar-SY": "Arabic (Syria)", "ar-TN": "Arabic (Tunisia)", "ar-AE": "Arabic (U.A.E.)", "ar-YE": "Arabic (Yemen)", an: "Aragonese", hy: "Armenian", as: "Assamese", ast: "Asturian", az: "Azerbaijani", eu: "Basque", be: "Belarusian", bn: "Bengali", bs: "Bosnian", br: "Breton", bg: "Bulgarian", my: "Burmese", ca: "Catalan", ch: "Chamorro", ce: "Chechen", zh: "Chinese", "zh-HK": "Chinese (Hong Kong)", "zh-CN": "Chinese (PRC)", "zh-SG": "Chinese (Singapore)", "zh-TW": "Chinese (Taiwan)", cv: "Chuvash", co: "Corsican", cr: "Cree", hr: "Croatian", cs: "Czech", da: "Danish", nl: "Dutch (Standard)", "nl-BE": "Dutch (Belgian)", en: "English", "en-AU": "English (Australia)", "en-BZ": "English (Belize)", "en-CA": "English (Canada)", "en-IE": "English (Ireland)", "en-JM": "English (Jamaica)", "en-NZ": "English (New Zealand)", "en-PH": "English (Philippines)", "en-ZA": "English (South Africa)", "en-TT": "English (Trinidad & Tobago)", "en-GB": "English (United Kingdom)", "en-US": "English (United States)", "en-ZW": "English (Zimbabwe)", eo: "Esperanto", et: "Estonian", fo: "Faeroese", fj: "Fijian", fi: "Finnish", fr: "French (Standard)", "fr-BE": "French (Belgium)", "fr-CA": "French (Canada)", "fr-FR": "French (France)", "fr-LU": "French (Luxembourg)", "fr-MC": "French (Monaco)", "fr-CH": "French (Switzerland)", fy: "Frisian", fur: "Friulian", gd: "Gaelic (Scots)", "gd-IE": "Gaelic (Irish)", gl: "Galacian", ka: "Georgian", de: "German (Standard)", "de-AT": "German (Austria)", "de-DE": "German (Germany)", "de-LI": "German (Liechtenstein)", "de-LU": "German (Luxembourg)", "de-CH": "German (Switzerland)", el: "Greek", gu: "Gujurati", ht: "Haitian", he: "Hebrew", hi: "Hindi", hu: "Hungarian", is: "Icelandic", id: "Indonesian", iu: "Inuktitut", ga: "Irish", it: "Italian (Standard)", "it-CH": "Italian (Switzerland)", ja: "Japanese", kn: "Kannada", ks: "Kashmiri", kk: "Kazakh", km: "Khmer", ky: "Kirghiz", tlh: "Klingon", ko: "Korean", "ko-KP": "Korean (North Korea)", "ko-KR": "Korean (South Korea)", la: "Latin", lv: "Latvian", lt: "Lithuanian", lb: "Luxembourgish", mk: "North Macedonia", ms: "Malay", ml: "Malayalam", mt: "Maltese", mi: "Maori", mr: "Marathi", mo: "Moldavian", nv: "Navajo", ng: "Ndonga", ne: "Nepali", no: "Norwegian", nb: "Norwegian (Bokmal)", nn: "Norwegian (Nynorsk)", oc: "Occitan", or: "Oriya", om: "Oromo", fa: "Persian", "fa-IR": "Persian/Iran", pl: "Polish", pt: "Portuguese", "pt-BR": "Portuguese (Brazil)", pa: "Punjabi", "pa-IN": "Punjabi (India)", "pa-PK": "Punjabi (Pakistan)", qu: "Quechua", rm: "Rhaeto-Romanic", ro: "Romanian", "ro-MO": "Romanian (Moldavia)", ru: "Russian", "ru-MO": "Russian (Moldavia)", sz: "Sami (Lappish)", sg: "Sango", sa: "Sanskrit", sc: "Sardinian", sd: "Sindhi", si: "Singhalese", sr: "Serbian", sk: "Slovak", sl: "Slovenian", so: "Somani", sb: "Sorbian", es: "Spanish", "es-AR": "Spanish (Argentina)", "es-BO": "Spanish (Bolivia)", "es-CL": "Spanish (Chile)", "es-CO": "Spanish (Colombia)", "es-CR": "Spanish (Costa Rica)", "es-DO": "Spanish (Dominican Republic)", "es-EC": "Spanish (Ecuador)", "es-SV": "Spanish (El Salvador)", "es-GT": "Spanish (Guatemala)", "es-HN": "Spanish (Honduras)", "es-MX": "Spanish (Mexico)", "es-NI": "Spanish (Nicaragua)", "es-PA": "Spanish (Panama)", "es-PY": "Spanish (Paraguay)", "es-PE": "Spanish (Peru)", "es-PR": "Spanish (Puerto Rico)", "es-ES": "Spanish (Spain)", "es-UY": "Spanish (Uruguay)", "es-VE": "Spanish (Venezuela)", sx: "Sutu", sw: "Swahili", sv: "Swedish", "sv-FI": "Swedish (Finland)", "sv-SV": "Swedish (Sweden)", ta: "Tamil", tt: "Tatar", te: "Teluga", th: "Thai", tig: "Tigre", ts: "Tsonga", tn: "Tswana", tr: "Turkish", tk: "Turkmen", uk: "Ukrainian", hsb: "Upper Sorbian", ur: "Urdu", ve: "Venda", vi: "Vietnamese", vo: "Volapuk", wa: "Walloon", cy: "Welsh", xh: "Xhosa", ji: "Yiddish", zu: "Zulu" }[t2] && (this.internal.languageSettings.languageCode = t2, false === this.internal.languageSettings.isSubscribed && (this.internal.events.subscribe("putCatalog", function() {
         this.internal.write("/Lang (" + this.internal.languageSettings.languageCode + ")");
@@ -38963,8 +38963,8 @@ var require_jspdf_node_min = __commonJS({
      * ====================================================================
      */
     Bt = C3.API, qt = Bt.getCharWidthsArray = function(t2, e2) {
-      var r2, n2, i2 = (e2 = e2 || {}).font || this.internal.getFont(), a2 = e2.fontSize || this.internal.getFontSize(), o2 = e2.charSpace || this.internal.getCharSpace(), s2 = e2.widths ? e2.widths : i2.metadata.Unicode.widths, c2 = s2.fof ? s2.fof : 1, u2 = e2.kerning ? e2.kerning : i2.metadata.Unicode.kerning, l2 = u2.fof ? u2.fof : 1, h2 = false !== e2.doKerning, f2 = 0, d2 = t2.length, p2 = 0, g2 = s2[0] || c2, m2 = [];
-      for (r2 = 0; r2 < d2; r2++) n2 = t2.charCodeAt(r2), "function" == typeof i2.metadata.widthOfString ? m2.push((i2.metadata.widthOfGlyph(i2.metadata.characterToGlyph(n2)) + o2 * (1e3 / a2) || 0) / 1e3) : (f2 = h2 && "object" == typeof u2[n2] && !isNaN(parseInt(u2[n2][p2], 10)) ? u2[n2][p2] / l2 : 0, m2.push((s2[n2] || g2) / c2 + f2)), p2 = n2;
+      var r2, n2, i2 = (e2 = e2 || {}).font || this.internal.getFont(), a2 = e2.fontSize || this.internal.getFontSize(), o2 = e2.charSpace || this.internal.getCharSpace(), s2 = e2.widths ? e2.widths : i2.metadata.Unicode.widths, c2 = s2.fof ? s2.fof : 1, u2 = e2.kerning ? e2.kerning : i2.metadata.Unicode.kerning, l2 = u2.fof ? u2.fof : 1, h2 = false !== e2.doKerning, f2 = 0, d2 = t2.length, p3 = 0, g2 = s2[0] || c2, m2 = [];
+      for (r2 = 0; r2 < d2; r2++) n2 = t2.charCodeAt(r2), "function" == typeof i2.metadata.widthOfString ? m2.push((i2.metadata.widthOfGlyph(i2.metadata.characterToGlyph(n2)) + o2 * (1e3 / a2) || 0) / 1e3) : (f2 = h2 && "object" == typeof u2[n2] && !isNaN(parseInt(u2[n2][p3], 10)) ? u2[n2][p3] / l2 : 0, m2.push((s2[n2] || g2) / c2 + f2)), p3 = n2;
       return m2;
     }, Mt = Bt.getStringUnitWidth = function(t2, e2) {
       var r2 = (e2 = e2 || {}).fontSize || this.internal.getFontSize(), n2 = e2.font || this.internal.getFont(), i2 = e2.charSpace || this.internal.getCharSpace();
@@ -38979,7 +38979,7 @@ var require_jspdf_node_min = __commonJS({
       return c2 !== a2 && i2.push(t2.slice(c2, a2)), i2;
     }, Rt = function(t2, e2, r2) {
       r2 || (r2 = {});
-      var n2, i2, a2, o2, s2, c2, u2, l2 = [], h2 = [l2], f2 = r2.textIndent || 0, d2 = 0, p2 = 0, g2 = t2.split(" "), m2 = qt.apply(this, [" ", r2])[0];
+      var n2, i2, a2, o2, s2, c2, u2, l2 = [], h2 = [l2], f2 = r2.textIndent || 0, d2 = 0, p3 = 0, g2 = t2.split(" "), m2 = qt.apply(this, [" ", r2])[0];
       if (c2 = -1 === r2.lineIndent ? g2[0].length + 2 : r2.lineIndent || 0) {
         var v2 = Array(c2).join(" "), b2 = [];
         g2.map(function(t3) {
@@ -38990,17 +38990,17 @@ var require_jspdf_node_min = __commonJS({
       }
       for (a2 = 0, o2 = g2.length; a2 < o2; a2++) {
         var y2 = 0;
-        if (n2 = g2[a2], c2 && "\n" == n2[0] && (n2 = n2.substr(1), y2 = 1), f2 + d2 + (p2 = (i2 = qt.apply(this, [n2, r2])).reduce(function(t3, e3) {
+        if (n2 = g2[a2], c2 && "\n" == n2[0] && (n2 = n2.substr(1), y2 = 1), f2 + d2 + (p3 = (i2 = qt.apply(this, [n2, r2])).reduce(function(t3, e3) {
           return t3 + e3;
         }, 0)) > e2 || y2) {
-          if (p2 > e2) {
+          if (p3 > e2) {
             for (s2 = Et.apply(this, [n2, i2, e2 - (f2 + d2), e2]), l2.push(s2.shift()), l2 = [s2.pop()]; s2.length; ) h2.push([s2.shift()]);
-            p2 = i2.slice(n2.length - (l2[0] ? l2[0].length : 0)).reduce(function(t3, e3) {
+            p3 = i2.slice(n2.length - (l2[0] ? l2[0].length : 0)).reduce(function(t3, e3) {
               return t3 + e3;
             }, 0);
           } else l2 = [n2];
-          h2.push(l2), f2 = p2 + c2, d2 = m2;
-        } else l2.push(n2), f2 += d2 + p2, d2 = m2;
+          h2.push(l2), f2 = p3 + c2, d2 = m2;
+        } else l2.push(n2), f2 += d2 + p3, d2 = m2;
       }
       return u2 = c2 ? function(t3, e3) {
         return (e3 ? v2 : "") + t3.join(" ");
@@ -39189,8 +39189,8 @@ var require_jspdf_node_min = __commonJS({
             o2({ data: n2(r3.metadata.toUnicode), addLength1: true, objectId: f2 }), i3("endobj");
             var d2 = a2();
             i3("<<"), i3("/Type /FontDescriptor"), i3("/FontName /" + S32(r3.fontName)), i3("/FontFile2 " + h2 + " 0 R"), i3("/FontBBox " + t2.API.PDFObject.convert(r3.metadata.bbox)), i3("/Flags " + r3.metadata.flags), i3("/StemV " + r3.metadata.stemV), i3("/ItalicAngle " + r3.metadata.italicAngle), i3("/Ascent " + r3.metadata.ascender), i3("/Descent " + r3.metadata.decender), i3("/CapHeight " + r3.metadata.capHeight), i3(">>"), i3("endobj");
-            var p2 = a2();
-            i3("<<"), i3("/Type /Font"), i3("/BaseFont /" + S32(r3.fontName)), i3("/FontDescriptor " + d2 + " 0 R"), i3("/W " + t2.API.PDFObject.convert(s2)), i3("/CIDToGIDMap /Identity"), i3("/DW 1000"), i3("/Subtype /CIDFontType2"), i3("/CIDSystemInfo"), i3("<<"), i3("/Supplement 0"), i3("/Registry (Adobe)"), i3("/Ordering (" + r3.encoding + ")"), i3(">>"), i3(">>"), i3("endobj"), r3.objectNumber = a2(), i3("<<"), i3("/Type /Font"), i3("/Subtype /Type0"), i3("/ToUnicode " + f2 + " 0 R"), i3("/BaseFont /" + S32(r3.fontName)), i3("/Encoding /" + r3.encoding), i3("/DescendantFonts [" + p2 + " 0 R]"), i3(">>"), i3("endobj"), r3.isAlreadyPutted = true;
+            var p3 = a2();
+            i3("<<"), i3("/Type /Font"), i3("/BaseFont /" + S32(r3.fontName)), i3("/FontDescriptor " + d2 + " 0 R"), i3("/W " + t2.API.PDFObject.convert(s2)), i3("/CIDToGIDMap /Identity"), i3("/DW 1000"), i3("/Subtype /CIDFontType2"), i3("/CIDSystemInfo"), i3("<<"), i3("/Supplement 0"), i3("/Registry (Adobe)"), i3("/Ordering (" + r3.encoding + ")"), i3(">>"), i3(">>"), i3("endobj"), r3.objectNumber = a2(), i3("<<"), i3("/Type /Font"), i3("/Subtype /Type0"), i3("/ToUnicode " + f2 + " 0 R"), i3("/BaseFont /" + S32(r3.fontName)), i3("/Encoding /" + r3.encoding), i3("/DescendantFonts [" + p3 + " 0 R]"), i3(">>"), i3("endobj"), r3.isAlreadyPutted = true;
           }
         })(e3);
       }]), e2.events.push(["putFont", function(e3) {
@@ -39210,9 +39210,9 @@ var require_jspdf_node_min = __commonJS({
         })(e3);
       }]);
       var i2 = function(t3) {
-        var e3, n3 = t3.text || "", i3 = t3.x, a2 = t3.y, o2 = t3.options || {}, s2 = t3.mutex || {}, c2 = s2.pdfEscape, u2 = s2.activeFontKey, l2 = s2.fonts, h2 = u2, f2 = "", d2 = 0, p2 = "", g2 = l2[h2].encoding;
+        var e3, n3 = t3.text || "", i3 = t3.x, a2 = t3.y, o2 = t3.options || {}, s2 = t3.mutex || {}, c2 = s2.pdfEscape, u2 = s2.activeFontKey, l2 = s2.fonts, h2 = u2, f2 = "", d2 = 0, p3 = "", g2 = l2[h2].encoding;
         if ("Identity-H" !== l2[h2].encoding) return { text: n3, x: i3, y: a2, options: o2, mutex: s2 };
-        for (p2 = n3, h2 = u2, Array.isArray(n3) && (p2 = n3[0]), d2 = 0; d2 < p2.length; d2 += 1) l2[h2].metadata.hasOwnProperty("cmap") && (e3 = l2[h2].metadata.cmap.unicode.codeMap[p2[d2].charCodeAt(0)]), e3 || p2[d2].charCodeAt(0) < 256 && l2[h2].metadata.hasOwnProperty("Unicode") ? f2 += p2[d2] : f2 += "";
+        for (p3 = n3, h2 = u2, Array.isArray(n3) && (p3 = n3[0]), d2 = 0; d2 < p3.length; d2 += 1) l2[h2].metadata.hasOwnProperty("cmap") && (e3 = l2[h2].metadata.cmap.unicode.codeMap[p3[d2].charCodeAt(0)]), e3 || p3[d2].charCodeAt(0) < 256 && l2[h2].metadata.hasOwnProperty("Unicode") ? f2 += p3[d2] : f2 += "";
         var m2 = "";
         return parseInt(h2.slice(1)) < 14 || "WinAnsiEncoding" === g2 ? m2 = c2(f2, h2).split("").map(function(t4) {
           return t4.charCodeAt(0).toString(16);
@@ -39251,7 +39251,7 @@ var require_jspdf_node_min = __commonJS({
      */
     (function(t2) {
       t2.__bidiEngine__ = t2.prototype.__bidiEngine__ = function(t3) {
-        var r3, n2, i2, a2, o2, s2, c2, u2 = e2, l2 = [[0, 3, 0, 1, 0, 0, 0], [0, 3, 0, 1, 2, 2, 0], [0, 3, 0, 17, 2, 0, 1], [0, 3, 5, 5, 4, 1, 0], [0, 3, 21, 21, 4, 0, 1], [0, 3, 5, 5, 4, 2, 0]], h2 = [[2, 0, 1, 1, 0, 1, 0], [2, 0, 1, 1, 0, 2, 0], [2, 0, 2, 1, 3, 2, 0], [2, 0, 2, 33, 3, 1, 1]], f2 = { L: 0, R: 1, EN: 2, AN: 3, N: 4, B: 5, S: 6 }, d2 = { 0: 0, 5: 1, 6: 2, 7: 3, 32: 4, 251: 5, 254: 6, 255: 7 }, p2 = ["(", ")", "(", "<", ">", "<", "[", "]", "[", "{", "}", "{", "\xAB", "\xBB", "\xAB", "\u2039", "\u203A", "\u2039", "\u2045", "\u2046", "\u2045", "\u207D", "\u207E", "\u207D", "\u208D", "\u208E", "\u208D", "\u2264", "\u2265", "\u2264", "\u2329", "\u232A", "\u2329", "\uFE59", "\uFE5A", "\uFE59", "\uFE5B", "\uFE5C", "\uFE5B", "\uFE5D", "\uFE5E", "\uFE5D", "\uFE64", "\uFE65", "\uFE64"], g2 = new RegExp(/^([1-4|9]|1[0-9]|2[0-9]|3[0168]|4[04589]|5[012]|7[78]|159|16[0-9]|17[0-2]|21[569]|22[03489]|250)$/), m2 = false, v2 = 0;
+        var r3, n2, i2, a2, o2, s2, c2, u2 = e2, l2 = [[0, 3, 0, 1, 0, 0, 0], [0, 3, 0, 1, 2, 2, 0], [0, 3, 0, 17, 2, 0, 1], [0, 3, 5, 5, 4, 1, 0], [0, 3, 21, 21, 4, 0, 1], [0, 3, 5, 5, 4, 2, 0]], h2 = [[2, 0, 1, 1, 0, 1, 0], [2, 0, 1, 1, 0, 2, 0], [2, 0, 2, 1, 3, 2, 0], [2, 0, 2, 33, 3, 1, 1]], f2 = { L: 0, R: 1, EN: 2, AN: 3, N: 4, B: 5, S: 6 }, d2 = { 0: 0, 5: 1, 6: 2, 7: 3, 32: 4, 251: 5, 254: 6, 255: 7 }, p3 = ["(", ")", "(", "<", ">", "<", "[", "]", "[", "{", "}", "{", "\xAB", "\xBB", "\xAB", "\u2039", "\u203A", "\u2039", "\u2045", "\u2046", "\u2045", "\u207D", "\u207E", "\u207D", "\u208D", "\u208E", "\u208D", "\u2264", "\u2265", "\u2264", "\u2329", "\u232A", "\u2329", "\uFE59", "\uFE5A", "\uFE59", "\uFE5B", "\uFE5C", "\uFE5B", "\uFE5D", "\uFE5E", "\uFE5D", "\uFE64", "\uFE65", "\uFE64"], g2 = new RegExp(/^([1-4|9]|1[0-9]|2[0-9]|3[0168]|4[04589]|5[012]|7[78]|159|16[0-9]|17[0-2]|21[569]|22[03489]|250)$/), m2 = false, v2 = 0;
         this.__bidiEngine__ = {};
         var b2 = function(t4) {
           var e3 = t4.charCodeAt(), r4 = e3 >> 8, n3 = d2[r4];
@@ -39309,8 +39309,8 @@ var require_jspdf_node_min = __commonJS({
               if (i2 && !a2) {
                 for (h3 = e3.length, l3 = s3 + 1; l3 < h3 && "NSM" === e3[l3]; ) l3++;
                 if (l3 < h3) {
-                  var d3 = t4[s3], p3 = d3 >= 1425 && d3 <= 2303 || 64286 === d3;
-                  if (c3 = e3[l3], p3 && ("R" === c3 || "AL" === c3)) {
+                  var d3 = t4[s3], p4 = d3 >= 1425 && d3 <= 2303 || 64286 === d3;
+                  if (c3 = e3[l3], p4 && ("R" === c3 || "AL" === c3)) {
                     f3 = "R";
                     break;
                   }
@@ -39329,9 +39329,9 @@ var require_jspdf_node_min = __commonJS({
           var n3 = t4.split("");
           return r4 && L2(n3, r4, { hiLevel: v2 }), n3.reverse(), e3 && e3.reverse(), n3.join("");
         }, L2 = function(t4, e3, i3) {
-          var a3, o3, s3, c3, u3, d3 = -1, p3 = t4.length, g3 = 0, y3 = [], N25 = v2 ? h2 : l2, L3 = [];
-          for (m2 = false, r3 = false, n2 = false, o3 = 0; o3 < p3; o3++) L3[o3] = b2(t4[o3]);
-          for (s3 = 0; s3 < p3; s3++) {
+          var a3, o3, s3, c3, u3, d3 = -1, p4 = t4.length, g3 = 0, y3 = [], N25 = v2 ? h2 : l2, L3 = [];
+          for (m2 = false, r3 = false, n2 = false, o3 = 0; o3 < p4; o3++) L3[o3] = b2(t4[o3]);
+          for (s3 = 0; s3 < p4; s3++) {
             if (u3 = g3, y3[s3] = w2(t4, L3, y3, s3), a3 = 240 & (g3 = N25[u3][f2[y3[s3]]]), g3 &= 15, e3[s3] = c3 = N25[g3][5], a3 > 0) if (16 === a3) {
               for (o3 = d3; o3 < s3; o3++) e3[o3] = 1;
               d3 = -1;
@@ -39348,7 +39348,7 @@ var require_jspdf_node_min = __commonJS({
               e4[n3] = v2;
               for (var i4 = n3 - 1; i4 >= 0 && "WS" === t5[i4]; i4--) e4[i4] = v2;
             }
-          })(L3, e3, p3);
+          })(L3, e3, p4);
         }, x2 = function(t4, e3, n3, i3, a3) {
           if (!(a3.hiLevel < t4)) {
             if (1 === t4 && 1 === v2 && !r3) return e3.reverse(), void (n3 && n3.reverse());
@@ -39364,7 +39364,7 @@ var require_jspdf_node_min = __commonJS({
         }, A2 = function(t4, e3, r4) {
           var n3 = t4.split(""), i3 = { hiLevel: v2 };
           return r4 || (r4 = []), L2(n3, r4, i3), (function(t5, e4, r5) {
-            if (0 !== r5.hiLevel && c2) for (var n4, i4 = 0; i4 < t5.length; i4++) 1 === e4[i4] && (n4 = p2.indexOf(t5[i4])) >= 0 && (t5[i4] = p2[n4 + 1]);
+            if (0 !== r5.hiLevel && c2) for (var n4, i4 = 0; i4 < t5.length; i4++) 1 === e4[i4] && (n4 = p3.indexOf(t5[i4])) >= 0 && (t5[i4] = p3[n4 + 1]);
           })(n3, r4, i3), x2(2, n3, e3, r4, i3), x2(1, n3, e3, r4, i3), n3.join("");
         };
         return this.__bidiEngine__.doBidiReorder = function(t4, e3, r4) {
@@ -39499,8 +39499,8 @@ var require_jspdf_node_min = __commonJS({
         for (this.scalarType = t3.readInt(), this.tableCount = t3.readShort(), this.searchRange = t3.readShort(), this.entrySelector = t3.readShort(), this.rangeShift = t3.readShort(), this.tables = {}, r2 = 0, n2 = this.tableCount; 0 <= n2 ? r2 < n2 : r2 > n2; r2 = 0 <= n2 ? ++r2 : --r2) e3 = { tag: t3.readString(4), checksum: t3.readInt(), offset: t3.readInt(), length: t3.readInt() }, this.tables[e3.tag] = e3;
       }
       return e2.prototype.encode = function(e3) {
-        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p2;
-        for (p2 in f2 = Object.keys(e3).length, s2 = Math.log(2), l2 = 16 * Math.floor(Math.log(f2) / s2), a2 = Math.floor(l2 / s2), u2 = 16 * f2 - l2, (n2 = new ae()).writeInt(this.scalarType), n2.writeShort(f2), n2.writeShort(l2), n2.writeShort(a2), n2.writeShort(u2), i2 = 16 * f2, c2 = n2.pos + i2, o2 = null, d2 = [], e3) for (h2 = e3[p2], n2.writeString(p2), n2.writeInt(t2(h2)), n2.writeInt(c2), n2.writeInt(h2.length), d2 = d2.concat(h2), "head" === p2 && (o2 = c2), c2 += h2.length; c2 % 4; ) d2.push(0), c2++;
+        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p3;
+        for (p3 in f2 = Object.keys(e3).length, s2 = Math.log(2), l2 = 16 * Math.floor(Math.log(f2) / s2), a2 = Math.floor(l2 / s2), u2 = 16 * f2 - l2, (n2 = new ae()).writeInt(this.scalarType), n2.writeShort(f2), n2.writeShort(l2), n2.writeShort(a2), n2.writeShort(u2), i2 = 16 * f2, c2 = n2.pos + i2, o2 = null, d2 = [], e3) for (h2 = e3[p3], n2.writeString(p3), n2.writeInt(t2(h2)), n2.writeInt(c2), n2.writeInt(h2.length), d2 = d2.concat(h2), "head" === p3 && (o2 = c2), c2 += h2.length; c2 % 4; ) d2.push(0), c2++;
         return n2.write(d2), r2 = 2981146554 - t2(n2.data), n2.pos = o2 + 8, n2.writeUInt32(r2), n2.data;
       }, t2 = function(t3) {
         var e3, r2, n2, i2;
@@ -39541,7 +39541,7 @@ var require_jspdf_node_min = __commonJS({
     })();
     var le = (function() {
       function t2(t3, e2) {
-        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p2, g2, m2, v2, b2;
+        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p3, g2, m2, v2, b2;
         switch (this.platformID = t3.readUInt16(), this.encodingID = t3.readShort(), this.offset = e2 + t3.readInt(), l2 = t3.pos, t3.pos = this.offset, this.format = t3.readUInt16(), this.length = t3.readUInt16(), this.language = t3.readUInt16(), this.isUnicode = 3 === this.platformID && 1 === this.encodingID && 4 === this.format || 0 === this.platformID && 4 === this.format, this.codeMap = {}, this.format) {
           case 0:
             for (s2 = 0; s2 < 256; ++s2) this.codeMap[s2] = t3.readByte();
@@ -39551,7 +39551,7 @@ var require_jspdf_node_min = __commonJS({
               var e3, r3;
               for (r3 = [], s2 = e3 = 0; 0 <= h2 ? e3 < h2 : e3 > h2; s2 = 0 <= h2 ? ++e3 : --e3) r3.push(t3.readUInt16());
               return r3;
-            })(), t3.pos += 2, p2 = (function() {
+            })(), t3.pos += 2, p3 = (function() {
               var e3, r3;
               for (r3 = [], s2 = e3 = 0; 0 <= h2 ? e3 < h2 : e3 > h2; s2 = 0 <= h2 ? ++e3 : --e3) r3.push(t3.readUInt16());
               return r3;
@@ -39567,22 +39567,22 @@ var require_jspdf_node_min = __commonJS({
               var e3, r3;
               for (r3 = [], s2 = e3 = 0; 0 <= n2 ? e3 < n2 : e3 > n2; s2 = 0 <= n2 ? ++e3 : --e3) r3.push(t3.readUInt16());
               return r3;
-            })(), s2 = m2 = 0, b2 = i2.length; m2 < b2; s2 = ++m2) for (g2 = i2[s2], r2 = v2 = d2 = p2[s2]; d2 <= g2 ? v2 <= g2 : v2 >= g2; r2 = d2 <= g2 ? ++v2 : --v2) 0 === u2[s2] ? a2 = r2 + c2[s2] : 0 !== (a2 = o2[u2[s2] / 2 + (r2 - d2) - (h2 - s2)] || 0) && (a2 += c2[s2]), this.codeMap[r2] = 65535 & a2;
+            })(), s2 = m2 = 0, b2 = i2.length; m2 < b2; s2 = ++m2) for (g2 = i2[s2], r2 = v2 = d2 = p3[s2]; d2 <= g2 ? v2 <= g2 : v2 >= g2; r2 = d2 <= g2 ? ++v2 : --v2) 0 === u2[s2] ? a2 = r2 + c2[s2] : 0 !== (a2 = o2[u2[s2] / 2 + (r2 - d2) - (h2 - s2)] || 0) && (a2 += c2[s2]), this.codeMap[r2] = 65535 & a2;
         }
         t3.pos = l2;
       }
       return t2.encode = function(t3, e2) {
-        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p2, g2, m2, v2, b2, y2, w2, N24, L2, x2, A2, S33, _2, P2, k2, F7, I26, C4, j2, O2, B2, q2, M12, E2, R12, D4, T36, z2, U2, H2, W3, V2, G2, Y2;
+        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p3, g2, m2, v2, b2, y2, w2, N24, L2, x2, A2, S33, _2, P2, k2, F7, I26, C4, j2, O2, B2, q2, M12, E2, R12, D4, T36, z2, U2, H2, W3, V2, G2, Y2;
         switch (F7 = new ae(), a2 = Object.keys(t3).sort(function(t4, e3) {
           return t4 - e3;
         }), e2) {
           case "macroman":
-            for (p2 = 0, g2 = (function() {
+            for (p3 = 0, g2 = (function() {
               var t4 = [];
               for (d2 = 0; d2 < 256; ++d2) t4.push(0);
               return t4;
-            })(), v2 = { 0: 0 }, i2 = {}, I26 = 0, B2 = a2.length; I26 < B2; I26++) null == v2[W3 = t3[n2 = a2[I26]]] && (v2[W3] = ++p2), i2[n2] = { old: t3[n2], new: v2[t3[n2]] }, g2[n2] = v2[t3[n2]];
-            return F7.writeUInt16(1), F7.writeUInt16(0), F7.writeUInt32(12), F7.writeUInt16(0), F7.writeUInt16(262), F7.writeUInt16(0), F7.write(g2), { charMap: i2, subtable: F7.data, maxGlyphID: p2 + 1 };
+            })(), v2 = { 0: 0 }, i2 = {}, I26 = 0, B2 = a2.length; I26 < B2; I26++) null == v2[W3 = t3[n2 = a2[I26]]] && (v2[W3] = ++p3), i2[n2] = { old: t3[n2], new: v2[t3[n2]] }, g2[n2] = v2[t3[n2]];
+            return F7.writeUInt16(1), F7.writeUInt16(0), F7.writeUInt32(12), F7.writeUInt16(0), F7.writeUInt16(262), F7.writeUInt16(0), F7.write(g2), { charMap: i2, subtable: F7.data, maxGlyphID: p3 + 1 };
           case "unicode":
             for (P2 = [], l2 = [], b2 = 0, v2 = {}, r2 = {}, m2 = c2 = null, C4 = 0, q2 = a2.length; C4 < q2; C4++) null == v2[w2 = t3[n2 = a2[C4]]] && (v2[w2] = ++b2), r2[n2] = { old: w2, new: v2[w2] }, o2 = v2[w2] - n2, null != m2 && o2 === c2 || (m2 && l2.push(m2), P2.push(n2), c2 = o2), m2 = n2;
             for (m2 && l2.push(m2), l2.push(65535), P2.push(65535), S33 = 2 * (A2 = P2.length), x2 = 2 * Math.pow(Math.log(A2) / Math.LN2, 2), h2 = Math.log(x2 / 2) / Math.LN2, L2 = 2 * A2 - x2, s2 = [], N24 = [], f2 = [], d2 = j2 = 0, M12 = P2.length; j2 < M12; d2 = ++j2) {
@@ -39597,7 +39597,7 @@ var require_jspdf_node_min = __commonJS({
             for (F7.writeUInt16(0), H2 = 0, R12 = P2.length; H2 < R12; H2++) n2 = P2[H2], F7.writeUInt16(n2);
             for (V2 = 0, D4 = s2.length; V2 < D4; V2++) o2 = s2[V2], F7.writeUInt16(o2);
             for (G2 = 0, T36 = N24.length; G2 < T36; G2++) y2 = N24[G2], F7.writeUInt16(y2);
-            for (Y2 = 0, z2 = f2.length; Y2 < z2; Y2++) p2 = f2[Y2], F7.writeUInt16(p2);
+            for (Y2 = 0, z2 = f2.length; Y2 < z2; Y2++) p3 = f2[Y2], F7.writeUInt16(p3);
             return { charMap: r2, subtable: F7.data, maxGlyphID: b2 + 1 };
         }
       }, t2;
@@ -39797,7 +39797,7 @@ var require_jspdf_node_min = __commonJS({
         if (e2.length > 0) for (i2 in s2 = this.glyphsFor(e2)) r2 = s2[i2], n2[i2] = r2;
         return n2;
       }, t2.prototype.encode = function(t3, e2) {
-        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p2, g2, m2;
+        var r2, n2, i2, a2, o2, s2, c2, u2, l2, h2, f2, d2, p3, g2, m2;
         for (n2 in r2 = he.encode(this.generateCmap(), "unicode"), a2 = this.glyphsFor(t3), f2 = { 0: 0 }, m2 = r2.charMap) f2[(s2 = m2[n2]).old] = s2.new;
         for (d2 in h2 = r2.maxGlyphID, a2) d2 in f2 || (f2[d2] = h2++);
         return u2 = (function(t4) {
@@ -39806,11 +39806,11 @@ var require_jspdf_node_min = __commonJS({
           return r3;
         })(f2), l2 = Object.keys(u2).sort(function(t4, e3) {
           return t4 - e3;
-        }), p2 = (function() {
+        }), p3 = (function() {
           var t4, e3, r3;
           for (r3 = [], t4 = 0, e3 = l2.length; t4 < e3; t4++) o2 = l2[t4], r3.push(u2[o2]);
           return r3;
-        })(), i2 = this.font.glyf.encode(a2, p2, f2), c2 = this.font.loca.encode(i2.offsets, p2), g2 = { cmap: this.font.cmap.raw(), glyf: i2.table, loca: c2, hmtx: this.font.hmtx.raw(), hhea: this.font.hhea.raw(), maxp: this.font.maxp.raw(), post: this.font.post.raw(), name: this.font.name.raw(), head: this.font.head.encode(e2) }, this.font.os2.exists && (g2["OS/2"] = this.font.os2.raw()), this.font.directory.encode(g2);
+        })(), i2 = this.font.glyf.encode(a2, p3, f2), c2 = this.font.loca.encode(i2.offsets, p3), g2 = { cmap: this.font.cmap.raw(), glyf: i2.table, loca: c2, hmtx: this.font.hmtx.raw(), hhea: this.font.hhea.raw(), maxp: this.font.maxp.raw(), post: this.font.post.raw(), name: this.font.name.raw(), head: this.font.head.encode(e2) }, this.font.os2.exists && (g2["OS/2"] = this.font.os2.raw()), this.font.directory.encode(g2);
       }, t2;
     })();
     C3.API.PDFObject = (function() {
@@ -39988,17 +39988,17 @@ function drawRequestHeader(doc3, {
   doc3.setFontSize(7);
   doc3.setTextColor(...PDF_INK.muted);
   doc3.text("Connected Healthcare", M + 19, HEADER_TOP + 11);
-  const heading2 = String(title || "MEDICAL REQUEST").toUpperCase();
+  const heading = String(title || "MEDICAL REQUEST").toUpperCase();
   doc3.setFont("helvetica", "bold");
   let size = 10.6;
   doc3.setFontSize(size);
   const tracking = 1.05;
-  while (size > 7.5 && doc3.getTextWidth(heading2) + heading2.length * tracking > 84) {
+  while (size > 7.5 && doc3.getTextWidth(heading) + heading.length * tracking > 84) {
     size -= 0.4;
     doc3.setFontSize(size);
   }
   doc3.setTextColor(...PDF_INK.navy);
-  drawTrackedText(doc3, heading2, R, HEADER_TOP + 4.8, tracking, "right");
+  drawTrackedText(doc3, heading, R, HEADER_TOP + 4.8, tracking, "right");
   doc3.setFont("helvetica", "normal");
   doc3.setFontSize(6.5);
   doc3.setTextColor(...PDF_INK.muted);
@@ -40070,9 +40070,9 @@ function drawPatientBlock(doc3, req, y) {
   drawDivider(doc3, rowY - 4);
   return rowY - 4;
 }
-function drawDoctorBlock(doc3, req, y, { heading: heading2 = "Requesting Doctor & Hospital", doctorLabel = "Requesting doctor" } = {}) {
+function drawDoctorBlock(doc3, req, y, { heading = "Requesting Doctor & Hospital", doctorLabel = "Requesting doctor" } = {}) {
   const top = y + 8;
-  drawSectionLabel(doc3, heading2, top);
+  drawSectionLabel(doc3, heading, top);
   let rowY = top + 9;
   drawTemplateField(doc3, doctorLabel, req.doctor_name, M, rowY, { width: 78 });
   drawTemplateField(doc3, "Specialty", req.doctor_specialization, COL2, rowY, { width: 80 });
@@ -81649,11 +81649,27 @@ function hairline(doc3, y) {
   doc3.setLineWidth(0.15);
   doc3.line(M10, y, R10, y);
 }
+function writeSection(doc3, title) {
+  doc3.__pendingSection = String(title || "");
+  return doc3.__pendingSection;
+}
+function flushSection(doc3, y, artwork, noteTitle, blockHeight) {
+  const title = doc3.__pendingSection;
+  if (!title) return y;
+  doc3.__pendingSection = null;
+  const d = density(doc3);
+  const room = headingRoom(d) + Math.min(Math.max(blockHeight, 6), PAGE.BOTTOM - 58);
+  let yy = y + room > PAGE.BOTTOM ? nextPage(doc3, artwork, noteTitle) : y + SPACE.before * d;
+  writeHeading(doc3, title, yy);
+  yy += 2.6 * d;
+  drawDivider(doc3, yy);
+  return yy + SPACE.heading * d;
+}
 function writeDocumentHead(doc3, title, reference, y) {
   const label2 = String(title || "Clinical Note").toUpperCase();
   const ref = String(reference || "").trim();
   let yy = y;
-  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc3, null, title);
+  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc3, null, "Clinical Note");
   if (!ref || headingWidth(doc3, label2) + headingWidth(doc3, ref) + 8 <= W) {
     writeHeading(doc3, label2, yy);
     if (ref) writeHeading(doc3, ref, yy, { x: R10, align: "right" });
@@ -81666,65 +81682,62 @@ function writeDocumentHead(doc3, title, reference, y) {
   writeHeading(doc3, ref, yy, { x: R10, align: "right" });
   return yy + 6;
 }
-function writeSection(doc3, title, y, artwork, noteTitle, need = 26) {
+function rowMetrics(doc3, label2, value, opts = {}) {
   const d = density(doc3);
-  let yy = y + SPACE.before * d;
-  if (yy + need > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
-  writeHeading(doc3, title, yy);
-  yy += 2.6 * d;
-  drawDivider(doc3, yy);
-  return yy + SPACE.heading * d;
-}
-function writeRow(doc3, label2, value, y, artwork, opts = {}) {
-  const {
-    noteTitle = "Clinical Note",
-    labelWidth = LABEL_W,
-    size = TYPE.value,
-    labelSize = TYPE.label,
-    rule = true,
-    numbered = false
-  } = opts;
-  const d = density(doc3);
+  const labelWidth = opts.labelWidth ?? LABEL_W;
+  const size = opts.size ?? TYPE.value;
+  const labelSize = opts.labelSize ?? TYPE.label;
   const lineHeight = (opts.lineHeight ?? LEAD.value) * d;
   const paragraphs = String(value ?? "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
-  const rows = numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
-  if (rows.length === 0) return y;
-  const valueX = M10 + labelWidth + VALUE_GAP;
-  const valueW = R10 - valueX;
-  const valueLines = rows.flatMap((line) => wrap(doc3, line, valueW, size));
+  const rows = opts.numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
+  const valueLines = rows.flatMap((line) => wrap(doc3, line, valueWidth(labelWidth), size));
   const labelLines = wrap(doc3, String(label2 || ""), labelWidth, labelSize, "bold");
   const labelLead = LEAD.label * d;
-  const height = Math.max(valueLines.length * lineHeight, labelLines.length * labelLead);
-  let yy = y;
+  return {
+    valueLines,
+    labelLines,
+    labelWidth,
+    size,
+    labelSize,
+    lineHeight,
+    labelLead,
+    height: Math.max(valueLines.length * lineHeight, labelLines.length * labelLead)
+  };
+}
+function writeRow(doc3, label2, value, y, artwork, opts = {}) {
+  const { noteTitle = "Clinical Note", rule = true } = opts;
+  const metrics = rowMetrics(doc3, label2, value, opts);
+  if (metrics.valueLines.length === 0) return y;
+  const d = density(doc3);
+  let yy = flushSection(doc3, y, artwork, noteTitle, metrics.height);
   let continued = false;
-  if (yy + height > PAGE.BOTTOM && height <= PAGE.BOTTOM - 58) {
+  if (yy + metrics.height > PAGE.BOTTOM && metrics.height <= PAGE.BOTTOM - 58) {
     yy = nextPage(doc3, artwork, noteTitle);
   }
-  labelLines.forEach((line, index) => {
-    writeLine(doc3, line, yy + index * labelLead, {
-      size: labelSize,
+  metrics.labelLines.forEach((line, index) => {
+    writeLine(doc3, line, yy + index * metrics.labelLead, {
+      size: metrics.labelSize,
       weight: "bold",
       color: PDF_INK.muted,
-      x: M10,
-      width: labelWidth,
+      width: metrics.labelWidth,
       kind: "label"
     });
   });
   let valueY = yy;
-  valueLines.forEach((line) => {
+  metrics.valueLines.forEach((line) => {
     if (valueY > PAGE.BOTTOM) {
       valueY = nextPage(doc3, artwork, noteTitle);
       continued = true;
     }
     writeLine(doc3, line, valueY, {
-      size,
-      x: valueX,
-      width: valueW,
+      size: metrics.size,
+      x: M10 + metrics.labelWidth + VALUE_GAP,
+      width: valueWidth(metrics.labelWidth),
       align: hasArabic(line) ? "right" : "left"
     });
-    valueY += lineHeight;
+    valueY += metrics.lineHeight;
   });
-  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight * 0.25) + SPACE.rowPad * d;
+  const end = Math.max(metrics.labelLines.length * metrics.labelLead + yy, valueY - metrics.lineHeight * 0.25) + SPACE.rowPad * d;
   if (rule && !continued) hairline(doc3, end - 0.7);
   return end;
 }
@@ -81785,16 +81798,15 @@ function writeVitalGrid(doc3, vitals, y, artwork, noteTitle, { caption = "" } = 
     rows.push({
       cells,
       labelLines,
-      height: labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d
+      height: labelLines * labelLead + 1.5 + valueLines * valueLead + SPACE.cellPad * d
     });
   }
-  if (caption && rows.length > 0) {
-    const captionHeight = wrap(doc3, caption, W, TYPE.caption, "bold").length * LEAD.caption * d;
-    if (y + SPACE.captionBefore * d + captionHeight + 1.2 + rows[0].height > PAGE.BOTTOM) {
-      y = nextPage(doc3, artwork, noteTitle) - SPACE.captionBefore * d;
-    }
+  const firstRow = rows[0]?.height ?? 0;
+  let yy = flushSection(doc3, y, artwork, noteTitle, captionRoom(doc3, caption) + firstRow);
+  if (caption && yy + captionRoom(doc3, caption) + firstRow > PAGE.BOTTOM) {
+    yy = nextPage(doc3, artwork, noteTitle);
   }
-  let yy = writeCaption(doc3, caption, y, artwork, noteTitle);
+  yy = writeCaption(doc3, caption, yy, artwork, noteTitle);
   rows.forEach(({ cells, labelLines, height: rowHeight }) => {
     if (yy + rowHeight > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
     cells.forEach((cell, column) => {
@@ -81827,14 +81839,45 @@ function writeVitalGrid(doc3, vitals, y, artwork, noteTitle, { caption = "" } = 
 function examinationBlocks(text) {
   return String(text || "").split(/\n\s*\n/).map((block3) => {
     const lines = block3.split("\n").map((line) => line.trim()).filter(Boolean);
-    const heading2 = lines.shift() || "";
+    const heading = lines.shift() || "";
     const items = lines.map((line) => {
       const clean = line.replace(/^•\s*/, "");
       const index = clean.indexOf(":");
       return index > 0 ? [clean.slice(0, index).trim(), clean.slice(index + 1).trim()] : [clean, ""];
     });
-    return { heading: heading2, items };
+    return { heading, items };
   }).filter((block3) => block3.heading || block3.items.length > 0);
+}
+function writeExamination(doc3, text, y, artwork, noteTitle, { label: label2 = "Examination" } = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return y;
+  if (!/^\s*•/m.test(raw)) return writeRow(doc3, label2, raw, y, artwork, { noteTitle });
+  const d = density(doc3);
+  const blocks = examinationBlocks(raw);
+  const first = blocks[0];
+  const firstRoom = (first?.heading ? LEAD.value * d : 0) + (first?.items?.[0] ? examRow(doc3, first.items[0][0], first.items[0][1]) : 0);
+  let yy = flushSection(doc3, y, artwork, noteTitle, captionRoom(doc3, label2) + firstRoom);
+  yy = writeCaption(doc3, label2, yy, artwork, noteTitle);
+  blocks.forEach((block3) => {
+    if (block3.heading) yy += SPACE.before * d;
+    if (yy + SPACE.before * d + LEAD.value * d + 10 > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
+    if (block3.heading) {
+      wrap(doc3, block3.heading, W, TYPE.value, "bold").forEach((line) => {
+        writeLine(doc3, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
+        yy += LEAD.value * d;
+      });
+    }
+    block3.items.forEach(([itemLabel, value]) => {
+      yy = writeRow(doc3, itemLabel, value, yy, artwork, {
+        noteTitle,
+        size: TYPE.cellValue,
+        lineHeight: LEAD.cellValue,
+        rule: false
+      });
+    });
+    yy += 1.4 * d;
+  });
+  return yy;
 }
 function gridCell(doc3, entry2, columnCount) {
   const colW = (W - SPACE.cellGap * (columnCount - 1)) / columnCount;
@@ -81848,24 +81891,29 @@ function gridCell(doc3, entry2, columnCount) {
 function writeFieldGrid(doc3, entries, y, artwork, noteTitle) {
   const list5 = (entries || []).filter((entry2) => String(entry2.value ?? "").trim());
   if (list5.length === 0) return y;
-  if (list5.length === 1) {
-    return writeRow(doc3, list5[0].label, list5[0].value, y, artwork, { noteTitle, rule: false });
-  }
   const d = density(doc3);
   const labelLead = LEAD.cellLabel * d;
   const valueLead = LEAD.cellValue * d;
   const fitThree = list5.filter((entry2) => gridCell(doc3, entry2, 3)).length;
   const fitTwo = list5.filter((entry2) => gridCell(doc3, entry2, 2)).length;
   const columns = fitThree * 2 >= list5.length ? 3 : fitTwo * 2 >= list5.length ? 2 : 1;
-  let yy = y;
+  const cellHeight = (cell) => cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d;
+  const firstRow = [];
+  if (columns > 1) {
+    for (const entry2 of list5) {
+      const cell = gridCell(doc3, entry2, columns);
+      if (!cell) break;
+      firstRow.push(cell);
+      if (firstRow.length === columns) break;
+    }
+  }
+  const firstRoom = firstRow.length ? Math.max(...firstRow.map(cellHeight)) : rowMetrics(doc3, list5[0].label, list5[0].value).height;
+  let yy = flushSection(doc3, y, artwork, noteTitle, firstRoom);
+  if (list5.length === 1) return writeRow(doc3, list5[0].label, list5[0].value, yy, artwork, { noteTitle, rule: false });
   let row = [];
   const flush = () => {
     if (row.length === 0) return;
-    const height = Math.max(
-      ...row.map(
-        (cell) => cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d
-      )
-    );
+    const height = Math.max(...row.map(cellHeight));
     if (yy + height > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
     row.forEach((cell, column) => {
       const x = M10 + column * (cell.colW + SPACE.cellGap);
@@ -81906,46 +81954,19 @@ function writeFieldGrid(doc3, entries, y, artwork, noteTitle) {
   flush();
   return yy;
 }
-function writeExamination(doc3, text, y, artwork, noteTitle, { label: label2 = "Examination" } = {}) {
-  const raw = String(text || "").trim();
-  if (!raw) return y;
-  if (!/^\s*•/m.test(raw)) return writeRow(doc3, label2, raw, y, artwork, { noteTitle });
-  const d = density(doc3);
-  let yy = y;
-  examinationBlocks(raw).forEach((block3) => {
-    if (block3.heading) yy += SPACE.before * d;
-    if (yy > PAGE.BOTTOM - 26) yy = nextPage(doc3, artwork, noteTitle);
-    if (block3.heading) {
-      wrap(doc3, block3.heading, W, TYPE.value, "bold").forEach((line) => {
-        writeLine(doc3, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
-        yy += LEAD.value * d;
-      });
-    }
-    block3.items.forEach(([itemLabel, value]) => {
-      yy = writeRow(doc3, itemLabel, value, yy, artwork, {
-        noteTitle,
-        labelWidth: LABEL_W,
-        size: TYPE.cellValue,
-        lineHeight: LEAD.cellValue,
-        rule: false
-      });
-    });
-    yy += 1.4 * d;
-  });
-  return yy;
-}
 function writeSubBlock(doc3, label2, entries, y, artwork, noteTitle) {
   const list5 = (entries || []).filter((entry2) => String(entry2.value ?? "").trim());
   if (list5.length === 0) return y;
   const d = density(doc3);
-  const captionLines = wrap(doc3, String(label2 || ""), W, TYPE.caption, "bold").length;
-  const needed = captionLines * LEAD.caption * d + 1.2 + 16;
-  let yy = y;
-  if (yy + needed > PAGE.BOTTOM) yy = nextPage(doc3, artwork, noteTitle);
+  const firstRoom = Math.max(
+    2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d,
+    rowMetrics(doc3, list5[0].label, list5[0].value).height
+  );
+  let yy = flushSection(doc3, y, artwork, noteTitle, captionRoom(doc3, label2) + firstRoom);
   yy = writeCaption(doc3, label2, yy, artwork, noteTitle);
   return writeFieldGrid(doc3, list5, yy, artwork, noteTitle);
 }
-var PAGE, M10, R10, W, LABEL_W, VALUE_GAP, TYPE, LEAD, SPACE, density, VITALS;
+var PAGE, M10, R10, W, LABEL_W, VALUE_GAP, TYPE, LEAD, SPACE, density, valueWidth, headingRoom, VITALS, captionRoom, examRow;
 var init_clinicalNotePdfLayout = __esm({
   "src/lib/clinicalNotePdfLayout.js"() {
     init_requestPdfLayout();
@@ -81981,6 +82002,8 @@ var init_clinicalNotePdfLayout = __esm({
     };
     SPACE = { before: 3.4, heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6, captionBefore: 1.9 };
     density = (doc3) => documentDensity(doc3);
+    valueWidth = (labelWidth = LABEL_W) => R10 - (M10 + labelWidth + VALUE_GAP);
+    headingRoom = (d) => TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
     VITALS = [
       { label: "Blood Pressure", keys: ["blood pressure", "bp"] },
       { label: "Heart Rate", keys: ["heart rate", "pulse", "hr"] },
@@ -81999,6 +82022,8 @@ var init_clinicalNotePdfLayout = __esm({
       { label: "Blood Glucose", keys: ["blood glucose", "glucose"] },
       { label: "Urine Output", keys: ["urine output"] }
     ];
+    captionRoom = (doc3, text) => String(text || "").trim() ? wrap(doc3, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc3) + 1.2 : 0;
+    examRow = (doc3, itemLabel, value) => rowMetrics(doc3, itemLabel, value, { size: TYPE.cellValue, lineHeight: LEAD.cellValue }).height;
   }
 });
 
@@ -82150,8 +82175,7 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
   [...blocks.values()].filter(
     (item) => item.entries.length > 0 || item.subs.length > 0 || item.groups.length > 0 || item.vitals.length > 0
   ).sort((a, b) => a.at - b.at || a.order - b.order).forEach((item) => {
-    const roomy = item.vitals.length > 0 || item.groups.length > 0 || item.subs.length > 0;
-    y = writeSection(doc3, item.title, y, artwork, TITLE, roomy ? 42 : 26);
+    writeSection(doc3, item.title);
     item.vitals.forEach(([label2, value]) => {
       const grid = parseVitals(value);
       const caption = /^vital signs?$/i.test(String(label2).trim()) ? "" : label2;
@@ -82167,7 +82191,7 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
     y += 2;
   });
   if (sensitive.length > 0) {
-    y = writeSection(doc3, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE);
+    writeSection(doc3, "Sexual & Reproductive History (Sensitive)");
     y = writeFieldGrid(doc3, sensitive, y, artwork, TITLE);
     y += 2;
   }
@@ -82262,25 +82286,23 @@ var { auditPdfLayout: auditPdfLayout2 } = await Promise.resolve().then(() => (in
 var LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 var LONG = "The patient reports a progressive course over the preceding three weeks with intermittent symptoms that are worse on exertion and at night, partially relieved by rest, with no associated fever, weight loss or night sweats. Family history is notable for premature coronary disease in a first-degree relative.";
 var BULLETS = "\u2022 General appearance: Alert, comfortable at rest\n\u2022 Cardiovascular: S1 S2 heard, no murmur\n\u2022 Respiratory: Clear to auscultation bilaterally";
-var def = SPECIALTY_DOCUMENTS2.find((d) => d.key === "peds_consultation");
+var def = SPECIALTY_DOCUMENTS2.find((d) => d.key === "surg_discharge_summary");
 var data = {};
 (def.fields || []).forEach((f, i) => {
   let value = i % 3 === 0 ? BULLETS : i % 2 === 0 ? LONG : "Documented";
-  if (f.type === "vitals") value = "BP: 138/86 mmHg \xB7 Pulse: 92 bpm \xB7 Temp: 36.9\xB0C \xB7 RR: 20 \xB7 SpO\u2082: 95% \xB7 Weight: 84 kg \xB7 Height: 172 cm \xB7 BMI: 28.4";
+  if (f.type === "vitals") value = "BP: 138/86 mmHg \xB7 Pulse: 92 bpm";
   data[f.key] = { label: f.label, value };
 });
 var doc2 = await generateClinicalNotePdf2(
   { document_type: def.key, document_type_label: def.label, patient_name: "A B", doctor_name: "Dr X", data },
   { logo: LOGO, profile: {} }
 );
-console.log("audit:", JSON.stringify(auditPdfLayout2(doc2)));
+console.log("audit:", JSON.stringify(auditPdfLayout2(doc2).slice(0, 3)));
 var boxes = doc2.__pdfBoxes;
-var heading = boxes.find((b) => b.label.startsWith("Measurements & examination"));
-if (heading) {
-  const after = boxes.filter((b) => b.page === heading.page && b.top > heading.top).sort((a, b) => a.top - b.top);
-  console.log("heading page", heading.page, "top", heading.top.toFixed(1));
-  after.slice(0, 6).forEach((b) => console.log("  next", b.kind, "top", b.top.toFixed(1), "bot", (b.top + b.height).toFixed(1), "x", b.x.toFixed(1), b.label.slice(0, 34)));
-}
+var p1 = boxes.filter((b) => b.page === 1).sort((a, b) => a.top - b.top);
+p1.slice(-5).forEach((b) => console.log("p1", b.kind, b.top.toFixed(1), b.label.slice(0, 34)));
+var p2 = boxes.filter((b) => b.page === 2).sort((a, b) => a.top - b.top);
+p2.slice(0, 4).forEach((b) => console.log("p2", b.kind, b.top.toFixed(1), b.label.slice(0, 34)));
 /*! Bundled license information:
 
 html2canvas/dist/html2canvas.js:

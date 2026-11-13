@@ -81859,8 +81859,9 @@ function writeExamination(doc2, text, y, artwork, noteTitle, { label: label2 = "
   let yy = flushSection(doc2, y, artwork, noteTitle, captionRoom(doc2, label2) + firstRoom);
   yy = writeCaption(doc2, label2, yy, artwork, noteTitle);
   blocks.forEach((block3) => {
-    if (block3.heading) yy += SPACE.before * d;
-    if (yy + SPACE.before * d + LEAD.value * d + 10 > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
+    const room = (block3.heading ? (SPACE.before + LEAD.value) * d : 0) + (block3.items[0] ? examRow(doc2, block3.items[0][0], block3.items[0][1]) : 0);
+    if (yy + room > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
+    else if (block3.heading) yy += SPACE.before * d;
     if (block3.heading) {
       wrap(doc2, block3.heading, W, TYPE.value, "bold").forEach((line) => {
         writeLine(doc2, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
