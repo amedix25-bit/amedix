@@ -247,7 +247,8 @@ export default async function (req) {
       }
 
       // One account is exempted by AMedix administration from document
-      // verification; it registers on its entered details alone.
+      // verification; it registers on the details it entered alone, and every
+      // other account still needs both documents.
       const verificationExempt = isVerificationExempt(email);
       const identity = verificationExempt
         ? null
