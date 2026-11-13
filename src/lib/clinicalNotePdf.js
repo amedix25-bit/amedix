@@ -1,162 +1,171 @@
+// The clinical note as an AMedix official document.
+//
+// The sheet follows a hospital record's own order — patient and doctor
+// identification, the note type and reference, then the encounter grouped into
+// history, vitals, examination, investigations, assessment and management — in
+// aligned label/value rows, one compact vital-signs grid and system-grouped
+// examination blocks. Nothing recorded on the note is dropped: every answered
+// field is printed in its own section, in the order its specialty declares.
 import { jsPDF } from "jspdf";
 import {
-  PDF_PAGE,
-  PDF_INK,
-  CONTENT_BOTTOM,
   loadRequestLogo,
   drawRequestHeader,
-  startPage,
-  ensureSignatureRoom,
   drawPatientBlock,
   drawDoctorBlock,
   drawSectionLabel,
   drawDivider,
-  drawSignatureBlock,
+  drawSignatureInline,
   drawRequestFooter,
 } from "@/lib/requestPdfLayout";
-import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
+import { getSpecialtyLabel, getDocDef } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
-import { hasArabic, wrapArabicText, drawArabicLine, arabicWidth } from "@/lib/pdfText";
+import {
+  PAGE,
+  textWidth,
+  wrap,
+  writeLine,
+  writeRow,
+  writeSection,
+  writeVitalGrid,
+  writeExamination,
+  parseVitals,
+  nextPage,
+} from "@/lib/clinicalNotePdfLayout";
 
 const TITLE = "Clinical Note";
 const SUBTITLE = "Official Medical Document";
-const { margin: M, right: R } = PDF_PAGE;
-const WIDTH = R - M;
+const { W } = PAGE;
 
-// The guideline basis and its reference register are documentation aids kept
-// with the note itself — they are never printed on the patient's document.
+// Documentation aids kept with the note (its evidence base and reference
+// register) are never printed on the patient's document.
 const NOT_ON_DOCUMENT = /guideline\s*basis|reference\s*register|guideline_basis|reference_register/i;
 
-function textWidth(doc, text, size, weight) {
-  if (hasArabic(text)) return arabicWidth(text, size, weight);
-  doc.setFont("helvetica", weight);
-  doc.setFontSize(size);
-  return doc.getTextWidth(String(text || ""));
+// The order a clinical record is read in. A field's own section decides where
+// it prints; when it declares none, its label decides.
+const SECTIONS = [
+  "History & Presentation",
+  "Past Medical, Medication & Allergy History",
+  "Vital Signs",
+  "Physical Examination",
+  "Investigations & Results",
+  "Assessment & Diagnosis",
+  "Management, Treatment & Follow-Up",
+  "Additional Clinical Documentation",
+];
+
+const RULES = [
+  { at: 0, test: /history|complaint|present|symptom|system|psychosocial|growth|development|nutrition|lifestyle|adolescent|safeguarding/i },
+  { at: 1, test: /past|previous|background|medication|drug|allerg|immunis|vaccin|co-?morbid|social|family/i },
+  { at: 4, test: /investigation|laborator|radiolog|imaging|ecg|echocardiogra|endoscop|biopsy|patholog|scan|panel|result/i },
+  { at: 5, test: /diagnos|assessment|differential|reasoning|impression|icd/i },
+  {
+    at: 6,
+    test: /management|treatment|plan|prescription|therap|procedure|intervention|referral|follow.?up|disposition|monitor|safety|resuscitation|escalat|education|advice|counsel|admission|operative|postop/i,
+  },
+];
+
+const sectionFor = (text) => {
+  const found = RULES.find((rule) => rule.test.test(text));
+  return found ? found.at : 7;
+};
+
+// Every label/value the specialty document declares, keyed by field key, so a
+// stored field can find the section and type it was recorded under.
+function fieldMeta(note) {
+  const def = note.document_type ? getDocDef(note.document_type) : null;
+  const map = new Map();
+  (def?.fields || []).forEach((field) => map.set(field.key, field));
+  return map;
 }
 
-// Nothing may run past the right margin: a line that is still too wide (a long
-// reference, a word with no spaces) is broken at the character that fits.
-function fitLines(doc, lines, size, weight = "normal") {
-  const out = [];
-  lines.forEach((line) => {
-    if (textWidth(doc, line, size, weight) <= WIDTH + 0.5) {
-      out.push(line);
-      return;
-    }
-    let current = "";
-    Array.from(String(line)).forEach((character) => {
-      if (current && textWidth(doc, current + character, size, weight) > WIDTH) {
-        out.push(current);
-        current = character;
-      } else {
-        current += character;
-      }
-    });
-    if (current) out.push(current);
-  });
-  return out;
-}
-
-// Lines of a paragraph, measured the way they will be printed: Arabic with the
-// browser's own text engine, everything else with the PDF's text metrics — and
-// every line guaranteed to fit the text column.
-function wrap(doc, text, width, size, weight = "normal") {
-  const lines = hasArabic(text)
-    ? wrapArabicText(text, width, size, weight)
-    : doc.splitTextToSize(String(text || ""), width);
-  return fitLines(doc, lines, size, weight);
-}
-
-// The note type across the head of the sheet, with its reference. A long type
-// name wraps instead of running off the page, and the reference moves to its
-// own line when there is no room beside it.
-function writeNoteHead(doc, title, reference, y) {
+// The note type across the head with its reference: a long type name wraps and
+// the reference drops to its own line rather than running off the sheet.
+function writeDocHead(doc, title, reference, y) {
   const label = String(title || "Clinical Note").toUpperCase();
   const ref = String(reference || "").trim();
   const labelWidth = textWidth(doc, label, 7.6, "bold") + label.length * 1.1;
   const refWidth = ref ? textWidth(doc, ref, 7.6, "bold") + ref.length * 1.1 : 0;
   let yy = y;
 
-  if (!ref || labelWidth + refWidth + 8 <= WIDTH) {
+  if (!ref || labelWidth + refWidth + 8 <= W) {
     drawSectionLabel(doc, label, yy);
-    if (ref) drawSectionLabel(doc, ref, yy, R, "right");
-    return yy + 8;
+    if (ref) drawSectionLabel(doc, ref, yy, PAGE.R, "right");
+    return yy + 6;
   }
-
-  wrap(doc, label, WIDTH, 7.6, "bold").forEach((line) => {
+  wrap(doc, label, W, 7.6, "bold").forEach((line) => {
     drawSectionLabel(doc, line, yy);
-    yy += 5.4;
+    yy += 5.2;
   });
-  drawSectionLabel(doc, ref, yy, R, "right");
-  return yy + 8;
+  drawSectionLabel(doc, ref, yy, PAGE.R, "right");
+  return yy + 6;
 }
 
-// One line, at its baseline. Arabic lines are shaped and printed as a crisp
-// image; Latin lines stay selectable PDF text.
-function writeLine(doc, line, y, { size = 9.4, weight = "normal", color = PDF_INK.ink, x = M, width = WIDTH, align = "left" } = {}) {
-  if (hasArabic(line)) {
-    drawArabicLine(doc, line, x, y, { size, weight, color, width, align });
-    return;
-  }
-  doc.setFont("helvetica", weight);
-  doc.setFontSize(size);
-  doc.setTextColor(...color);
-  doc.text(line, x, y, align === "right" ? { align: "right" } : undefined);
-}
-
-// Body text that flows across pages inside the framed template. Content stops
-// above the signature band, and a continuation page repeats the letterhead.
-function writeFlow(doc, text, y, artwork, { size = 9.4, lineHeight = 4.9 } = {}) {
-  const value = String(text || "").trim();
-  if (!value) return y;
-  let yy = y;
-  wrap(doc, value, WIDTH, size).forEach((line) => {
-    if (yy > CONTENT_BOTTOM) {
-      yy = startPage(doc, artwork, TITLE) + 2;
-    }
-    writeLine(doc, line, yy, { size, color: PDF_INK.ink });
-    yy += lineHeight;
-  });
-  return yy;
-}
-
-// A labelled field: a small muted label over its value.
-function writeLabelled(doc, label, value, y, artwork) {
-  const text = String(value || "").trim();
-  if (!text) return y;
-  let yy = y;
-  if (yy > CONTENT_BOTTOM - 12) yy = startPage(doc, artwork, TITLE) + 2;
-
-  wrap(doc, String(label || ""), WIDTH, 6.9, "bold").forEach((line) => {
-    writeLine(doc, line, yy, { size: 6.9, weight: "bold", color: PDF_INK.muted });
-    yy += 3.4;
-  });
-  yy += 1.4;
-  yy = writeFlow(doc, text, yy, artwork);
-  return yy + 3.2;
-}
-
-// The specialty-specific documentation stored on the note, exactly as it was
-// recorded: every answered field with its own label. Sexual & reproductive
-// history is kept in its own clearly marked block.
-function documentedFields(note) {
-  const entries = Object.entries(note.data || {}).filter(
-    ([, field]) => field && field.value !== null && field.value !== undefined && field.value !== ""
-  );
-  const main = [];
+// Gathers everything the note recorded into sections, once, so nothing is
+// printed twice and nothing is left out.
+function collect(note, meta) {
+  const items = [];
   const sensitive = [];
-  entries.forEach(([key, field]) => {
-    if (NOT_ON_DOCUMENT.test(`${key} ${field.label || ""}`)) return;
+  const vitals = [];
+  const examinations = [];
+
+  const add = (at, label, value) => {
+    const text = String(value ?? "").trim();
+    if (!text) return;
+    items.push({ at, label, value: text });
+  };
+
+  if (String(note.vital_signs || "").trim()) vitals.push(["Vital Signs", note.vital_signs]);
+  if (String(note.physical_examination || "").trim()) {
+    examinations.push(["Physical Examination", note.physical_examination]);
+  }
+
+  // The encounter's own record leads its section; the specialty's fields follow.
+  add(0, "History", note.history);
+  add(1, "Allergies", note.allergies || "None recorded");
+  add(1, "Current Medications", (note.current_medications || []).join(", ") || "None recorded");
+
+  const diagnoses = (Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
+    ? note.provisional_diagnoses
+    : [note.diagnosis]
+  ).filter((item) => String(item || "").trim());
+  if (diagnoses.length > 0) {
+    add(5, "Provisional Diagnosis", diagnoses.map((item) => `• ${String(item).trim()}`).join("\n"));
+  }
+
+  add(4, "Biopsy", note.biopsy);
+  add(6, "Prescriptions", note.prescription);
+  add(6, "Interventions", note.interventions);
+  add(6, "Doctor's Recommendations", note.recommendations);
+  add(7, "Additional Notes", note.notes);
+
+  Object.entries(note.data || {}).forEach(([key, field]) => {
+    if (!field) return;
+    const label = field.label || key;
+    if (NOT_ON_DOCUMENT.test(`${key} ${label}`)) return;
     const value = formatStoredValue(field.value).trim();
     if (!value) return;
-    (key.startsWith("srh.") ? sensitive : main).push([field.label || key, value]);
+    if (key.startsWith("srh.")) {
+      sensitive.push([label, value]);
+      return;
+    }
+    const declared = meta.get(key) || {};
+    const type = String(field.type || declared.type || "");
+    const group = `${declared.section || ""} ${label} ${type}`;
+
+    if (/vital/i.test(`${label} ${type}`)) {
+      if (!vitals.some(([, existing]) => existing.trim() === value)) vitals.push([label, value]);
+      return;
+    }
+    if (/exam|physical/i.test(`${label} ${type}`) || /^\s*•/m.test(value)) {
+      if (!examinations.some(([, existing]) => existing.trim() === value)) examinations.push([label, value]);
+      return;
+    }
+    add(sectionFor(group), label, value);
   });
-  return { main, sensitive };
+
+  return { items, sensitive, vitals, examinations };
 }
 
-// Builds the clinical note as an AMedix official document — the same framed
-// sheet, patient and doctor blocks, and signed foot as the laboratory and
-// imaging request forms.
 export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
   const artwork = logo || (await loadRequestLogo());
   const doc = new jsPDF();
@@ -188,88 +197,86 @@ export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
   );
 
   // ===== Note type & reference =====
-  y += 8;
-  if (y > CONTENT_BOTTOM - 20) y = startPage(doc, artwork, TITLE) + 6;
-  y = writeNoteHead(
-    doc,
-    note.document_type_label || "Clinical Note",
-    note.note_reference ? `Reference: ${note.note_reference}` : "",
-    y
-  );
+  y += 7;
+  if (y > PAGE.BOTTOM - 24) y = nextPage(doc, artwork, TITLE);
+  y = writeDocHead(doc, note.document_type_label || "Clinical Note", note.note_reference ? `Reference: ${note.note_reference}` : "", y);
   drawDivider(doc, y);
-  y += 9;
+  y += 6;
 
-  // ===== Provisional diagnosis =====
-  const dxList = (Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
-    ? note.provisional_diagnoses
-    : [note.diagnosis]
-  ).filter((d) => String(d || "").trim());
+  const meta = fieldMeta(note);
+  const { items, sensitive, vitals, examinations } = collect(note, meta);
+  const at = (index) => items.filter((item) => item.at === index);
 
-  if (dxList.length > 0) {
-    if (y > CONTENT_BOTTOM - 16) y = startPage(doc, artwork, TITLE) + 2;
-    drawSectionLabel(doc, "Provisional Diagnosis", y);
-    y += 7;
-    dxList.forEach((diagnosis, index) => {
-      y = writeFlow(doc, `${index + 1}. ${diagnosis}`, y, artwork, { size: 10 });
-      y += 1;
+  // ===== History, then past history, medications and allergies =====
+  [0, 1].forEach((index) => {
+    const rows = at(index);
+    if (rows.length === 0) return;
+    y = writeSection(doc, SECTIONS[index], y, artwork, TITLE);
+    rows.forEach((row) => {
+      y = writeRow(doc, row.label, row.value, y, artwork, { noteTitle: TITLE });
     });
-    y += 5;
-  }
-
-  // ===== Encounter documentation =====
-  [
-    ["History", note.history],
-    ["Vital Signs", note.vital_signs],
-    ["Physical Examination", note.physical_examination],
-    ["Prescriptions", note.prescription],
-    ["Interventions", note.interventions],
-    ["Biopsy", note.biopsy],
-    ["Doctor's Recommendations", note.recommendations],
-    ["Additional Notes", note.notes],
-  ].forEach(([label, value]) => {
-    y = writeLabelled(doc, label, value, y, artwork);
+    y += 2;
   });
 
-  // ===== Specialty-specific clinical documentation =====
-  const { main, sensitive } = documentedFields(note);
-  if (main.length > 0) {
-    if (y > CONTENT_BOTTOM - 16) y = startPage(doc, artwork, TITLE) + 2;
-    drawSectionLabel(doc, "Clinical Documentation", y);
-    y += 7;
-    main.forEach(([label, value]) => {
-      y = writeLabelled(doc, label, value, y, artwork);
+  // ===== Vital signs — one compact grid =====
+  const vitalGroups = vitals
+    .map(([label, value]) => ({ label, grid: parseVitals(value), raw: value }))
+    .filter((group) => group.grid.length > 0 || String(group.raw).trim());
+  if (vitalGroups.length > 0) {
+    y = writeSection(doc, SECTIONS[2], y, artwork, TITLE);
+    vitalGroups.forEach((group) => {
+      y =
+        group.grid.length === 0
+          ? writeRow(doc, group.label, group.raw, y, artwork, { noteTitle: TITLE })
+          : writeVitalGrid(doc, group.grid, y, artwork, TITLE);
     });
     y += 2;
   }
+
+  // ===== Physical examination — grouped by system =====
+  if (examinations.length > 0) {
+    y = writeSection(doc, SECTIONS[3], y, artwork, TITLE);
+    examinations.forEach(([label, value]) => {
+      y = writeExamination(doc, value, y, artwork, TITLE, { label });
+    });
+    y += 2;
+  }
+
+  // ===== Investigations, assessment, management, additional documentation =====
+  [4, 5, 6, 7].forEach((index) => {
+    const rows = at(index);
+    if (rows.length === 0) return;
+    y = writeSection(doc, SECTIONS[index], y, artwork, TITLE);
+    rows.forEach((row) => {
+      y = writeRow(doc, row.label, row.value, y, artwork, { noteTitle: TITLE });
+    });
+    y += 2;
+  });
+
+  // ===== Sexual & reproductive history — its own clearly marked block =====
   if (sensitive.length > 0) {
-    if (y > CONTENT_BOTTOM - 20) y = startPage(doc, artwork, TITLE) + 2;
-    drawSectionLabel(doc, "Sexual & Reproductive History (Sensitive)", y);
-    y += 7;
+    y = writeSection(doc, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE);
     sensitive.forEach(([label, value]) => {
-      y = writeLabelled(doc, label, value, y, artwork);
+      y = writeRow(doc, label, value, y, artwork, { noteTitle: TITLE });
     });
     y += 2;
   }
 
-  // ===== Patient snapshot recorded with the note =====
-  y = writeLabelled(doc, "Allergies", note.allergies || "None recorded", y, artwork);
-  y = writeLabelled(
+  // ===== Signature at the end of the record =====
+  if (y + 44 > PAGE.BOTTOM) y = nextPage(doc, artwork, TITLE);
+  drawSignatureInline(
     doc,
-    "Current Medications",
-    (note.current_medications || []).join(", ") || "None recorded",
+    {
+      doctorName: note.signed_by_name || note.doctor_name,
+      detail: [note.specialty ? getSpecialtyLabel(note.specialty) : "", note.hospital].filter(Boolean).join("  ·  "),
+      note: note.signed_datetime
+        ? `Electronically signed ${new Date(note.signed_datetime).toLocaleString("en-GB")}`
+        : "Electronically signed",
+    },
     y,
-    artwork
+    artwork,
+    TITLE
   );
-
-  // ===== Signature at the foot of the document =====
-  y = ensureSignatureRoom(doc, y, artwork, TITLE);
-  drawSignatureBlock(doc, {
-    doctorName: note.signed_by_name || note.doctor_name,
-    detail: [note.specialty ? getSpecialtyLabel(note.specialty) : "", note.hospital].filter(Boolean).join("  ·  "),
-    note: note.signed_datetime
-      ? `Electronically signed ${new Date(note.signed_datetime).toLocaleString("en-GB")}`
-      : "Electronically signed",
-  });
 
   drawRequestFooter(doc, note.note_reference || note.id);
   return doc;
