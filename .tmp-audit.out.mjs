@@ -81668,7 +81668,7 @@ function writeDocumentHead(doc2, title, reference, y) {
 }
 function writeSection(doc2, title, y, artwork, noteTitle) {
   const d = density(doc2);
-  let yy = y;
+  let yy = y + SPACE.before * d;
   if (yy + 24 > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
   writeHeading(doc2, title, yy);
   yy += 2.6 * d;
@@ -81724,7 +81724,7 @@ function writeRow(doc2, label2, value, y, artwork, opts = {}) {
     });
     valueY += lineHeight;
   });
-  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight) + SPACE.rowPad * d;
+  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight * 0.25) + SPACE.rowPad * d;
   if (rule && !continued) hairline(doc2, end - 0.7);
   return end;
 }
@@ -81755,7 +81755,7 @@ function writeCaption(doc2, text, y, artwork, noteTitle) {
   const d = density(doc2);
   const lead = LEAD.caption * d;
   const lines = wrap(doc2, label2, W, TYPE.caption, "bold");
-  let yy = y;
+  let yy = y + SPACE.captionBefore * d;
   if (yy + lines.length * lead > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
   lines.forEach(
     (line, index) => writeLine(doc2, line, yy + index * lead, {
@@ -81774,7 +81774,7 @@ function writeVitalGrid(doc2, vitals, y, artwork, noteTitle, { caption = "" } = 
   const colW = W / perRow;
   const labelLead = LEAD.vitalLabel * d;
   const valueLead = LEAD.vitalValue * d;
-  let yy = writeCaption(doc2, caption, y, artwork, noteTitle);
+  const rows = [];
   for (let start = 0; start < vitals.length; start += perRow) {
     const cells = vitals.slice(start, start + perRow).map((item) => ({
       labels: wrap(doc2, item.label, colW - 5, TYPE.vitalLabel),
@@ -81782,7 +81782,20 @@ function writeVitalGrid(doc2, vitals, y, artwork, noteTitle, { caption = "" } = 
     }));
     const labelLines = Math.max(...cells.map((cell) => cell.labels.length));
     const valueLines = Math.max(...cells.map((cell) => cell.values.length));
-    const rowHeight = labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d;
+    rows.push({
+      cells,
+      labelLines,
+      height: labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d
+    });
+  }
+  if (caption && rows.length > 0) {
+    const captionHeight = wrap(doc2, caption, W, TYPE.caption, "bold").length * LEAD.caption * d;
+    if (y + SPACE.captionBefore * d + captionHeight + 1.2 + rows[0].height > PAGE.BOTTOM) {
+      y = nextPage(doc2, artwork, noteTitle) - SPACE.captionBefore * d;
+    }
+  }
+  let yy = writeCaption(doc2, caption, y, artwork, noteTitle);
+  rows.forEach(({ cells, labelLines, height: rowHeight }) => {
     if (yy + rowHeight > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
     cells.forEach((cell, column) => {
       const x = M10 + column * colW;
@@ -81808,7 +81821,7 @@ function writeVitalGrid(doc2, vitals, y, artwork, noteTitle, { caption = "" } = 
     });
     yy += rowHeight;
     hairline(doc2, yy - 1.8);
-  }
+  });
   return yy + 0.8;
 }
 function examinationBlocks(text) {
@@ -81900,7 +81913,8 @@ function writeExamination(doc2, text, y, artwork, noteTitle, { label: label2 = "
   const d = density(doc2);
   let yy = y;
   examinationBlocks(raw).forEach((block3) => {
-    if (yy > PAGE.BOTTOM - 20) yy = nextPage(doc2, artwork, noteTitle);
+    if (block3.heading) yy += SPACE.before * d;
+    if (yy > PAGE.BOTTOM - 26) yy = nextPage(doc2, artwork, noteTitle);
     if (block3.heading) {
       wrap(doc2, block3.heading, W, TYPE.value, "bold").forEach((line) => {
         writeLine(doc2, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
@@ -81925,7 +81939,7 @@ function writeSubBlock(doc2, label2, entries, y, artwork, noteTitle) {
   if (list5.length === 0) return y;
   const d = density(doc2);
   const captionLines = wrap(doc2, String(label2 || ""), W, TYPE.caption, "bold").length;
-  const needed = captionLines * LEAD.caption * d + 1.2 + 12;
+  const needed = captionLines * LEAD.caption * d + 1.2 + 16;
   let yy = y;
   if (yy + needed > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
   yy = writeCaption(doc2, label2, yy, artwork, noteTitle);
@@ -81965,7 +81979,7 @@ var init_clinicalNotePdfLayout = __esm({
       vitalLabel: 3,
       vitalValue: 4.1
     };
-    SPACE = { heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6 };
+    SPACE = { before: 3.4, heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6, captionBefore: 1.9 };
     density = (doc2) => documentDensity(doc2);
     VITALS = [
       { label: "Blood Pressure", keys: ["blood pressure", "bp"] },

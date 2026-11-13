@@ -47,7 +47,9 @@ const LEAD = {
   vitalLabel: 3,
   vitalValue: 4.1,
 };
-const SPACE = { heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6 };
+// `before` is the breathing room above a heading — a heading must never touch
+// the last line of the block above it.
+const SPACE = { before: 3.4, heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6, captionBefore: 1.9 };
 
 const density = (doc) => documentDensity(doc);
 
@@ -175,10 +177,10 @@ export function writeDocumentHead(doc, title, reference, y) {
 
 // A section heading with its rule. Room is reserved for the heading AND its
 // first block of content, so a heading can never sit at the foot of a page.
-export function writeSection(doc, title, y, artwork, noteTitle) {
+export function writeSection(doc, title, y, artwork, noteTitle, need = 26) {
   const d = density(doc);
-  let yy = y;
-  if (yy + 24 > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  let yy = y + SPACE.before * d;
+  if (yy + need > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
   writeHeading(doc, title, yy);
   yy += 2.6 * d;
   drawDivider(doc, yy);
@@ -246,7 +248,9 @@ export function writeRow(doc, label, value, y, artwork, opts = {}) {
     valueY += lineHeight;
   });
 
-  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight) + SPACE.rowPad * d;
+  // The row ends most of a line pitch below its last baseline, so the next
+  // label or finding always starts clear of the line above it.
+  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight * 0.25) + SPACE.rowPad * d;
   if (rule && !continued) hairline(doc, end - 0.7);
   return end;
 }
@@ -303,7 +307,7 @@ export function writeCaption(doc, text, y, artwork, noteTitle) {
   const d = density(doc);
   const lead = LEAD.caption * d;
   const lines = wrap(doc, label, W, TYPE.caption, "bold");
-  let yy = y;
+  let yy = y + SPACE.captionBefore * d;
   if (yy + lines.length * lead > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
   lines.forEach((line, index) =>
     writeLine(doc, line, yy + index * lead, {
@@ -323,8 +327,10 @@ export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "
   const colW = W / perRow;
   const labelLead = LEAD.vitalLabel * d;
   const valueLead = LEAD.vitalValue * d;
-  let yy = writeCaption(doc, caption, y, artwork, noteTitle);
 
+  // Rows are measured before anything is printed, so a caption always travels
+  // with the first row of measurements it introduces.
+  const rows = [];
   for (let start = 0; start < vitals.length; start += perRow) {
     const cells = vitals.slice(start, start + perRow).map((item) => ({
       labels: wrap(doc, item.label, colW - 5, TYPE.vitalLabel),
@@ -332,7 +338,23 @@ export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "
     }));
     const labelLines = Math.max(...cells.map((cell) => cell.labels.length));
     const valueLines = Math.max(...cells.map((cell) => cell.values.length));
-    const rowHeight = labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d;
+    rows.push({
+      cells,
+      labelLines,
+      height: labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d,
+    });
+  }
+
+  if (caption && rows.length > 0) {
+    const captionHeight = wrap(doc, caption, W, TYPE.caption, "bold").length * LEAD.caption * d;
+    if (y + SPACE.captionBefore * d + captionHeight + 1.2 + rows[0].height > PAGE.BOTTOM) {
+      y = nextPage(doc, artwork, noteTitle) - SPACE.captionBefore * d;
+    }
+  }
+
+  let yy = writeCaption(doc, caption, y, artwork, noteTitle);
+
+  rows.forEach(({ cells, labelLines, height: rowHeight }) => {
     if (yy + rowHeight > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
 
     cells.forEach((cell, column) => {
@@ -359,7 +381,7 @@ export function writeVitalGrid(doc, vitals, y, artwork, noteTitle, { caption = "
     });
     yy += rowHeight;
     hairline(doc, yy - 1.8);
-  }
+  });
   return yy + 0.8;
 }
 
@@ -475,8 +497,10 @@ export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Ex
   const d = density(doc);
   let yy = y;
   examinationBlocks(raw).forEach((block) => {
-    // A system heading travels with at least its first finding.
-    if (yy > PAGE.BOTTOM - 20) yy = nextPage(doc, artwork, noteTitle);
+    // A system heading travels with at least its first finding, and never
+    // touches the last line of the system above it.
+    if (block.heading) yy += SPACE.before * d;
+    if (yy > PAGE.BOTTOM - 26) yy = nextPage(doc, artwork, noteTitle);
     if (block.heading) {
       wrap(doc, block.heading, W, TYPE.value, "bold").forEach((line) => {
         writeLine(doc, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
@@ -504,7 +528,7 @@ export function writeSubBlock(doc, label, entries, y, artwork, noteTitle) {
   if (list.length === 0) return y;
   const d = density(doc);
   const captionLines = wrap(doc, String(label || ""), W, TYPE.caption, "bold").length;
-  const needed = captionLines * LEAD.caption * d + 1.2 + 12;
+  const needed = captionLines * LEAD.caption * d + 1.2 + 16;
   let yy = y;
   if (yy + needed > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
   yy = writeCaption(doc, label, yy, artwork, noteTitle);

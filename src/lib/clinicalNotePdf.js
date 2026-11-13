@@ -265,7 +265,10 @@ function renderNote(note, { artwork, profile, density = 1 }) {
     )
     .sort((a, b) => a.at - b.at || a.order - b.order)
     .forEach((item) => {
-      y = writeSection(doc, item.title, y, artwork, TITLE);
+      // A section reserves room for its heading plus the first block beneath it
+      // — a grid or a grouped examination needs more than a single row.
+      const roomy = item.vitals.length > 0 || item.groups.length > 0 || item.subs.length > 0;
+      y = writeSection(doc, item.title, y, artwork, TITLE, roomy ? 42 : 26);
 
       item.vitals.forEach(([label, value]) => {
         const grid = parseVitals(value);

@@ -11,7 +11,7 @@ const LONG =
   "The patient reports a progressive course over the preceding three weeks with intermittent symptoms that are worse on exertion and at night, partially relieved by rest, with no associated fever, weight loss or night sweats. Family history is notable for premature coronary disease in a first-degree relative.";
 const BULLETS = "• General appearance: Alert, comfortable at rest\n• Cardiovascular: S1 S2 heard, no murmur\n• Respiratory: Clear to auscultation bilaterally";
 
-const def = SPECIALTY_DOCUMENTS.find((d) => d.key === "im_consultation");
+const def = SPECIALTY_DOCUMENTS.find((d) => d.key === "nsg_spine");
 const data = {};
 (def.fields || []).forEach((f, i) => {
   let value = "Documented";
@@ -25,6 +25,10 @@ const doc = await generateClinicalNotePdf(
   { logo: LOGO, profile: {} }
 );
 const issues = auditPdfLayout(doc);
-console.log("issues:", issues.length, JSON.stringify(issues.slice(0, 3), null, 1));
-const boxes = doc.__pdfBoxes.filter((b) => b.page === 1).sort((a, b) => a.top - b.top);
-boxes.slice(0, 14).forEach((b) => console.log(b.kind, "x", b.x.toFixed(1), "w", b.width.toFixed(1), "top", b.top.toFixed(1), "bot", (b.top + b.height).toFixed(1), b.label.slice(0, 40)));
+console.log("issues:", issues.length);
+const box = (lbl) => doc.__pdfBoxes.find((b) => b.label.startsWith(lbl));
+["coronary disease in a first-", "The patient reports a progre"].forEach((l) => {
+  doc.__pdfBoxes
+    .filter((b) => b.label.startsWith(l))
+    .forEach((b) => console.log(l, "p", b.page, "x", b.x.toFixed(1), "w", b.width.toFixed(1), "top", b.top.toFixed(1), "bot", (b.top + b.height).toFixed(1)));
+});
