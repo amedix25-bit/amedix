@@ -16,6 +16,7 @@ import Welcome from '@/pages/Welcome';
 import Home from '@/pages/Home';
 import PatientDashboard from '@/pages/PatientDashboard';
 import DoctorDashboard from '@/pages/DoctorDashboard';
+import DoctorPublicProfile from '@/pages/DoctorPublicProfile';
 import LabRequestDetail from '@/pages/LabRequestDetail';
 import AdminDashboard from '@/pages/AdminDashboard';
 import LabLogin from '@/pages/LabLogin';
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
         <Route path="/radiology-department" element={<RadiologyDepartmentPortal />} />
         <Route path="/radiology-portal" element={<RadiologyPortal />} />
         <Route path="/doctor/lab-request/:id" element={<LabRequestDetail />} />
+        <Route path="/doctor-profile/:doctorId" element={<DoctorPublicProfile />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/lab-portal" element={<PortalRouteGuard portal="lab"><LabPortal /></PortalRouteGuard>} />
         <Route path="/pharmacy-portal" element={<PortalRouteGuard portal="pharmacy"><PharmacyPortal /></PortalRouteGuard>} />

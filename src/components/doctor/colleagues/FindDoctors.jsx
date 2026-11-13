@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { displayDoctor, initials } from "@/lib/messaging";
-import { Loader2, Search, ShieldCheck, Clock, UserPlus, UserMinus, Building2, MessageSquare, Send } from "lucide-react";
+import { displayDoctor } from "@/lib/messaging";
+import DoctorAvatar from "@/components/DoctorAvatar";
+import PhysicianProfileDialog from "@/components/doctor/profile/PhysicianProfileDialog";
+import { Loader2, Search, ShieldCheck, Clock, UserPlus, UserMinus, MessageSquare, Send } from "lucide-react";
 
 // Doctor Portal → Find Doctors / My Colleagues.
 //
@@ -177,9 +179,14 @@ export default function FindDoctors({ profile }) {
         <div className="grid gap-2">
           {visible.map((doctor) => (
             <div key={doctor.doctor_id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                {initials(doctor.full_name)}
-              </div>
+              <button
+                type="button"
+                onClick={() => setViewDoctor(doctor)}
+                title="View professional profile"
+                className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <DoctorAvatar photoUrl={doctor.photo_url} name={doctor.full_name} className="h-10 w-10 text-xs" />
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -231,54 +238,12 @@ export default function FindDoctors({ profile }) {
         </div>
       )}
 
-      <Dialog open={!!viewDoctor} onOpenChange={(open) => !open && setViewDoctor(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{viewDoctor ? displayDoctor(viewDoctor.full_name) : ""}</DialogTitle>
-          </DialogHeader>
-          {viewDoctor && (
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2">
-                {viewDoctor.verified ? (
-                  <Badge variant="outline" className="gap-1 border-success/30 bg-success/10 text-success">
-                    <ShieldCheck className="h-3 w-3" /> AMedix verified
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="gap-1 border-warning/30 bg-warning/10 text-warning">
-                    <Clock className="h-3 w-3" /> Awaiting AMedix verification
-                  </Badge>
-                )}
-                {viewDoctor.is_colleague && <Badge variant="secondary">Colleague</Badge>}
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Primary specialty</p>
-                <p>{viewDoctor.specialization || "Not recorded"}</p>
-              </div>
-              {viewDoctor.specialties?.length > 1 && (
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Subspecialties</p>
-                  <p>{viewDoctor.specialties.join(", ")}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Affiliated institution</p>
-                <p className="flex items-center gap-1">
-                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  {viewDoctor.hospital || "Not recorded"}
-                </p>
-              </div>
-              <p className="rounded-lg bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
-                Professional contact only — no clinical access is granted by this connection.
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" disabled={!viewDoctor.verified} onClick={() => { setMessageTo(viewDoctor); setViewDoctor(null); }}>
-                  <MessageSquare className="h-3.5 w-3.5" /> Message
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhysicianProfileDialog
+        doctorId={viewDoctor?.doctor_id}
+        open={!!viewDoctor}
+        onOpenChange={(open) => !open && setViewDoctor(null)}
+        onConnectionChange={() => load(search)}
+      />
 
       <Dialog open={!!messageTo} onOpenChange={(open) => !open && setMessageTo(null)}>
         <DialogContent>

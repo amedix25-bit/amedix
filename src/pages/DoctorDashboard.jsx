@@ -22,10 +22,11 @@ import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Building2, Pill, MessageSquare, Link2, Scale, BedDouble, BookOpen, Settings, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Search, Building2, Pill, MessageSquare, Link2, Scale, BedDouble, BookOpen, Settings, HelpCircle, IdCard } from "lucide-react";
 import EncountersSection from "@/components/doctor/encounters/EncountersSection";
 import DoctorSettingsSection from "@/components/doctor/settings/DoctorSettingsSection";
 import DoctorHelpSection from "@/components/doctor/help/DoctorHelpSection";
+import ProfessionalProfileSection from "@/components/doctor/profile/ProfessionalProfileSection";
 import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 
 // The Doctor Portal navigation — every entry opens a screen that already
@@ -59,6 +60,7 @@ const navItems = [
   { key: "prescriptions", label: "Prescriptions", icon: Pill },
   { key: "communication", label: "Communication", icon: MessageSquare },
   { key: "encounters", label: "Inpatient & ED", icon: BedDouble },
+  { key: "professional-profile", label: "Professional Profile", icon: IdCard },
   { key: "hospitals", label: "My Hospitals", icon: Building2 },
   {
     key: "resources",
@@ -345,6 +347,9 @@ export default function DoctorDashboard() {
             onTabChange={setCommunicationTab}
             unreadMessages={messagingUnread}
           />
+        )}
+        {activeTab === "professional-profile" && profile && (
+          <ProfessionalProfileSection profile={profile} onProfileUpdated={setProfile} />
         )}
         {activeTab === "hospitals" && profile && user && (
           <DoctorHospitalsSection profile={profile} user={user} onProfileUpdated={setProfile} />

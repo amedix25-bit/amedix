@@ -1,0 +1,240 @@
+{
+  "name": "DoctorProfessionalProfile",
+  "type": "object",
+  "properties": {
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id this professional profile belongs to \u2014 exactly one professional profile per doctor"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 the owner. Written server-side; every read and write is resolved through the doctor's own profile"
+    },
+    "professional_title": {
+      "type": "string",
+      "description": "The doctor's professional title as they present it, e.g. Consultant Interventional Cardiologist. Self-reported presentation text \u2014 it never replaces the verified specialty"
+    },
+    "workplace": {
+      "type": "string",
+      "description": "Current hospital or workplace as the doctor presents it. Self-reported; the verified affiliation is always shown separately from the hospital record"
+    },
+    "location": {
+      "type": "string",
+      "description": "City / country the doctor practises in, as they choose to display it"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short professional biography written by the doctor (self-reported)"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Professional profile picture shown on the profile header, uploaded by the doctor. Also written to the doctor's profile picture so every other surface shows the same face"
+    },
+    "education": {
+      "type": "array",
+      "description": "Education & Qualifications \u2014 degrees, residency programmes, fellowships and certifications entered by the doctor. Every entry is SELF-REPORTED: it is never presented as AMedix-verified, and the verified licence, specialty and hospital are shown in their own verified panel",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entry_id": {
+            "type": "string",
+            "description": "Stable identifier of this entry, generated when it is added \u2014 used for updating and removing a single entry"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "degree",
+              "residency",
+              "fellowship",
+              "certification"
+            ],
+            "enumColors": [
+              "blue",
+              "purple",
+              "green",
+              "yellow"
+            ],
+            "description": "DEGREE: an academic medical degree (MBBS, MD, MSc\u2026). RESIDENCY: a residency / specialist training programme. FELLOWSHIP: a subspecialty fellowship. CERTIFICATION: a board certification or professional certificate"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the qualification exactly as conferred, e.g. MBBS, Fellowship in Interventional Cardiology, Board Certified in Internal Medicine"
+          },
+          "institution": {
+            "type": "string",
+            "description": "University, teaching hospital or awarding body"
+          },
+          "field": {
+            "type": "string",
+            "description": "Field or specialty of the qualification, when applicable"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country where the qualification was awarded"
+          },
+          "start_year": {
+            "type": "string",
+            "description": "Start year of the programme (four digits), optional"
+          },
+          "end_year": {
+            "type": "string",
+            "description": "Completion year of the qualification (four digits), optional"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional short note, e.g. distinction, thesis title"
+          }
+        },
+        "required": [
+          "entry_id",
+          "type",
+          "title"
+        ]
+      }
+    },
+    "achievements": {
+      "type": "array",
+      "description": "Achievements & Experience \u2014 awards, research publications, conference activity, professional accomplishments and clinical experience entered by the doctor. Every entry is SELF-REPORTED",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entry_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "award",
+              "publication",
+              "conference",
+              "accomplishment",
+              "experience"
+            ],
+            "enumColors": [
+              "yellow",
+              "blue",
+              "purple",
+              "green",
+              "gray"
+            ],
+            "description": "AWARD: a prize, honour or recognition. PUBLICATION: a research paper, article or book chapter. CONFERENCE: a presentation, lecture or organising role. ACCOMPLISHMENT: another professional achievement. EXPERIENCE: a clinical post, leadership role or years of practice"
+          },
+          "title": {
+            "type": "string",
+            "description": "Award, publication or role title"
+          },
+          "organization": {
+            "type": "string",
+            "description": "Awarding body, journal, conference, society or employer"
+          },
+          "year": {
+            "type": "string",
+            "description": "Year of the achievement (four digits), optional"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Short description \u2014 citation, journal and DOI, conference city, scope of the role"
+          },
+          "link": {
+            "type": "string",
+            "description": "Optional https link to the publication or event"
+          }
+        },
+        "required": [
+          "entry_id",
+          "type",
+          "title"
+        ]
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Privacy settings chosen by the doctor \u2014 enforced SERVER-SIDE when another doctor opens the profile. { visibility: network | connections, show_photo, show_title, show_specialty, show_workplace, show_location, show_bio, show_education, show_achievements, show_license }",
+      "properties": {
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "network",
+            "connections"
+          ],
+          "enumColors": [
+            "green",
+            "blue"
+          ],
+          "description": "NETWORK: any verified doctor on AMedix can open the full profile (subject to the switches below). CONNECTIONS: only physicians the doctor has connected with can open it; everyone else sees the professional card only"
+        },
+        "show_photo": {
+          "type": "boolean"
+        },
+        "show_title": {
+          "type": "boolean"
+        },
+        "show_specialty": {
+          "type": "boolean"
+        },
+        "show_workplace": {
+          "type": "boolean"
+        },
+        "show_location": {
+          "type": "boolean"
+        },
+        "show_bio": {
+          "type": "boolean"
+        },
+        "show_education": {
+          "type": "boolean"
+        },
+        "show_achievements": {
+          "type": "boolean"
+        },
+        "show_license": {
+          "type": "boolean",
+          "description": "Whether the verified licence number may be shown to other doctors"
+        }
+      }
+    },
+    "updated_datetime": {
+      "type": "string",
+      "description": "Date and time the professional profile was last changed (ISO datetime)"
+    }
+  },
+  "required": [
+    "doctor_id",
+    "doctor_user_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.doctor_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.doctor_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
