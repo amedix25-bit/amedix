@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { auditEntry, isActivated, loadAuthorization, withAudit } from '../../shared/hospitalAuthorization.ts';
 import { normalizeCode } from '../../shared/registrationCodes.ts';
+import { isDocumentVerificationAccepted } from '../../shared/documentNumberVerification.ts';
 
 // Doctor registration that can be started, interrupted and resumed.
 //
@@ -38,9 +39,10 @@ async function findVerified(base44, userId, verificationId, documentTypes) {
   if (!record) return null;
   if (record.user_id !== userId) return null;
   if (record.profile_type !== 'doctor') return null;
-  // A submitted document (pending review) or an approved one satisfies the
-  // registration step — approval itself stays with AMedix administration.
-  if (!['verified', 'pending'].includes(record.status)) return null;
+  // Only an automated document-number verification that succeeded satisfies
+  // the registration step — a mismatch, an unreadable document or a missing
+  // number never does, and no administrator is involved.
+  if (!isDocumentVerificationAccepted(record)) return null;
   if (!documentTypes.includes(record.document_type)) return null;
   return record;
 }
@@ -53,7 +55,7 @@ async function latestVerified(base44, userId, documentTypes) {
     { user_id: userId, profile_type: 'doctor', status: { $in: ['verified', 'pending'] } },
     { sort: '-created_date', limit: 20 }
   ));
-  return list.find((record) => documentTypes.includes(record.document_type) && !record.doctor_id) || null;
+  return list.find((record) => documentTypes.includes(record.document_type) && !record.doctor_id && isDocumentVerificationAccepted(record)) || null;
 }
 
 async function resolveVerification(base44, userId, draft, fieldKey, documentTypes, submittedId) {

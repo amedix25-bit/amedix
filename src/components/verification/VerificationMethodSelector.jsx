@@ -4,9 +4,9 @@ import DocumentVerificationCard from "@/components/verification/DocumentVerifica
 
 // The Verification Process section: the user chooses exactly ONE identity
 // document — Passport, Driver's Licence or Birth Certificate (Personal Card is
-// kept for accounts that already used it). Submitting it enters the AMedix
-// administration review queue; the account is verified only when an
-// administrator approves it.
+// kept for accounts that already used it). The number printed on the document
+// is read and compared with the number entered here by the AMedix automated
+// engine, immediately — no queue, no review, no approval by anyone.
 const METHODS = [
   { key: "passport", title: "Passport", twoSided: false },
   { key: "drivers_licence", title: "Driver's Licence", twoSided: true },
@@ -135,7 +135,7 @@ export default function VerificationMethodSelector({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        {t("Choose one document — it is reviewed by AMedix administration, and approving it verifies your account. The other documents are not required.")}
+        {t("Choose one document — the number printed on it is checked automatically against the number you enter. The other documents are not required.")}
       </p>
       {config && (
         <DocumentVerificationCard

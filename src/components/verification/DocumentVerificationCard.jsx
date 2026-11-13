@@ -3,19 +3,23 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ShieldCheck, Clock, ShieldX } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldX, AlertTriangle, RefreshCw } from "lucide-react";
 import DocumentScanUpload from "@/components/verification/DocumentScanUpload";
 import { verificationState } from "@/components/verification/verificationStatus";
 
-// One identity document inside the Verification Process section. The user
-// photographs or uploads the document and submits it; the submission is stored
-// privately and enters the administrator review queue. Submitting never
-// verifies the account — this card only shows the state AMedix administration
-// has recorded for it, and lets the user resubmit after a rejection.
+// One identity document inside the Verification Process section.
+//
+// The user photographs or uploads the document and submits it; the AMedix
+// automated engine reads the number printed on it and compares it with the
+// number entered here, immediately. The result is final and automatic — there
+// is no review queue and nobody approves it:
+//   MATCH      → verified, the registration continues
+//   MISMATCH   → refused, with both numbers shown so the user can correct it
+//   UNREADABLE → refused, with a request for a clearer photo or PDF
 //
 // fields: [{ key, label, placeholder?, type?, readOnly? }]
 // values: { [key]: currentValue } — readOnly fields are shown as text
-// result: { status, verification_id?, reason?, review_reason? } | null
+// result: { status, outcome?, verification_id?, message?, entered_number?, read_number? } | null
 export default function DocumentVerificationCard({
   profileType, documentType, title, description, fields, values, onValueChange, result, onResult, t, twoSided = false,
 }) {
@@ -24,8 +28,8 @@ export default function DocumentVerificationCard({
   const [error, setError] = useState("");
   const [resubmitting, setResubmitting] = useState(false);
 
-  // An existing submission (from an earlier session) is shown with its real
-  // state — pending review, approved or rejected with the administrator's reason.
+  // An existing submission from an earlier session is shown with its recorded
+  // automated outcome.
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -39,11 +43,13 @@ export default function DocumentVerificationCard({
         if (!cancelled && latest) {
           onResult({
             status: latest.status,
+            outcome: latest.verification_outcome || latest.auto_check?.outcome || "",
             verification_id: latest.id,
-            reason: latest.reason || "",
-            review_reason: latest.review_reason || "",
+            message: latest.review_reason || latest.auto_check?.note || "",
+            entered_number: latest.auto_check?.entered_number || "",
+            read_number: latest.auto_check?.read_number || "",
+            auto_check: latest.auto_check || null,
             submitted_datetime: latest.attempted_datetime || "",
-            reviewed_datetime: latest.reviewed_datetime || "",
           });
         }
       } catch (err) {
@@ -55,10 +61,11 @@ export default function DocumentVerificationCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileType, documentType]);
 
-  const state = verificationState(result?.status);
+  const state = verificationState(result?.status, result?.auto_check);
   const allFieldsFilled = fields.every((f) => (values?.[f.key] || "").toString().trim() !== "");
-  const alreadySubmitted = state.key === "pending" || state.key === "verified";
-  const formVisible = !alreadySubmitted || resubmitting;
+  const retryable = state.key === "rejected" || state.key === "unreadable";
+  const alreadyVerified = state.key === "verified";
+  const formVisible = !alreadyVerified || resubmitting;
   const readyToSubmit = !!file && allFieldsFilled && !submitting;
 
   const handleSubmit = async () => {
@@ -86,19 +93,22 @@ export default function DocumentVerificationCard({
         setError(data.error);
         return;
       }
+      const outcome = data.outcome || "";
       onResult({
-        status: data.status || "pending",
+        status: data.status,
+        outcome,
         verification_id: data.verification_id,
         submitted_datetime: data.submitted_datetime,
-        reason: "",
-        read: data.read,
-        auto_check: data.auto_check,
+        message: data.message || "",
+        entered_number: data.entered_number || "",
+        read_number: data.read_number || "",
+        auto_check: { outcome },
       });
       setFile(null);
       setResubmitting(false);
     } catch (err) {
       console.error(err);
-      setError(t("We could not submit your document. Check your connection and try again."));
+      setError(t("We could not check your document. Check your connection and try again."));
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +117,8 @@ export default function DocumentVerificationCard({
   const stateIcon =
     state.key === "verified" ? <ShieldCheck className="w-4 h-4 shrink-0" />
       : state.key === "rejected" ? <ShieldX className="w-4 h-4 shrink-0" />
-        : <Clock className="w-4 h-4 shrink-0" />;
+        : state.key === "unreadable" ? <AlertTriangle className="w-4 h-4 shrink-0" />
+          : <RefreshCw className="w-4 h-4 shrink-0" />;
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -125,25 +136,36 @@ export default function DocumentVerificationCard({
       {state.key !== "none" && (
         <div className={`mt-3 rounded-lg border px-3 py-2.5 ${state.box}`}>
           <p className={`text-sm font-semibold ${state.text}`}>{t(state.label)}</p>
-          {state.key === "pending" && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("Your document was received and is waiting for AMedix administration to review it. You do not need to do anything else.")}
-            </p>
-          )}
+
           {state.key === "verified" && (
-            <p className="text-xs text-muted-foreground mt-1">{t("Your identity document was reviewed and approved.")}</p>
-          )}
-          {state.key === "rejected" && (
-            <p className="text-xs text-muted-foreground mt-1 break-words">
-              {result?.review_reason || t("Your document was not accepted. Please submit a new one below.")}
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("The number printed on the document matches the number you entered. Verified automatically.")}
             </p>
           )}
-          {result?.verification_id && (
-            <p className="text-[11px] text-muted-foreground mt-1 break-all">
-              {t("Reference")}: {result.verification_id}
-            </p>
+
+          {retryable && (
+            <>
+              <p className="text-xs text-muted-foreground mt-1 break-words">
+                {result?.message || t(state.description)}
+              </p>
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                <p className="text-muted-foreground break-all">
+                  {t("You entered")}: <span className="font-medium text-foreground">{result?.entered_number || "—"}</span>
+                </p>
+                <p className="text-muted-foreground break-all">
+                  {t("On the document")}: <span className="font-medium text-foreground">
+                    {result?.read_number || t("could not be read")}
+                  </span>
+                </p>
+              </div>
+            </>
           )}
-          {alreadySubmitted && !resubmitting && (
+
+          {state.key === "pending" && (
+            <p className="text-xs text-muted-foreground mt-1">{t(state.description)}</p>
+          )}
+
+          {alreadyVerified && !resubmitting && (
             <Button type="button" variant="ghost" size="sm" className="mt-2 h-7 px-2" onClick={() => setResubmitting(true)}>
               {t("Submit a different document")}
             </Button>
@@ -191,14 +213,14 @@ export default function DocumentVerificationCard({
             {submitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 animate-spin" />
-                {t("Submitting…")}
+                {t("Reading the document…")}
               </>
             ) : (
-              t("Submit for review")
+              t(retryable ? "Check this document" : "Verify document")
             )}
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            {t("Your document is stored privately and reviewed by AMedix administration. Submitting does not verify your account by itself.")}
+            {t("The number on your document is read and compared with the number you entered, automatically. Your document is stored privately.")}
           </p>
         </div>
       )}

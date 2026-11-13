@@ -12,7 +12,7 @@
         "patient",
         "doctor"
       ],
-      "description": "Kind of profile this verification belongs to"
+      "description": "Kind of profile this verification belongs to \u2014 patient or doctor"
     },
     "document_type": {
       "type": "string",
@@ -22,13 +22,14 @@
         "drivers_licence",
         "passport",
         "national_id",
-        "medical_license"
+        "medical_license",
+        "professional_card"
       ],
-      "description": "Selected verification document \u2014 Passport, Driver's Licence or Birth Certificate for identity (one is enough), Personal Card for legacy records, Medical License for doctor credentials"
+      "description": "Selected verification document \u2014 Passport, Driver's Licence or Birth Certificate for identity (one is enough), Personal Card for legacy records, Medical License / Professional identification card for doctor credentials. The selected document decides which number the automated engine reads and compares."
     },
     "file_uri": {
       "type": "string",
-      "description": "Private storage URI of the submitted document (the assembled PDF) \u2014 only accessible via short-lived signed URLs issued by the backend after an administrator access check"
+      "description": "Private storage URI of the submitted document \u2014 never public; read inside the verification function through a short-lived signed link"
     },
     "file_name": {
       "type": "string",
@@ -72,7 +73,7 @@
     },
     "expected_date_of_birth": {
       "type": "string",
-      "description": "Date of birth as entered by the user \u2014 compared against the document for the administrator's review"
+      "description": "Date of birth as entered by the user \u2014 recorded with the automated comparison"
     },
     "extracted_date_of_birth": {
       "type": "string",
@@ -80,23 +81,23 @@
     },
     "expected_national_id_number": {
       "type": "string",
-      "description": "National ID number as entered by the user \u2014 compared against the document"
+      "description": "National ID / certificate number as entered by the user \u2014 compared automatically against the document"
     },
     "extracted_national_id_number": {
       "type": "string",
-      "description": "National ID number as read from the uploaded document by OCR"
+      "description": "National ID / certificate number as read from the uploaded document by OCR"
     },
     "expected_license_number": {
       "type": "string",
-      "description": "Medical license number as entered by the user \u2014 compared against the document"
+      "description": "Medical licence / professional number as entered by the user \u2014 compared automatically against the document"
     },
     "extracted_license_number": {
       "type": "string",
-      "description": "License number as read from the uploaded document by OCR"
+      "description": "Licence number as read from the uploaded document by OCR"
     },
     "expected_full_name": {
       "type": "string",
-      "description": "Full name as entered by the user \u2014 compared against the document"
+      "description": "Full name as entered by the user \u2014 recorded with the automated comparison"
     },
     "extracted_full_name": {
       "type": "string",
@@ -104,15 +105,15 @@
     },
     "expected_personal_card_number": {
       "type": "string",
-      "description": "Personal Card number as entered by the user"
+      "description": "Personal card number as entered by the user \u2014 compared automatically against the document"
     },
     "extracted_personal_card_number": {
       "type": "string",
-      "description": "Personal Card number as read from the uploaded document by OCR"
+      "description": "Personal card number as read from the uploaded document by OCR"
     },
     "expected_passport_number": {
       "type": "string",
-      "description": "Passport number as entered by the user"
+      "description": "Passport number as entered by the user \u2014 compared automatically against the document"
     },
     "extracted_passport_number": {
       "type": "string",
@@ -132,39 +133,62 @@
         "red",
         "red"
       ],
-      "description": "PENDING: submitted and waiting for AMedix administration review \u2014 submitting never verifies an account. VERIFIED: approved by an authorized administrator. REJECTED: refused by an administrator, with the reason recorded. FAILED: a legacy automatic outcome kept unchanged for existing records."
+      "description": "Decided automatically by the AMedix document-verification engine: VERIFIED \u2014 the number printed on the document matched the number entered, registration continues. REJECTED \u2014 the numbers did not match. FAILED \u2014 the number could not be read from the document, so a clearer document is required. PENDING exists only on legacy records submitted before the automated engine; no human decides those, and a pending record counts only when its own automated run already matched the number."
     },
     "reason": {
       "type": "string",
-      "description": "Machine-readable outcome of the submission's automatic readability check \u2014 unreadable / mismatch / card_mismatch \u2014 a note for the reviewing administrator, never an approval or a refusal"
+      "description": "Machine-readable outcome of the automated comparison \u2014 match / mismatch / unreadable (legacy values unreadable / mismatch / card_mismatch are kept unchanged)"
+    },
+    "verification_outcome": {
+      "type": "string",
+      "enum": [
+        "match",
+        "mismatch",
+        "unreadable"
+      ],
+      "enumColors": [
+        "green",
+        "red",
+        "yellow"
+      ],
+      "description": "Result of the automated document-number comparison. MATCH: the number printed on the document equals the number entered. MISMATCH: they differ. UNREADABLE: the number could not be read from the document. Never set from the browser \u2014 written by the verification function."
+    },
+    "auto_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "True only when the automated engine matched the document number. An unreadable document, a mismatched number or a missing number is never treated as a match."
+    },
+    "engine": {
+      "type": "string",
+      "description": "Identifier and version of the verification engine that produced this result, e.g. amedix_document_number_v1"
     },
     "auto_check": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Automated readability and detail comparison produced at submission time: { outcome: match | mismatch | unreadable, checked_datetime, checks: [{ field, label, entered, read, matched }] }. Advisory only \u2014 the administrator makes the decision"
+      "description": "Automated document-number verification produced at submission time: { outcome: match | mismatch | unreadable, checked_datetime, engine, number_field, number_label, entered_number, read_number, normalized_entered, normalized_read, sides_read, checks: [{ field, label, entered, read, matched, decisive }], note }. The decisive check is the document number."
     },
     "review_reason": {
       "type": "string",
-      "description": "The specific reason recorded by the administrator when the submission was rejected \u2014 shown to the user so they can resubmit correctly"
+      "description": "Message shown to the user when the automated engine refused the document (numbers do not match, or the document could not be read). Legacy records may hold an administrator's reason."
     },
     "review_notes": {
       "type": "string",
-      "description": "Internal reviewer notes"
+      "description": "Legacy field \u2014 internal reviewer notes from the former manual review process. Empty on every automated decision"
     },
     "reviewed_by_user_id": {
       "type": "string"
     },
     "reviewed_by_name": {
       "type": "string",
-      "description": "The authorized AMedix administrator who approved or rejected the submission"
+      "description": "Legacy field \u2014 the administrator who decided a record submitted before the automated engine existed. Empty on every automated decision"
     },
     "reviewed_datetime": {
       "type": "string",
-      "description": "Date and time of the administrative decision (ISO datetime)"
+      "description": "Legacy field \u2014 date and time of a manual decision on a record submitted before the automated engine (ISO datetime)"
     },
     "review_history": {
       "type": "array",
-      "description": "Append-only record of every event on this submission \u2014 submitted, document opened by a reviewer, approved, rejected",
+      "description": "Append-only automated audit trail \u2014 every event on this submission: auto_verified (number matched), auto_rejected (number did not match or could not be read), plus legacy submitted/approved/rejected events kept unchanged",
       "items": {
         "type": "object",
         "properties": {
@@ -173,7 +197,7 @@
           },
           "action": {
             "type": "string",
-            "description": "submitted / document_viewed / approved / rejected"
+            "description": "auto_verified / auto_rejected for automated decisions; submitted / document_viewed / approved / rejected on legacy records"
           },
           "actor_name": {
             "type": "string"
@@ -193,7 +217,7 @@
     },
     "document_access_log": {
       "type": "array",
-      "description": "Audit trail of every time the private document was opened through a signed link, and by whom",
+      "description": "Legacy audit trail of document openings from the former manual review process \u2014 kept unchanged; the automated engine never exposes documents to a person",
       "items": {
         "type": "object",
         "properties": {
@@ -221,7 +245,7 @@
     },
     "verified_datetime": {
       "type": "string",
-      "description": "Date and time an administrator approved the document (ISO datetime)"
+      "description": "Date and time the automated engine matched the document number (ISO datetime)"
     },
     "patient_id": {
       "type": "string",

@@ -18,10 +18,10 @@ import {
 //                      crop, perspective correction, enhancement)
 //   • Choose a photo → an existing photo from the gallery (JPG/PNG/HEIC)
 //   • Upload a PDF   → an existing PDF, used as it is
-// Every page is reviewed (rotate, retake, add the other side) before anything
+// Every page is checked (rotate, retake, add the other side) before anything
 // leaves the device; the pages are then combined into one PDF, uploaded to
-// private storage with the original file preserved, and the submission is sent
-// for administrative review.
+// private storage with the original file preserved, and the document number is
+// read and compared with the number entered — automatically, on submission.
 export default function DocumentScanUpload({
   documentType, sides = "single", patientName = "", cin = "", hint = "", file, onFile, t,
 }) {

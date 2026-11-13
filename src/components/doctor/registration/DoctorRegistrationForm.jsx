@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SPECIALTIES } from "@/lib/specialties";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import DocumentVerificationCard from "@/components/verification/DocumentVerificationCard";
+import { isSubmitted } from "@/components/verification/verificationStatus";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { EMPTY_DOCTOR_FORM, saveDoctorDraft, submitDoctorRegistration } from "@/lib/doctorRegistration";
 import { DOCTOR_HOSPITAL_CODE_KEY } from "@/components/registration/DoctorHospitalCodeGate";
@@ -45,8 +46,8 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
   const restored = !!restores?.fields && Object.values(restores.fields).some((v) => (v || "").toString().trim() !== "");
 
   const buildPayload = () => {
-    const identityDone = ["verified", "pending"].includes(doctorVerification.identity?.status);
-    const licenseDone = ["verified", "pending"].includes(doctorVerification.medical_license?.status);
+    const identityDone = isSubmitted(doctorVerification.identity);
+    const licenseDone = isSubmitted(doctorVerification.medical_license);
     return {
       ...doctorForm,
       step: licenseDone ? "license_verification" : identityDone ? "identity_verification" : "details",
@@ -85,9 +86,8 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       setError(t("Enter the AMedix Hospital Code given to you by your approved hospital."));
       return;
     }
-    const submitted = (v) => ["verified", "pending"].includes(v?.status);
-    if (!submitted(doctorVerification.identity) || !submitted(doctorVerification.medical_license)) {
-      setError(t("Submit your identity and licence documents to continue."));
+    if (!isSubmitted(doctorVerification.identity) || !isSubmitted(doctorVerification.medical_license)) {
+      setError(t("Verify your identity and licence documents to continue — the number on each document must match the number you entered."));
       return;
     }
     setError("");

@@ -99,12 +99,13 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
   const isFemale = form.gender === "female";
 
-  // Backend verdict for the Verification Process section — { status, reason, verification_id }.
+  // Automated document-number verdict for the Verification Process section —
+  // { status, outcome, message, verification_id }. Decided by the engine when
+  // the document is submitted; nothing is queued for review.
   const [verification, setVerification] = useState(null);
   const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
-    // A submitted document stays submitted — it is stored server-side and
-    // reviewed by administration, so editing a detail never erases its state.
+    // A verified document stays verified — editing a detail never erases it.
     setError("");
   };
   const setL = (field) => (e) => setLifestyle((s) => ({ ...s, [field]: e.target.value }));
@@ -164,8 +165,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       setError(t("Please select your sex."));
       return;
     }
-    if (!isSubmitted(verification?.status)) {
-      setError(t("Submit your identity document to continue."));
+    if (!isSubmitted(verification)) {
+      setError(t("Verify your identity document to continue — the number on it must match the number you entered."));
       return;
     }
     setStep(1);
