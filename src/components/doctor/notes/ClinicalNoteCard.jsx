@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
-import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock, ChevronDown } from "lucide-react";
+import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock, ChevronDown, FileDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
+import { loadRequestLogo } from "@/lib/requestPdfLayout";
+import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -37,6 +40,27 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
   const photoCount = Array.isArray(note.photo_file_uris) ? note.photo_file_uris.length : 0;
   const [photoUrls, setPhotoUrls] = useState(null);
   const [photosLoading, setPhotosLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // The note as an AMedix official document — same sheet as the laboratory and
+  // imaging request forms, generated from the saved record on demand.
+  const downloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const [logo, profile] = await Promise.all([
+        loadRequestLogo(),
+        note.patient_id
+          ? base44.entities.PatientProfile.get(note.patient_id).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      const doc = await generateClinicalNotePdf(note, { logo, profile });
+      doc.save(`${note.note_reference || "ClinicalNote"}${note.patient_cin ? `_${note.patient_cin}` : ""}.pdf`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   // Clinical photographs live in private storage — signed URLs are issued by
   // the backend only after permission checks, and every view is audit-logged.
@@ -278,6 +302,11 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
             </p>
           </div>
         )}
+
+        <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfLoading} className="gap-1.5">
+          {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          {pdfLoading ? "Preparing PDF..." : "Download PDF"}
+        </Button>
       </div>
     </div>
   );

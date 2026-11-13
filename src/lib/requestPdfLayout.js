@@ -365,12 +365,12 @@ export function drawPatientBlock(doc, req, y) {
 }
 
 // ===== Requesting doctor & hospital =====
-export function drawDoctorBlock(doc, req, y) {
+export function drawDoctorBlock(doc, req, y, { heading = "Requesting Doctor & Hospital", doctorLabel = "Requesting doctor" } = {}) {
   const top = y + 8;
-  drawSectionLabel(doc, "Requesting Doctor & Hospital", top);
+  drawSectionLabel(doc, heading, top);
 
   let rowY = top + 9;
-  drawTemplateField(doc, "Requesting doctor", req.doctor_name, M, rowY, { width: 78 });
+  drawTemplateField(doc, doctorLabel, req.doctor_name, M, rowY, { width: 78 });
   drawTemplateField(doc, "Specialty", req.doctor_specialization, COL2, rowY, { width: 80 });
   rowY += 13;
 
