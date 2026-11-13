@@ -6,6 +6,7 @@ import ClinicalNoteForm from "@/components/doctor/notes/ClinicalNoteForm";
 import DoctorLabRequests from "@/components/doctor/DoctorLabRequests";
 import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorPatientSummary from "@/components/doctor/patients/DoctorPatientSummary";
+import PatientAccessBanner from "@/components/doctor/patients/PatientAccessBanner";
 import DoctorPatientHistorySection from "@/components/doctor/patients/DoctorPatientHistorySection";
 import DoctorAntenatalSection from "@/components/doctor/antenatal/DoctorAntenatalSection";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
@@ -43,6 +44,8 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="w-4 h-4" /> All patients
       </button>
+
+      <PatientAccessBanner patientId={patient.id} doctorId={doctorProfile?.id} />
 
       <DoctorPatientSummary patient={patient} />
 

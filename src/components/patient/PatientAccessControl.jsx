@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Shield, Check, X, UserCog, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DoctorAvatar from "@/components/DoctorAvatar";
+import { notifyDoctorAccessGranted } from "@/lib/doctorAccessNotify";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 const nowIso = () => new Date().toISOString();
@@ -65,6 +66,8 @@ export default function PatientAccessControl({ patientId }) {
       if (status === "declined") patch.date_responded = today();
       await base44.entities.AccessRequest.update(req.id, patch);
       await logAction(req, action);
+      // The doctor is told straight away that this patient granted them access.
+      if (action === "access_granted") await notifyDoctorAccessGranted(req);
     } catch (err) {
       console.error(err);
     }
