@@ -444,21 +444,18 @@ export function writeExamination(doc, text, y, artwork, noteTitle, { label = "Ex
 
   const d = density(doc);
   const blocks = examinationBlocks(raw);
-  const first = blocks[0];
-  const firstRoom =
-    (first?.heading ? LEAD.value * d : 0) + (first?.items?.[0] ? examRow(doc, first.items[0][0], first.items[0][1]) : 0);
+  const blockRoom = (block) =>
+    (block?.heading ? (SPACE.before + LEAD.value) * d : 0) +
+    (block?.items?.[0] ? examRow(doc, block.items[0][0], block.items[0][1]) : 0);
 
-  let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, label) + firstRoom);
+  let yy = flushSection(doc, y, artwork, noteTitle, captionRoom(doc, label) + blockRoom(blocks[0]));
   yy = writeCaption(doc, label, yy, artwork, noteTitle);
 
   blocks.forEach((block) => {
     // A system heading travels with its first finding, and never touches the
     // last line of the system above it. The first system was already reserved
     // together with the caption, so this check can never separate the two.
-    const room =
-      (block.heading ? (SPACE.before + LEAD.value) * d : 0) +
-      (block.items[0] ? examRow(doc, block.items[0][0], block.items[0][1]) : 0);
-    if (yy + room > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+    if (yy + blockRoom(block) > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
     else if (block.heading) yy += SPACE.before * d;
     if (block.heading) {
       wrap(doc, block.heading, W, TYPE.value, "bold").forEach((line) => {
