@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 // The AMedix hospital directory for the Doctor Portal hospital gate: every
 // registered hospital with an ACTIVE account, so the doctor can find and
 // select the hospital they work in before entering its AMedix Hospital Code.
-// Only names, locations and logos are returned — never codes.
+// Only names, locations and logos are returned — never the hospital codes.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);

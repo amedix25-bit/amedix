@@ -35,7 +35,7 @@ import { readDocumentWithVision } from '../../shared/inlineVision.ts';
 // ~9 MB of decoded document: enough for a good phone scan or a small PDF, small
 // enough that the check stays a request and never becomes a transfer.
 const MAX_TOTAL_BASE64_CHARS = 12_000_000;
-const MAX_PAGES = 3; // retry deploy
+const MAX_PAGES = 3;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'application/pdf']);
 
 export default async function (req: any) {
