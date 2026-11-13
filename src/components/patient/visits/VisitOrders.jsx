@@ -36,21 +36,24 @@ export default function VisitOrders({ visit }) {
       setOrders(null);
       setError("");
       try {
-        const [prescriptions, labs, imaging] = await Promise.all([
-          base44.entities.Prescription.filter(
-            { patient_id: visit.patient_id, encounter_id: visit.encounter_id },
-            "-prescribed_datetime"
-          ),
-          base44.entities.LabRequest.filter(
-            { patient_id: visit.patient_id, encounter_id: visit.encounter_id },
-            "-created_date"
-          ),
-          base44.entities.ImagingRequest.filter(
-            { patient_id: visit.patient_id, encounter_id: visit.encounter_id },
-            "-created_date"
-          ),
+        const opts = { sort: "-created_date", limit: 200 };
+        const [rxPage, labPage, imPage] = await Promise.all([
+          base44.entities.Prescription.filter({ patient_id: visit.patient_id }, opts),
+          base44.entities.LabRequest.filter({ patient_id: visit.patient_id }, opts),
+          base44.entities.ImagingRequest.filter({ patient_id: visit.patient_id }, opts),
         ]);
-        setOrders({ prescriptions, labs, imaging });
+        const rows = (page) => (page?.items ? page.items : page || []);
+        setOrders({
+          prescriptions: rows(rxPage).filter((rx) =>
+            belongsToVisit(rx, visit, rx.prescribed_datetime || rx.date_prescribed)
+          ),
+          labs: rows(labPage).filter((lab) =>
+            belongsToVisit(lab, visit, lab.request_datetime || lab.date_requested)
+          ),
+          imaging: rows(imPage).filter((im) =>
+            belongsToVisit(im, visit, im.request_datetime || im.date_requested)
+          ),
+        });
       } catch (err) {
         console.error(err);
         setError("Could not load the prescriptions and requests for this visit. Please reopen the visit to try again.");
@@ -199,6 +202,17 @@ export default function VisitOrders({ visit }) {
       ))}
     </div>
   );
+}
+
+// An order belongs to a visit when it carries that visit's reference, or — for
+// orders saved before visits were recorded — when the same doctor issued it on
+// the day of the visit.
+function belongsToVisit(record, visit, dateValue) {
+  if (visit.encounter_id && record.encounter_id === visit.encounter_id) return true;
+  if (record.encounter_id) return false;
+  if (visit.doctor_name && record.doctor_name !== visit.doctor_name) return false;
+  if (!dateValue || !visit.encounter_datetime) return false;
+  return new Date(dateValue).toDateString() === new Date(visit.encounter_datetime).toDateString();
 }
 
 function Row({ label, value }) {
