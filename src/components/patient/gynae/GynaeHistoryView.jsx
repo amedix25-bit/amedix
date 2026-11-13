@@ -13,17 +13,39 @@ import {
   DELIVERY_MODES,
   NEONATAL_OUTCOMES,
   MENOPAUSE_SYMPTOMS,
+  sectionHasAnswers,
 } from "@/lib/gynaeObstetric";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 // Read-only presentation of the Gynaecological & Obstetric History. Shared by
 // the patient's My Health (Past History) and by authorized treating doctors.
-export default function GynaeHistoryView({ gynae, profile }) {
-  const { t } = usePatientLanguage();
+export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true }) {
+  const { t, isArabic } = usePatientLanguage();
   const g = normalizeGynaeHistory(gynae);
   const notRecorded = t("Not recorded");
   const value = (v) => (v === "" || v === null || v === undefined ? notRecorded : String(v));
   const yesNo = (v) => (v ? t(labelFor(YES_NO_UNKNOWN, v)) : notRecorded);
+
+  const when = (iso) =>
+    iso
+      ? new Date(iso).toLocaleDateString(isArabic ? "ar" : "en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+
+  // Under each part: when it was first recorded, or when it was last updated —
+  // so previously recorded answers are told apart from later ones.
+  const stamp = (key) => {
+    if (!showRecordInfo || !sectionHasAnswers(key, g[key])) return null;
+    const iso = g.section_updated?.[key];
+    return (
+      <p className="text-[11px] text-muted-foreground">
+        {iso ? `${t("Updated")} ${when(iso)}` : t("Recorded at registration")}
+      </p>
+    );
+  };
 
   const pregnancyStatus =
     profile?.pregnancy_status === "pregnant" || profile?.pregnancy_status === "not_pregnant"
@@ -34,8 +56,16 @@ export default function GynaeHistoryView({ gynae, profile }) {
 
   return (
     <div className="space-y-5">
+      {showRecordInfo && (g.recorded_datetime || g.updated_datetime) && (
+        <p className="text-[11px] text-muted-foreground">
+          {g.recorded_datetime ? `${t("Recorded")}: ${when(g.recorded_datetime)}` : ""}
+          {g.recorded_datetime && g.updated_datetime ? " · " : ""}
+          {g.updated_datetime ? `${t("Last updated")}: ${when(g.updated_datetime)}` : ""}
+        </p>
+      )}
       <section className="space-y-2">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Current Pregnancy")}</h4>
+        {stamp("current_pregnancy")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow
             label={t("Pregnancy status")}
@@ -68,6 +98,7 @@ export default function GynaeHistoryView({ gynae, profile }) {
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Menstrual History")}</h4>
+        {stamp("menstrual")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow label={t("Last menstrual period (LMP)")} value={value(g.menstrual.lmp)} />
           <InfoRow label={t("Age at menarche")} value={value(g.menstrual.age_at_menarche)} />
@@ -83,6 +114,7 @@ export default function GynaeHistoryView({ gynae, profile }) {
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Past Gynaecological History")}</h4>
+        {stamp("past")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow
             label={t("Previous gynaecological conditions")}
@@ -110,6 +142,7 @@ export default function GynaeHistoryView({ gynae, profile }) {
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Past Obstetric History")}</h4>
+        {stamp("obstetric")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow label={t("Pregnancies / births / abortions")} value={summary || notRecorded} />
           <InfoRow label={t("Term deliveries")} value={value(g.obstetric.term_deliveries)} />
@@ -156,6 +189,7 @@ export default function GynaeHistoryView({ gynae, profile }) {
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Menopause")}</h4>
+        {stamp("menopause")}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
           <InfoRow
             label={t("Menopause status")}

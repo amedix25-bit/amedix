@@ -59,7 +59,7 @@ export default function PatientHealth({
           <Lock className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {t(
-              "Your medical history was recorded at registration and is locked. Contact your doctor or an administrator for any corrections or updates."
+              "Your medical history was recorded at registration and is shown to your treating doctors. You can complete or update your Gynaecological & Obstetric History at any time — earlier answers are kept and every update is recorded."
             )}
           </span>
         </div>
@@ -142,7 +142,13 @@ export default function PatientHealth({
         onRefresh={onRefreshData}
       />
       <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} doctorView={doctorView} />
-      <GynaeObstetricSection number="9" patient={profile} doctorView={doctorView} editable={editable} />
+      <GynaeObstetricSection
+        number="9"
+        patient={profile}
+        doctorView={doctorView}
+        editable={editable}
+        onProfileChanged={onRefreshData}
+      />
       <FamilyHistorySection
         number="10"
         patient={profile}

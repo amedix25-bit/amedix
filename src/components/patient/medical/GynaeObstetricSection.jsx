@@ -7,16 +7,18 @@ import { Label } from "@/components/ui/label";
 import DateField from "@/components/ui/date-field";
 import { Loader2, Pencil, X } from "lucide-react";
 import GynaeHistoryView from "@/components/patient/gynae/GynaeHistoryView";
+import GynaeHistoryEditorDialog from "@/components/patient/gynae/GynaeHistoryEditorDialog";
+import { normalizeGynaeHistory, hasAnyGynaeAnswer } from "@/lib/gynaeObstetric";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-// My Health point 9 — the patient's one Gynaecological & Obstetric History
-// section (female patients only): current pregnancy, menstrual history, past
-// gynaecological history, previous pregnancies and menopause. It reads the
-// history recorded at registration from the patient record, so an authorized
-// treating doctor sees exactly the same information. A doctor may update the
-// current pregnancy status during an active visit; the edit is recorded.
-export default function GynaeObstetricSection({ number, patient, doctorView, editable }) {
-  const { t } = usePatientLanguage();
+// My Health point 9 — the patient's one Gynaecological, Obstetric and
+// Postmenopausal History section (female patients only). It reads the history
+// from the patient record, so an authorized treating doctor sees exactly the
+// same information. The patient herself can complete or update it at any time
+// (kept in her Past History, with an update history); a doctor may update the
+// current pregnancy status during an active visit and the edit is recorded.
+export default function GynaeObstetricSection({ number, patient, doctorView, editable, onProfileChanged }) {
+  const { t, isArabic } = usePatientLanguage();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,10 +26,22 @@ export default function GynaeObstetricSection({ number, patient, doctorView, edi
   const [local, setLocal] = useState(null);
   const [logRefresh, setLogRefresh] = useState(0);
   const [form, setForm] = useState(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   if (!patient || patient.gender !== "female") return null;
 
   const p = local || patient;
+  const g = normalizeGynaeHistory(p.gynae_obstetric_history);
+  const hasHistory = hasAnyGynaeAnswer(p.gynae_obstetric_history);
+  const draft = g.status === "in_progress";
+  const stampDate = g.updated_datetime || g.recorded_datetime;
+  const updated = stampDate
+    ? new Date(stampDate).toLocaleDateString(isArabic ? "ar" : "en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "";
 
   const startEdit = () => {
     setError("");
@@ -71,71 +85,101 @@ export default function GynaeObstetricSection({ number, patient, doctorView, edi
   };
 
   return (
-    <SectionCard
-      number={number}
-      title={t("Gynaecological & Obstetric History")}
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (!v) setEditing(false);
-      }}
-      patient={patient}
-      sectionKey="pregnancy"
-      editLogRefresh={logRefresh}
-      action={
-        editable && !editing ? (
-          <Button variant="outline" size="sm" onClick={startEdit}>
-            <Pencil className="w-3.5 h-3.5 mr-1" /> {t("Edit")}
-          </Button>
-        ) : undefined
-      }
-    >
-      {editing ? (
-        <form onSubmit={save} className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{t("Update current pregnancy")}</p>
-            <button type="button" onClick={() => setEditing(false)} className="text-muted-foreground">
-              <X className="w-4 h-4" />
-            </button>
+    <>
+      <SectionCard
+        number={number}
+        title={t("Gynaecological & Obstetric History")}
+        open={open}
+        onOpenChange={(v) => {
+          setOpen(v);
+          if (!v) setEditing(false);
+        }}
+        patient={patient}
+        sectionKey="pregnancy"
+        editLogRefresh={logRefresh}
+        action={
+          !doctorView ? (
+            <Button variant="outline" size="sm" onClick={() => setEditorOpen(true)}>
+              <Pencil className="w-3.5 h-3.5 mr-1" /> {hasHistory ? t("Update") : t("Complete")}
+            </Button>
+          ) : editable && !editing ? (
+            <Button variant="outline" size="sm" onClick={startEdit}>
+              <Pencil className="w-3.5 h-3.5 mr-1" /> {t("Edit")}
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing ? (
+          <form onSubmit={save} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">{t("Update current pregnancy")}</p>
+              <button type="button" onClick={() => setEditing(false)} className="text-muted-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("Pregnancy status")}</Label>
+                <select
+                  value={form.pregnancy_status}
+                  onChange={(e) => setForm({ ...form, pregnancy_status: e.target.value })}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="pregnant">{t("Pregnant")}</option>
+                  <option value="not_pregnant">{t("Not pregnant")}</option>
+                  <option value="unknown">{t("Unknown")}</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("Gestational age")}</Label>
+                <Input
+                  value={form.gestational_age}
+                  onChange={(e) => setForm({ ...form, gestational_age: e.target.value })}
+                  placeholder={t("e.g. 18 weeks")}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("Estimated due date")}</Label>
+                <DateField
+                  value={form.estimated_due_date}
+                  onChange={(estimated_due_date) => setForm({ ...form, estimated_due_date })}
+                />
+              </div>
+            </div>
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" size="sm" disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+              {t("Save changes")}
+            </Button>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            {!doctorView && (
+              <div className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+                {draft
+                  ? t("Saved as a draft — you can return and finish it at any time.")
+                  : hasHistory
+                    ? updated
+                      ? `${t("Last updated")}: ${updated}`
+                      : t("Recorded at registration")
+                    : t("This section was recorded at registration. You can complete or update it at any time — nothing you saved before is removed.")}
+              </div>
+            )}
+            <GynaeHistoryView gynae={p.gynae_obstetric_history} profile={p} />
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{t("Pregnancy status")}</Label>
-              <select
-                value={form.pregnancy_status}
-                onChange={(e) => setForm({ ...form, pregnancy_status: e.target.value })}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="pregnant">{t("Pregnant")}</option>
-                <option value="not_pregnant">{t("Not pregnant")}</option>
-                <option value="unknown">{t("Unknown")}</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Gestational age")}</Label>
-              <Input
-                value={form.gestational_age}
-                onChange={(e) => setForm({ ...form, gestational_age: e.target.value })}
-                placeholder={t("e.g. 18 weeks")}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Estimated due date")}</Label>
-              <DateField
-                value={form.estimated_due_date}
-                onChange={(estimated_due_date) => setForm({ ...form, estimated_due_date })}
-              />
-            </div>
-          </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" size="sm" disabled={saving}>
-            {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
-            {t("Save changes")}
-          </Button>
-        </form>
-      ) : (
-        <GynaeHistoryView gynae={p.gynae_obstetric_history} profile={p} />
-      )}
-    </SectionCard>
+        )}
+      </SectionCard>
+
+      <GynaeHistoryEditorDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        profile={p}
+        onSaved={(updatedProfile) => {
+          setLocal(updatedProfile);
+          setLogRefresh((v) => v + 1);
+          onProfileChanged?.();
+        }}
+      />
+    </>
   );
 }

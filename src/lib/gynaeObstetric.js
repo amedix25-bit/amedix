@@ -142,7 +142,22 @@ export const emptyGynaeHistory = () => ({
   },
 });
 
-// Fill in any subsection a legacy record does not have yet.
+// The five parts of the one history, and the label of each.
+export const GYNAE_SECTION_KEYS = ["menstrual", "past", "obstetric", "current_pregnancy", "menopause"];
+
+export const GYNAE_SECTION_LABELS = {
+  menstrual: "Menstrual History",
+  past: "Past Gynaecological History",
+  obstetric: "Past Obstetric History",
+  current_pregnancy: "Current Pregnancy",
+  menopause: "Menopause",
+};
+
+// How many past saves are kept in the update history.
+export const GYNAE_REVISION_LIMIT = 10;
+
+// Fill in any subsection a legacy record does not have yet, and keep the
+// saving metadata (who recorded it, when it was last updated, its revisions).
 export const normalizeGynaeHistory = (record) => {
   const base = emptyGynaeHistory();
   const saved = record && typeof record === "object" ? record : {};
@@ -152,9 +167,95 @@ export const normalizeGynaeHistory = (record) => {
     obstetric: { ...base.obstetric, ...(saved.obstetric || {}) },
     current_pregnancy: { ...base.current_pregnancy, ...(saved.current_pregnancy || {}) },
     menopause: { ...base.menopause, ...(saved.menopause || {}) },
+    status: saved.status || "",
     recorded_datetime: saved.recorded_datetime || "",
+    recorded_by: saved.recorded_by || "",
+    updated_datetime: saved.updated_datetime || "",
+    updated_by: saved.updated_by || "",
+    section_updated: saved.section_updated && typeof saved.section_updated === "object" ? saved.section_updated : {},
+    revisions: Array.isArray(saved.revisions) ? saved.revisions : [],
   };
 };
+
+// Whether one part carries any answer at all — a blank answer is never a
+// negative history, so a blank part is simply "not recorded".
+export const sectionHasAnswers = (key, value) => {
+  const empty = emptyGynaeHistory()[key];
+  if (!empty) return false;
+  return JSON.stringify({ ...empty, ...(value || {}) }) !== JSON.stringify(empty);
+};
+
+export const hasAnyGynaeAnswer = (record) => {
+  const g = normalizeGynaeHistory(record);
+  return GYNAE_SECTION_KEYS.some((key) => sectionHasAnswers(key, g[key]));
+};
+
+const newId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+// Builds the ONE saved history from what the patient submitted. It can run at
+// registration and any number of times afterwards: every previous answer is
+// kept, a pregnancy keeps its own entry_id so it is updated in place instead
+// of being added again, and each save appends one revision to the update
+// history. `finalStatus` is "in_progress" for a part-finished save.
+export function buildGynaeSave(previous, next, actor = {}, options = {}) {
+  const finalStatus = options.finalStatus || "completed";
+  const prev = normalizeGynaeHistory(previous);
+  const incoming = normalizeGynaeHistory(next);
+  const now = new Date().toISOString();
+
+  const pregnancies = [];
+  const seen = new Set();
+  (incoming.obstetric.pregnancies || []).forEach((raw) => {
+    if (!raw) return;
+    const entry = { ...raw, entry_id: raw.entry_id || newId("pg") };
+    if (seen.has(entry.entry_id)) return;
+    seen.add(entry.entry_id);
+    pregnancies.push(entry);
+  });
+
+  const conditions = [];
+  (incoming.past.conditions || []).forEach((key) => {
+    if (key && !conditions.includes(key)) conditions.push(key);
+  });
+
+  const sections = {
+    menstrual: { ...incoming.menstrual },
+    past: { ...incoming.past, conditions },
+    obstetric: { ...incoming.obstetric, pregnancies },
+    current_pregnancy: { ...incoming.current_pregnancy },
+    menopause: { ...incoming.menopause },
+  };
+
+  const changed = GYNAE_SECTION_KEYS.filter(
+    (key) => JSON.stringify(prev[key]) !== JSON.stringify(sections[key])
+  );
+
+  const section_updated = { ...prev.section_updated };
+  changed.forEach((key) => {
+    section_updated[key] = now;
+  });
+
+  const revision = {
+    revision_id: newId("rev"),
+    datetime: now,
+    actor_name: actor.name || "",
+    actor_role: actor.role || "patient",
+    status: finalStatus,
+    sections_changed: changed,
+    snapshot: sections,
+  };
+
+  return {
+    ...sections,
+    status: finalStatus,
+    recorded_datetime: prev.recorded_datetime || now,
+    recorded_by: prev.recorded_by || actor.name || "",
+    updated_datetime: now,
+    updated_by: actor.name || prev.updated_by || "",
+    section_updated,
+    revisions: [...(prev.revisions || []), revision].slice(-GYNAE_REVISION_LIMIT),
+  };
+}
 
 export const labelFor = (options, value) => options.find((o) => o.value === value)?.label || "";
 

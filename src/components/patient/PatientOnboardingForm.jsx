@@ -25,7 +25,7 @@ import LivingSituationFields from "@/components/patient/lifestyle/LivingSituatio
 import VaccinationStatusFields from "@/components/patient/lifestyle/VaccinationStatusFields";
 import { vaccinationMapToRecords } from "@/lib/lifestyleOptions";
 import GynaeObstetricHistoryForm from "@/components/patient/gynae/GynaeObstetricHistoryForm";
-import { emptyGynaeHistory, legacyGynaeFields } from "@/lib/gynaeObstetric";
+import { emptyGynaeHistory, legacyGynaeFields, buildGynaeSave } from "@/lib/gynaeObstetric";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
 
@@ -170,19 +170,26 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     setError("");
-    // A pregnant patient is never classified as postmenopausal.
-    const gynaeRecord = {
-      ...gynae,
-      menopause: {
-        ...gynae.menopause,
-        status:
-          gynae.current_pregnancy.status === "pregnant"
-            ? "premenopausal"
-            : gynae.menopause.status || "unknown",
-      },
-      recorded_datetime: new Date().toISOString(),
-      recorded_by: "patient",
-    };
+    // A pregnant patient is never classified as postmenopausal. The history is
+    // built through the same helper the patient uses later, so registration
+    // itself is the first entry of her update history.
+    const gynaeRecord = isFemale
+      ? buildGynaeSave(
+          {},
+          {
+            ...gynae,
+            menopause: {
+              ...gynae.menopause,
+              status:
+                gynae.current_pregnancy.status === "pregnant"
+                  ? "premenopausal"
+                  : gynae.menopause.status || "unknown",
+            },
+          },
+          { name: form.first_name, role: "patient" },
+          { finalStatus: "completed" }
+        )
+      : {};
     const gynaeFields = legacyGynaeFields(gynaeRecord, isFemale);
     try {
       const newCin = await generateUniqueCIN();

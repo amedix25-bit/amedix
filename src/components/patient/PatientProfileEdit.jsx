@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Lock, CheckCircle2 } from "lucide-react";
+import { Loader2, Save, Lock, CheckCircle2, Pencil } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { OccupationsEditor, PhoneNumbersEditor, EmergencyContactsEditor } from "@/components/patient/profile/DemographicsEditors";
 import DietNutritionFields from "@/components/patient/lifestyle/DietNutritionFields";
@@ -13,9 +13,12 @@ import LivingSituationFields from "@/components/patient/lifestyle/LivingSituatio
 import VaccinationStatusFields from "@/components/patient/lifestyle/VaccinationStatusFields";
 import { vaccinationMapToRecords, vaccinationRecordsToMap } from "@/lib/lifestyleOptions";
 import { formatDateDisplay } from "@/lib/dateFormat";
+import GynaeHistoryEditorDialog from "@/components/patient/gynae/GynaeHistoryEditorDialog";
+import { normalizeGynaeHistory, hasAnyGynaeAnswer } from "@/lib/gynaeObstetric";
 
 export default function PatientProfileEdit({ profile, onSaved }) {
   const { t } = usePatientLanguage();
+  const [gynaeOpen, setGynaeOpen] = useState(false);
   const [form, setForm] = useState({
     address: "",
     blood_type: "Unknown",
@@ -263,6 +266,28 @@ export default function PatientProfileEdit({ profile, onSaved }) {
         <EmergencyContactsEditor value={emergencyContacts} onChange={touch(setEmergencyContacts)} />
       </div>
 
+      {profile?.gender === "female" && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="font-semibold text-sm mb-1">
+            {t("Gynaecological, Obstetric & Postmenopausal History")}
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            {hasAnyGynaeAnswer(profile?.gynae_obstetric_history) &&
+            normalizeGynaeHistory(profile?.gynae_obstetric_history).updated_datetime
+              ? `${t("Last updated")}: ${new Date(
+                  normalizeGynaeHistory(profile.gynae_obstetric_history).updated_datetime
+                ).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+              : t(
+                  "Complete or update your gynaecological, obstetric and postmenopausal history. Your earlier answers are kept, every update is recorded, and it is shown to your treating doctors."
+                )}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => setGynaeOpen(true)}>
+            <Pencil className="w-3.5 h-3.5 mr-1" />
+            {hasAnyGynaeAnswer(profile?.gynae_obstetric_history) ? t("Update") : t("Complete")}
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -274,6 +299,13 @@ export default function PatientProfileEdit({ profile, onSaved }) {
           </span>
         )}
       </div>
+
+      <GynaeHistoryEditorDialog
+        open={gynaeOpen}
+        onOpenChange={setGynaeOpen}
+        profile={profile}
+        onSaved={() => onSaved?.()}
+      />
     </div>
   );
 }

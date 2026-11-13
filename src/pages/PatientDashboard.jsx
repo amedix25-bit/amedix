@@ -154,7 +154,9 @@ function PatientPortal() {
             </div>
           )}
           {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} onGoToProfile={() => setActiveTab("profile")} />}
-          {activeTab === "health" && <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} />}
+          {activeTab === "health" && (
+            <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} onRefreshData={loadProfile} />
+          )}
           {activeTab === "drugs" && (
             drugsView === "choose" ? (
               <DrugsEntry onOpen={setDrugsView} />
