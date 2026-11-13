@@ -10,24 +10,85 @@ import {
   drawPatientBlock,
   drawDoctorBlock,
   drawSectionLabel,
-  drawSectionHead,
   drawDivider,
   drawSignatureBlock,
   drawRequestFooter,
 } from "@/lib/requestPdfLayout";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
-import { hasArabic, wrapArabicText, drawArabicLine } from "@/lib/pdfText";
+import { hasArabic, wrapArabicText, drawArabicLine, arabicWidth } from "@/lib/pdfText";
 
 const TITLE = "Clinical Note";
 const SUBTITLE = "Official Medical Document";
 const { margin: M, right: R } = PDF_PAGE;
 const WIDTH = R - M;
 
+// The guideline basis and its reference register are documentation aids kept
+// with the note itself — they are never printed on the patient's document.
+const NOT_ON_DOCUMENT = /guideline\s*basis|reference\s*register|guideline_basis|reference_register/i;
+
+function textWidth(doc, text, size, weight) {
+  if (hasArabic(text)) return arabicWidth(text, size, weight);
+  doc.setFont("helvetica", weight);
+  doc.setFontSize(size);
+  return doc.getTextWidth(String(text || ""));
+}
+
+// Nothing may run past the right margin: a line that is still too wide (a long
+// reference, a word with no spaces) is broken at the character that fits.
+function fitLines(doc, lines, size, weight = "normal") {
+  const out = [];
+  lines.forEach((line) => {
+    if (textWidth(doc, line, size, weight) <= WIDTH + 0.5) {
+      out.push(line);
+      return;
+    }
+    let current = "";
+    Array.from(String(line)).forEach((character) => {
+      if (current && textWidth(doc, current + character, size, weight) > WIDTH) {
+        out.push(current);
+        current = character;
+      } else {
+        current += character;
+      }
+    });
+    if (current) out.push(current);
+  });
+  return out;
+}
+
 // Lines of a paragraph, measured the way they will be printed: Arabic with the
-// browser's own text engine, everything else with the PDF's text metrics.
+// browser's own text engine, everything else with the PDF's text metrics — and
+// every line guaranteed to fit the text column.
 function wrap(doc, text, width, size, weight = "normal") {
-  return hasArabic(text) ? wrapArabicText(text, width, size, weight) : doc.splitTextToSize(String(text || ""), width);
+  const lines = hasArabic(text)
+    ? wrapArabicText(text, width, size, weight)
+    : doc.splitTextToSize(String(text || ""), width);
+  return fitLines(doc, lines, size, weight);
+}
+
+// The note type across the head of the sheet, with its reference. A long type
+// name wraps instead of running off the page, and the reference moves to its
+// own line when there is no room beside it.
+function writeNoteHead(doc, title, reference, y) {
+  const label = String(title || "Clinical Note").toUpperCase();
+  const ref = String(reference || "").trim();
+  const labelWidth = textWidth(doc, label, 7.6, "bold") + label.length * 1.1;
+  const refWidth = ref ? textWidth(doc, ref, 7.6, "bold") + ref.length * 1.1 : 0;
+  let yy = y;
+
+  if (!ref || labelWidth + refWidth + 8 <= WIDTH) {
+    drawSectionLabel(doc, label, yy);
+    if (ref) drawSectionLabel(doc, ref, yy, R, "right");
+    return yy + 8;
+  }
+
+  wrap(doc, label, WIDTH, 7.6, "bold").forEach((line) => {
+    drawSectionLabel(doc, line, yy);
+    yy += 5.4;
+  });
+  drawSectionLabel(doc, ref, yy, R, "right");
+  return yy + 8;
 }
 
 // One line, at its baseline. Arabic lines are shaped and printed as a crisp
@@ -85,6 +146,7 @@ function documentedFields(note) {
   const main = [];
   const sensitive = [];
   entries.forEach(([key, field]) => {
+    if (NOT_ON_DOCUMENT.test(`${key} ${field.label || ""}`)) return;
     const value = formatStoredValue(field.value).trim();
     if (!value) return;
     (key.startsWith("srh.") ? sensitive : main).push([field.label || key, value]);
@@ -127,13 +189,13 @@ export async function generateClinicalNotePdf(note, { logo, profile } = {}) {
 
   // ===== Note type & reference =====
   y += 8;
-  drawSectionHead(
+  if (y > CONTENT_BOTTOM - 20) y = startPage(doc, artwork, TITLE) + 6;
+  y = writeNoteHead(
     doc,
     note.document_type_label || "Clinical Note",
-    y,
-    note.note_reference ? `Reference: ${note.note_reference}` : ""
+    note.note_reference ? `Reference: ${note.note_reference}` : "",
+    y
   );
-  y += 8;
   drawDivider(doc, y);
   y += 9;
 
