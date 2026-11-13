@@ -15,7 +15,7 @@ const STATUSES = ["active", "resolved", "being_monitored", "unknown"];
 // My Health conditions section (points 2 "Known Case Of" and 4 "Past Medical
 // History"). Read-only for the patient; the doctor may add, edit or remove
 // entries during an active visit (check-in gated, recorded with their name).
-export default function ConditionsSection({ number, title, category, patient, emptyText, doctorView, editable, registrationEvents }) {
+export default function ConditionsSection({ number, title, category, patient, emptyText, doctorView, editable, registrationEvents, preloadedItems, onRefresh }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
   const [items, setItems] = useState([]);
@@ -29,8 +29,16 @@ export default function ConditionsSection({ number, title, category, patient, em
   const [error, setError] = useState("");
   const [logRefresh, setLogRefresh] = useState(0);
 
+  // Doctor Portal: the conditions arrive from the authorized backend payload,
+  // because the doctor cannot read the patient's condition records directly.
+  useEffect(() => {
+    if (!preloadedItems) return;
+    setItems(preloadedItems.filter((c) => c.category === category));
+    setLoading(false);
+  }, [preloadedItems, category]);
+
   const load = useCallback(async () => {
-    if (!patient?.id) return;
+    if (!patient?.id || preloadedItems) return;
     try {
       const results = await base44.entities.MedicalCondition.filter(
         { patient_id: patient.id, category },
@@ -57,7 +65,17 @@ export default function ConditionsSection({ number, title, category, patient, em
     } finally {
       setLoading(false);
     }
-  }, [patient?.id, category, registrationEvents]);
+  }, [patient?.id, category, registrationEvents, preloadedItems]);
+
+  // After an edit: the doctor's data is refreshed from the backend payload, the
+  // patient's own view re-reads it.
+  const refresh = useCallback(async () => {
+    if (preloadedItems) {
+      if (onRefresh) await onRefresh();
+      return;
+    }
+    await load();
+  }, [preloadedItems, onRefresh, load]);
 
   useEffect(() => {
     load();
@@ -102,7 +120,7 @@ export default function ConditionsSection({ number, title, category, patient, em
       });
       setForm(null);
       setLogRefresh((v) => v + 1);
-      await load();
+      await refresh();
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || "Could not save. Please try again.");
@@ -121,7 +139,7 @@ export default function ConditionsSection({ number, title, category, patient, em
         record: { id: item.id },
       });
       setLogRefresh((v) => v + 1);
-      await load();
+      await refresh();
     } catch (err) {
       console.error(err);
     }

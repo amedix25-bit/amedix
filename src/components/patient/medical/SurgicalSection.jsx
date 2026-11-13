@@ -13,7 +13,7 @@ import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTransl
 // My Health point 5 — Past Surgical History. Read-only for the patient; the
 // doctor may add, edit or remove entries during an active visit (check-in
 // gated, recorded with their name).
-export default function SurgicalSection({ number, patient, doctorView, editable }) {
+export default function SurgicalSection({ number, patient, doctorView, editable, preloadedItems, onRefresh }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
   const dv = (s, field) => (doctorView ? doctorText("SurgicalHistory", s, field, s[field]) : s[field]);
@@ -25,8 +25,16 @@ export default function SurgicalSection({ number, patient, doctorView, editable 
   const [error, setError] = useState("");
   const [logRefresh, setLogRefresh] = useState(0);
 
+  // Doctor Portal: previous operations arrive from the authorized backend
+  // payload — the doctor cannot read the surgical records directly.
+  useEffect(() => {
+    if (!preloadedItems) return;
+    setItems(preloadedItems);
+    setLoading(false);
+  }, [preloadedItems]);
+
   const load = useCallback(async () => {
-    if (!patient?.id) return;
+    if (!patient?.id || preloadedItems) return;
     try {
       const results = await base44.entities.SurgicalHistory.filter({ patient_id: patient.id }, "-surgery_date");
       setItems(results);
@@ -35,7 +43,15 @@ export default function SurgicalSection({ number, patient, doctorView, editable 
     } finally {
       setLoading(false);
     }
-  }, [patient?.id]);
+  }, [patient?.id, preloadedItems]);
+
+  const refresh = useCallback(async () => {
+    if (preloadedItems) {
+      if (onRefresh) await onRefresh();
+      return;
+    }
+    await load();
+  }, [preloadedItems, onRefresh, load]);
 
   useEffect(() => {
     load();
@@ -81,7 +97,7 @@ export default function SurgicalSection({ number, patient, doctorView, editable 
       });
       setForm(null);
       setLogRefresh((v) => v + 1);
-      await load();
+      await refresh();
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || "Could not save. Please try again.");
@@ -100,7 +116,7 @@ export default function SurgicalSection({ number, patient, doctorView, editable 
         record: { id: s.id },
       });
       setLogRefresh((v) => v + 1);
-      await load();
+      await refresh();
     } catch (err) {
       console.error(err);
     }

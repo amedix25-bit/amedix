@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import SectionCard from "@/components/patient/medical/SectionCard";
-import InfoRow from "@/components/patient/medical/InfoRow";
+import DemographicsSection from "@/components/patient/medical/DemographicsSection";
+import FamilyHistorySection from "@/components/patient/medical/FamilyHistorySection";
 import ConditionsSection from "@/components/patient/medical/ConditionsSection";
 import CurrentDiagnosisSection from "@/components/patient/medical/CurrentDiagnosisSection";
 import SurgicalSection from "@/components/patient/medical/SurgicalSection";
@@ -9,21 +9,37 @@ import AllergiesSection from "@/components/patient/medical/AllergiesSection";
 import LifestyleSection from "@/components/patient/medical/LifestyleSection";
 import PregnancySection from "@/components/patient/medical/PregnancySection";
 import MedicalHistorySection from "@/components/patient/medical/MedicalHistorySection";
-import { calcAge, capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
-import { formatDateDisplay } from "@/lib/dateFormat";
 import { Lock, Pencil, Loader2 } from "lucide-react";
 
-// My Health — nine collapsible points. The patient cannot edit any section
+// My Health — the ten collapsible points. The patient cannot edit any section
 // except Lifestyle (from the Profile tab); the doctor may edit the medical
 // points during an active visit (check-in gated) and every edit is recorded
 // as "Dr. <name> edited <datetime>".
-export default function PatientHealth({ profile, onGoToProfile, doctorView, registrationEvents }) {
+export default function PatientHealth({
+  profile,
+  onGoToProfile,
+  doctorView,
+  registrationEvents,
+  doctorData,
+  onRefreshData,
+}) {
   const { t } = usePatientLanguage();
-  const age = calcAge(profile?.date_of_birth);
   const [checkIn, setCheckIn] = useState(null);
   const editable = doctorView && checkIn?.checked_in === true;
+  // Doctor Portal: records the doctor cannot read directly are supplied by the
+  // authorized backend payload, so the whole record is visible here.
+  const preloaded = doctorData
+    ? {
+        conditions: doctorData.conditions || [],
+        surgical: doctorData.surgical || [],
+        allergies: doctorData.allergies || [],
+        medications: doctorData.medications || [],
+        familyHistory: doctorData.family_history || [],
+        latestNote: (doctorData.notes || []).find((n) => String(n.diagnosis || "").trim()) || null,
+      }
+    : null;
 
   useEffect(() => {
     if (!doctorView || !profile?.id) return;
@@ -68,15 +84,7 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView, regi
         </div>
       )}
       <MedicalHistorySection patientId={profile?.id} />
-      <SectionCard number="1" title={t("Demographics")}>
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-          <InfoRow label={t("Name")} value={profile?.full_name} />
-          <InfoRow label={t("CIN")} value={profile?.cin} />
-          <InfoRow label={t("Age")} value={age === null ? null : t("{age} years", { age })} />
-          <InfoRow label={t("Sex")} value={profile?.gender ? t(capitalize(profile.gender)) : null} />
-          <InfoRow label={t("Date of Birth")} value={profile?.date_of_birth ? formatDateDisplay(profile.date_of_birth) : null} />
-        </div>
-      </SectionCard>
+      <DemographicsSection number="1" patient={profile} doctorView={doctorView} />
 
       <ConditionsSection
         number="2"
@@ -86,9 +94,15 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView, regi
         emptyText={t("No known conditions were recorded at registration.")}
         doctorView={doctorView}
         editable={editable}
+        preloadedItems={preloaded?.conditions}
+        onRefresh={onRefreshData}
       />
 
-      <CurrentDiagnosisSection number="3" patient={profile} />
+      <CurrentDiagnosisSection
+        number="3"
+        patient={profile}
+        preloadedNote={preloaded ? preloaded.latestNote : undefined}
+      />
 
       <ConditionsSection
         number="4"
@@ -99,13 +113,42 @@ export default function PatientHealth({ profile, onGoToProfile, doctorView, regi
         doctorView={doctorView}
         editable={editable}
         registrationEvents={registrationEvents}
+        preloadedItems={preloaded?.conditions}
+        onRefresh={onRefreshData}
       />
 
-      <SurgicalSection number="5" patient={profile} doctorView={doctorView} editable={editable} />
-      <MedicationsSection number="6" patient={profile} editable={editable} doctorView={doctorView} />
-      <AllergiesSection number="7" patient={profile} doctorView={doctorView} editable={editable} />
+      <SurgicalSection
+        number="5"
+        patient={profile}
+        doctorView={doctorView}
+        editable={editable}
+        preloadedItems={preloaded?.surgical}
+        onRefresh={onRefreshData}
+      />
+      <MedicationsSection
+        number="6"
+        patient={profile}
+        editable={editable}
+        doctorView={doctorView}
+        preloadedItems={preloaded?.medications}
+        onRefresh={onRefreshData}
+      />
+      <AllergiesSection
+        number="7"
+        patient={profile}
+        doctorView={doctorView}
+        editable={editable}
+        preloadedItems={preloaded?.allergies}
+        onRefresh={onRefreshData}
+      />
       <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} doctorView={doctorView} />
       <PregnancySection number="9" patient={profile} doctorView={doctorView} editable={editable} />
+      <FamilyHistorySection
+        number="10"
+        patient={profile}
+        doctorView={doctorView}
+        records={preloaded?.familyHistory}
+      />
     </div>
   );
 }

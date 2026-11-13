@@ -22,7 +22,7 @@ const severityClass = (s) =>
 // My Health point 7 — Allergies. Read-only for the patient; the doctor may
 // add, edit or remove entries during an active visit (check-in gated,
 // recorded with their name).
-export default function AllergiesSection({ number, patient, doctorView, editable }) {
+export default function AllergiesSection({ number, patient, doctorView, editable, preloadedItems, onRefresh }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
   const [items, setItems] = useState([]);
@@ -33,8 +33,16 @@ export default function AllergiesSection({ number, patient, doctorView, editable
   const [error, setError] = useState("");
   const [logRefresh, setLogRefresh] = useState(0);
 
+  // Doctor Portal: the allergy entries arrive from the authorized backend
+  // payload — the doctor cannot read the patient's allergy records directly.
+  useEffect(() => {
+    if (!preloadedItems) return;
+    setItems(preloadedItems);
+    setLoading(false);
+  }, [preloadedItems]);
+
   const load = useCallback(async () => {
-    if (!patient?.id) return;
+    if (!patient?.id || preloadedItems) return;
     try {
       const results = await base44.entities.Allergy.filter({ patient_id: patient.id });
       setItems(results);
@@ -43,7 +51,15 @@ export default function AllergiesSection({ number, patient, doctorView, editable
     } finally {
       setLoading(false);
     }
-  }, [patient?.id]);
+  }, [patient?.id, preloadedItems]);
+
+  const refresh = useCallback(async () => {
+    if (preloadedItems) {
+      if (onRefresh) await onRefresh();
+      return;
+    }
+    await load();
+  }, [preloadedItems, onRefresh, load]);
 
   useEffect(() => {
     load();
@@ -88,7 +104,7 @@ export default function AllergiesSection({ number, patient, doctorView, editable
       });
       setForm(null);
       setLogRefresh((v) => v + 1);
-      await load();
+      await refresh();
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || "Could not save. Please try again.");
@@ -107,7 +123,7 @@ export default function AllergiesSection({ number, patient, doctorView, editable
         record: { id: a.id },
       });
       setLogRefresh((v) => v + 1);
-      await load();
+      await refresh();
     } catch (err) {
       console.error(err);
     }

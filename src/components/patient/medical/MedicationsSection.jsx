@@ -10,7 +10,7 @@ import { medicationStatus, mealLabel, routeLabel, todayStr } from "@/lib/medicat
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorText } from "@/lib/doctorMedicalTranslations";
 
-export default function MedicationsSection({ number, patient, editable, doctorView }) {
+export default function MedicationsSection({ number, patient, editable, doctorView, preloadedItems, onRefresh }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
   // Doctor Portal display value — patient-entered Arabic text shown in
@@ -25,8 +25,16 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
   const [startDate, setStartDate] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Doctor Portal: the medication list arrives from the authorized backend
+  // payload — the doctor cannot read the patient's medication records directly.
+  useEffect(() => {
+    if (!preloadedItems) return;
+    setItems(preloadedItems);
+    setLoading(false);
+  }, [preloadedItems]);
+
   const load = useCallback(async () => {
-    if (!patient?.id) return;
+    if (!patient?.id || preloadedItems) return;
     try {
       const results = await base44.entities.Medication.filter({ patient_id: patient.id }, "-start_date");
       setItems(results);
@@ -35,7 +43,15 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
     } finally {
       setLoading(false);
     }
-  }, [patient?.id]);
+  }, [patient?.id, preloadedItems]);
+
+  const refresh = useCallback(async () => {
+    if (preloadedItems) {
+      if (onRefresh) await onRefresh();
+      return;
+    }
+    await load();
+  }, [preloadedItems, onRefresh, load]);
 
   useEffect(() => {
     load();
@@ -59,7 +75,7 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
       setStartDate("");
       setShowAdd(false);
       setLogRefresh((v) => v + 1);
-      load();
+      await refresh();
     } catch (err) {
       console.error(err);
     } finally {
@@ -75,7 +91,7 @@ export default function MedicationsSection({ number, patient, editable, doctorVi
           ? { is_active: true, stopped_date: "" }
           : { is_active: false, stopped_date: new Date().toISOString().slice(0, 10) }
       );
-      load();
+      await refresh();
     } catch (err) {
       console.error(err);
     }

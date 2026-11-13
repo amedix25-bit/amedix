@@ -4,12 +4,30 @@ import SectionCard from "./SectionCard";
 import { Loader2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-export default function CurrentDiagnosisSection({ number, patient }) {
+export default function CurrentDiagnosisSection({ number, patient, preloadedNote }) {
   const { t } = usePatientLanguage();
   const [latest, setLatest] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Doctor Portal: the latest diagnosis comes from the authorized backend
+  // payload (the patient-only diagnosis feed refuses doctor accounts).
   useEffect(() => {
+    if (preloadedNote === undefined) return;
+    setLatest(
+      preloadedNote
+        ? {
+            diagnosis: preloadedNote.diagnosis,
+            date: preloadedNote.date,
+            doctor_name: preloadedNote.doctor_name,
+            icd11: preloadedNote.icd11 || preloadedNote.icd11_coded_diagnoses || [],
+          }
+        : null
+    );
+    setLoading(false);
+  }, [preloadedNote]);
+
+  useEffect(() => {
+    if (preloadedNote !== undefined) return;
     const load = async () => {
       if (!patient?.id) return;
       try {
@@ -23,7 +41,7 @@ export default function CurrentDiagnosisSection({ number, patient }) {
       }
     };
     load();
-  }, [patient?.id]);
+  }, [patient?.id, preloadedNote]);
 
   return (
     <SectionCard number={number} title={t("Current Diagnosis")}>

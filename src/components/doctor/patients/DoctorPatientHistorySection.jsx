@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import PatientHealth from "@/components/patient/PatientHealth";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
@@ -20,21 +20,32 @@ const ICONS = {
 // laboratory results.
 export default function DoctorPatientHistorySection({ patient }) {
   const [events, setEvents] = useState(null);
+  // The authorized clinical payload — the doctor cannot read the patient's
+  // condition, allergy, medication, surgical, family-history or note records
+  // directly, so every section is fed from this one verified backend read.
+  const [recordData, setRecordData] = useState(null);
   // Significant medical events the patient reported at registration.
   const [reportedEvents, setReportedEvents] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const reload = useCallback(async () => {
+    setReloadKey((v) => v + 1);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
       if (!patient?.id) return;
       try {
-        const [recordData, appts] = await Promise.all([
+        const [payload, appts] = await Promise.all([
           base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id }),
           base44.entities.Appointment.filter({ patient_id: patient.id }),
         ]);
-        const history = recordData.data.medical_history || [];
-        setReportedEvents(recordData.data.medical_events || []);
-        const imaging = recordData.data.imaging || [];
-        const labs = recordData.data.lab_results || [];
+        const data = payload.data || {};
+        setRecordData(data);
+        const history = data.medical_history || [];
+        setReportedEvents(data.medical_events || []);
+        const imaging = data.imaging || [];
+        const labs = data.lab_results || [];
         setEvents(
           [
             ...history.map((h) => ({
@@ -77,11 +88,17 @@ export default function DoctorPatientHistorySection({ patient }) {
       }
     };
     load();
-  }, [patient?.id]);
+  }, [patient?.id, reloadKey]);
 
   return (
     <div className="space-y-6">
-      <PatientHealth profile={patient} doctorView registrationEvents={reportedEvents} />
+      <PatientHealth
+        profile={patient}
+        doctorView
+        registrationEvents={reportedEvents}
+        doctorData={recordData}
+        onRefreshData={reload}
+      />
 
       <div>
         <h4 className="font-semibold text-sm mb-3">Chronological History</h4>
