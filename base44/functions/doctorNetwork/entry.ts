@@ -67,10 +67,12 @@ export default async function (req: Request): Promise<Response> {
     if (action === 'list') {
       const index = await buildEligibilityIndex(base44);
       const search = String(body.search || '').trim().toLowerCase();
-      // Every active doctor account that holds a doctor profile is listed, so a
-      // doctor who has entered the portal is immediately findable by colleagues.
+      // Only a doctor verified by their own hospital is listed: verification is
+      // what opens the network to colleagues, so an unverified doctor is never
+      // shown to other doctors.
       const doctors = [...index.evaluations.values()]
         .filter((e) => e.account_type === 'doctor' && e.doctor)
+        .filter((e) => e.eligible === true)
         .filter((e) => e.user_id && e.user_id !== user.id)
         .filter((e) => e.user_exists !== false)
         .filter((e) => !['test_account', 'suspected_test', 'duplicate'].includes(e.classification))

@@ -11,9 +11,9 @@ import { Loader2, Search, ShieldCheck, Clock, UserPlus, UserMinus, Building2, Me
 
 // Doctor Portal → Find Doctors / My Colleagues.
 //
-// Every doctor working in the Doctor Portal appears here, nationwide, at any
-// stage of verification. Adding a colleague and messaging are professional
-// contacts only and stay reserved to fully verified doctors.
+// Only doctors verified by their own hospital are listed: verification is what
+// opens the network, so a doctor who has not been verified by the hospital they
+// work at is never shown here.
 export default function FindDoctors({ profile }) {
   const { toast } = useToast();
   const [doctors, setDoctors] = useState([]);

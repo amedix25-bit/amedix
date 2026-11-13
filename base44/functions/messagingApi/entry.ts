@@ -33,7 +33,7 @@ import {
 
 // Secure AMedix messaging. Three channels, one authorization core:
 //   hospital — doctor ↔ hospital administration (two-way)
-//   doctor   — doctor ↔ doctor, verified accounts only (two-way)
+//   doctor   — doctor ↔ doctor, hospital-verified doctors only (two-way)
 //   patient  — doctor → patient (STRICTLY one-way; a patient can read, never send)
 // Every read, write, attachment download, assignment and status change is
 // authorized HERE on the server. The browser's visibility is never the security

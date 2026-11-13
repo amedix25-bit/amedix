@@ -196,15 +196,10 @@ export function evaluateSnapshot(snap) {
     if (draft && draft.status === "pending_verification" && doctor.is_verified !== true) {
       blockers.push("The doctor registration is still awaiting verification.");
     }
-    const licenseVerified = (verifications || []).some(
-      (v) => v.status === "verified" && v.document_type === "medical_license"
-    );
-    const identityVerified = identityVerifiedFor(verifications, "doctor");
-    const override = control && control.verification_status === "verified";
-    if (!override) {
-      if (!licenseVerified) blockers.push("The medical license verification is missing or was not verified.");
-      if (!identityVerified) blockers.push("The doctor identity document verification is missing or was not verified.");
-    }
+    // The doctor's professional verification is the decision of the hospital
+    // they work at: that hospital reviews the doctor and approves them, and the
+    // approval is what opens the verified network. The identity and licence
+    // documents are checked once, at registration, and are never re-gated here.
     if (control && control.verification_status === "rejected") blockers.push("AMedix administration rejected the doctor's verification.");
     verified = doctor.is_verified === true && !(control && control.verification_status === "rejected");
   } else if (accountType === "hospital") {

@@ -2,7 +2,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { buildEligibilityIndex, evaluateAccount, logAccountAudit } from '../../shared/verifiedAccounts.ts';
 
 // AMedix account governance — the administrator-only view of who may use the
-// verified communication network, and the controls that change it.
+// verified communication network, and the controls that change it. A doctor is
+// verified by the hospital they work at, so the hospital's decision is what the
+// governance view reports.
 //
 // Reads: verified hospitals, verified doctors, verified patients, pending
 // accounts, suspended accounts, flagged accounts and identified test accounts,

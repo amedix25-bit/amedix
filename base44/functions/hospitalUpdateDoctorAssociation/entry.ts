@@ -1,11 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 // Hospital-admin management of the hospital's doctor associations:
-// deactivate, reactivate, or remove. Removal ends the association immediately
-// — the doctor loses access to that hospital's patients and hospital-specific
-// information, and if this was their current working hospital, they are
-// re-pointed to another active association (or the working hospital is
-// cleared), which instantly blocks the hospital's check-in security gate.
+// verify, revoke verification, deactivate, reactivate, or remove.
+//
+// The hospital verifies the doctors who work at it. Its approval is what marks
+// a doctor professionally verified, and that is what makes the doctor visible
+// in the verified network to other doctors. Only the hospital the association
+// belongs to can decide it — no other facility can verify or revoke a doctor.
+//
+// Removal ends the association immediately — the doctor loses access to that
+// hospital's patients and hospital-specific information, and if this was their
+// current working hospital, they are re-pointed to another active association
+// (or the working hospital is cleared), which instantly blocks the hospital's
+// check-in security gate.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -16,7 +23,9 @@ export default async function(req) {
     const associationId = String(body.association_id || "");
     const action = String(body.action || "");
     const statusByAction = { remove: "removed", deactivate: "deactivated", reactivate: "active" };
-    if (!associationId || !statusByAction[action]) {
+    const verificationByAction = { verify: true, revoke_verification: false };
+    const isVerificationAction = action in verificationByAction;
+    if (!associationId || (!statusByAction[action] && !isVerificationAction)) {
       return Response.json({ error: "A valid association and action are required." }, { status: 400 });
     }
 
@@ -33,6 +42,45 @@ export default async function(req) {
     const assoc = assocs[0];
     if (assoc.hospital_id !== profile.id) {
       return Response.json({ error: "This doctor is not associated with your hospital." }, { status: 403 });
+    }
+
+    // Professional verification of the doctor, decided by this hospital.
+    if (isVerificationAction) {
+      if (assoc.status !== "active") {
+        return Response.json(
+          { error: "Only a doctor currently active at your hospital can be verified." },
+          { status: 403 }
+        );
+      }
+      const doctorRows = await base44.asServiceRole.entities.DoctorProfile.filter({ id: assoc.doctor_id });
+      if (doctorRows.length === 0) {
+        return Response.json({ error: "Doctor profile not found." }, { status: 404 });
+      }
+      const isVerified = verificationByAction[action];
+      await base44.asServiceRole.entities.DoctorProfile.update(doctorRows[0].id, { is_verified: isVerified });
+
+      // The decision is recorded in the account audit trail, attributed to the
+      // hospital that made it. A logging failure never undoes the decision.
+      try {
+        await base44.asServiceRole.entities.AccountAuditLog.create({
+          user_id: doctorRows[0].user_id,
+          account_type: "doctor",
+          account_name: assoc.doctor_name,
+          action: isVerified ? "verification_approved" : "verification_rejected",
+          action_label: isVerified ? "Doctor verified by hospital" : "Doctor verification revoked by hospital",
+          detail: isVerified
+            ? `${assoc.doctor_name} was verified by ${profile.hospital_name}.`
+            : `${assoc.doctor_name} is no longer verified at ${profile.hospital_name}.`,
+          actor_user_id: user.id,
+          actor_name: user.full_name || profile.hospital_name,
+          actor_role: "hospital",
+          datetime: new Date().toISOString(),
+        });
+      } catch (err) {
+        // audit trail is best-effort; the verification itself already applied
+      }
+
+      return Response.json({ is_verified: isVerified });
     }
 
     await base44.asServiceRole.entities.HospitalDoctor.update(assoc.id, { status: statusByAction[action] });

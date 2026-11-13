@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Stethoscope, Plus, Copy, KeyRound, RefreshCw } from "lucide-react";
+import { Loader2, Stethoscope, Plus, Copy, KeyRound, RefreshCw, ShieldCheck } from "lucide-react";
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 const isOnline = (ts) => !!ts && Date.now() - new Date(ts).getTime() < ONLINE_WINDOW_MS;
@@ -165,6 +165,29 @@ export default function HospitalDoctorsSection({ profile }) {
     }
   };
 
+  // The hospital verifies the doctors who work at it — that approval is what
+  // makes a doctor professionally verified and visible to other doctors.
+  const decideVerification = async (a, verified) => {
+    setBusyId(a.id);
+    try {
+      await base44.functions.invoke("hospitalUpdateDoctorAssociation", {
+        association_id: a.id,
+        action: verified ? "verify" : "revoke_verification",
+      });
+      toast({
+        title: verified ? t("Doctor verified") : t("Verification revoked"),
+        description: verified
+          ? `${a.doctor_name} is now verified and can be found by other doctors.`
+          : `${a.doctor_name} is no longer listed in the verified network.`,
+      });
+      await load();
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -214,8 +237,8 @@ export default function HospitalDoctorsSection({ profile }) {
               <p className="text-xs text-muted-foreground">
                 Give this code to the doctor you want to add. In their Doctor Portal they open My Hospitals, enter the
                 code, confirm your hospital and their department — they are affiliated with your hospital immediately.
-                A doctor can never join by typing the hospital name, and their professional verification is reviewed
-                separately by AMedix administration.
+                A doctor can never join by typing the hospital name. Once they appear in this list you verify them
+                yourself — a verified doctor becomes visible to the other verified doctors of AMedix.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -333,7 +356,7 @@ export default function HospitalDoctorsSection({ profile }) {
                             d?.is_verified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
                           }`}
                         >
-                          {d?.is_verified ? t("Verified by AMedix") : t("Verification pending")}
+                          {d?.is_verified ? t("Verified by your hospital") : t("Awaiting your verification")}
                         </span>
                       </div>
                     </div>
@@ -356,14 +379,33 @@ export default function HospitalDoctorsSection({ profile }) {
                         </Button>
                       </>
                     ) : a.status === "active" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateAssociation(a, "deactivate")}
-                        disabled={busyId === a.id}
-                      >
-                        {t("Deactivate Doctor")}
-                      </Button>
+                      <>
+                        {d?.is_verified ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => decideVerification(a, false)}
+                            disabled={busyId === a.id}
+                          >
+                            {busyId === a.id && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                            {t("Revoke Verification")}
+                          </Button>
+                        ) : (
+                          <Button size="sm" onClick={() => decideVerification(a, true)} disabled={busyId === a.id}>
+                            {busyId === a.id && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                            <ShieldCheck className="w-4 h-4 mr-1.5" />
+                            {t("Verify Doctor")}
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateAssociation(a, "deactivate")}
+                          disabled={busyId === a.id}
+                        >
+                          {t("Deactivate Doctor")}
+                        </Button>
+                      </>
                     ) : (
                       <Button
                         size="sm"

@@ -6,7 +6,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminUsers from "@/components/admin/AdminUsers";
-import AdminDoctorVerification from "@/components/admin/AdminDoctorVerification";
 import AdminLabPanels from "@/components/admin/AdminLabPanels";
 import AdminPartnerAds from "@/components/admin/partner/AdminPartnerAds";
 import AdminHospitalAuthorizations from "@/components/admin/hospital/AdminHospitalAuthorizations";
@@ -18,7 +17,6 @@ import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "users", label: "Users", icon: Users },
-  { key: "verification", label: "Doctor Verification", icon: ShieldCheck },
   { key: "hospitals", label: "Hospital Approvals", icon: Building2 },
   { key: "institution_approvals", label: "Institution Approvals", icon: ClipboardCheck },
   { key: "access_codes", label: "Access Codes", icon: KeyRound },
@@ -49,7 +47,6 @@ export default function AdminDashboard() {
 
         {activeTab === "overview" && <AdminOverview />}
         {activeTab === "users" && <AdminUsers />}
-        {activeTab === "verification" && <AdminDoctorVerification />}
         {activeTab === "hospitals" && <AdminHospitalAuthorizations />}
         {activeTab === "institution_approvals" && <AdminInstitutionApprovals />}
         {activeTab === "access_codes" && <AdminAccessCodes />}
