@@ -134,7 +134,7 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
           <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-sm text-muted-foreground">
-            {t("Your registration has been submitted together with your documents. Your account is awaiting AMedix administration approval.")}
+            {t("Your registration has been submitted with your documents. Your hospital affiliation is already active, and your account is awaiting AMedix administration approval of your professional verification.")}
           </p>
         </div>
         <Button className="w-full" onClick={() => onSubmitted({ state })}>{t("Go to Doctor Portal")}</Button>

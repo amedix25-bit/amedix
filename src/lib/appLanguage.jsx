@@ -456,6 +456,7 @@ const AR = {
   "Register Your Pharmacy with AMedix": "سجّل صيدليتك في AMedix",
   "Registration progress": "تقدم التسجيل",
   "Pending AMedix approval": "بانتظار موافقة AMedix",
+  "Your registration has been submitted with your documents. Your hospital affiliation is already active, and your account is awaiting AMedix administration approval of your professional verification.": "تم تقديم تسجيلك مع مستنداتك. انتسابك إلى المستشفى مُفعَّل بالفعل، وحسابك بانتظار موافقة إدارة AMedix على التحقق المهني.",
   "Your laboratory registration has been submitted": "تم تقديم تسجيل مختبرك",
   "Your pharmacy registration has been submitted": "تم تقديم تسجيل صيدليتك",
   "Go to laboratory portal": "الانتقال إلى بوابة المختبر",
