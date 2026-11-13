@@ -9,8 +9,9 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 // The one Gynaecological & Obstetric History section of the female patient.
 // The order follows the clinical questions: pregnancy status first, then the
 // previous pregnancy outcomes it depends on — so Gravida can be calculated and
-// shown only while she is pregnant. A pregnant patient can never be recorded as
-// postmenopausal.
+// shown only while she is pregnant. Menopause status comes next: a patient
+// recorded as postmenopausal is never asked about her menstrual cycle. A
+// pregnant patient can never be recorded as postmenopausal.
 export default function GynaeObstetricHistoryForm({ value, onChange }) {
   const { t } = usePatientLanguage();
   const update = (key) => (patch) => onChange({ ...value, [key]: { ...value[key], ...patch } });
@@ -44,18 +45,22 @@ export default function GynaeObstetricHistoryForm({ value, onChange }) {
       </section>
 
       <section className="space-y-2 border-t border-border pt-4">
+        <h4 className="text-xs font-semibold text-primary">{t("Menopause")}</h4>
+        <MenopauseFields value={value.menopause} onChange={update("menopause")} pregnant={pregnant} />
+      </section>
+
+      <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary">{t("Menstrual History")}</h4>
-        <MenstrualHistoryFields value={value.menstrual} onChange={update("menstrual")} />
+        <MenstrualHistoryFields
+          value={value.menstrual}
+          onChange={update("menstrual")}
+          postmenopausal={postmenopausal}
+        />
       </section>
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary">{t("Past Gynaecological History")}</h4>
         <GynaePastHistoryFields value={value.past} onChange={update("past")} />
-      </section>
-
-      <section className="space-y-2 border-t border-border pt-4">
-        <h4 className="text-xs font-semibold text-primary">{t("Menopause")}</h4>
-        <MenopauseFields value={value.menopause} onChange={update("menopause")} pregnant={pregnant} />
       </section>
     </div>
   );

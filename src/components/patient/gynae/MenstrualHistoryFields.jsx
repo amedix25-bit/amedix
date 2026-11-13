@@ -5,9 +5,18 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 
 // Past menstrual history — LMP, menarche, regularity, cycle, flow, pain and
 // abnormal bleeding. Every field may stay unanswered (saved as unknown).
-export default function MenstrualHistoryFields({ value, onChange }) {
+// A patient recorded as postmenopausal is not asked about her cycle at all.
+export default function MenstrualHistoryFields({ value, onChange, postmenopausal }) {
   const { t } = usePatientLanguage();
   const set = (patch) => onChange(patch);
+
+  if (postmenopausal) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        {t("Not asked — you are recorded as postmenopausal, so your menstrual cycle questions are skipped. Your menopause details are recorded above.")}
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-3">

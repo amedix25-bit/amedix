@@ -1145,6 +1145,8 @@ const AR = {
     "Gravida هو عدد مرات الحمل. Para هو عدد الولادات من الأسبوع 24 فما بعد. Abortions هو عدد الأحمال التي انتهت قبل الأسبوع 24. يُحسب كل حمل مرة واحدة فقط.",
   "Number of pregnancies (Gravida)": "عدد مرات الحمل (Gravida)",
   "Gravida (G)": "عدد مرات الحمل (G)",
+  "Not asked — you are recorded as postmenopausal, so your menstrual cycle questions are skipped. Your menopause details are recorded above.":
+    "لم تُطرح عليك أسئلة الدورة الشهرية لأنك مسجّلة كمنقطعة الطمث — وتُسجَّل تفاصيل انقطاع الطمث أعلاه.",
   "Para (P)": "عدد الولادات (P)",
   "Calculated from all your pregnancies, including the current one — you never count it yourself.":
     "يُحسب من جميع أحمالك بما في ذلك حملك الحالي — لا تحتاجين إلى حسابه بنفسك.",
