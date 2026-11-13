@@ -191,7 +191,7 @@ export async function recogniseDocument(
         prompt: basePrompt(profile, hint, 'Extract the number structurally, and list every other number on the document.'),
       }),
       visionPass(base44, {
-        pass: 'B', model: 'claude_sonnet_5', engine: 'claude_sonnet_5', url: side.url, source: 'original', side: side.side,
+        pass: 'B', model: 'claude-sonnet-5', engine: 'claude-sonnet-5', url: side.url, source: 'original', side: side.side,
         prompt: basePrompt(profile, hint, 'Transcribe the document line by line first, then take the number from your transcription.'),
       }),
       visionPass(base44, {
@@ -199,7 +199,7 @@ export async function recogniseDocument(
         prompt: basePrompt(profile, hint, 'This copy has been rectified by the server: straightened, shadow-flattened, contrast-equalised and upscaled. Read the number character by character, digit by digit, and state each character you are unsure of.'),
       }),
       visionPass(base44, {
-        pass: 'D', model: 'claude_sonnet_5', engine: 'claude_sonnet_5', url: side.enhancedUrl, source: 'enhanced', side: side.side,
+        pass: 'D', model: 'claude-sonnet-5', engine: 'claude-sonnet-5', url: side.enhancedUrl, source: 'enhanced', side: side.side,
         prompt: basePrompt(profile, hint, profile.mrz
           ? 'Read the machine-readable zone at the bottom character by character, including any fill characters, and take the document number from it. If the zone is unreadable, read the printed number field instead.'
           : 'Focus on each numeric field in turn, decide which one is the identification number, and transcribe it character by character.'),

@@ -432,14 +432,83 @@ export function enhance(raster: Raster, mode: EnhanceMode = 'enhanced', targetWi
   const flat = flattenLighting(straightened.gray, straightened.width, straightened.height);
   const local = clahe(flat, straightened.width, straightened.height, 8, 2.5);
   const sharpened = unsharp(local, straightened.width, straightened.height, mode === 'binary' ? 1.4 : 1.15);
-  const scale = sharpened.width >= targetWidth ? 1 : Math.min(2.5, targetWidth / sharpened.width);
-  const outW = Math.round(sharpened.width * scale);
-  const outH = Math.round(sharpened.height * scale);
-  const scaled = scale === 1 ? sharpened : resizeGray(sharpened, sharpened.width, sharpened.height, outW, outH);
+  const sourceW = straightened.width;
+  const sourceH = straightened.height;
+  const scale = sourceW >= targetWidth ? 1 : Math.min(2.5, targetWidth / sourceW);
+  const outW = Math.round(sourceW * scale);
+  const outH = Math.round(sourceH * scale);
+  const scaled = scale === 1 ? sharpened : resizeGray(sharpened, sourceW, sourceH, outW, outH);
   const final = mode === 'binary' ? sauvola(scaled, outW, outH, Math.max(15, Math.round(outW / 60)), 0.2) : scaled;
   return { width: outW, height: outH, gray: final, skew: Number(skew.toFixed(2)), scale: Number(scale.toFixed(2)) };
 }
 
 export function renderJpeg(result: EnhanceResult, quality = 92): Promise<Uint8Array> {
   return encodeJpeg(result.gray, result.width, result.height, quality);
+}
+
+// ---- document containers ---------------------------------------------------
+//
+// The scanner uploads a PDF whose pages are JPEG images, so the page pixels have
+// to be taken out of the container before they can be processed. A plain image
+// upload is decoded directly.
+
+export function findJpegStreams(bytes: Uint8Array): Uint8Array[] {
+  const streams: Uint8Array[] = [];
+  const limit = Math.min(bytes.length - 3, 40 * 1024 * 1024);
+  for (let i = 0; i < limit; i++) {
+    if (bytes[i] === 0xff && bytes[i + 1] === 0xd8 && bytes[i + 2] === 0xff) {
+      let end = i + 2;
+      while (end + 1 < bytes.length && !(bytes[end] === 0xff && bytes[end + 1] === 0xd9)) end++;
+      if (end + 1 < bytes.length) {
+        const candidate = bytes.slice(i, end + 2);
+        if (candidate.length > 2048) streams.push(candidate);
+        i = end + 1;
+      }
+    }
+  }
+  return streams;
+}
+
+export async function decodeDocument(bytes: Uint8Array): Promise<Raster[]> {
+  const head = bytes.length > 3 ? bytes : new Uint8Array(0);
+  if (isPng(head) || (head[0] === 0xff && head[1] === 0xd8)) {
+    try {
+      return [await decodeImage(head)];
+    } catch {
+      return [];
+    }
+  }
+  const pages: Raster[] = [];
+  for (const stream of findJpegStreams(bytes).slice(0, 4)) {
+    try {
+      pages.push(await decodeImage(stream));
+    } catch {
+      // an embedded thumbnail or an unsupported codec is simply skipped
+    }
+  }
+  return pages;
+}
+
+// Stacks the processed pages into one picture so a single read sees both sides
+// of a two-sided document.
+export function composePages(
+  pages: { gray: Float32Array; width: number; height: number }[],
+  gap = 24
+): { gray: Float32Array; width: number; height: number } {
+  if (!pages.length) return { gray: new Float32Array(0), width: 0, height: 0 };
+  if (pages.length === 1) return pages[0];
+  const width = Math.max(...pages.map((p) => p.width));
+  const scaled = pages.map((p) => {
+    if (p.width === width) return p;
+    const height = Math.round((p.height * width) / p.width);
+    return { gray: resizeGray(p.gray, p.width, p.height, width, height), width, height };
+  });
+  const height = scaled.reduce((sum, p) => sum + p.height, 0) + gap * (scaled.length - 1);
+  const out = new Float32Array(width * height).fill(255);
+  let offset = 0;
+  for (const page of scaled) {
+    out.set(page.gray, offset * width);
+    offset += page.height + gap;
+  }
+  return { gray: out, width, height };
 }
