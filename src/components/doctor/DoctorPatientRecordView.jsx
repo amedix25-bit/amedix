@@ -29,12 +29,13 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
     <button
       type="button"
       onClick={() => setActiveTab(key)}
-      className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      title={label}
+      className={`flex-1 min-w-0 shrink inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[13px] font-medium transition-colors ${
         activeTab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
       }`}
     >
-      <Icon className="w-4 h-4" />
-      {label}
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{label}</span>
     </button>
   );
 
@@ -49,7 +50,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
 
       <DoctorPatientSummary patient={patient} />
 
-      <div className="flex flex-wrap rounded-xl border border-border bg-card p-1 gap-1 max-w-3xl">
+      <div className="flex flex-nowrap w-full overflow-x-auto rounded-xl border border-border bg-card p-1 gap-1">
         {tabButton("history", "Patient History", History)}
         {isObgyn && patient.gender === "female" && tabButton("antenatal", "Antenatal Care", Baby)}
         {tabButton("notes", "Clinical Notes", FileText)}
