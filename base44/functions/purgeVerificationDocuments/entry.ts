@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import {
   hasRetainedDocument, purgeUpdate, RETENTION_POLICY,
 } from '../../shared/documentRetention.ts';
+// deployment smoke check
 
 // AMedix Zero-Retention Document Verification Policy — cleanup sweep.
 //
