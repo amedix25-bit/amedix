@@ -170,8 +170,20 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     setError("");
-    const marriedFemale = isFemale && lifestyle.marital_status === "married";
-    const isPregnant = marriedFemale && lifestyle.pregnancy_status === "pregnant";
+    // A pregnant patient is never classified as postmenopausal.
+    const gynaeRecord = {
+      ...gynae,
+      menopause: {
+        ...gynae.menopause,
+        status:
+          gynae.current_pregnancy.status === "pregnant"
+            ? "premenopausal"
+            : gynae.menopause.status || "unknown",
+      },
+      recorded_datetime: new Date().toISOString(),
+      recorded_by: "patient",
+    };
+    const gynaeFields = legacyGynaeFields(gynaeRecord, isFemale);
     try {
       const newCin = await generateUniqueCIN();
       const fullName = [form.first_name, form.father_name, form.grandfather_name, form.last_name].filter(Boolean).join(" ");
@@ -222,22 +234,10 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         consanguinity: lifestyle.consanguinity,
         allergy_record_status: medical.allergies.length ? "" : allergyRecord,
         marital_status: isFemale ? lifestyle.marital_status : "",
-        pregnancy_status: marriedFemale ? lifestyle.pregnancy_status : "not_applicable",
-        gestational_age: isPregnant ? lifestyle.gestational_age : "",
-        estimated_due_date: isPregnant ? lifestyle.estimated_due_date : "",
-        gravida: marriedFemale ? Number(lifestyle.gravida) : 0,
-        para: marriedFemale ? Number(lifestyle.para) : 0,
-        living_children: marriedFemale ? Number(lifestyle.living_children) : 0,
-        miscarriages_abortions: marriedFemale ? Number(lifestyle.miscarriages) : 0,
-        stillbirths: marriedFemale ? Number(lifestyle.stillbirths) : 0,
-        pregnancy_history: marriedFemale
-          ? `G${lifestyle.gravida} P${lifestyle.para} · ${lifestyle.living_children} living children · ${lifestyle.miscarriages} miscarriages/abortions · ${lifestyle.stillbirths} stillbirths`
-          : "",
-        pregnancy_complications: marriedFemale ? lifestyle.pregnancy_complications : "",
-        menstrual_history: marriedFemale ? lifestyle.menstrual_history : "",
-        contraception_history: marriedFemale ? lifestyle.contraception_history : "",
-        fertility_history: marriedFemale ? lifestyle.fertility_history : "",
-        gynecological_history: marriedFemale ? lifestyle.gynecological_history : "",
+        // Gynaecological & obstetric history — recorded once, stored in the
+        // patient's Past History with the legacy summaries kept in sync.
+        ...gynaeFields,
+        gynae_obstetric_history: isFemale ? gynaeRecord : {},
         urological_history: isFemale ? lifestyle.urological_history : "",
         medication_info_completed: true,
       });
@@ -871,7 +871,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
                   {isFemale && (
                     <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-                      <h3 className="text-sm font-semibold text-primary">{t("Reproductive & Urological History")}</h3>
+                      <h3 className="text-sm font-semibold text-primary">{t("Other Reproductive History")}</h3>
                       <p className="text-[11px] text-muted-foreground">
                         {t("Optional — answered voluntarily. This information is access-controlled and is not displayed unnecessarily.")}
                       </p>
@@ -882,92 +882,10 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     </div>
                   )}
 
-                  {isFemale && lifestyle.marital_status === "married" && (
-                    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-                      <h3 className="text-sm font-semibold text-primary">{t("Pregnancy History")} *</h3>
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label>{t("Pregnancy status")} *</Label>
-                          <Select value={lifestyle.pregnancy_status} onValueChange={(v) => setLifestyle((s) => ({ ...s, pregnancy_status: v }))}>
-                            <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="not_pregnant">{t("Not pregnant")}</SelectItem>
-                              <SelectItem value="pregnant">{t("Pregnant")}</SelectItem>
-                              <SelectItem value="unknown">{t("Unknown")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {lifestyle.pregnancy_status === "pregnant" && (
-                          <>
-                            <div className="space-y-1.5">
-                              <Label>{t("Gestational age")} *</Label>
-                              <Select value={lifestyle.gestational_age} onValueChange={(v) => setLifestyle((s) => ({ ...s, gestational_age: v }))}>
-                                <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: 40 }, (_, i) => i + 1).map((w) => (
-                                    <SelectItem key={w} value={`${w} weeks`}>{w} {t("weeks")}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label htmlFor="edd">{t("Estimated due date")} *</Label>
-                              <DateField
-                                id="edd"
-                                value={lifestyle.estimated_due_date}
-                                onChange={(date) => setLifestyle((s) => ({ ...s, estimated_due_date: date }))}
-                              />
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      {lifestyle.pregnancy_status === "not_pregnant" && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("Answer about previous pregnancies even if you are not pregnant now.")}
-                        </p>
-                      )}
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {PREGNANCY_COUNTS.map(({ key, label }) => (
-                          <div key={key} className="space-y-1.5">
-                            <Label>{t(label)} *</Label>
-                            <Select value={lifestyle[key]} onValueChange={(v) => setLifestyle((s) => ({ ...s, [key]: v }))}>
-                              <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
-                              <SelectContent>
-                                {Array.from({ length: 13 }, (_, i) => String(i)).map((n) => (
-                                  <SelectItem key={n} value={n}>{n}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        {t("The questions below are optional and answered voluntarily. This information is access-controlled.")}
-                      </p>
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="preg_comps">{t("Significant pregnancy complications")}</Label>
-                          <Input id="preg_comps" value={lifestyle.pregnancy_complications} onChange={setL("pregnancy_complications")} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="menstrual">{t("Menstrual history")}</Label>
-                          <Input id="menstrual" value={lifestyle.menstrual_history} onChange={setL("menstrual_history")} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="contraception">{t("Contraception history")}</Label>
-                          <Input id="contraception" value={lifestyle.contraception_history} onChange={setL("contraception_history")} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="fertility">{t("Fertility-related history")}</Label>
-                          <Input id="fertility" value={lifestyle.fertility_history} onChange={setL("fertility_history")} />
-                        </div>
-                        <div className="space-y-1.5 sm:col-span-2">
-                          <Label htmlFor="gynecology">{t("Relevant gynecological history")}</Label>
-                          <Input id="gynecology" value={lifestyle.gynecological_history} onChange={setL("gynecological_history")} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {/* Female patients only: the single Gynaecological & Obstetric
+                      History section — current pregnancy, menstrual history,
+                      past gynaecological history, previous pregnancies, menopause. */}
+                  {isFemale && <GynaeObstetricHistoryForm value={gynae} onChange={setGynae} />}
 
                   <MedicalListSection
                     id="none_immunizations"

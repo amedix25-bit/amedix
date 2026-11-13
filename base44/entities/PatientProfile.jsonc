@@ -391,7 +391,7 @@
         "unknown"
       ],
       "default": "not_applicable",
-      "description": "Pregnancy status of a married female patient \u2014 answered at registration, including Unknown when the patient is unsure"
+      "description": "Pregnancy status of a female patient \u2014 answered at registration, including Unknown when the patient is unsure. Kept in sync with gynae_obstetric_history.current_pregnancy"
     },
     "gestational_age": {
       "type": "string"
@@ -402,26 +402,27 @@
     },
     "gravida": {
       "type": "integer",
-      "description": "Number of pregnancies (Gravida) \u2014 collected at registration for married female patients"
+      "description": "Number of pregnancies (Gravida) \u2014 collected at registration for female patients. Kept in sync with gynae_obstetric_history.obstetric"
     },
     "para": {
       "type": "integer",
-      "description": "Number of births (Para) \u2014 collected at registration for married female patients"
+      "description": "Number of births from 24 weeks onwards (Para) \u2014 collected at registration for female patients. Kept in sync with gynae_obstetric_history.obstetric"
     },
     "living_children": {
       "type": "integer",
-      "description": "Number of living children \u2014 collected at registration for married female patients"
+      "description": "Number of living children \u2014 collected at registration for female patients"
     },
     "miscarriages_abortions": {
       "type": "integer",
-      "description": "Number of miscarriages/abortions \u2014 collected at registration for married female patients"
+      "description": "Number of pregnancies that ended before 24 weeks (miscarriage, induced abortion, ectopic) \u2014 never double-counted with para"
     },
     "stillbirths": {
       "type": "integer",
-      "description": "Number of stillbirths \u2014 collected at registration for married female patients"
+      "description": "Number of stillbirths \u2014 collected at registration for female patients"
     },
     "pregnancy_history": {
-      "type": "string"
+      "type": "string",
+      "description": "Readable summary of the previous pregnancies (G/P/A and each pregnancy's outcome) generated from gynae_obstetric_history"
     },
     "pregnancy_complications": {
       "type": "string",
@@ -429,7 +430,7 @@
     },
     "menstrual_history": {
       "type": "string",
-      "description": "Menstrual history, when relevant \u2014 access-controlled reproductive history"
+      "description": "Readable summary of the menstrual history generated from gynae_obstetric_history.menstrual"
     },
     "contraception_history": {
       "type": "string",
@@ -441,11 +442,16 @@
     },
     "gynecological_history": {
       "type": "string",
-      "description": "Relevant gynecological history \u2014 access-controlled reproductive history"
+      "description": "Readable summary of the previous gynaecological conditions, operations, treatments and investigations generated from gynae_obstetric_history.past"
     },
     "urological_history": {
       "type": "string",
       "description": "Relevant urological or reproductive history \u2014 access-controlled reproductive history"
+    },
+    "gynae_obstetric_history": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "The female patient's one Gynaecological & Obstetric History, recorded at registration and shown in her Past History for authorized treating doctors. Shape: { menstrual: { age_at_menarche, cycle_regularity, cycle_length, bleeding_duration, flow, dysmenorrhoea, abnormal_uterine_bleeding, lmp, details }, past: { conditions, condition_details, infections, surgeries, treatments, investigations, contraception, fertility, other_details }, obstetric: { gravida, para, abortions, term_deliveries, preterm_deliveries, miscarriages, induced_abortions, ectopic_pregnancies, stillbirths, living_children, pregnancies: [{ entry_id, year, outcome, gestational_age, mode_of_delivery, complications, delivery_complications, neonatal_outcome, neonatal_details, notes }] }, current_pregnancy: { status, lmp, gestational_age, edd }, menopause: { status, age_at_menopause, year_of_menopause, last_menstrual_period, postmenopausal_bleeding, symptoms, hrt, hrt_details, osteoporosis, fragility_fracture, other_details, surgical_menopause, surgical_menopause_reason, surgical_menopause_age }, recorded_datetime, recorded_by }. An unanswered question is stored as unknown, never as a negative history; a new pregnancy is added as its own entry and never overwrites an existing one; a pregnant patient is never recorded as postmenopausal."
     },
     "medication_info_completed": {
       "type": "boolean",

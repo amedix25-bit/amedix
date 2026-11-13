@@ -263,8 +263,8 @@ export function legacyGynaeFields(gynae, isFemale) {
   const summary = gpaText(o);
   const history = [
     summary,
-    o.living_children !== "" ? `${o.living_children} living children` : "",
-    o.stillbirths !== "" ? `${o.stillbirths} stillbirths` : "",
+    toCount(o.living_children) !== null ? `${o.living_children} living children` : "",
+    toCount(o.stillbirths) !== null ? `${o.stillbirths} stillbirths` : "",
     pregnancies,
   ].filter(Boolean).join(" · ");
 
@@ -273,15 +273,25 @@ export function legacyGynaeFields(gynae, isFemale) {
     .filter(Boolean)
     .join("; ");
 
+  // A counter the patient did not answer is left out entirely — never written
+  // as 0, which would turn an unanswered question into a negative history.
+  const counts = {};
+  [
+    ["gravida", o.gravida],
+    ["para", o.para],
+    ["living_children", o.living_children],
+    ["miscarriages_abortions", o.abortions],
+    ["stillbirths", o.stillbirths],
+  ].forEach(([field, raw]) => {
+    const n = toCount(raw);
+    if (n !== null) counts[field] = n;
+  });
+
   return {
     pregnancy_status: status,
     gestational_age: pregnant ? String(g.current_pregnancy.gestational_age || "") : "",
     estimated_due_date: pregnant ? String(g.current_pregnancy.edd || "") : "",
-    gravida: toCount(o.gravida) ?? 0,
-    para: toCount(o.para) ?? 0,
-    living_children: toCount(o.living_children) ?? 0,
-    miscarriages_abortions: toCount(o.abortions) ?? 0,
-    stillbirths: toCount(o.stillbirths) ?? 0,
+    ...counts,
     pregnancy_history: history,
     pregnancy_complications: complications,
     menstrual_history: menstrual,

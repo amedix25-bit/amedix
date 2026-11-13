@@ -7,7 +7,7 @@ import SurgicalSection from "@/components/patient/medical/SurgicalSection";
 import MedicationsSection from "@/components/patient/medical/MedicationsSection";
 import AllergiesSection from "@/components/patient/medical/AllergiesSection";
 import LifestyleSection from "@/components/patient/medical/LifestyleSection";
-import PregnancySection from "@/components/patient/medical/PregnancySection";
+import GynaeObstetricSection from "@/components/patient/medical/GynaeObstetricSection";
 import MedicalHistorySection from "@/components/patient/medical/MedicalHistorySection";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
@@ -142,7 +142,7 @@ export default function PatientHealth({
         onRefresh={onRefreshData}
       />
       <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} doctorView={doctorView} />
-      <PregnancySection number="9" patient={profile} doctorView={doctorView} editable={editable} />
+      <GynaeObstetricSection number="9" patient={profile} doctorView={doctorView} editable={editable} />
       <FamilyHistorySection
         number="10"
         patient={profile}
