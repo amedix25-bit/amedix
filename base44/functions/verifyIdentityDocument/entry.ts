@@ -28,7 +28,8 @@ import { readDocumentWithVision } from '../../shared/inlineVision.ts';
 //   UNREADABLE → refused, and the user is asked for a clearer photo or PDF
 //
 // What the record keeps is the decision: status, document category, timestamp,
-// masked numbers, the confidence breakdown and the record's own id.
+// masked numbers, the confidence breakdown, which recognisers answered, and the
+// record's own id.
 
 // ~9 MB of decoded document: enough for a good phone scan or a small PDF, small
 // enough that the check stays a request and never becomes a transfer.
@@ -263,6 +264,12 @@ export default async function (req: any) {
           field: c.field, label: c.label, decisive: c.decisive, matched: c.matched,
           entered: maskDocumentNumber(c.entered), read: maskDocumentNumber(c.read),
         })),
+        // Which recognisers answered, from which rendition, and how strongly —
+        // no number text, no image, nothing that could carry the document.
+        readings: diagnosis.readings.map((r) => ({
+          pass: r.pass, engine: r.engine, source: r.source, confidence: Math.round(r.confidence), well_formed: r.validFormat,
+        })),
+        agreement: diagnosis.agreement ? { supporters: diagnosis.agreement.supporters, engines: diagnosis.agreement.engines } : null,
         note: message,
       }),
       review_history: [

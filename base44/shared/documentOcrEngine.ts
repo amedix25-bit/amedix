@@ -258,12 +258,27 @@ export async function recogniseDocument(
     reading.validFormat = validateFormat(reading.raw, profile).ok;
   }
 
-  // The independent extraction pipeline runs only when the vision passes have
-  // not already produced a clear agreement — it costs a second pipeline.
+  // The independent extraction pipeline runs when the vision passes have not
+  // already produced enough evidence to decide — it costs a second pipeline, so
+  // it is skipped only when the readings already agree convincingly.
   const usable = readings.filter((r) => r.normalized && r.validFormat);
-  const quickGroups = new Map<string, number>();
-  usable.forEach((r) => quickGroups.set(r.normalized, (quickGroups.get(r.normalized) || 0) + 1));
-  const clearAgreement = [...quickGroups.values()].some((n) => n >= 2);
+  const quickGroups = new Map<string, { supporters: number; engines: Set<string>; confidence: number }>();
+  for (const reading of usable) {
+    const group = quickGroups.get(reading.normalized);
+    if (group) {
+      group.supporters += 1;
+      group.engines.add(reading.engine);
+      group.confidence = Math.max(group.confidence, reading.confidence);
+    } else {
+      quickGroups.set(reading.normalized, { supporters: 1, engines: new Set([reading.engine]), confidence: reading.confidence });
+    }
+  }
+  // Two independent renditions of the same page agreeing on the complete number
+  // at high confidence is evidence in its own right: the camera original and the
+  // rectified render are different pictures, and a misreading rarely survives both.
+  const clearAgreement = [...quickGroups.values()].some(
+    (g) => (g.engines.size >= 2 && g.supporters >= 2 && g.confidence >= 70) || (g.supporters >= 2 && g.confidence >= 85)
+  );
   if (!clearAgreement) {
     const extra = await Promise.allSettled(
       params.sides.map((side) => extractorPass(base44, { image: side.original, side: side.side, profile }))
@@ -311,15 +326,18 @@ export async function recogniseDocument(
     : 0;
   const character = best ? best.confidence / 100 : 0;
 
-  // A reading is only trusted when independent recognisers agree on the whole
-  // number, or when a single reading is exceptionally certain AND the document
-  // carries a check-digit-validated zone.
+  // A reading is trusted when independent recognisers agree on the whole number,
+  // when several readings agree, or when two separate renditions of the same page
+  // — the camera original and the rectified render — agree on the complete,
+  // well-formed number at high confidence. A single unconfirmed reading is never
+  // enough, however certain it claims to be.
   const mrzConfirms = !!mrzNumber && !!best && best.value === normalizeNumber(mrzNumber, profile);
+  const bestFormatValid = !!best && usable.some((r) => r.normalized === best!.value);
   const enoughEvidence = !!best && (
     (best.engines >= 2 && best.supporters >= 2 && best.confidence >= 70)
     || (best.supporters >= 3 && best.confidence >= 85)
+    || (best.supporters >= 2 && best.confidence >= 85 && bestFormatValid)
     || mrzConfirms
-    || (best.engines >= 1 && best.confidence >= 97 && best.value.length >= 6 && usable.length >= 2 && best.supporters >= 2)
   );
 
   const matching = enoughEvidence && best ? (best.value === expectedNormalized ? 1 : 0) : 0;
