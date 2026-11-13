@@ -6,8 +6,7 @@ import {
 import { maskDocumentNumber, scrubAutoCheck, retentionFields } from '../../shared/documentRetention.ts';
 import { NUMBER_PROFILES, validateFormat } from '../../shared/documentOcrProfiles.ts';
 import { recogniseDocument, OCR_ENGINE_VERSION, type Side } from '../../shared/documentOcrEngine.ts';
-import { createRenderToken } from '../../shared/documentRenderToken.ts';
-import { decodeDocument, assessQuality, detectBands, estimateSkew } from '../../shared/documentImageOps.ts';
+import { decodeDocument, assessQuality, detectBands, estimateSkew, enhance, blankCheck } from '../../shared/documentImageOps.ts';
 
 // AMedix automated document-number verification (multi-pass engine).
 //
@@ -28,7 +27,6 @@ import { decodeDocument, assessQuality, detectBands, estimateSkew } from '../../
 // own id — no file, no storage reference, no unmasked number.
 
 const str = (v: any, max = 200) => (typeof v === 'string' && v.length <= max ? v : '');
-const APP_ORIGIN = 'https://amedix.base44.app';
 
 export default async function (req: any) {
   try {
@@ -78,15 +76,7 @@ export default async function (req: any) {
     // else does, and they expire in minutes.
     const signSide = async (uri: string, side: 'front' | 'back'): Promise<Side> => {
       const signed: any = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 300 });
-      const url = signed.signed_url;
-      const enhancedToken = await createRenderToken(url, 'enhanced');
-      const binaryToken = await createRenderToken(url, 'binary');
-      return {
-        side,
-        url,
-        enhancedUrl: `${APP_ORIGIN}/functions/documentRender?t=${encodeURIComponent(enhancedToken)}`,
-        binaryUrl: `${APP_ORIGIN}/functions/documentRender?t=${encodeURIComponent(binaryToken)}`,
-      };
+      return { side, url: signed.signed_url };
     };
 
     const sides: Side[] = [];
@@ -107,7 +97,7 @@ export default async function (req: any) {
     }
 
     // ---- server-side pixel analysis (no derivative is stored) --------------
-    let analysis: { quality: any; bands: any[]; skew: number } | null = null;
+    let analysis: any = null;
     try {
       const front = sides[0];
       const res = await fetch(front.url, { signal: AbortSignal.timeout(15000) });
@@ -116,11 +106,80 @@ export default async function (req: any) {
         const pages = await decodeDocument(bytes);
         if (pages.length) {
           const raster = pages[0];
-          analysis = { quality: assessQuality(raster), bands: detectBands(raster), skew: estimateSkew(raster) };
+          // The rectified page is built for every attempt: its metrics prove the
+          // enhancement stage ran, and a page that comes out empty is refused
+          // here instead of being silently read as "no number found".
+          const rectified = enhance(raster, 'enhanced');
+          analysis = {
+            quality: assessQuality(raster),
+            skew: estimateSkew(raster),
+            bands: detectBands(raster),
+            pages_decoded: pages.length,
+            page: blankCheck(raster),
+            rectified: {
+              width: rectified.width,
+              height: rectified.height,
+              scale: Number(rectified.scale.toFixed(2)),
+              skew_corrected: rectified.skew,
+              ...blankCheck(rectified),
+            },
+          };
+        } else {
+          analysis = { pages_decoded: 0, page: { blank: true }, error: 'no_page_decoded' };
         }
+      } else {
+        analysis = { page: { blank: true }, error: `document_fetch_${res.status}` };
       }
     } catch {
-      analysis = null;
+      analysis = { page: { blank: true }, error: 'document_unreadable' };
+    }
+
+    // A blank page stops the attempt: nothing is sent to a recogniser, and the
+    // user is told the page came through empty rather than that the number
+    // could not be found.
+    if (analysis && analysis.page && analysis.page.blank) {
+      const blankMessage = 'The uploaded page came through empty. Photograph the document again with the whole page in frame, or upload a PDF that contains the page.';
+      const record = await base44.asServiceRole.entities.IdentityVerification.create({
+        user_id: user.id,
+        profile_type,
+        document_type,
+        source: ['camera', 'gallery', 'pdf'].includes(body.source) ? body.source : 'gallery',
+        attempted_datetime: submittedAt,
+        ...retentionFields(submittedAt),
+        status: 'failed',
+        verification_outcome: 'unreadable',
+        auto_verified: false,
+        engine: OCR_ENGINE_VERSION,
+        reason: 'blank_page',
+        review_reason: blankMessage,
+        auto_check: scrubAutoCheck({
+          outcome: 'unreadable',
+          checked_datetime: submittedAt,
+          engine: OCR_ENGINE_VERSION,
+          number_field: numberField,
+          number_label: profile.numberLabel,
+          entered_number: enteredNumber,
+          read_number: '',
+          sides_read: tried,
+          page_analysis: analysis,
+          note: blankMessage,
+        }),
+        review_history: [{
+          datetime: submittedAt,
+          action: 'auto_rejected',
+          actor_name: 'AMedix automated document verification',
+          actor_role: 'system',
+          detail: `${profile.label} · blank page · nothing sent to recognition`,
+        }],
+      });
+      return Response.json({
+        status: 'failed',
+        outcome: 'unreadable',
+        verification_id: record.id,
+        message: blankMessage,
+        blank_page: true,
+        page_analysis: analysis,
+      });
     }
 
     const bandHint = analysis && analysis.bands.length
@@ -246,9 +305,10 @@ export default async function (req: any) {
           : null,
         near_miss: diagnosis.nearMiss,
         character_distance: diagnosis.characterDistance,
-        image_quality: analysis ? analysis.quality : null,
-        text_bands: analysis ? analysis.bands.length : 0,
-        skew_degrees: analysis ? analysis.skew : null,
+        image_quality: analysis?.quality || null,
+        page_analysis: analysis || null,
+        text_bands: analysis?.bands?.length || 0,
+        skew_degrees: analysis?.skew ?? null,
         note: message,
       }),
       review_history: [

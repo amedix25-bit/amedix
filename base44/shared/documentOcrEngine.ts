@@ -6,15 +6,21 @@
 // the readings agree. A number is never accepted because it looks similar:
 // agreement must be on the complete number, character for character.
 //
-//   PASS A  original document      · vision engine 1 (structured extraction)
-//   PASS B  original document      · vision engine 2 (transcription first)
-//   PASS C  rectified render       · vision engine 1 (character by character,
-//                                    guided by the text bands found in the pixels)
-//   PASS D  rectified render       · vision engine 2 (zone / MRZ focused)
-//   PASS E  binarised render       · independent extraction pipeline (fallback)
+//   PASS A  document · vision engine 1 (structured extraction)
+//   PASS B  document · vision engine 2 (transcription first)
+//   PASS C  document · vision engine 1 (character by character, guided by the
+//            lines of text located by the server-side pixel analysis)
+//   PASS D  document · vision engine 2 (zone / MRZ focused)
+//   PASS E  document · independent extraction pipeline (fallback, only when
+//            the vision passes produced no agreement)
 //
-// Zero retention: the render URLs are signed, expire in minutes and are rebuilt
-// in memory on every read. Nothing about the document is written to storage.
+// Every pass reads the document itself. The rectified copy is produced
+// server-side and used where it demonstrably helps — quality assessment, skew
+// measurement and text-band localisation — but it is never handed to a
+// recogniser, because a third-party vision model cannot open an app-hosted
+// render URL: a pass pointed at one comes back blind, not merely blurred.
+//
+// Zero retention: nothing about the document is written to storage.
 
 import {
   NUMBER_PROFILES, normalizeNumber, validateFormat, readMrzTd3, characterDistance,
@@ -23,7 +29,7 @@ import {
 
 export const OCR_ENGINE_VERSION = 'amedix_document_number_v2_multipass';
 
-export type Side = { side: 'front' | 'back'; url: string; enhancedUrl: string; binaryUrl: string };
+export type Side = { side: 'front' | 'back'; url: string };
 
 export type Reading = {
   pass: string;
@@ -160,7 +166,7 @@ async function extractorPass(
     return {
       pass: 'E',
       engine: 'amedix_extractor',
-      source: 'binary',
+      source: 'original',
       side: params.side,
       raw: typeof (out as any).number === 'string' ? (out as any).number : '',
       normalized: '',
@@ -195,11 +201,11 @@ export async function recogniseDocument(
         prompt: basePrompt(profile, hint, 'Transcribe the document line by line first, then take the number from your transcription.'),
       }),
       visionPass(base44, {
-        pass: 'C', model: 'gemini_3_1_pro', engine: 'gemini_3_1_pro', url: side.enhancedUrl, source: 'enhanced', side: side.side,
-        prompt: basePrompt(profile, hint, 'This copy has been rectified by the server: straightened, shadow-flattened, contrast-equalised and upscaled. Read the number character by character, digit by digit, and state each character you are unsure of.'),
+        pass: 'C', model: 'gemini_3_1_pro', engine: 'gemini_3_1_pro', url: side.url, source: 'original', side: side.side,
+        prompt: basePrompt(profile, hint, 'Work character by character, digit by digit, from the printed field itself. State each character you are unsure of rather than choosing one.'),
       }),
       visionPass(base44, {
-        pass: 'D', model: 'claude-sonnet-5', engine: 'claude-sonnet-5', url: side.enhancedUrl, source: 'enhanced', side: side.side,
+        pass: 'D', model: 'claude-sonnet-5', engine: 'claude-sonnet-5', url: side.url, source: 'original', side: side.side,
         prompt: basePrompt(profile, hint, profile.mrz
           ? 'Read the machine-readable zone at the bottom character by character, including any fill characters, and take the document number from it. If the zone is unreadable, read the printed number field instead.'
           : 'Focus on each numeric field in turn, decide which one is the identification number, and transcribe it character by character.'),
@@ -241,7 +247,7 @@ export async function recogniseDocument(
   const clearAgreement = [...quickGroups.values()].some((n) => n >= 2);
   if (!clearAgreement) {
     const extra = await Promise.allSettled(
-      params.sides.map((side) => extractorPass(base44, { url: side.binaryUrl, side: side.side, profile }))
+      params.sides.map((side) => extractorPass(base44, { url: side.url, side: side.side, profile }))
     );
     for (const entry of extra) {
       if (entry.status === 'fulfilled' && entry.value) {

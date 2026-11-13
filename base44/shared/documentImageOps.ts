@@ -156,6 +156,27 @@ export function assessQuality(raster: Raster) {
   };
 }
 
+// A page that decodes or enhances to nothing is a failure, never a document.
+// This is the guard against the blank-page defect: an empty raster must be
+// stopped here, not sent to a recogniser and reported as unreadable text.
+export function blankCheck(source: Raster | Gray) {
+  const { gray } = 'gray' in source ? source : toGray(source, 900);
+  let ink = 0;
+  let sum = 0;
+  for (let i = 0; i < gray.length; i++) { if (gray[i] < 160) ink++; sum += gray[i]; }
+  const mean = sum / gray.length;
+  let variance = 0;
+  for (let i = 0; i < gray.length; i++) variance += (gray[i] - mean) * (gray[i] - mean);
+  const stdDev = Math.sqrt(variance / gray.length);
+  const inkFraction = ink / gray.length;
+  return {
+    blank: gray.length === 0 || inkFraction < 0.002 || stdDev < 6,
+    ink_fraction: Number(inkFraction.toFixed(4)),
+    std_dev: Math.round(stdDev),
+    pixels: gray.length,
+  };
+}
+
 // ---- orientation / skew ----------------------------------------------------
 
 function projectionScore(gray: Float32Array, w: number, h: number, degrees: number): number {
