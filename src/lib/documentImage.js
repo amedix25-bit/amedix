@@ -9,6 +9,25 @@ export const IMAGE_ACCEPT = "image/*,.heic,.heif";
 export const PDF_ACCEPT = "application/pdf,.pdf";
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
 export const MAX_IMAGE_BYTES = 30 * 1024 * 1024;
+
+// In-memory verification: the document travels INSIDE the verification request,
+// so its size is bounded by the request rather than by a storage upload.
+export const MAX_INLINE_DOCUMENT_BYTES = 8 * 1024 * 1024;
+
+export function dataUrlToBase64(dataUrl) {
+  const value = String(dataUrl || "");
+  const comma = value.indexOf(",");
+  return comma === -1 ? "" : value.slice(comma + 1);
+}
+
+export function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("read_failed"));
+    reader.readAsDataURL(file);
+  });
+}
 const MAX_EDGE = 2400;
 const MIN_EDGE = 500;
 

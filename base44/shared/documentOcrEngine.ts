@@ -14,22 +14,26 @@
 //   PASS E  document · independent extraction pipeline (fallback, only when
 //            the vision passes produced no agreement)
 //
-// Every pass reads the document itself. The rectified copy is produced
-// server-side and used where it demonstrably helps — quality assessment, skew
-// measurement and text-band localisation — but it is never handed to a
-// recogniser, because a third-party vision model cannot open an app-hosted
-// render URL: a pass pointed at one comes back blind, not merely blurred.
+// Every pass reads the document itself. The rectified copy is produced in
+// memory and given to the passes that benefit from it (C and D): both renditions
+// travel inline as base64 inside the request, so there is no URL a model could
+// fail to open and no server-side render to store.
 //
-// Zero retention: nothing about the document is written to storage.
+// Zero retention: the document never leaves memory. Nothing is written to
+// storage, a temporary file, a cache or a log; only the decision is recorded.
 
 import {
   NUMBER_PROFILES, normalizeNumber, validateFormat, readMrzTd3, characterDistance,
   type NumberProfile,
 } from './documentOcrProfiles.ts';
+import { readDocumentWithVision, type InlineImage } from './inlineVision.ts';
 
-export const OCR_ENGINE_VERSION = 'amedix_document_number_v2_multipass';
+export const OCR_ENGINE_VERSION = 'amedix_document_number_v3_inmemory';
 
-export type Side = { side: 'front' | 'back'; url: string };
+// One submitted page, prepared twice in memory: as the camera original
+// (grayscale, size-capped) and as the rectified, contrast-corrected render. Both
+// are base64 held in the request — never a file, never a URL.
+export type Side = { side: 'front' | 'back'; original: InlineImage; enhanced: InlineImage };
 
 export type Reading = {
   pass: string;
@@ -57,7 +61,10 @@ export type Diagnosis = {
   notes: string;
 };
 
-const PASS_TIMEOUT_MS = 30000;
+// A pass reads an inline image and reasons about small print; a slow model must
+// not be mistaken for an unreadable document, so the budget is generous and the
+// request is aborted only when the model genuinely overruns.
+const PASS_TIMEOUT_MS = 60000;
 
 const NUMBER_SCHEMA = {
   type: 'object',
@@ -110,19 +117,18 @@ async function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
 
 async function visionPass(
   base44: any,
-  params: { pass: string; model: string; engine: string; url: string; source: Reading['source']; side: 'front' | 'back'; prompt: string }
+  params: { pass: string; model: string; engine: string; image: InlineImage; source: Reading['source']; side: 'front' | 'back'; prompt: string }
 ): Promise<Reading | null> {
   try {
-    const result: any = await withTimeout(
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: params.prompt,
-        file_urls: [params.url],
+    const data: any = await withTimeout(
+      readDocumentWithVision(base44, {
         model: params.model,
-        response_json_schema: NUMBER_SCHEMA,
+        prompt: `${params.prompt}\n\nReply with JSON only, in exactly this shape: {"number": string, "all_numbers": string[], "script": string, "confidence": number, "readable": boolean, "notes": string}`,
+        images: [params.image],
+        timeoutMs: PASS_TIMEOUT_MS - 5000,
       }),
       params.pass
     );
-    const data = typeof result === 'string' ? JSON.parse(result) : result;
     if (!data || typeof data !== 'object') return null;
     return {
       pass: params.pass,
@@ -143,37 +149,36 @@ async function visionPass(
 
 async function extractorPass(
   base44: any,
-  params: { url: string; side: 'front' | 'back'; profile: NumberProfile }
+  params: { image: InlineImage; side: 'front' | 'back'; profile: NumberProfile }
 ): Promise<Reading | null> {
   try {
-    const res: any = await withTimeout(
-      base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: params.url,
-        json_schema: {
-          type: 'object',
-          properties: {
-            number: { type: 'string', description: `The ${params.profile.numberLabel} exactly as printed, no spaces or separators; empty when it cannot be read` },
-            readable: { type: 'boolean', description: 'Whether the number is legible' },
-          },
-          required: ['number'],
-        },
+    const out: any = await withTimeout(
+      readDocumentWithVision(base44, {
+        model: 'gpt_6_sol',
+        prompt: [
+          `Transcribe the ${params.profile.numberLabel.toLowerCase()} printed on this document, character by character, exactly as printed.`,
+          `Where it is normally printed: ${params.profile.regions.join('; ')}.`,
+          `Numbers that are not it: ${params.profile.distractors.join('; ')}.`,
+          'Digits may be printed as Arabic-Indic numerals; convert them to 0-9. Do not complete a character you cannot see.',
+          'Reply with JSON only: {"number": string, "readable": boolean}',
+        ].join('\n'),
+        images: [params.image],
+        timeoutMs: PASS_TIMEOUT_MS - 5000,
       }),
       'pass_e'
     );
-    if (res.status !== 'success' || !res.output) return null;
-    const out = Array.isArray(res.output) ? res.output[0] : res.output;
     if (!out || typeof out !== 'object') return null;
     return {
       pass: 'E',
-      engine: 'amedix_extractor',
+      engine: 'amedix_inmemory_transcription',
       source: 'original',
       side: params.side,
-      raw: typeof (out as any).number === 'string' ? (out as any).number : '',
+      raw: typeof out.number === 'string' ? out.number : '',
       normalized: '',
       confidence: 70,
-      readable: (out as any).readable !== false,
+      readable: out.readable !== false,
       validFormat: true,
-      note: 'independent extraction pipeline',
+      note: 'independent in-memory transcription pass',
     };
   } catch {
     return null;
@@ -189,33 +194,47 @@ export async function recogniseDocument(
   const hint = params.bandHint || '';
   const readings: Reading[] = [];
 
-  const tasks: Promise<Reading | null>[] = [];
+  type Spec = { pass: string; model: string; engine: string; image: InlineImage; source: Reading['source']; side: 'front' | 'back'; prompt: string };
+  const specs: Spec[] = [];
   for (const side of params.sides) {
-    tasks.push(
-      visionPass(base44, {
-        pass: 'A', model: 'gemini_3_1_pro', engine: 'gemini_3_1_pro', url: side.url, source: 'original', side: side.side,
-        prompt: basePrompt(profile, hint, 'Extract the number structurally, and list every other number on the document.'),
-      }),
-      visionPass(base44, {
-        pass: 'B', model: 'claude-sonnet-5', engine: 'claude-sonnet-5', url: side.url, source: 'original', side: side.side,
-        prompt: basePrompt(profile, hint, 'Transcribe the document line by line first, then take the number from your transcription.'),
-      }),
-      visionPass(base44, {
-        pass: 'C', model: 'gemini_3_1_pro', engine: 'gemini_3_1_pro', url: side.url, source: 'original', side: side.side,
-        prompt: basePrompt(profile, hint, 'Work character by character, digit by digit, from the printed field itself. State each character you are unsure of rather than choosing one.'),
-      }),
-      visionPass(base44, {
-        pass: 'D', model: 'claude-sonnet-5', engine: 'claude-sonnet-5', url: side.url, source: 'original', side: side.side,
-        prompt: basePrompt(profile, hint, profile.mrz
-          ? 'Read the machine-readable zone at the bottom character by character, including any fill characters, and take the document number from it. If the zone is unreadable, read the printed number field instead.'
-          : 'Focus on each numeric field in turn, decide which one is the identification number, and transcribe it character by character.'),
-      })
-    );
+    const renditions: { image: InlineImage; source: Reading['source'] }[] = [
+      { image: side.original, source: 'original' },
+      { image: side.enhanced, source: 'enhanced' },
+    ];
+    for (const rendition of renditions) {
+      specs.push({
+        pass: rendition.source === 'original' ? 'A' : 'C',
+        model: 'gemini_3_1_pro',
+        engine: 'gemini_3_1_pro',
+        image: rendition.image,
+        source: rendition.source,
+        side: side.side,
+        prompt: basePrompt(profile, hint, rendition.source === 'original'
+          ? 'Extract the number structurally, and list every other number on the document.'
+          : 'Work character by character, digit by digit, from the printed field itself. State each character you are unsure of rather than choosing one.'),
+      });
+      specs.push({
+        pass: rendition.source === 'original' ? 'B' : 'D',
+        model: 'claude-sonnet-5',
+        engine: 'claude-sonnet-5',
+        image: rendition.image,
+        source: rendition.source,
+        side: side.side,
+        prompt: basePrompt(profile, hint, rendition.source === 'original'
+          ? 'Transcribe the document line by line first, then take the number from your transcription.'
+          : profile.mrz
+            ? 'Read the machine-readable zone at the bottom character by character, including any fill characters, and take the document number from it. If the zone is unreadable, read the printed number field instead.'
+            : 'Focus on each numeric field in turn, decide which one is the identification number, and transcribe it character by character.'),
+      });
+    }
   }
 
-  const settled = await Promise.allSettled(tasks);
-  for (const entry of settled) {
-    if (entry.status === 'fulfilled' && entry.value) readings.push(entry.value);
+  // Batches of four keep the worker's concurrent outbound connections in budget.
+  for (let i = 0; i < specs.length; i += 4) {
+    const settled = await Promise.allSettled(specs.slice(i, i + 4).map((spec) => visionPass(base44, spec)));
+    for (const entry of settled) {
+      if (entry.status === 'fulfilled' && entry.value) readings.push(entry.value);
+    }
   }
 
   // Machine-readable zone: a check-digit-validated reading outranks a plain one.
@@ -247,7 +266,7 @@ export async function recogniseDocument(
   const clearAgreement = [...quickGroups.values()].some((n) => n >= 2);
   if (!clearAgreement) {
     const extra = await Promise.allSettled(
-      params.sides.map((side) => extractorPass(base44, { url: side.url, side: side.side, profile }))
+      params.sides.map((side) => extractorPass(base44, { image: side.original, side: side.side, profile }))
     );
     for (const entry of extra) {
       if (entry.status === 'fulfilled' && entry.value) {

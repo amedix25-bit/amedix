@@ -78,14 +78,10 @@ export default function DocumentVerificationCard({
       const res = await base44.functions.invoke("verifyIdentityDocument", {
         profile_type: profileType,
         document_type: documentType,
-        file_uri: file.uri,
-        file_name: file.name,
-        file_mime: file.mime || "",
-        file_size: file.size || 0,
-        page_count: file.page_count || 1,
+        // The pages travel as base64 inside this request. The document is read in
+        // memory and never uploaded — there is nothing stored to keep or delete.
+        pages: file.pages || [],
         source: file.source || "gallery",
-        original_file_uri: file.original_uri || "",
-        original_file_name: file.original_name || "",
         expected,
       });
       const data = res.data || {};

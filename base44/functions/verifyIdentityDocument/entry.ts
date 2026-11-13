@@ -1,32 +1,40 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import {
   DOCUMENTS, PROFILE_DOCUMENTS, TWO_SIDED, FIELD_LABELS,
-  normalizeDocumentNumber, advisoryMatches, documentNumberLabel,
+  advisoryMatches, documentNumberLabel,
 } from '../../shared/documentNumberVerification.ts';
 import { maskDocumentNumber, scrubAutoCheck, retentionFields } from '../../shared/documentRetention.ts';
 import { NUMBER_PROFILES, validateFormat } from '../../shared/documentOcrProfiles.ts';
-import { recogniseDocument, OCR_ENGINE_VERSION, type Side } from '../../shared/documentOcrEngine.ts';
-import { decodeDocument, assessQuality, detectBands, estimateSkew, enhance, blankCheck } from '../../shared/documentImageOps.ts';
+import { recogniseDocument, OCR_ENGINE_VERSION } from '../../shared/documentOcrEngine.ts';
+import { prepareInMemoryDocument } from '../../shared/documentInMemoryPages.ts';
+import { readDocumentWithVision } from '../../shared/inlineVision.ts';
 
-// AMedix automated document-number verification (multi-pass engine).
+// AMedix automated document-number verification — NO STORAGE AT ALL.
 //
-// The document is read by several independent recognisers over the camera
-// original and a server-rectified render of the same page. The number is only
-// accepted when the readings agree on the complete value; agreement is then
-// compared with the number the user entered:
+// The document is never uploaded. The browser sends its pages as base64 inside
+// this request; the pages are decoded, measured, rectified and read entirely in
+// the function's memory and released when it returns. There is nothing to delete
+// afterwards because nothing is ever created:
+//   • no UploadPrivateFile / UploadPublicFile call
+//   • no signed URL, no storage reference
+//   • no temporary file, cache entry or log line carrying document bytes
+//   • no copy kept for a later pass — every pass reads from memory
+//
+// Several independent recognisers read the camera original and the rectified
+// render of the same page. A number is accepted only when the readings agree on
+// the complete value; that value is then compared with the number the user typed:
 //   MATCH      → verified, registration continues
 //   MISMATCH   → refused, with both numbers shown so the user can correct it
 //   UNREADABLE → refused, and the user is asked for a clearer photo or PDF
 //
-// An unreadable document is never reported as a mismatch, and a near-miss
-// number is never silently accepted.
-//
-// ZERO RETENTION: the document and every rectified render exist only in memory
-// for the length of this request. The record carries the decision, the document
-// type, the time, the masked numbers, the confidence breakdown and this record's
-// own id — no file, no storage reference, no unmasked number.
+// What the record keeps is the decision: status, document category, timestamp,
+// masked numbers, the confidence breakdown and the record's own id.
 
-const str = (v: any, max = 200) => (typeof v === 'string' && v.length <= max ? v : '');
+// ~9 MB of decoded document: enough for a good phone scan or a small PDF, small
+// enough that the check stays a request and never becomes a transfer.
+const MAX_TOTAL_BASE64_CHARS = 12_000_000;
+const MAX_PAGES = 3;
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'application/pdf']);
 
 export default async function (req: any) {
   try {
@@ -35,10 +43,7 @@ export default async function (req: any) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = (await req.json().catch(() => ({}))) || {};
-    const {
-      profile_type, document_type, file_uri, file_name,
-      file_uri_back = '', expected = {},
-    } = body;
+    const { profile_type, document_type, expected = {}, pages = [] } = body;
 
     const requiredFields = PROFILE_DOCUMENTS[profile_type]?.[document_type];
     const spec = DOCUMENTS[document_type];
@@ -46,12 +51,27 @@ export default async function (req: any) {
     if (!requiredFields || !spec || !profile) {
       return Response.json({ error: 'Invalid verification method' }, { status: 400 });
     }
-    if (typeof file_uri !== 'string' || file_uri.length === 0 || file_uri.length > 500) {
-      return Response.json({ error: 'Invalid file' }, { status: 400 });
+
+    if (!Array.isArray(pages) || pages.length === 0 || pages.length > MAX_PAGES) {
+      return Response.json({ error: 'The document pages were not received. Choose the document again and retry.' }, { status: 400 });
     }
-    if (typeof file_uri_back !== 'string' || file_uri_back.length > 500) {
-      return Response.json({ error: 'Invalid file' }, { status: 400 });
+    let totalChars = 0;
+    for (const page of pages) {
+      if (!page || typeof page.base64 !== 'string' || !page.base64) {
+        return Response.json({ error: 'The document pages were not received. Choose the document again and retry.' }, { status: 400 });
+      }
+      if (!ALLOWED_MIME.has(page.mime)) {
+        return Response.json({ error: 'Only a photo (JPG/PNG) or a PDF can be checked.' }, { status: 400 });
+      }
+      totalChars += page.base64.length;
     }
+    if (totalChars > MAX_TOTAL_BASE64_CHARS) {
+      return Response.json(
+        { error: 'This document is too large to check in one pass. Photograph the pages instead of uploading a large PDF.' },
+        { status: 413 }
+      );
+    }
+
     for (const key of requiredFields) {
       const value = expected?.[key];
       const max = key === 'full_name' ? 200 : 100;
@@ -60,10 +80,9 @@ export default async function (req: any) {
       }
     }
 
-    const frontIsPdf = typeof file_name === 'string' && file_name.toLowerCase().endsWith('.pdf');
-    if (TWO_SIDED.includes(document_type) && !file_uri_back && !frontIsPdf) {
+    if (TWO_SIDED.includes(document_type) && pages.length < 2 && pages[0].mime !== 'application/pdf') {
       return Response.json(
-        { error: 'This document has two sides — submit the front and the back, or one PDF containing both sides' },
+        { error: 'This document has two sides — include the front and the back, or one PDF containing both sides' },
         { status: 400 }
       );
     }
@@ -71,87 +90,22 @@ export default async function (req: any) {
     const submittedAt = new Date().toISOString();
     const numberField = spec.numberField;
     const enteredNumber = String(expected[numberField] || '');
+    const source = ['camera', 'gallery', 'pdf'].includes(body.source) ? body.source : 'gallery';
 
-    // Short-lived signed links: the reader and the rectifier use them, nothing
-    // else does, and they expire in minutes.
-    const signSide = async (uri: string, side: 'front' | 'back'): Promise<Side> => {
-      const signed: any = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 300 });
-      return { side, url: signed.signed_url };
-    };
-
-    const sides: Side[] = [];
-    const tried: string[] = [];
-    try {
-      sides.push(await signSide(file_uri, 'front'));
-      tried.push('front');
-    } catch {
-      tried.push('front_failed');
-    }
-    if (file_uri_back) {
-      try {
-        sides.push(await signSide(file_uri_back, 'back'));
-        tried.push('back');
-      } catch {
-        tried.push('back_failed');
-      }
-    }
-
-    // ---- server-side pixel analysis (no derivative is stored) --------------
-    let analysis: any = null;
-    try {
-      const front = sides[0];
-      const res = await fetch(front.url, { signal: AbortSignal.timeout(15000) });
-      if (res.ok) {
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        const pages = await decodeDocument(bytes);
-        if (pages.length) {
-          const raster = pages[0];
-          // The rectified page is built for every attempt: its metrics prove the
-          // enhancement stage ran, and a page that comes out empty is refused
-          // here instead of being silently read as "no number found".
-          const rectified = enhance(raster, 'enhanced');
-          analysis = {
-            quality: assessQuality(raster),
-            skew: estimateSkew(raster),
-            bands: detectBands(raster),
-            pages_decoded: pages.length,
-            page: blankCheck(raster),
-            rectified: {
-              width: rectified.width,
-              height: rectified.height,
-              scale: Number(rectified.scale.toFixed(2)),
-              skew_corrected: rectified.skew,
-              ...blankCheck(rectified),
-            },
-          };
-        } else {
-          analysis = { pages_decoded: 0, page: { blank: true }, error: 'no_page_decoded' };
-        }
-      } else {
-        analysis = { page: { blank: true }, error: `document_fetch_${res.status}` };
-      }
-    } catch {
-      analysis = { page: { blank: true }, error: 'document_unreadable' };
-    }
-
-    // A blank page stops the attempt: nothing is sent to a recogniser, and the
-    // user is told the page came through empty rather than that the number
-    // could not be found.
-    if (analysis && analysis.page && analysis.page.blank) {
-      const blankMessage = 'The uploaded page came through empty. Photograph the document again with the whole page in frame, or upload a PDF that contains the page.';
+    const refusal = async (reason: string, message: string) => {
       const record = await base44.asServiceRole.entities.IdentityVerification.create({
         user_id: user.id,
         profile_type,
         document_type,
-        source: ['camera', 'gallery', 'pdf'].includes(body.source) ? body.source : 'gallery',
+        source,
         attempted_datetime: submittedAt,
         ...retentionFields(submittedAt),
         status: 'failed',
         verification_outcome: 'unreadable',
         auto_verified: false,
         engine: OCR_ENGINE_VERSION,
-        reason: 'blank_page',
-        review_reason: blankMessage,
+        reason,
+        review_reason: message,
         auto_check: scrubAutoCheck({
           outcome: 'unreadable',
           checked_datetime: submittedAt,
@@ -160,28 +114,43 @@ export default async function (req: any) {
           number_label: profile.numberLabel,
           entered_number: enteredNumber,
           read_number: '',
-          sides_read: tried,
-          page_analysis: analysis,
-          note: blankMessage,
+          sides_read: [],
+          note: message,
         }),
         review_history: [{
           datetime: submittedAt,
           action: 'auto_rejected',
           actor_name: 'AMedix automated document verification',
           actor_role: 'system',
-          detail: `${profile.label} · blank page · nothing sent to recognition`,
+          detail: `${profile.label} · ${reason} · read in memory, nothing stored`,
         }],
       });
       return Response.json({
         status: 'failed',
         outcome: 'unreadable',
         verification_id: record.id,
-        message: blankMessage,
-        blank_page: true,
-        page_analysis: analysis,
+        message,
+        blank_page: reason === 'blank_page',
       });
+    };
+
+    // ---- decode, measure and rectify — all in memory ----------------------
+    const prepared = await prepareInMemoryDocument(pages);
+    if (prepared.reason === 'undecodable') {
+      return refusal(
+        'document_unreadable',
+        'This file could not be opened. Photograph the document with the camera, or upload a PDF that contains the page.'
+      );
+    }
+    if (prepared.reason === 'blank') {
+      return refusal(
+        'blank_page',
+        'The uploaded page came through empty. Photograph the document again with the whole page in frame, or upload a PDF that contains the page.'
+      );
     }
 
+    const analysis = prepared.analysis;
+    const sides = prepared.sides;
     const bandHint = analysis && analysis.bands.length
       ? `Independent pixel analysis of this image found lines of printed text at: ${analysis.bands
           .slice(0, 4)
@@ -189,27 +158,25 @@ export default async function (req: any) {
           .join('; ')}. Detected skew ${analysis.skew}°. Check those areas, but do not assume the number is only there.`
       : '';
 
-    // ---- multi-pass recognition -------------------------------------------
-    const diagnosis = sides.length
-      ? await recogniseDocument(base44, { documentType: document_type, expectedNumber: enteredNumber, sides, bandHint })
-      : { outcome: 'unreadable' as const, rawReading: '', normalizedReading: '', expectedNormalized: '', readings: [], agreement: null, confidence: { overall: 0, readability: 0, detection: 0, character: 0, matching: 0 }, nearMiss: false, characterDistance: 0, notes: 'document could not be opened' };
+    // ---- multi-pass recognition, every pass fed from memory ----------------
+    const diagnosis = await recogniseDocument(base44, { documentType: document_type, expectedNumber: enteredNumber, sides, bandHint });
 
     // ---- advisory values (audit only, never decisive) ---------------------
     let advisory: Record<string, string> = {};
     const advisoryFields = requiredFields.filter((key: string) => key !== numberField);
     if (advisoryFields.length && sides.length) {
       try {
-        const properties: Record<string, any> = {};
-        advisoryFields.forEach((key: string) => {
-          properties[key] = { type: 'string', description: (spec as any).extract[key] };
+        const data: any = await readDocumentWithVision(base44, {
+          model: 'gemini_3_1_pro',
+          prompt: [
+            `Read this ${profile.label.toLowerCase()} and return the requested fields exactly as printed.`,
+            `Fields: ${advisoryFields.map((key: string) => `${key} (${(spec as any).extract[key]})`).join('; ')}.`,
+            'Transcribe what you see; leave a field empty when it is not printed or not legible.',
+            'Reply with JSON only, using exactly those keys.',
+          ].join('\n'),
+          images: [sides[0].original],
+          timeoutMs: 30000,
         });
-        const res: any = await base44.asServiceRole.integrations.Core.InvokeLLM({
-          prompt: `Read this ${profile.label.toLowerCase()} and return the requested fields exactly as printed. Transcribe what you see; leave a field empty when it is not printed or not legible.`,
-          file_urls: [sides[0].url],
-          model: 'gemini_3_flash',
-          response_json_schema: { type: 'object', properties, required: [] },
-        });
-        const data = typeof res === 'string' ? JSON.parse(res) : res;
         if (data && typeof data === 'object') {
           advisoryFields.forEach((key: string) => {
             if (typeof data[key] === 'string') advisory[key] = data[key];
@@ -238,15 +205,16 @@ export default async function (req: any) {
 
     const status = diagnosis.outcome === 'match' ? 'verified' : diagnosis.outcome === 'mismatch' ? 'rejected' : 'failed';
 
-    const qualityIssue = !analysis
+    const quality = analysis ? analysis.quality : null;
+    const qualityIssue = !quality
       ? ''
-      : analysis.quality.sharpness < 40
+      : quality.sharpness < 40
         ? 'The photograph looks blurred — hold the phone steady and make sure the number is in focus.'
-        : analysis.quality.glare_fraction > 0.08
+        : quality.glare_fraction > 0.08
           ? 'Glare or reflection is covering part of the document — move away from direct light.'
-          : analysis.quality.contrast < 70
+          : quality.contrast < 70
             ? 'The lighting is too flat or too dark — photograph the document in even daylight.'
-            : Math.min(analysis.quality.pixel_width, analysis.quality.pixel_height) < 700
+            : Math.min(quality.pixel_width, quality.pixel_height) < 700
               ? 'The photograph is small — fill the frame with the document so the number is sharp.'
               : '';
 
@@ -269,7 +237,7 @@ export default async function (req: any) {
       user_id: user.id,
       profile_type,
       document_type,
-      source: ['camera', 'gallery', 'pdf'].includes(body.source) ? body.source : 'gallery',
+      source,
       attempted_datetime: submittedAt,
       ...expectedRecord,
       ...retentionFields(submittedAt),
@@ -280,8 +248,8 @@ export default async function (req: any) {
       reason: diagnosis.outcome === 'match' ? '' : diagnosis.outcome,
       review_reason: diagnosis.outcome === 'match' ? '' : message,
       verified_datetime: diagnosis.outcome === 'match' ? submittedAt : '',
-      // Only masked numbers and counts are written — never a reading, never a
-      // complete number, never anything else the document said.
+      // Only masked numbers, counts and the decision — never a full number,
+      // never a reading, never a byte of the document.
       auto_check: scrubAutoCheck({
         outcome: diagnosis.outcome,
         checked_datetime: submittedAt,
@@ -290,25 +258,11 @@ export default async function (req: any) {
         number_label: profile.numberLabel,
         entered_number: enteredNumber,
         read_number: diagnosis.rawReading || '',
-        sides_read: tried,
+        sides_read: sides.map((side) => side.side),
         checks: checks.map((c: any) => ({
           field: c.field, label: c.label, decisive: c.decisive, matched: c.matched,
           entered: maskDocumentNumber(c.entered), read: maskDocumentNumber(c.read),
         })),
-        confidence: diagnosis.confidence,
-        passes: diagnosis.readings.map((r) => ({
-          pass: r.pass, engine: r.engine, source: r.source, side: r.side,
-          readable: r.readable, valid_format: r.validFormat, confidence: Math.round(r.confidence),
-        })),
-        agreement: diagnosis.agreement
-          ? { supporters: diagnosis.agreement.supporters, engines: diagnosis.agreement.engines, confidence: Math.round(diagnosis.agreement.confidence) }
-          : null,
-        near_miss: diagnosis.nearMiss,
-        character_distance: diagnosis.characterDistance,
-        image_quality: analysis?.quality || null,
-        page_analysis: analysis || null,
-        text_bands: analysis?.bands?.length || 0,
-        skew_degrees: analysis?.skew ?? null,
         note: message,
       }),
       review_history: [
@@ -317,7 +271,7 @@ export default async function (req: any) {
           action: diagnosis.outcome === 'match' ? 'auto_verified' : 'auto_rejected',
           actor_name: 'AMedix automated document verification',
           actor_role: 'system',
-          detail: `${profile.label} · ${profile.numberLabel} · ${diagnosis.outcome} · confidence ${diagnosis.confidence.overall}`,
+          detail: `${profile.label} · ${profile.numberLabel} · ${diagnosis.outcome} · confidence ${diagnosis.confidence.overall} · read in memory, nothing stored`,
         },
       ],
     });
@@ -328,6 +282,7 @@ export default async function (req: any) {
       verification_id: record.id,
       submitted_datetime: submittedAt,
       document_retained: false,
+      document_stored: false,
       document_type,
       number_label: documentNumberLabel(document_type),
       entered_number: enteredNumber,
@@ -335,7 +290,8 @@ export default async function (req: any) {
       checks,
       message,
       confidence: diagnosis.confidence,
-      quality: analysis ? analysis.quality : null,
+      quality,
+      pages_decoded: analysis ? analysis.pages_decoded : 0,
       passes: diagnosis.readings.map((r) => `${r.pass}:${r.engine}:${r.source}:${Math.round(r.confidence)}`),
       format_valid: validateFormat(diagnosis.rawReading, profile).ok,
       near_miss: diagnosis.nearMiss,

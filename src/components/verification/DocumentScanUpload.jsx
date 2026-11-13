@@ -1,5 +1,4 @@
 import React, { useRef, useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
   Loader2, ScanLine, UploadCloud, FileUp, Check, AlertTriangle, RefreshCw, Image as ImageIcon,
@@ -8,8 +7,8 @@ import DocumentScannerCamera from "@/components/verification/DocumentScannerCame
 import ScanReview from "@/components/verification/ScanReview";
 import { documentFileName } from "@/lib/documentScanner";
 import {
-  IMAGE_ACCEPT, PDF_ACCEPT, MAX_PDF_BYTES, isPdfFile, fileSizeLabel,
-  prepareImageFile, rotateImageDataUrl, pagesToPdf,
+  IMAGE_ACCEPT, PDF_ACCEPT, MAX_INLINE_DOCUMENT_BYTES, isPdfFile, fileSizeLabel,
+  prepareImageFile, rotateImageDataUrl, readFileAsDataUrl, dataUrlToBase64,
 } from "@/lib/documentImage";
 
 // THE unified document acquisition flow for every verification document —
@@ -53,7 +52,10 @@ export default function DocumentScanUpload({
     setPages((prev) => [...prev, { ...page, label: pageLabel(prev.length) }]);
   };
 
-  const uploadPending = async () => {
+  // NOTHING IS UPLOADED. The pages are held in memory and handed to the
+  // verification request as base64, where they are read and released. No file is
+  // written to private storage, public storage or anywhere else.
+  const handOverPending = async () => {
     const pending = pendingRef.current;
     if (!pending || busyRef.current) return;
     busyRef.current = true;
@@ -61,21 +63,13 @@ export default function DocumentScanUpload({
     setRetryable(false);
     try {
       setStage("upload");
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({
-        file: new File([pending.blob], pending.name, { type: "application/pdf" }), // stored privately
-      });
-
-      // Zero retention: the unedited original is never uploaded at all, and the
-      // prepared copy exists only so the number on it can be read once.
       onFile({
-        uri: file_uri,
+        pages: pending.pages,
         name: pending.name,
-        original_uri: "",
-        original_name: "",
         source: pending.source,
-        page_count: pending.pageCount,
-        size: pending.blob.size,
-        mime: "application/pdf",
+        page_count: pending.pages.length,
+        size: pending.size,
+        mime: pending.pages.length === 1 ? pending.pages[0].mime : "application/pdf",
       });
       pendingRef.current = null;
       setPages([]);
@@ -85,7 +79,7 @@ export default function DocumentScanUpload({
       setTimeout(() => setStage(""), 1200);
     } catch (err) {
       console.error(err);
-      setError(t("The upload did not finish. Check your connection and try again — your pages are kept."));
+      setError(t("The document could not be prepared. Please try again."));
       setRetryable(true);
       setMode(pages.length ? "review" : "idle");
     } finally {
@@ -94,9 +88,14 @@ export default function DocumentScanUpload({
     }
   };
 
-  const queue = async (blob, name, source, pageCount, original = null) => {
-    pendingRef.current = { blob, name, source, pageCount, original };
-    await uploadPending();
+  const queue = async (inlinePages, name, source) => {
+    pendingRef.current = {
+      pages: inlinePages,
+      name,
+      source,
+      size: inlinePages.reduce((sum, p) => sum + Math.round((p.base64.length * 3) / 4), 0),
+    };
+    await handOverPending();
   };
 
   const confirmPages = async () => {
@@ -104,8 +103,14 @@ export default function DocumentScanUpload({
     setPreparing(true);
     setError("");
     try {
-      const pdf = await pagesToPdf(pages);
-      await queue(pdf, fileName, pages[0]?.source === "camera" ? "camera" : "gallery", pages.length, originals[0] || null);
+      const inlinePages = pages.map((page) => ({ mime: "image/jpeg", base64: dataUrlToBase64(page.dataUrl) }));
+      const bytes = inlinePages.reduce((sum, p) => sum + Math.round((p.base64.length * 3) / 4), 0);
+      if (bytes > MAX_INLINE_DOCUMENT_BYTES) {
+        setError(t("These pages are too large to check at once. Photograph the document with the camera so it is compressed for reading."));
+        setRetryable(false);
+        return;
+      }
+      await queue(inlinePages, fileName, pages[0]?.source === "camera" ? "camera" : "gallery");
     } catch (err) {
       console.error(err);
       setError(t("The document could not be prepared. Please try again."));
@@ -124,11 +129,20 @@ export default function DocumentScanUpload({
 
     const pdf = files.find(isPdfFile);
     if (pdf) {
-      if (pdf.size > MAX_PDF_BYTES) {
-        setError(t("This PDF is larger than 25 MB. Please upload a smaller file."));
+      if (pdf.size > MAX_INLINE_DOCUMENT_BYTES) {
+        setError(t("This PDF is larger than 8 MB. Nothing is uploaded, so the document has to travel inside the check itself — photograph the pages instead."));
         return;
       }
-      await queue(pdf, fileName, "pdf", 1, pdf);
+      setPreparing(true);
+      try {
+        const dataUrl = await readFileAsDataUrl(pdf);
+        await queue([{ mime: "application/pdf", base64: dataUrlToBase64(dataUrl) }], fileName, "pdf");
+      } catch (err) {
+        console.error(err);
+        setError(t("This PDF could not be opened. Please choose another file."));
+      } finally {
+        setPreparing(false);
+      }
       return;
     }
 
@@ -167,11 +181,20 @@ export default function DocumentScanUpload({
       setError(t("Please select a PDF file."));
       return;
     }
-    if (picked.size > MAX_PDF_BYTES) {
-      setError(t("This PDF is larger than 25 MB. Please upload a smaller file."));
+    if (picked.size > MAX_INLINE_DOCUMENT_BYTES) {
+      setError(t("This PDF is larger than 8 MB. Nothing is uploaded, so the document has to travel inside the check itself — photograph the pages instead."));
       return;
     }
-    await queue(picked, fileName, "pdf", 1, picked);
+    setPreparing(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(picked);
+      await queue([{ mime: "application/pdf", base64: dataUrlToBase64(dataUrl) }], fileName, "pdf");
+    } catch (err) {
+      console.error(err);
+      setError(t("This PDF could not be opened. Please choose another file."));
+    } finally {
+      setPreparing(false);
+    }
   };
 
   const rotatePage = async (index, degrees) => {
@@ -278,7 +301,7 @@ export default function DocumentScanUpload({
             <p className="text-sm text-destructive">{error}</p>
           </div>
           {retryable && (
-            <Button type="button" size="sm" variant="outline" onClick={uploadPending} disabled={busy}>
+            <Button type="button" size="sm" variant="outline" onClick={handOverPending} disabled={busy}>
               <RefreshCw className="w-3.5 h-3.5 mr-2 rtl:ml-2 rtl:mr-0" />
               {t("Try again")}
             </Button>
