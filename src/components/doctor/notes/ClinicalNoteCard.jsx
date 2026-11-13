@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
-import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock, ChevronDown, FileDown } from "lucide-react";
+import { FlaskConical, Image as ImageIcon, ExternalLink, Loader2, FileSignature, Lock, ChevronDown, FileDown, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
-import { storedNotePdfUrl } from "@/lib/clinicalNotePdfStore";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -41,31 +40,57 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
   const photoCount = Array.isArray(note.photo_file_uris) ? note.photo_file_uris.length : 0;
   const [photoUrls, setPhotoUrls] = useState(null);
   const [photosLoading, setPhotosLoading] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfAction, setPdfAction] = useState(null); // "view" | "download"
+  const pdfCache = useRef({ key: "", url: null });
 
-  // The note as an AMedix official document — same sheet as the laboratory and
-  // imaging request forms. A note that already keeps its saved document opens
-  // that; otherwise it is rendered from the saved record on demand.
-  const downloadPdf = async () => {
-    setPdfLoading(true);
+  // The note as an AMedix official document — the same sheet as the laboratory
+  // and imaging request forms — rendered in the browser from the saved note
+  // itself, so it is always the latest version and never leaves this session.
+  // Only a doctor who may read the note can build it.
+  const notePdfUrl = async () => {
+    const key = note.updated_date || note.created_date || note.id;
+    if (pdfCache.current.key === key && pdfCache.current.url) return pdfCache.current.url;
+    const [logo, profile] = await Promise.all([
+      loadRequestLogo(),
+      note.patient_id
+        ? base44.entities.PatientProfile.get(note.patient_id).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+    const doc = await generateClinicalNotePdf(note, { logo, profile });
+    const url = String(doc.output("bloburl"));
+    pdfCache.current = { key, url };
+    return url;
+  };
+
+  const pdfFileName = () =>
+    `${note.note_reference || "ClinicalNote"}${note.patient_cin ? `_${note.patient_cin}` : ""}.pdf`;
+
+  const openPdf = async () => {
+    setPdfAction("view");
     try {
-      const storedUrl = await storedNotePdfUrl(note.id).catch(() => null);
-      if (storedUrl) {
-        window.open(storedUrl, "_blank", "noopener");
-        return;
-      }
-      const [logo, profile] = await Promise.all([
-        loadRequestLogo(),
-        note.patient_id
-          ? base44.entities.PatientProfile.get(note.patient_id).catch(() => null)
-          : Promise.resolve(null),
-      ]);
-      const doc = await generateClinicalNotePdf(note, { logo, profile });
-      doc.save(`${note.note_reference || "ClinicalNote"}${note.patient_cin ? `_${note.patient_cin}` : ""}.pdf`);
+      const url = await notePdfUrl();
+      window.open(url, "_blank", "noopener");
     } catch (err) {
       console.error(err);
     } finally {
-      setPdfLoading(false);
+      setPdfAction(null);
+    }
+  };
+
+  const downloadPdf = async () => {
+    setPdfAction("download");
+    try {
+      const url = await notePdfUrl();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = pdfFileName();
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPdfAction(null);
     }
   };
 
@@ -310,10 +335,16 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
           </div>
         )}
 
-        <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfLoading} className="gap-1.5">
-          {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-          {pdfLoading ? "Preparing PDF..." : "Download PDF"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={openPdf} disabled={pdfAction !== null} className="gap-1.5">
+            {pdfAction === "view" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            {pdfAction === "view" ? "Preparing PDF..." : "View PDF"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfAction !== null} className="gap-1.5">
+            {pdfAction === "download" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+            {pdfAction === "download" ? "Preparing PDF..." : "Download PDF"}
+          </Button>
+        </div>
       </div>
     </div>
   );

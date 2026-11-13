@@ -17,11 +17,31 @@ import {
 } from "@/lib/requestPdfLayout";
 import { getSpecialtyLabel } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
+import { hasArabic, wrapArabicText, drawArabicLine } from "@/lib/pdfText";
 
 const TITLE = "Clinical Note";
 const SUBTITLE = "Official Medical Document";
 const { margin: M, right: R } = PDF_PAGE;
 const WIDTH = R - M;
+
+// Lines of a paragraph, measured the way they will be printed: Arabic with the
+// browser's own text engine, everything else with the PDF's text metrics.
+function wrap(doc, text, width, size, weight = "normal") {
+  return hasArabic(text) ? wrapArabicText(text, width, size, weight) : doc.splitTextToSize(String(text || ""), width);
+}
+
+// One line, at its baseline. Arabic lines are shaped and printed as a crisp
+// image; Latin lines stay selectable PDF text.
+function writeLine(doc, line, y, { size = 9.4, weight = "normal", color = PDF_INK.ink, x = M, width = WIDTH, align = "left" } = {}) {
+  if (hasArabic(line)) {
+    drawArabicLine(doc, line, x, y, { size, weight, color, width, align });
+    return;
+  }
+  doc.setFont("helvetica", weight);
+  doc.setFontSize(size);
+  doc.setTextColor(...color);
+  doc.text(line, x, y, align === "right" ? { align: "right" } : undefined);
+}
 
 // Body text that flows across pages inside the framed template. Content stops
 // above the signature band, and a continuation page repeats the letterhead.
@@ -29,14 +49,11 @@ function writeFlow(doc, text, y, artwork, { size = 9.4, lineHeight = 4.9 } = {})
   const value = String(text || "").trim();
   if (!value) return y;
   let yy = y;
-  doc.splitTextToSize(value, WIDTH).forEach((line) => {
+  wrap(doc, value, WIDTH, size).forEach((line) => {
     if (yy > CONTENT_BOTTOM) {
       yy = startPage(doc, artwork, TITLE) + 2;
     }
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(size);
-    doc.setTextColor(...PDF_INK.ink);
-    doc.text(line, M, yy);
+    writeLine(doc, line, yy, { size, color: PDF_INK.ink });
     yy += lineHeight;
   });
   return yy;
@@ -49,11 +66,8 @@ function writeLabelled(doc, label, value, y, artwork) {
   let yy = y;
   if (yy > CONTENT_BOTTOM - 12) yy = startPage(doc, artwork, TITLE) + 2;
 
-  doc.splitTextToSize(String(label || ""), WIDTH).forEach((line) => {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.9);
-    doc.setTextColor(...PDF_INK.muted);
-    doc.text(line, M, yy);
+  wrap(doc, String(label || ""), WIDTH, 6.9, "bold").forEach((line) => {
+    writeLine(doc, line, yy, { size: 6.9, weight: "bold", color: PDF_INK.muted });
     yy += 3.4;
   });
   yy += 1.4;
