@@ -17,6 +17,7 @@ import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/c
 import VaccinationDocumentUpload, { ImmunizationEntryForm, ChronicCareEntryForm, immunizationKindLabel, chronicCareTypeLabel } from "@/components/patient/onboarding/PreventiveCareForms";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import { isSubmitted } from "@/components/verification/verificationStatus";
+import { isVerificationExempt } from "@/lib/verificationExemption";
 import DateField from "@/components/ui/date-field";
 import DietNutritionFields from "@/components/patient/lifestyle/DietNutritionFields";
 import SleepPatternFields from "@/components/patient/lifestyle/SleepPatternFields";
@@ -103,6 +104,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   // { status, outcome, message, verification_id }. Decided by the engine when
   // the document is submitted; nothing is queued for review.
   const [verification, setVerification] = useState(null);
+  // The one account AMedix administration exempted from document verification.
+  const verificationExempt = isVerificationExempt(user?.email);
   const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     // A verified document stays verified — editing a detail never erases it.
@@ -165,7 +168,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       setError(t("Please select your sex."));
       return;
     }
-    if (!isSubmitted(verification)) {
+    if (!verificationExempt && !isSubmitted(verification)) {
       setError(t("Verify your identity document to continue — the number on it must match the number you entered."));
       return;
     }
@@ -530,20 +533,29 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     </div>
                   </section>
 
-                  <section>
-                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Verification Process")} *</h3>
-                    <VerificationMethodSelector
-                      profileType="patient"
-                      fullName={[form.first_name, form.father_name, form.grandfather_name, form.last_name].filter(Boolean).join(" ")}
-                      fullNameAr={[form.first_name_ar, form.father_name_ar, form.grandfather_name_ar, form.last_name_ar].filter(Boolean).join(" ")}
-                      birthCertificateReadOnly
-                      dateOfBirth={form.date_of_birth}
-                      nationalIdNumber={form.identification_number}
-                      result={verification}
-                      onResult={setVerification}
-                      t={t}
-                    />
-                  </section>
+                  {verificationExempt ? (
+                    <section className="rounded-lg border border-border bg-muted/40 p-3">
+                      <p className="text-sm font-medium text-primary">{t("Verification Process")}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t("Your account is authorized by AMedix — no document upload is needed to create your account.")}
+                      </p>
+                    </section>
+                  ) : (
+                    <section>
+                      <h3 className="text-sm font-semibold text-primary mb-3">{t("Verification Process")} *</h3>
+                      <VerificationMethodSelector
+                        profileType="patient"
+                        fullName={[form.first_name, form.father_name, form.grandfather_name, form.last_name].filter(Boolean).join(" ")}
+                        fullNameAr={[form.first_name_ar, form.father_name_ar, form.grandfather_name_ar, form.last_name_ar].filter(Boolean).join(" ")}
+                        birthCertificateReadOnly
+                        dateOfBirth={form.date_of_birth}
+                        nationalIdNumber={form.identification_number}
+                        result={verification}
+                        onResult={setVerification}
+                        t={t}
+                      />
+                    </section>
+                  )}
 
                   {error && <p className="text-sm text-destructive">{error}</p>}
 

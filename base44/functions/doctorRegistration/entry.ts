@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { auditEntry, isActivated, loadAuthorization, withAudit } from '../../shared/hospitalAuthorization.ts';
 import { normalizeCode } from '../../shared/registrationCodes.ts';
-import { isDocumentVerificationAccepted } from '../../shared/documentNumberVerification.ts';
+import { isDocumentVerificationAccepted, isVerificationExempt } from '../../shared/documentNumberVerification.ts';
 
 // Doctor registration that can be started, interrupted and resumed.
 //
@@ -246,9 +246,16 @@ export default async function (req) {
         return Response.json({ error: 'This registration was not approved. Please contact AMedix administration.' }, { status: 403 });
       }
 
-      const identity = await resolveVerification(base44, user.id, draft, 'identity_verification_id', IDENTITY_DOCUMENTS, body.identity_verification_id);
-      const license = await resolveVerification(base44, user.id, draft, 'license_verification_id', LICENSE_DOCUMENTS, body.license_verification_id);
-      if (!identity || !license) {
+      // One account is exempted by AMedix administration from document
+      // verification; it registers on its entered details alone.
+      const verificationExempt = isVerificationExempt(email);
+      const identity = verificationExempt
+        ? null
+        : await resolveVerification(base44, user.id, draft, 'identity_verification_id', IDENTITY_DOCUMENTS, body.identity_verification_id);
+      const license = verificationExempt
+        ? null
+        : await resolveVerification(base44, user.id, draft, 'license_verification_id', LICENSE_DOCUMENTS, body.license_verification_id);
+      if (!verificationExempt && (!identity || !license)) {
         return Response.json({ error: 'Verification is required before you can continue.' }, { status: 400 });
       }
 
@@ -272,13 +279,15 @@ export default async function (req) {
 
       // Attach the already-verified documents to the new profile — the same
       // records are reused, so a resumed registration never creates duplicates.
-      try {
-        await base44.asServiceRole.entities.IdentityVerification.updateMany(
-          { id: { $in: [identity.id, license.id] }, user_id: user.id, profile_type: 'doctor' },
-          { $set: { doctor_id: profile.id } }
-        );
-      } catch (err) {
-        // the profile itself is never rolled back for a link failure
+      if (identity && license) {
+        try {
+          await base44.asServiceRole.entities.IdentityVerification.updateMany(
+            { id: { $in: [identity.id, license.id] }, user_id: user.id, profile_type: 'doctor' },
+            { $set: { doctor_id: profile.id } }
+          );
+        } catch (err) {
+          // the profile itself is never rolled back for a link failure
+        }
       }
 
       // FAST-TRACK AFFILIATION: a valid, active AMedix Hospital Code activates

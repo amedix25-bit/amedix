@@ -10,6 +10,8 @@ import DocumentVerificationCard from "@/components/verification/DocumentVerifica
 import { isSubmitted } from "@/components/verification/verificationStatus";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { EMPTY_DOCTOR_FORM, saveDoctorDraft, submitDoctorRegistration } from "@/lib/doctorRegistration";
+import { isVerificationExempt } from "@/lib/verificationExemption";
+import { base44 } from "@/api/base44Client";
 import { DOCTOR_HOSPITAL_CODE_KEY } from "@/components/registration/DoctorHospitalCodeGate";
 
 // The existing doctor registration form, now resumable: saved details and any
@@ -44,6 +46,12 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
   const [saveState, setSaveState] = useState("idle");
   const lastSaved = useRef("");
   const restored = !!restores?.fields && Object.values(restores.fields).some((v) => (v || "").toString().trim() !== "");
+  // The one account AMedix administration exempted from document verification.
+  const [email, setEmail] = useState("");
+  useEffect(() => {
+    base44.auth.me().then((u) => setEmail(u?.email || "")).catch(() => setEmail(""));
+  }, []);
+  const verificationExempt = isVerificationExempt(email);
 
   const buildPayload = () => {
     const identityDone = isSubmitted(doctorVerification.identity);
@@ -86,7 +94,7 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       setError(t("Enter the AMedix Hospital Code given to you by your approved hospital."));
       return;
     }
-    if (!isSubmitted(doctorVerification.identity) || !isSubmitted(doctorVerification.medical_license)) {
+    if (!verificationExempt && (!isSubmitted(doctorVerification.identity) || !isSubmitted(doctorVerification.medical_license))) {
       setError(t("Verify your identity and licence documents to continue — the number on each document must match the number you entered."));
       return;
     }
@@ -96,8 +104,8 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
       const res = await submitDoctorRegistration({
         ...buildPayload(),
         hospital_code: hospitalCode.trim(),
-        identity_verification_id: doctorVerification.identity.verification_id,
-        license_verification_id: doctorVerification.medical_license.verification_id,
+        identity_verification_id: doctorVerification.identity?.verification_id || "",
+        license_verification_id: doctorVerification.medical_license?.verification_id || "",
       });
       if (res.error) {
         setError(res.error);
@@ -242,34 +250,45 @@ export default function DoctorRegistrationForm({ state = "incomplete", restores 
         <Label htmlFor="phone">{t("Phone")}</Label>
         <Input id="phone" placeholder={t("Contact number")} value={doctorForm.phone} onChange={(e) => setDoctorForm({ ...doctorForm, phone: e.target.value })} />
       </div>
-      <div className="pt-2">
-        <h3 className="text-sm font-semibold text-primary">{t("Verification Process")} *</h3>
-        <p className="text-xs text-muted-foreground mt-1 mb-3">
-          {t("Your documents are verified securely and stored with your profile.")}
-        </p>
-      </div>
-      <VerificationMethodSelector
-        profileType="doctor"
-        fullName={[doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" ")}
-        initialMethod={["birth_certificate", "personal_card", "drivers_licence", "passport"].includes(restores?.identity?.method) ? restores.identity.method : ""}
-        result={doctorVerification.identity}
-        onResult={(r) => setDoctorVerification((s) => ({ ...s, identity: r }))}
-        t={t}
-      />
-      <DocumentVerificationCard
-        profileType="doctor"
-        documentType="medical_license"
-        title={t("Medical / Professional License Document")}
-        description={t("Upload a clear photo or PDF")}
-        fields={[{ key: "license_number", label: t("Medical License Number"), placeholder: t("Medical license number") }]}
-        values={{ license_number: doctorForm.license_number }}
-        onValueChange={(key, value) => {
-          setDoctorForm((f) => ({ ...f, license_number: value }));
-        }}
-        result={doctorVerification.medical_license}
-        onResult={(r) => setDoctorVerification((s) => ({ ...s, medical_license: r }))}
-        t={t}
-      />
+      {verificationExempt ? (
+        <div className="rounded-lg border border-border bg-muted/40 p-3">
+          <p className="text-sm font-medium text-primary">{t("Verification Process")}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {t("Your account is authorized by AMedix — no document upload is needed to create your account.")}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="pt-2">
+            <h3 className="text-sm font-semibold text-primary">{t("Verification Process")} *</h3>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              {t("Your documents are verified securely and stored with your profile.")}
+            </p>
+          </div>
+          <VerificationMethodSelector
+            profileType="doctor"
+            fullName={[doctorForm.first_name, doctorForm.middle_name, doctorForm.last_name].filter(Boolean).join(" ")}
+            initialMethod={["birth_certificate", "personal_card", "drivers_licence", "passport"].includes(restores?.identity?.method) ? restores.identity.method : ""}
+            result={doctorVerification.identity}
+            onResult={(r) => setDoctorVerification((s) => ({ ...s, identity: r }))}
+            t={t}
+          />
+          <DocumentVerificationCard
+            profileType="doctor"
+            documentType="medical_license"
+            title={t("Medical / Professional License Document")}
+            description={t("Upload a clear photo or PDF")}
+            fields={[{ key: "license_number", label: t("Medical License Number"), placeholder: t("Medical license number") }]}
+            values={{ license_number: doctorForm.license_number }}
+            onValueChange={(key, value) => {
+              setDoctorForm((f) => ({ ...f, license_number: value }));
+            }}
+            result={doctorVerification.medical_license}
+            onResult={(r) => setDoctorVerification((s) => ({ ...s, medical_license: r }))}
+            t={t}
+          />
+        </>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : t("Create Doctor Account")}
