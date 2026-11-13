@@ -81649,11 +81649,27 @@ function hairline(doc2, y) {
   doc2.setLineWidth(0.15);
   doc2.line(M10, y, R10, y);
 }
+function writeSection(doc2, title) {
+  doc2.__pendingSection = String(title || "");
+  return doc2.__pendingSection;
+}
+function flushSection(doc2, y, artwork, noteTitle, blockHeight) {
+  const title = doc2.__pendingSection;
+  if (!title) return y;
+  doc2.__pendingSection = null;
+  const d = density(doc2);
+  const room = headingRoom(d) + Math.min(Math.max(blockHeight, 6), PAGE.BOTTOM - 58);
+  let yy = y + room > PAGE.BOTTOM ? nextPage(doc2, artwork, noteTitle) : y + SPACE.before * d;
+  writeHeading(doc2, title, yy);
+  yy += 2.6 * d;
+  drawDivider(doc2, yy);
+  return yy + SPACE.heading * d;
+}
 function writeDocumentHead(doc2, title, reference, y) {
   const label2 = String(title || "Clinical Note").toUpperCase();
   const ref = String(reference || "").trim();
   let yy = y;
-  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc2, null, title);
+  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc2, null, "Clinical Note");
   if (!ref || headingWidth(doc2, label2) + headingWidth(doc2, ref) + 8 <= W) {
     writeHeading(doc2, label2, yy);
     if (ref) writeHeading(doc2, ref, yy, { x: R10, align: "right" });
@@ -81666,92 +81682,62 @@ function writeDocumentHead(doc2, title, reference, y) {
   writeHeading(doc2, ref, yy, { x: R10, align: "right" });
   return yy + 6;
 }
-function sectionNeed(doc2, item) {
+function rowMetrics(doc2, label2, value, opts = {}) {
   const d = density(doc2);
-  const heading = TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
-  const valueWidth = R10 - (M10 + LABEL_W + VALUE_GAP);
-  if (item.vitals?.length > 0) {
-    const [label2, value] = item.vitals[0];
-    const grid = parseVitals(value);
-    const measured = grid.length > 0 ? 2 * LEAD.vitalLabel * d + 1.5 + LEAD.vitalValue * d + SPACE.cellPad * d : rowRoom(doc2, label2, value, W);
-    return heading + captionRoom(doc2, label2) + measured;
-  }
-  if (item.groups?.length > 0) {
-    const [label2, value] = item.groups[0];
-    const first = examinationBlocks(value)[0];
-    const finding = first?.items?.[0] ? rowRoom(doc2, first.items[0][0], first.items[0][1], valueWidth) : LEAD.value * d;
-    return heading + captionRoom(doc2, label2) + LEAD.value * d + finding;
-  }
-  if (item.subs?.length > 0) {
-    return heading + captionRoom(doc2, item.subs[0].label) + 2 * LEAD.cellValue * d;
-  }
-  if (item.entries?.length > 0) {
-    const first = item.entries[0];
-    const gridRow = 2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d;
-    const full = rowRoom(doc2, first.label, first.value, valueWidth);
-    return heading + (item.entries.length === 1 ? full : Math.max(gridRow, full));
-  }
-  return heading + 8;
-}
-function writeSection(doc2, title, y, artwork, noteTitle, need = 26) {
-  const d = density(doc2);
-  let yy = y + SPACE.before * d;
-  if (yy + need > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
-  writeHeading(doc2, title, yy);
-  yy += 2.6 * d;
-  drawDivider(doc2, yy);
-  return yy + SPACE.heading * d;
-}
-function writeRow(doc2, label2, value, y, artwork, opts = {}) {
-  const {
-    noteTitle = "Clinical Note",
-    labelWidth = LABEL_W,
-    size = TYPE.value,
-    labelSize = TYPE.label,
-    rule = true,
-    numbered = false
-  } = opts;
-  const d = density(doc2);
+  const labelWidth = opts.labelWidth ?? LABEL_W;
+  const size = opts.size ?? TYPE.value;
+  const labelSize = opts.labelSize ?? TYPE.label;
   const lineHeight = (opts.lineHeight ?? LEAD.value) * d;
   const paragraphs = String(value ?? "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
-  const rows = numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
-  if (rows.length === 0) return y;
-  const valueX = M10 + labelWidth + VALUE_GAP;
-  const valueW = R10 - valueX;
-  const valueLines = rows.flatMap((line) => wrap(doc2, line, valueW, size));
+  const rows = opts.numbered ? paragraphs.map((line, i) => `${i + 1}. ${line}`) : paragraphs;
+  const valueLines = rows.flatMap((line) => wrap(doc2, line, valueWidth(labelWidth), size));
   const labelLines = wrap(doc2, String(label2 || ""), labelWidth, labelSize, "bold");
   const labelLead = LEAD.label * d;
-  const height = Math.max(valueLines.length * lineHeight, labelLines.length * labelLead);
-  let yy = y;
+  return {
+    valueLines,
+    labelLines,
+    labelWidth,
+    size,
+    labelSize,
+    lineHeight,
+    labelLead,
+    height: Math.max(valueLines.length * lineHeight, labelLines.length * labelLead)
+  };
+}
+function writeRow(doc2, label2, value, y, artwork, opts = {}) {
+  const { noteTitle = "Clinical Note", rule = true } = opts;
+  const metrics = rowMetrics(doc2, label2, value, opts);
+  if (metrics.valueLines.length === 0) return y;
+  const d = density(doc2);
+  let yy = flushSection(doc2, y, artwork, noteTitle, metrics.height);
   let continued = false;
-  if (yy + height > PAGE.BOTTOM && height <= PAGE.BOTTOM - 58) {
+  if (yy + metrics.height > PAGE.BOTTOM && metrics.height <= PAGE.BOTTOM - 58) {
     yy = nextPage(doc2, artwork, noteTitle);
   }
-  labelLines.forEach((line, index) => {
-    writeLine(doc2, line, yy + index * labelLead, {
-      size: labelSize,
+  metrics.labelLines.forEach((line, index) => {
+    writeLine(doc2, line, yy + index * metrics.labelLead, {
+      size: metrics.labelSize,
       weight: "bold",
       color: PDF_INK.muted,
-      x: M10,
-      width: labelWidth,
+      width: metrics.labelWidth,
       kind: "label"
     });
   });
   let valueY = yy;
-  valueLines.forEach((line) => {
+  metrics.valueLines.forEach((line) => {
     if (valueY > PAGE.BOTTOM) {
       valueY = nextPage(doc2, artwork, noteTitle);
       continued = true;
     }
     writeLine(doc2, line, valueY, {
-      size,
-      x: valueX,
-      width: valueW,
+      size: metrics.size,
+      x: M10 + metrics.labelWidth + VALUE_GAP,
+      width: valueWidth(metrics.labelWidth),
       align: hasArabic(line) ? "right" : "left"
     });
-    valueY += lineHeight;
+    valueY += metrics.lineHeight;
   });
-  const end = Math.max(labelLines.length * labelLead + yy, valueY - lineHeight * 0.25) + SPACE.rowPad * d;
+  const end = Math.max(metrics.labelLines.length * metrics.labelLead + yy, valueY - metrics.lineHeight * 0.25) + SPACE.rowPad * d;
   if (rule && !continued) hairline(doc2, end - 0.7);
   return end;
 }
@@ -81812,16 +81798,15 @@ function writeVitalGrid(doc2, vitals, y, artwork, noteTitle, { caption = "" } = 
     rows.push({
       cells,
       labelLines,
-      height: labelLines * labelLead + 1.5 + valueLines * valueLead + 2.6 * d
+      height: labelLines * labelLead + 1.5 + valueLines * valueLead + SPACE.cellPad * d
     });
   }
-  if (caption && rows.length > 0) {
-    const captionHeight = wrap(doc2, caption, W, TYPE.caption, "bold").length * LEAD.caption * d;
-    if (y + SPACE.captionBefore * d + captionHeight + 1.2 + rows[0].height > PAGE.BOTTOM) {
-      y = nextPage(doc2, artwork, noteTitle) - SPACE.captionBefore * d;
-    }
+  const firstRow = rows[0]?.height ?? 0;
+  let yy = flushSection(doc2, y, artwork, noteTitle, captionRoom(doc2, caption) + firstRow);
+  if (caption && yy + captionRoom(doc2, caption) + firstRow > PAGE.BOTTOM) {
+    yy = nextPage(doc2, artwork, noteTitle);
   }
-  let yy = writeCaption(doc2, caption, y, artwork, noteTitle);
+  yy = writeCaption(doc2, caption, yy, artwork, noteTitle);
   rows.forEach(({ cells, labelLines, height: rowHeight }) => {
     if (yy + rowHeight > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
     cells.forEach((cell, column) => {
@@ -81863,6 +81848,37 @@ function examinationBlocks(text) {
     return { heading, items };
   }).filter((block3) => block3.heading || block3.items.length > 0);
 }
+function writeExamination(doc2, text, y, artwork, noteTitle, { label: label2 = "Examination" } = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return y;
+  if (!/^\s*•/m.test(raw)) return writeRow(doc2, label2, raw, y, artwork, { noteTitle });
+  const d = density(doc2);
+  const blocks = examinationBlocks(raw);
+  const first = blocks[0];
+  const firstRoom = (first?.heading ? LEAD.value * d : 0) + (first?.items?.[0] ? examRow(doc2, first.items[0][0], first.items[0][1]) : 0);
+  let yy = flushSection(doc2, y, artwork, noteTitle, captionRoom(doc2, label2) + firstRoom);
+  yy = writeCaption(doc2, label2, yy, artwork, noteTitle);
+  blocks.forEach((block3) => {
+    if (block3.heading) yy += SPACE.before * d;
+    if (yy + SPACE.before * d + LEAD.value * d + 10 > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
+    if (block3.heading) {
+      wrap(doc2, block3.heading, W, TYPE.value, "bold").forEach((line) => {
+        writeLine(doc2, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
+        yy += LEAD.value * d;
+      });
+    }
+    block3.items.forEach(([itemLabel, value]) => {
+      yy = writeRow(doc2, itemLabel, value, yy, artwork, {
+        noteTitle,
+        size: TYPE.cellValue,
+        lineHeight: LEAD.cellValue,
+        rule: false
+      });
+    });
+    yy += 1.4 * d;
+  });
+  return yy;
+}
 function gridCell(doc2, entry2, columnCount) {
   const colW = (W - SPACE.cellGap * (columnCount - 1)) / columnCount;
   const paragraphs = String(entry2.value ?? "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
@@ -81875,24 +81891,29 @@ function gridCell(doc2, entry2, columnCount) {
 function writeFieldGrid(doc2, entries, y, artwork, noteTitle) {
   const list5 = (entries || []).filter((entry2) => String(entry2.value ?? "").trim());
   if (list5.length === 0) return y;
-  if (list5.length === 1) {
-    return writeRow(doc2, list5[0].label, list5[0].value, y, artwork, { noteTitle, rule: false });
-  }
   const d = density(doc2);
   const labelLead = LEAD.cellLabel * d;
   const valueLead = LEAD.cellValue * d;
   const fitThree = list5.filter((entry2) => gridCell(doc2, entry2, 3)).length;
   const fitTwo = list5.filter((entry2) => gridCell(doc2, entry2, 2)).length;
   const columns = fitThree * 2 >= list5.length ? 3 : fitTwo * 2 >= list5.length ? 2 : 1;
-  let yy = y;
+  const cellHeight = (cell) => cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d;
+  const firstRow = [];
+  if (columns > 1) {
+    for (const entry2 of list5) {
+      const cell = gridCell(doc2, entry2, columns);
+      if (!cell) break;
+      firstRow.push(cell);
+      if (firstRow.length === columns) break;
+    }
+  }
+  const firstRoom = firstRow.length ? Math.max(...firstRow.map(cellHeight)) : rowMetrics(doc2, list5[0].label, list5[0].value).height;
+  let yy = flushSection(doc2, y, artwork, noteTitle, firstRoom);
+  if (list5.length === 1) return writeRow(doc2, list5[0].label, list5[0].value, yy, artwork, { noteTitle, rule: false });
   let row = [];
   const flush = () => {
     if (row.length === 0) return;
-    const height = Math.max(
-      ...row.map(
-        (cell) => cell.labels.length * labelLead + 1.3 + cell.values.length * valueLead + SPACE.cellPad * d
-      )
-    );
+    const height = Math.max(...row.map(cellHeight));
     if (yy + height > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
     row.forEach((cell, column) => {
       const x = M10 + column * (cell.colW + SPACE.cellGap);
@@ -81933,46 +81954,19 @@ function writeFieldGrid(doc2, entries, y, artwork, noteTitle) {
   flush();
   return yy;
 }
-function writeExamination(doc2, text, y, artwork, noteTitle, { label: label2 = "Examination" } = {}) {
-  const raw = String(text || "").trim();
-  if (!raw) return y;
-  if (!/^\s*•/m.test(raw)) return writeRow(doc2, label2, raw, y, artwork, { noteTitle });
-  const d = density(doc2);
-  let yy = y;
-  examinationBlocks(raw).forEach((block3) => {
-    if (block3.heading) yy += SPACE.before * d;
-    if (yy > PAGE.BOTTOM - 26) yy = nextPage(doc2, artwork, noteTitle);
-    if (block3.heading) {
-      wrap(doc2, block3.heading, W, TYPE.value, "bold").forEach((line) => {
-        writeLine(doc2, line, yy, { size: TYPE.value, weight: "bold", color: PDF_INK.navy, kind: "heading" });
-        yy += LEAD.value * d;
-      });
-    }
-    block3.items.forEach(([itemLabel, value]) => {
-      yy = writeRow(doc2, itemLabel, value, yy, artwork, {
-        noteTitle,
-        labelWidth: LABEL_W,
-        size: TYPE.cellValue,
-        lineHeight: LEAD.cellValue,
-        rule: false
-      });
-    });
-    yy += 1.4 * d;
-  });
-  return yy;
-}
 function writeSubBlock(doc2, label2, entries, y, artwork, noteTitle) {
   const list5 = (entries || []).filter((entry2) => String(entry2.value ?? "").trim());
   if (list5.length === 0) return y;
   const d = density(doc2);
-  const captionLines = wrap(doc2, String(label2 || ""), W, TYPE.caption, "bold").length;
-  const needed = captionLines * LEAD.caption * d + 1.2 + 16;
-  let yy = y;
-  if (yy + needed > PAGE.BOTTOM) yy = nextPage(doc2, artwork, noteTitle);
+  const firstRoom = Math.max(
+    2 * LEAD.cellLabel * d + 1.3 + 2 * LEAD.cellValue * d + SPACE.cellPad * d,
+    rowMetrics(doc2, list5[0].label, list5[0].value).height
+  );
+  let yy = flushSection(doc2, y, artwork, noteTitle, captionRoom(doc2, label2) + firstRoom);
   yy = writeCaption(doc2, label2, yy, artwork, noteTitle);
   return writeFieldGrid(doc2, list5, yy, artwork, noteTitle);
 }
-var PAGE, M10, R10, W, LABEL_W, VALUE_GAP, TYPE, LEAD, SPACE, density, rowRoom, captionRoom, VITALS;
+var PAGE, M10, R10, W, LABEL_W, VALUE_GAP, TYPE, LEAD, SPACE, density, valueWidth, headingRoom, VITALS, captionRoom, examRow;
 var init_clinicalNotePdfLayout = __esm({
   "src/lib/clinicalNotePdfLayout.js"() {
     init_requestPdfLayout();
@@ -82008,13 +82002,8 @@ var init_clinicalNotePdfLayout = __esm({
     };
     SPACE = { before: 3.4, heading: 6.2, rowPad: 1.9, cellGap: 8, cellPad: 2.6, captionBefore: 1.9 };
     density = (doc2) => documentDensity(doc2);
-    rowRoom = (doc2, label2, value, valueWidth) => {
-      const d = density(doc2);
-      const lines = String(value ?? "").split(/\n+/).map((line) => line.trim()).filter(Boolean).flatMap((line) => wrap(doc2, line, valueWidth, TYPE.value));
-      const labelLines = wrap(doc2, String(label2 || ""), LABEL_W, TYPE.label, "bold").length;
-      return Math.max(lines.length * LEAD.value * d, labelLines * LEAD.label * d) + SPACE.rowPad * d;
-    };
-    captionRoom = (doc2, text) => String(text || "").trim() ? wrap(doc2, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc2) + 1.2 : 0;
+    valueWidth = (labelWidth = LABEL_W) => R10 - (M10 + labelWidth + VALUE_GAP);
+    headingRoom = (d) => TYPE.section * 0.352778 + (SPACE.before + 2.6 + SPACE.heading) * d;
     VITALS = [
       { label: "Blood Pressure", keys: ["blood pressure", "bp"] },
       { label: "Heart Rate", keys: ["heart rate", "pulse", "hr"] },
@@ -82033,6 +82022,8 @@ var init_clinicalNotePdfLayout = __esm({
       { label: "Blood Glucose", keys: ["blood glucose", "glucose"] },
       { label: "Urine Output", keys: ["urine output"] }
     ];
+    captionRoom = (doc2, text) => String(text || "").trim() ? wrap(doc2, text, W, TYPE.caption, "bold").length * LEAD.caption * density(doc2) + 1.2 : 0;
+    examRow = (doc2, itemLabel, value) => rowMetrics(doc2, itemLabel, value, { size: TYPE.cellValue, lineHeight: LEAD.cellValue }).height;
   }
 });
 
@@ -82184,7 +82175,7 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
   [...blocks.values()].filter(
     (item) => item.entries.length > 0 || item.subs.length > 0 || item.groups.length > 0 || item.vitals.length > 0
   ).sort((a, b) => a.at - b.at || a.order - b.order).forEach((item) => {
-    y = writeSection(doc2, item.title, y, artwork, TITLE, sectionNeed(doc2, item));
+    writeSection(doc2, item.title);
     item.vitals.forEach(([label2, value]) => {
       const grid = parseVitals(value);
       const caption = /^vital signs?$/i.test(String(label2).trim()) ? "" : label2;
@@ -82200,8 +82191,7 @@ function renderNote(note, { artwork, profile, density: density2 = 1 }) {
     y += 2;
   });
   if (sensitive.length > 0) {
-    const block3 = { entries: sensitive, vitals: [], groups: [], subs: [] };
-    y = writeSection(doc2, "Sexual & Reproductive History (Sensitive)", y, artwork, TITLE, sectionNeed(doc2, block3));
+    writeSection(doc2, "Sexual & Reproductive History (Sensitive)");
     y = writeFieldGrid(doc2, sensitive, y, artwork, TITLE);
     y += 2;
   }

@@ -171,8 +171,9 @@ function flushSection(doc, y, artwork, noteTitle, blockHeight) {
 
   const d = density(doc);
   const room = headingRoom(d) + Math.min(Math.max(blockHeight, 6), PAGE.BOTTOM - 58);
-  let yy = y + SPACE.before * d;
-  if (yy + room - SPACE.before * d > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
+  // The heading and its first block are placed together: if that block would
+  // not fit under the heading here, both move to a fresh page.
+  let yy = y + room > PAGE.BOTTOM ? nextPage(doc, artwork, noteTitle) : y + SPACE.before * d;
 
   writeHeading(doc, title, yy);
   yy += 2.6 * d;
