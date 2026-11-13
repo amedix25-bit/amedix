@@ -1,0 +1,78 @@
+{
+  "name": "ClinicalNotePdf",
+  "type": "object",
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "description": "ClinicalNote id this stored document belongs to \u2014 exactly one stored PDF per clinical note. Written server-side."
+    },
+    "note_reference": {
+      "type": "string",
+      "description": "Human-readable reference of the clinical note, e.g. CN-20261113-8F3K"
+    },
+    "note_date": {
+      "type": "string",
+      "description": "Date of the clinical encounter the note documents"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the note belongs to"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string",
+      "description": "Patient Clinical Identification Number at the time the document was saved"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor responsible for the note"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor the note belongs to \u2014 read server-side from the note itself"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "pdf_file_uri": {
+      "type": "string",
+      "description": "Private storage URI of the saved clinical note document. Never public \u2014 read through a short-lived signed link issued server-side to the note's own doctor or an administrator."
+    },
+    "pdf_file_name": {
+      "type": "string",
+      "description": "Name of the saved document, e.g. CN-20261113-8F3K_CIN-000123.pdf"
+    },
+    "pdf_generated_datetime": {
+      "type": "string",
+      "description": "Date and time the note document was generated and saved (ISO datetime)"
+    }
+  },
+  "required": [
+    "note_id",
+    "pdf_file_uri"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

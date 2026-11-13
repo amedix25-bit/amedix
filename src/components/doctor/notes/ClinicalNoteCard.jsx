@@ -9,6 +9,7 @@ import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { generateClinicalNotePdf } from "@/lib/clinicalNotePdf";
+import { storedNotePdfUrl } from "@/lib/clinicalNotePdfStore";
 
 function Field({ label, value }) {
   if (!value) return null;
@@ -43,10 +44,16 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
   const [pdfLoading, setPdfLoading] = useState(false);
 
   // The note as an AMedix official document — same sheet as the laboratory and
-  // imaging request forms, generated from the saved record on demand.
+  // imaging request forms. A note that already keeps its saved document opens
+  // that; otherwise it is rendered from the saved record on demand.
   const downloadPdf = async () => {
     setPdfLoading(true);
     try {
+      const storedUrl = await storedNotePdfUrl(note.id).catch(() => null);
+      if (storedUrl) {
+        window.open(storedUrl, "_blank", "noopener");
+        return;
+      }
       const [logo, profile] = await Promise.all([
         loadRequestLogo(),
         note.patient_id
