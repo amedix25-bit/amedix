@@ -140,7 +140,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
       {activeTab === "newimaging" && (
         <section className="rounded-2xl border border-border bg-card p-6">
           <h3 className="font-semibold text-lg mb-4">Add Imaging</h3>
-          <DoctorImagingRequests doctorProfile={doctorProfile} initialCin={patient.cin} />
+          <DoctorImagingRequests doctorProfile={doctorProfile} patient={patient} initialCin={patient.cin} />
         </section>
       )}
 

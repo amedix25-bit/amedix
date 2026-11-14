@@ -51,9 +51,16 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
   const [view, setView] = useState(initialView === "history" ? "history" : "patients");
   const submitGuard = React.useRef(false);
 
+  // The patient whose profile is open (when this section is rendered inside a
+  // patient profile). Every request listed then MUST belong to that patient.
+  const scopedPatient = draftContext?.patient || null;
+  const scopedCin = String(scopedPatient?.cin || "").trim().toUpperCase();
+
   useEffect(() => {
+    setItems([]);
+    setLoading(true);
     load();
-  }, [doctorProfile]);
+  }, [doctorProfile?.id, scopedPatient?.id, scopedCin]);
 
   // Persist the in-progress selection so it survives returning to this page.
   useEffect(() => {

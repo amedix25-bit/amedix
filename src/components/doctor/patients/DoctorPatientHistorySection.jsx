@@ -33,6 +33,12 @@ export default function DoctorPatientHistorySection({ patient }) {
   }, []);
 
   useEffect(() => {
+    // Switching patient clears the previous patient's record immediately, so
+    // nothing from the patient just closed is visible while the next loads.
+    setEvents(null);
+    setRecordData(null);
+    setReportedEvents([]);
+    let cancelled = false;
     const load = async () => {
       if (!patient?.id) return;
       try {
@@ -40,6 +46,7 @@ export default function DoctorPatientHistorySection({ patient }) {
           base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id }),
           base44.entities.Appointment.filter({ patient_id: patient.id }),
         ]);
+        if (cancelled) return;
         const data = payload.data || {};
         setRecordData(data);
         const history = data.medical_history || [];
@@ -83,11 +90,14 @@ export default function DoctorPatientHistorySection({ patient }) {
           ].sort((x, y) => (y.date || "").localeCompare(x.date || ""))
         );
       } catch (err) {
-        console.error(err);
-        setEvents([]);
+        if (!cancelled) {
+          console.error(err);
+          setEvents([]);
+        }
       }
     };
     load();
+    return () => { cancelled = true; };
   }, [patient?.id, reloadKey]);
 
   return (

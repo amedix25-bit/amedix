@@ -8,17 +8,19 @@ import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 // Imaging results the patient explicitly shared with this doctor via
 // "Send to Doctor" in their portal. Opening the report marks the
 // share as seen (clears the bell badge too).
-export default function DoctorSharedImagingResults({ userId }) {
+export default function DoctorSharedImagingResults({ userId, patientId }) {
   const [items, setItems] = useState(null);
 
   useEffect(() => {
+    setItems(null);
     const load = async () => {
       try {
         const list = await base44.entities.DoctorNotification.filter(
           { doctor_user_id: userId, type: "imaging_result_shared" },
           "-datetime"
         );
-        setItems(list);
+        // Inside a patient profile only that patient's shared results are shown.
+        setItems(patientId ? list.filter((n) => String(n.patient_id || "") === patientId) : list);
       } catch (err) {
         console.error(err);
         setItems([]);
@@ -27,7 +29,7 @@ export default function DoctorSharedImagingResults({ userId }) {
     load();
     const unsubscribe = base44.entities.DoctorNotification.subscribe(() => load());
     return unsubscribe;
-  }, [userId]);
+  }, [userId, patientId]);
 
   const markRead = async (n) => {
     if (n.is_read) return;

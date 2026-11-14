@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
+import { verifyPatientOwnership, logOwnershipDenial } from "../../shared/patientOwnership.ts";
 
 // Protected radiology file access (Phase 9). Private study images and report
 // PDFs are resolved to SHORT-LIVED signed URLs ONLY for users authorized on
@@ -25,6 +26,26 @@ export default async function(req: Request): Promise<Response> {
     const found = await svc.entities.ImagingRequest.filter({ id: requestId });
     const request = found[0];
     if (!request) return Response.json({ error: "Imaging request not found." }, { status: 404 });
+
+    // PATIENT ISOLATION (fail-closed): the request must resolve to a real
+    // patient whose CIN and account match the identifiers carried on it. A
+    // request that cannot be proven to belong to one patient is never served.
+    const ownership = await verifyPatientOwnership(base44, request, {});
+    if (!ownership.ok) {
+      await logOwnershipDenial(base44, {
+        user,
+        module: "radiologyFileAccess",
+        record_id: request.id,
+        record_ref: request.request_id || "",
+        reason: ownership.reason,
+        patient_id: request.patient_id || "",
+        hospital: request.routed_hospital || request.doctor_hospital || "",
+      });
+      return Response.json(
+        { error: "This study's patient ownership could not be verified, so the file cannot be served." },
+        { status: 403 }
+      );
+    }
 
     const radProfiles = await svc.entities.RadiologistProfile.filter({ user_id: user.id });
     const radiologist = radProfiles[0];

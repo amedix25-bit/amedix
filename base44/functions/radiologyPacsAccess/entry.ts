@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { secrets } from 'base44:runtime';
 import { authorizeRadiologyStudy } from "../../shared/radiologyStudyAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { verifyPatientOwnership, logOwnershipDenial } from "../../shared/patientOwnership.ts";
 import {
   RADIANT_TEMPLATE_STUDY_UID,
   RADIANT_LAUNCH_ONLY_URL,
@@ -938,6 +939,22 @@ export default async function(req: Request): Promise<Response> {
     const found = await svc.entities.ImagingRequest.filter({ id: requestId });
     const request = found[0];
     if (!request) return json({ error: "Imaging request not found." }, 404);
+
+    // PATIENT ISOLATION (fail-closed): the viewer is only launched for a
+    // request proven to belong to one patient (id, CIN and account agree).
+    const ownership = await verifyPatientOwnership(base44, request, {});
+    if (!ownership.ok) {
+      await logOwnershipDenial(base44, {
+        user,
+        module: "radiologyPacsAccess",
+        record_id: request.id,
+        record_ref: request.request_id || "",
+        reason: ownership.reason,
+        patient_id: request.patient_id || "",
+        hospital: request.routed_hospital || request.doctor_hospital || "",
+      });
+      return json({ error: "This study's patient ownership could not be verified, so the viewer cannot open it." }, 403);
+    }
 
     const actorRole = await authorizeRadiologyStudy(base44, user, request);
     if (!actorRole) return json({ error: "You are not authorized to access this study's images." }, 403);

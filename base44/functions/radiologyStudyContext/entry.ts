@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { canonicalStage } from "../../shared/radiologyWorkflow.ts";
 import { authorizedFacilities, isAuthorizedForFacility } from "../../shared/radiologyMembership.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { verifyPatientOwnership, logOwnershipDenial } from "../../shared/patientOwnership.ts";
 
 // Authorized clinical context for the radiologist's study review screen —
 // the minimum authorized information for interpretation, never the entire
@@ -29,6 +30,26 @@ export default async function(req: Request): Promise<Response> {
     const found = await svc.entities.ImagingRequest.filter({ id: requestId });
     const request = found[0];
     if (!request) return Response.json({ error: "Imaging request not found." }, { status: 404 });
+
+    // PATIENT ISOLATION (fail-closed): the study is only ever served when the
+    // request resolves to one patient whose CIN and account match the record.
+    const ownership = await verifyPatientOwnership(base44, request, {});
+    if (!ownership.ok) {
+      await logOwnershipDenial(base44, {
+        user,
+        actor_role: "radiologist",
+        module: "radiologyStudyContext",
+        record_id: request.id,
+        record_ref: request.request_id || "",
+        reason: ownership.reason,
+        patient_id: request.patient_id || "",
+        hospital: request.routed_hospital || request.doctor_hospital || "",
+      });
+      return Response.json(
+        { error: "This study's patient ownership could not be verified, so it cannot be opened." },
+        { status: 403 }
+      );
+    }
 
     const authorized =
       (request.authorized_radiologist_user_ids || []).includes(user.id) ||

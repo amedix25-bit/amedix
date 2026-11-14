@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { authorizeRadiologyStudy } from "../../shared/radiologyStudyAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { createZipStore } from "../../shared/zipStore.ts";
+import { verifyPatientOwnership, logOwnershipDenial } from "../../shared/patientOwnership.ts";
 
 // RadiAnt desktop DICOM workflow — the authorized way a radiologist gets the
 // study onto their own workstation.
@@ -108,6 +109,23 @@ export default async function (req: Request): Promise<Response> {
     const found = await svc.entities.ImagingRequest.filter({ id: requestId });
     const request = found[0];
     if (!request) return json({ error: "Imaging request not found." }, 404);
+
+    // PATIENT ISOLATION (fail-closed): no study is packaged unless the request
+    // itself resolves to one patient whose CIN and account match the record.
+    const ownership = await verifyPatientOwnership(base44, request, {});
+    if (!ownership.ok) {
+      await logOwnershipDenial(base44, {
+        user,
+        actor_role: "radiologist",
+        module: "radiologyStudyDownload",
+        record_id: request.id,
+        record_ref: request.request_id || "",
+        reason: ownership.reason,
+        patient_id: request.patient_id || "",
+        hospital: request.routed_hospital || request.doctor_hospital || "",
+      });
+      return json({ error: "This study's patient ownership could not be verified, so it cannot be downloaded." }, 403);
+    }
 
     const actorRole = await authorizeRadiologyStudy(base44, user, request);
     if (!actorRole) {
