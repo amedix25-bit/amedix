@@ -248,7 +248,8 @@ function renderNote(note, { artwork, profile, density = 1 }) {
     doc,
     note.document_type_label || "Clinical Note",
     note.note_reference ? `Reference: ${note.note_reference}` : "",
-    y
+    y,
+    { artwork, noteTitle: TITLE }
   );
   drawDivider(doc, y);
   y += 6;

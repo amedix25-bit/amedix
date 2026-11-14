@@ -184,11 +184,13 @@ function flushSection(doc, y, artwork, noteTitle, blockHeight) {
 // The document's own title across the head with its reference: a long title
 // wraps and the reference drops to its own line rather than running off the
 // sheet, and it is never left alone at the foot of a page.
-export function writeDocumentHead(doc, title, reference, y) {
+export function writeDocumentHead(doc, title, reference, y, { artwork = null, noteTitle = "Clinical Note" } = {}) {
   const label = String(title || "Clinical Note").toUpperCase();
   const ref = String(reference || "").trim();
   let yy = y;
-  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc, null, "Clinical Note");
+  // A continuation page carries the same letterhead and title as every other
+  // page of the record, never a bare or differently headed sheet.
+  if (yy + 20 > PAGE.BOTTOM) yy = nextPage(doc, artwork, noteTitle);
 
   if (!ref || headingWidth(doc, label) + headingWidth(doc, ref) + 8 <= W) {
     writeHeading(doc, label, yy);
