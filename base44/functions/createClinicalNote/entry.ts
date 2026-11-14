@@ -179,6 +179,66 @@ export default async function(req) {
       await base44.asServiceRole.entities.Medication.bulkCreate(
         meds.map((m) => ({ ...m, patient_user_id: patient.user_id || "" }))
       );
+
+      // Every medication prescribed in the note is also issued as an electronic
+      // prescription, so it reaches the patient's own prescription list (and can
+      // be dispensed) instead of living only inside the note and the medication
+      // list. The note is signed by the prescribing doctor, and the prescription
+      // carries that doctor and encounter, so the two documents always agree.
+      const ROUTES = [
+        "oral",
+        "intravenous",
+        "intramuscular",
+        "subcutaneous",
+        "topical",
+        "inhalation",
+        "rectal",
+        "ophthalmic",
+        "otic",
+        "nasal",
+        "other",
+      ];
+      const day = now.toISOString().slice(0, 10);
+      const stamp = day.replace(/-/g, "");
+      try {
+        await base44.asServiceRole.entities.Prescription.bulkCreate(
+          meds
+            .filter((m: any) => String(m?.name || "").trim())
+            .map((m: any, index: number) => ({
+              prescription_id: `PR-${stamp}-${Math.random().toString(36).slice(2, 6).toUpperCase()}${index}`,
+              patient_id: patient.id,
+              patient_user_id: patient.user_id || "",
+              patient_cin: patient.cin || "",
+              patient_name: patient.full_name || "",
+              patient_dob: patient.date_of_birth || "",
+              doctor_id: doctor.id,
+              doctor_user_id: user.id,
+              doctor_name: doctor.full_name || "",
+              doctor_specialization: doctor.specialization || "",
+              doctor_hospital: doctor.hospital || "",
+              encounter_id: encounter.encounter_id || "",
+              medication_name: String(m.name || "").trim(),
+              active_ingredient: String(m.active_ingredient || "").trim(),
+              strength: String(m.strength || "").trim(),
+              dosage: String(m.dose || "").trim(),
+              ...(ROUTES.includes(m.route) ? { route: m.route } : {}),
+              frequency: String(m.prn ? "As needed (PRN)" : m.frequency || "").trim(),
+              duration: String(m.duration || "").trim(),
+              quantity: String(m.quantity || "").trim(),
+              special_instructions: [m.special_instructions, m.notes]
+                .map((v: any) => String(v || "").trim())
+                .filter(Boolean)
+                .join(" · "),
+              date_prescribed: day,
+              prescribed_datetime: now.toISOString(),
+              status: "issued",
+            }))
+        );
+      } catch (e) {
+        // The note and the medication list are already saved; the prescription
+        // rows are logged rather than failing the clinician's note.
+        console.log("PRESCRIPTION-FROM-NOTE-ERROR:", e && e.message);
+      }
     }
 
     await logClinicalAudit(base44, {

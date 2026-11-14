@@ -14,6 +14,7 @@ import DoctorLabHistory from "@/components/doctor/lab/DoctorLabHistory";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { loadRequestLogo } from "@/lib/requestPdfLayout";
+import { addPatientQrToRequestForm } from "@/lib/patientQr";
 import { fetchCheckInStatus, LOCKED_MESSAGE } from "@/lib/checkInGate";
 import { FlaskConical, Plus, X, CheckCircle2, ArrowLeft, ArrowRight, Search, ClipboardList, History } from "lucide-react";
 
@@ -260,6 +261,11 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
         },
       });
       await addRequestBarcode(doc, payload.request_id);
+      try {
+        await addPatientQrToRequestForm(doc, p.cin || payload.patient_cin);
+      } catch (e) {
+        // The patient QR is an aid — the CIN is printed on the form regardless.
+      }
       const pdfFile = new File([doc.output("blob")], `LabRequest_${p.cin}_${today}.pdf`, { type: "application/pdf" });
       const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file: pdfFile }); // stored privately
       const created = (await base44.functions.invoke("createLabRequest", { ...payload, pdf_url: file_url })).data.lab_request;

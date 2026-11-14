@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Pill, Loader2, ShieldCheck, QrCode, MapPin } from "lucide-react";
+import { Pill, Loader2, ShieldCheck, QrCode, MapPin, FileText } from "lucide-react";
+import { openPrescriptionPdf } from "@/lib/prescriptionPdf";
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -175,7 +176,18 @@ export default function PatientPrescriptions() {
                     {p.prescription_id} · {t("Prescribed by")} {p.doctor_name || "—"} · {p.date_prescribed}
                   </p>
                 </div>
-                <PrescriptionStatusBadge status={p.status} />
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => openPrescriptionPdf(p)}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    {t("PDF")}
+                  </Button>
+                  <PrescriptionStatusBadge status={p.status} />
+                </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-xs">
                 <div><span className="text-muted-foreground">{t("Dosage")}:</span> {p.dosage ? ar(p.dosage) : "—"}</div>

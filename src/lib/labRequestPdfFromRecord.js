@@ -2,6 +2,7 @@ import { base44 } from "@/api/base44Client";
 import { generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
 import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { signatureImageDataUrl } from "@/lib/doctorSignature";
+import { addPatientQrToRequestForm } from "@/lib/patientQr";
 
 // Rebinds the signature that was applied when the request was issued, so a
 // re-rendered form still shows who signed it and when.
@@ -36,6 +37,11 @@ export async function openLabRequestPdfFromRecord(record) {
     await addRequestBarcode(doc, record.request_id);
   } catch (e) {
     // The barcode is an aid, not part of the record — never block the form.
+  }
+  try {
+    await addPatientQrToRequestForm(doc, record.patient_cin);
+  } catch (e) {
+    // The patient QR is an aid — the CIN is printed on the form regardless.
   }
   const url = URL.createObjectURL(doc.output("blob"));
   if (tab) tab.location.href = url;

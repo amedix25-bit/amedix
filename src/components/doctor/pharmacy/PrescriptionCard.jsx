@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { Pill, ChevronDown } from "lucide-react";
+import { Pill, ChevronDown, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { openPrescriptionPdf } from "@/lib/prescriptionPdf";
 import PrescriptionStatusBadge from "@/components/pharmacy/PrescriptionStatusBadge";
 import PrescriptionAvailability from "@/components/pharmacy/PrescriptionAvailability";
 import DispensingHistory from "@/components/pharmacy/DispensingHistory";
@@ -91,7 +93,11 @@ export default function PrescriptionCard({ prescription, onIssued, showPatient }
             </p>
           )}
           <DispensingHistory prescription={prescription} />
-          <div className="mt-2">
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openPrescriptionPdf(prescription)}>
+              <FileText className="w-3.5 h-3.5" />
+              Prescription PDF
+            </Button>
             <CancelPrescriptionButton prescription={prescription} onDone={onIssued} />
           </div>
           {/* Substitution request awaiting the prescriber's decision + history */}
