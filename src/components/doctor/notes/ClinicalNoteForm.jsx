@@ -552,12 +552,11 @@ export default function ClinicalNoteForm({ doctorProfile, onSaved, onCancel, onN
         data: specialtyData,
         icd11_coded_diagnoses: codedDiagnoses,
         photo_file_uris: photoUris,
+        // The prescribed medications are saved by the backend together with the
+        // note, so each one is also issued as an electronic prescription that
+        // reaches the patient's own prescription list.
+        medications: meds.map((m) => medicationRecordFromForm(m, { patient, fallbackReason: diagnoses[0] })),
       });
-      if (meds.length > 0) {
-        await base44.entities.Medication.bulkCreate(
-          meds.map((m) => medicationRecordFromForm(m, { patient, fallbackReason: diagnoses[0] }))
-        );
-      }
       if (draftId) {
         try { await base44.entities.ClinicalNoteDraft.delete(draftId); } catch (e) { console.error(e); }
       }

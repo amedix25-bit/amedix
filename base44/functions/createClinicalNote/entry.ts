@@ -225,7 +225,7 @@ export default async function(req) {
               frequency: String(m.prn ? "As needed (PRN)" : m.frequency || "").trim(),
               duration: String(m.duration || "").trim(),
               quantity: String(m.quantity || "").trim(),
-              special_instructions: [m.special_instructions, m.notes]
+              special_instructions: [m.special_instructions, m.notes || m.doctor_notes]
                 .map((v: any) => String(v || "").trim())
                 .filter(Boolean)
                 .join(" · "),
