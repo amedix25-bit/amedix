@@ -193,6 +193,16 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
         </div>
       </div>
       <div className={`space-y-3 ${expanded ? "" : "hidden"}`}>
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 border border-border p-2">
+          <Button variant="outline" size="sm" onClick={openPdf} disabled={pdfAction !== null} className="gap-1.5">
+            {pdfAction === "view" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            {pdfAction === "view" ? "Preparing PDF..." : "View PDF"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfAction !== null} className="gap-1.5">
+            {pdfAction === "download" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+            {pdfAction === "download" ? "Preparing PDF..." : "Download PDF"}
+          </Button>
+        </div>
         {note.data && Object.keys(note.data).length > 0 && (
           <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
             {(() => {
@@ -335,16 +345,6 @@ export default function ClinicalNoteCard({ note, imagingMap, open, onToggle, def
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={openPdf} disabled={pdfAction !== null} className="gap-1.5">
-            {pdfAction === "view" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-            {pdfAction === "view" ? "Preparing PDF..." : "View PDF"}
-          </Button>
-          <Button variant="outline" size="sm" onClick={downloadPdf} disabled={pdfAction !== null} className="gap-1.5">
-            {pdfAction === "download" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-            {pdfAction === "download" ? "Preparing PDF..." : "Download PDF"}
-          </Button>
-        </div>
       </div>
     </div>
   );
