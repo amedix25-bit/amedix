@@ -139,9 +139,36 @@ const shared = read("src/components/doctor/DoctorSharedImagingResults.jsx");
 check("shared imaging results are filtered to the open patient",
   /patientId \? list\.filter\(/.test(shared));
 
+// ===== 6. The lab request section is patient-scoped inside a profile =====
+const labList = read("src/components/doctor/DoctorLabRequests.jsx");
+check("lab list queries by the patient being viewed",
+  /filter\(\s*\{\s*patient_id:\s*scopedPatient\.id\s*\}/.test(labList));
+check("lab list drops rows whose patient id or CIN does not match",
+  /String\(r\.patient_id \|\| ""\) === scopedPatient\.id/.test(labList) &&
+    /=== scopedCin/.test(labList));
+check("the doctor's whole lab caseload is only queried when no patient is open",
+  /await base44\.entities\.LabRequest\.filter\(\{ doctor_id: doctorProfile\.id \}/.test(labList));
+check("the doctor-wide lab history is never shown inside a patient profile",
+  /!scopedPatient/.test(labList));
+
 const history = read("src/components/doctor/patients/DoctorPatientHistorySection.jsx");
 check("patient history clears the previous patient before loading the next",
   /setEvents\(null\)/.test(history) && /setRecordData\(null\)/.test(history));
+
+// ===== 7. Facility portals only show a patient through that facility =====
+const labProfile = read("base44/functions/labGetPatientProfile/entry.ts");
+check("a laboratory only sees a patient who authorized it",
+  /authorized_by_patient === true && r\.patient_id === patientId/.test(labProfile) &&
+    /lab_id: laboratoryId/.test(labProfile));
+
+const pharmacyLookup = read("base44/functions/pharmacyFindPatientByCin/entry.ts");
+check("a pharmacy only sees prescriptions authorized to itself",
+  /authorized_pharmacy_user_id: user\.id/.test(pharmacyLookup) &&
+    /patient_id: patient\.id/.test(pharmacyLookup));
+
+const hospitalPatients = read("src/components/hospital/portal/HospitalManagePatientsSection.jsx");
+check("the hospital patient list is scoped to that hospital",
+  /HospitalCheckIn\.filter\(\{ hospital_id: profile\.id \}/.test(hospitalPatients));
 
 // ===== Report =====
 console.log(`patient isolation QA — ${passed} passed, ${failures.length} failed`);

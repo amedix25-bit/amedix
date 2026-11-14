@@ -80,8 +80,19 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
 
   const load = async () => {
     try {
-      const data = await base44.entities.LabRequest.filter({ doctor_id: doctorProfile.id }, "-date_requested");
-      setItems(data);
+      // Inside a patient profile the query is scoped to that exact patient —
+      // the doctor's whole lab caseload is never fetched or shown there.
+      const data = scopedPatient?.id
+        ? await base44.entities.LabRequest.filter({ patient_id: scopedPatient.id }, "-date_requested")
+        : await base44.entities.LabRequest.filter({ doctor_id: doctorProfile.id }, "-date_requested");
+      const verified = scopedPatient?.id
+        ? data.filter(
+            (r) =>
+              String(r.patient_id || "") === scopedPatient.id &&
+              (!r.patient_cin || !scopedCin || String(r.patient_cin).trim().toUpperCase() === scopedCin)
+          )
+        : data;
+      setItems(verified);
     } catch (err) {
       console.error(err);
     } finally {
@@ -436,14 +447,14 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
             <LabHistoryList requests={patientRequests} showPdf />
           )}
         </div>
-      ) : view === "history" ? (
+      ) : view === "history" && !scopedPatient ? (
         <div className="space-y-3">
           <LabViewToggle view={view} onViewChange={setView} />
           <DoctorLabHistory doctorProfile={doctorProfile} />
         </div>
       ) : (
         <div className="space-y-3">
-          <LabViewToggle view={view} onViewChange={setView} />
+          {!scopedPatient && <LabViewToggle view={view} onViewChange={setView} />}
           <div className="flex justify-end">
             <Button onClick={() => { setShowForm(!showForm); setStep("edit"); setFormError(""); }}>
               <Plus className="w-4 h-4 mr-2" />
