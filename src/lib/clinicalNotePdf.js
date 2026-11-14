@@ -12,6 +12,13 @@ import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { getSpecialtyLabel, getDocDef } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import {
+  isDocumentedValue,
+  isDecisionSupportType,
+  documentedActions,
+  stripCodingPrompts,
+  isRawPayload,
+} from "@/lib/clinicalNotePdfContent";
+import {
   openNotePage,
   drawNoteFooter,
   writePatientName,
@@ -76,8 +83,28 @@ function formatDateTime(value) {
   const date = new Date(value);
   if (isNaN(date.getTime())) return String(value);
   const day = formatDate(date);
+  // A recorded date alone carries no time to report.
+  if (typeof value === "string" && !/\d{1,2}:\d{2}/.test(value) && !/T\d{2}/.test(value)) return day;
   const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   return `${day} · ${time}`;
+}
+
+// The signing time exactly as recorded, shown in the reader's local time zone
+// with that zone named, so the moment of signing is unambiguous.
+function formatSignedAt(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return String(value);
+  const stamp = date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  return zone && !stamp.includes(zone) ? `${stamp} (${zone})` : stamp;
 }
 
 function patientAge(dob) {
@@ -183,8 +210,10 @@ function collect(note, meta, order) {
   }
 
   core(0, "History", note.history);
-  core(1, "Allergies", note.allergies || "None recorded");
-  core(1, "Current Medications", (note.current_medications || []).join(", ") || "None recorded");
+  // Patient-record snapshots print only when the record holds them: an absent
+  // snapshot is not a documented finding and is never shown as "None recorded".
+  core(1, "Allergies", note.allergies);
+  core(1, "Current Medications", (note.current_medications || []).join(", "));
 
   const diagnoses = (Array.isArray(note.provisional_diagnoses) && note.provisional_diagnoses.length > 0
     ? note.provisional_diagnoses
@@ -200,21 +229,77 @@ function collect(note, meta, order) {
   core(6, "Doctor's Recommendations", note.recommendations);
   core(7, "Additional Notes", note.notes);
 
+  // ICD-11 coding prints from the note's own structured entries: the documented
+  // diagnosis with its role, status and clinical basis. Coding metadata, mapping
+  // prompts and provenance lines are audit detail, not documentation, and never
+  // print. A note without structured coding falls back to its recorded field text.
+  const coded = (Array.isArray(note.icd11_coded_diagnoses) ? note.icd11_coded_diagnoses : []).filter(
+    (entry) => entry && String(entry.display || "").trim()
+  );
+  const codedField = [...meta.values()].find((field) => field.type === "icd11_diagnoses");
+  if (coded.length > 0) {
+    const section = String(codedField?.section || "").trim();
+    const at = section ? sectionFor(`${section} diagnosis`) : 5;
+    const target = block(
+      section || SECTIONS[5],
+      at,
+      codedField && order.has(codedField.key) ? order.get(codedField.key) : 0
+    );
+    coded.forEach((entry) => {
+      const head = [String(entry.code || "").trim(), String(entry.display || "").trim()].filter(Boolean).join("  ");
+      const basis = String(entry.basis || "").trim();
+      const follow = String(entry.follow_up || "").trim();
+      addEntry(
+        target,
+        [entry.role, entry.status].filter(Boolean).join(" · ") || "Diagnosis",
+        [head, basis ? `Clinical basis: ${basis}` : "", follow ? `Follow-up: ${follow}` : ""].filter(Boolean).join("\n")
+      );
+    });
+  }
+
+  // A structured examination prints its own documented findings, so the same
+  // findings flattened beside it are not printed a second time.
+  const hasStructuredExam = Object.entries(note.data || {}).some(([key, field]) => {
+    const declared = meta.get(key) || {};
+    const type = String(field?.type || declared.type || "");
+    const label = String(field?.label || declared.label || key);
+    const text = stripCodingPrompts(formatStoredValue(field?.value));
+    if (!isDocumentedValue(text)) return false;
+    return type === "examinations" || (/exam/i.test(label) && /^\s*•/m.test(text) && !/^\s*•/.test(text));
+  });
+
   Object.entries(note.data || {}).forEach(([key, field], index) => {
-    if (!field) return;
+    if (!field || key.includes("__")) return;
+    if (hasStructuredExam && key.startsWith("exam.")) return;
     const declared = meta.get(key) || {};
     const label = field.label || declared.label || key;
     if (NOT_ON_DOCUMENT.test(`${key} ${label}`)) return;
-    const value = formatStoredValue(field.value).trim();
-    if (!value) return;
+    const raw = stripCodingPrompts(formatStoredValue(field.value));
+    if (!isDocumentedValue(raw) || isRawPayload(raw)) return;
+    const value = raw.trim();
     if (key.startsWith("srh.")) {
       sensitive.push({ label, value });
       return;
     }
 
     const type = String(field.type || declared.type || "");
+    // The coded diagnoses already printed above, from their structured record.
+    if (coded.length > 0 && type === "icd11_diagnoses") return;
     const position = order.has(key) ? order.get(key) : 900 + index;
     const section = String(declared.section || "").trim();
+
+    // Decision support reduces to what the clinician documented — an action, a
+    // decision, an escalation, an additional concern. A block carrying only rule
+    // text, prompts or provenance has nothing documented and prints nothing.
+    if (isDecisionSupportType(type) || /safety concern/i.test(section)) {
+      const documented = documentedActions(value);
+      if (documented.length === 0) return;
+      const at = section ? sectionFor(`${section} ${label}`) : 6;
+      const target = block(section || SECTIONS[6], at, position);
+      documented.forEach((entry) => addEntry(target, entry.label, entry.value));
+      return;
+    }
+
     // A structured examination keeps its own system groups inside its section.
     const grouped = /^\s*•/m.test(value) && !/^\s*•/.test(value);
 
@@ -328,15 +413,22 @@ function renderNote(note, { artwork, profile, density = 1 }) {
   // A record with no clinical section still carries its title and reference.
   y = flushDocumentHead(doc, y, ctx);
 
-  // ===== Signature at the end of the record =====
+  // ===== Electronic signature at the end of the record =====
+  // The panel reports the note's own signing event, recorded server-side when the
+  // physician signed. Producing the PDF never creates, changes or re-timestamps a
+  // signature, and the signed content stays as it was finalized.
+  const signed = Boolean(
+    String(note.signed_datetime || "").trim() && String(note.signed_by_name || "").trim()
+  );
   writeSignature(
     doc,
     {
+      signed,
       doctorName: note.signed_by_name || note.doctor_name,
-      detail: [note.specialty ? getSpecialtyLabel(note.specialty) : "", note.hospital].filter(Boolean).join("  ·  "),
-      note: note.signed_datetime
-        ? `Electronically signed ${new Date(note.signed_datetime).toLocaleString("en-GB")}`
-        : "Electronically signed",
+      specialty: note.specialty ? getSpecialtyLabel(note.specialty) : note.department,
+      hospital: note.hospital,
+      signedAt: signed ? formatSignedAt(note.signed_datetime) : "",
+      reference: note.note_reference,
     },
     y,
     ctx

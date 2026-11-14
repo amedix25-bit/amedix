@@ -796,42 +796,110 @@ export function writeSubBlock(doc, label, entries, y, ctx = {}) {
   return writeFieldGrid(doc, list, yy, ctx);
 }
 
-// ===== Signature =====
-// The closing block of the record: the caption, the signature itself, the rule it
-// rests on, then the doctor's name and the signing detail.
-export function writeSignature(doc, opts = {}, y, ctx = {}) {
-  if (y + 40 > PAGE.BOTTOM) y = continueNotePage(doc, ctx);
+// ===== Electronic signature =====
+// The record closes on one clearly identifiable panel: the signing status, the
+// physician who signed it, their specialty and facility, and the exact date and
+// time the signature was applied — read from the record's own signing event,
+// never from the moment this document was produced. A record carrying no signing
+// event says so plainly instead of presenting itself as signed.
+const PANEL = { h: 38, pad: 6, fill: [247, 250, 253], radius: 2, ink: [255, 255, 255] };
 
-  let yy = writeCaption(doc, "Doctor's Signature", y, ctx);
-  const ruleY = yy + 15;
+const fitOne = (doc, text, size, weight, width) => {
+  const lines = wrap(doc, String(text ?? ""), width, size, weight);
+  if (lines.length === 0) return "";
+  return lines.length > 1 ? `${lines[0].replace(/[\s,·;:]+$/, "")}…` : lines[0];
+};
 
+function drawSignaturePanel(doc, opts, top) {
+  const x = PAGE.M;
+  const w = PAGE.W;
+  const inner = PANEL.pad;
+  const room = w - inner * 2;
+
+  doc.setFillColor(...PANEL.fill);
+  doc.setDrawColor(...PDF_INK.rule);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, top, w, PANEL.h, PANEL.radius, PANEL.radius, "FD");
+
+  // Status indicator — the first thing a reader looks for on the sheet.
+  const signed = Boolean(opts.signed);
+  const statusLabel = signed ? "ELECTRONICALLY SIGNED" : "SIGNING EVENT NOT RECORDED";
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(TYPE.meta);
+  const pillW = doc.getTextWidth(statusLabel) + 8;
+  doc.setFillColor(...(signed ? PDF_INK.navy : [140, 106, 40]));
+  doc.roundedRect(x + inner, top + 4.4, pillW, 5.4, 2.7, 2.7, "F");
+  writeLine(doc, statusLabel, top + 8.3, {
+    size: TYPE.meta,
+    weight: "bold",
+    color: PANEL.ink,
+    x: x + inner + 4,
+    width: pillW - 8,
+    kind: "label",
+  });
+
+  // The physician's own applied signature, when the record carries one.
   if (opts.image) {
     try {
-      doc.addImage(String(opts.image), opts.imageFormat || "PNG", PAGE.M + 2, yy + 2, 52, ruleY - yy - 2, undefined, "FAST");
+      doc.addImage(String(opts.image), opts.imageFormat || "PNG", x + w - inner - 46, top + 4.6, 46, 14, undefined, "FAST");
     } catch (e) {
-      // An inline signature is informational — it never blocks the record.
+      // A drawn signature is decorative here — it never blocks the record.
     }
   }
 
-  doc.setDrawColor(...PDF_INK.rule);
-  doc.setLineWidth(0.35);
-  doc.line(PAGE.M, ruleY, PAGE.M + 78, ruleY);
-
-  writeLine(doc, String(opts.doctorName || "").trim() || "—", ruleY + 5, {
-    size: 9,
+  writeLine(doc, fitOne(doc, opts.doctorName || "—", 10.8, "bold", room), top + 19.4, {
+    size: 10.8,
     weight: "bold",
     color: PDF_INK.ink,
-    width: 78,
+    x: x + inner,
+    width: room,
   });
 
-  const meta = [opts.detail, opts.note].filter((value) => String(value || "").trim()).join("  ·  ");
-  if (meta) {
-    writeLine(doc, meta, ruleY + 9.4, {
-      size: TYPE.meta,
-      color: PDF_INK.muted,
-      width: 160,
+  const affiliation = [opts.specialty, opts.hospital].filter((value) => String(value || "").trim()).join("  ·  ");
+  if (affiliation) {
+    writeLine(doc, fitOne(doc, affiliation, 8.3, "normal", room), top + 24.6, {
+      size: 8.3,
+      color: PDF_INK.navy,
+      x: x + inner,
+      width: room,
     });
   }
 
-  return ruleY + 12;
+  const stamp = signed
+    ? `Electronically signed ${opts.signedAt || ""}`.trim()
+    : "No electronic signature is recorded for this document";
+  writeLine(doc, fitOne(doc, stamp, 7.8, "normal", room), top + 29.6, {
+    size: 7.8,
+    color: PDF_INK.muted,
+    x: x + inner,
+    width: room,
+  });
+
+  const footnote = [
+    signed ? "Signed in the AMedix clinical record" : "No signing event to reference",
+    opts.reference ? `Reference ${opts.reference}` : "",
+    "Finalized record · amendments recorded separately",
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+  writeLine(doc, fitOne(doc, footnote, TYPE.meta, "normal", room), top + 34.2, {
+    size: TYPE.meta,
+    color: PDF_INK.muted,
+    x: x + inner,
+    width: room,
+    kind: "label",
+  });
+
+  return top + PANEL.h + 4;
+}
+
+export function writeSignature(doc, opts = {}, y, ctx = {}) {
+  const d = density(doc);
+  const caption = "Electronic Signature";
+  const block = captionRoom(doc, caption) + PANEL.h + 4;
+
+  let yy = y + 2 * d;
+  if (yy + block > PAGE.BOTTOM) yy = continueNotePage(doc, ctx);
+  yy = writeCaption(doc, caption, yy, ctx) + 1.2;
+  return drawSignaturePanel(doc, opts, yy);
 }
