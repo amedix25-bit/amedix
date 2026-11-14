@@ -2,32 +2,28 @@
 //
 // The sheet follows a hospital record's own order — patient and doctor
 // identification, the note type and reference, then the encounter grouped into
-// history, vitals, examination, investigations, assessment and management — in
-// aligned label/value rows, one compact vital-signs grid and system-grouped
-// examination blocks. Nothing recorded on the note is dropped: every answered
-// field is printed in its own section, in the order its specialty declares.
+// history, vitals, examination, investigations, assessment and management — set
+// in one typographic system: navy section headings, small muted field labels, and
+// every recorded value in the same regular-weight dark text. Nothing recorded on
+// the note is dropped or reworded: each answered field prints under its own
+// section, in the order its specialty declares.
 import { jsPDF } from "jspdf";
-import {
-  loadRequestLogo,
-  drawRequestHeader,
-  drawPatientBlock,
-  drawDoctorBlock,
-  drawDivider,
-  drawSignatureInline,
-  drawRequestFooter,
-} from "@/lib/requestPdfLayout";
+import { loadRequestLogo } from "@/lib/requestPdfLayout";
 import { getSpecialtyLabel, getDocDef } from "@/lib/specialtyDocuments";
 import { formatStoredValue } from "@/lib/examinations/clinicalExaminations";
 import {
-  PAGE,
+  openNotePage,
+  drawNoteFooter,
+  writePatientName,
   writeDocumentHead,
+  flushDocumentHead,
   writeSection,
   writeFieldGrid,
   writeSubBlock,
   writeVitalGrid,
   writeExamination,
+  writeSignature,
   parseVitals,
-  nextPage,
 } from "@/lib/clinicalNotePdfLayout";
 import { renderAuditedDocument, setDocumentDensity } from "@/lib/pdfLayoutAudit";
 
@@ -66,6 +62,58 @@ const sectionFor = (text) => {
   const found = RULES.find((rule) => rule.test.test(text));
   return found ? found.at : 7;
 };
+
+// ===== Identification =====
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return String(value);
+  const day = formatDate(date);
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `${day} · ${time}`;
+}
+
+function patientAge(dob) {
+  if (!dob) return "";
+  const date = new Date(dob);
+  if (isNaN(date.getTime())) return "";
+  const now = new Date();
+  let age = now.getFullYear() - date.getFullYear();
+  const month = now.getMonth() - date.getMonth();
+  if (month < 0 || (month === 0 && now.getDate() < date.getDate())) age -= 1;
+  return age >= 0 ? `${age} years` : "";
+}
+
+const capitalise = (value) => {
+  const text = String(value || "").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+};
+
+function patientFacts(note, profile) {
+  const dob = note.patient_dob;
+  return [
+    { label: "Clinical Identification Number (CIN)", value: note.patient_cin },
+    { label: "Date of birth", value: [formatDate(dob), patientAge(dob)].filter(Boolean).join("  ·  ") },
+    { label: "Gender", value: capitalise(profile?.gender) },
+    { label: "Blood group", value: profile?.blood_type },
+  ];
+}
+
+function doctorFacts(note) {
+  return [
+    { label: "Treating doctor", value: note.doctor_name },
+    { label: "Specialty", value: note.specialty ? getSpecialtyLabel(note.specialty) : "" },
+    { label: "Hospital", value: note.hospital },
+    { label: "Date and time", value: formatDateTime(note.encounter_datetime || note.date) },
+  ];
+}
 
 // The note's own template: every field the specialty declares, keyed by field
 // key, with the position it holds in that template. A stored field finds the
@@ -214,45 +262,26 @@ function collect(note, meta, order) {
 function renderNote(note, { artwork, profile, density = 1 }) {
   const doc = new jsPDF();
   setDocumentDensity(doc, density);
+  const ctx = { artwork, title: TITLE, subtitle: SUBTITLE };
 
-  let y = drawRequestHeader(doc, { logo: artwork, title: TITLE, subtitle: SUBTITLE, framed: true });
+  let y = openNotePage(doc, ctx);
 
-  y = drawPatientBlock(
-    doc,
-    {
-      patient_name: note.patient_name,
-      patient_cin: note.patient_cin,
-      patient_dob: note.patient_dob,
-      patient_gender: profile?.gender,
-      patient_blood_type: profile?.blood_type,
-    },
-    y
-  );
+  // ===== Patient and doctor identification =====
+  writeSection(doc, "Patient Information");
+  y = writePatientName(doc, note.patient_name, y, ctx);
+  y = writeFieldGrid(doc, patientFacts(note, profile), y, ctx);
 
-  y = drawDoctorBlock(
-    doc,
-    {
-      doctor_name: note.doctor_name,
-      doctor_specialization: note.specialty ? getSpecialtyLabel(note.specialty) : "",
-      doctor_hospital: note.hospital,
-      date_requested: note.encounter_datetime || note.date,
-    },
-    y,
-    { heading: "Treating Doctor & Hospital", doctorLabel: "Treating doctor" }
-  );
+  writeSection(doc, "Treating Doctor & Hospital");
+  y = writeFieldGrid(doc, doctorFacts(note), y, ctx);
 
   // ===== Note type & reference =====
-  y += 7;
-  if (y > PAGE.BOTTOM - 24) y = nextPage(doc, artwork, TITLE);
-  y = writeDocumentHead(
+  // Held back and printed together with the first clinical section, so the head
+  // of the record is never left alone at the foot of a page.
+  writeDocumentHead(
     doc,
     note.document_type_label || "Clinical Note",
-    note.note_reference ? `Reference: ${note.note_reference}` : "",
-    y,
-    { artwork, noteTitle: TITLE }
+    note.note_reference ? `Reference: ${note.note_reference}` : ""
   );
-  drawDivider(doc, y);
-  y += 6;
 
   const { meta, order } = fieldIndex(note);
   const { blocks, sensitive } = collect(note, meta, order);
@@ -273,33 +302,34 @@ function renderNote(note, { artwork, profile, density = 1 }) {
       item.vitals.forEach(([label, value]) => {
         const grid = parseVitals(value);
         const caption = /^vital signs?$/i.test(String(label).trim()) ? "" : label;
-        y = grid.length > 0
-          ? writeVitalGrid(doc, grid, y, artwork, TITLE, { caption })
-          : writeFieldGrid(doc, [{ label, value }], y, artwork, TITLE);
+        y =
+          grid.length > 0
+            ? writeVitalGrid(doc, grid, y, ctx, { caption })
+            : writeFieldGrid(doc, [{ label, value }], y, ctx);
       });
 
       item.groups.forEach(([label, value]) => {
-        y = writeExamination(doc, value, y, artwork, TITLE, { label });
+        y = writeExamination(doc, value, y, ctx, { label });
       });
 
-      y = writeFieldGrid(doc, item.entries, y, artwork, TITLE);
+      y = writeFieldGrid(doc, item.entries, y, ctx);
 
       item.subs.forEach((sub) => {
-        y = writeSubBlock(doc, sub.label, sub.entries, y, artwork, TITLE);
+        y = writeSubBlock(doc, sub.label, sub.entries, y, ctx);
       });
-      y += 2;
     });
 
   // ===== Sexual & reproductive history — its own clearly marked block =====
   if (sensitive.length > 0) {
     writeSection(doc, "Sexual & Reproductive History (Sensitive)");
-    y = writeFieldGrid(doc, sensitive, y, artwork, TITLE);
-    y += 2;
+    y = writeFieldGrid(doc, sensitive, y, ctx);
   }
 
+  // A record with no clinical section still carries its title and reference.
+  y = flushDocumentHead(doc, y, ctx);
+
   // ===== Signature at the end of the record =====
-  if (y + 44 > PAGE.BOTTOM) y = nextPage(doc, artwork, TITLE);
-  drawSignatureInline(
+  writeSignature(
     doc,
     {
       doctorName: note.signed_by_name || note.doctor_name,
@@ -309,11 +339,10 @@ function renderNote(note, { artwork, profile, density = 1 }) {
         : "Electronically signed",
     },
     y,
-    artwork,
-    TITLE
+    ctx
   );
 
-  drawRequestFooter(doc, note.note_reference || note.id);
+  drawNoteFooter(doc, note.note_reference || note.id);
   return doc;
 }
 
