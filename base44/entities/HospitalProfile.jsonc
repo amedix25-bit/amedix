@@ -16,6 +16,10 @@
     "phone": {
       "type": "string"
     },
+    "operating_hours": {
+      "type": "string",
+      "description": "The hospital's operating hours as it wants them shown to patients in the public Hospitals & Doctors directory, e.g. 'Sat\u2013Thu, 8:00 AM \u2013 8:00 PM'. Maintained by the hospital itself; empty when the hospital has not set it."
+    },
     "photo_url": {
       "type": "string",
       "description": "Hospital profile photo"

@@ -13,6 +13,7 @@ export default function HospitalProfileSection({ profile, onUpdate }) {
     hospital_name: profile.hospital_name || "",
     location: profile.location || "",
     phone: profile.phone || "",
+    operating_hours: profile.operating_hours || "",
     payment_methods: (profile.payment_methods || []).join(", "),
   });
   const [photoFile, setPhotoFile] = useState(null);
@@ -50,6 +51,7 @@ export default function HospitalProfileSection({ profile, onUpdate }) {
         hospital_name: form.hospital_name.trim(),
         location: form.location.trim(),
         phone: form.phone.trim(),
+        operating_hours: form.operating_hours.trim(),
         payment_methods: payment_methods.length > 0 ? payment_methods : ["Cash", "Card", "Bank Transfer"],
         photo_url,
       });
@@ -94,6 +96,17 @@ export default function HospitalProfileSection({ profile, onUpdate }) {
           <Label>Phone</Label>
           <Input value={form.phone} onChange={set("phone")} />
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Operating Hours</Label>
+        <Input
+          value={form.operating_hours}
+          onChange={set("operating_hours")}
+          placeholder="Sat–Thu, 8:00 AM – 8:00 PM"
+        />
+        <p className="text-xs text-muted-foreground">
+          Shown to patients on this hospital's card in the Hospitals &amp; Doctors directory.
+        </p>
       </div>
       <div className="space-y-1.5">
         <Label>Accepted Payment Methods</Label>

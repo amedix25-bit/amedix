@@ -110,6 +110,30 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
     }
   };
 
+  // A doctor may end an affiliation at any time. The hospital's public doctor
+  // directory drops the profile immediately — nothing is kept listed.
+  const leave = async (a) => {
+    const confirmed = window.confirm(
+      `End your affiliation with ${a.hospital_name}? Your profile will no longer appear in this hospital's public doctor directory.`
+    );
+    if (!confirmed) return;
+    setSwitchingId(a.id);
+    try {
+      await base44.functions.invoke("doctorJoinHospital", { action: "leave", association_id: a.id });
+      const isCurrent = String(a.hospital_name || "").trim().toLowerCase() === currentHospital;
+      if (isCurrent) onProfileUpdated({ ...profile, hospital: "" });
+      toast({
+        title: "Affiliation ended",
+        description: `You are no longer affiliated with ${a.hospital_name}.`,
+      });
+      load();
+    } catch (err) {
+      fail(err);
+    } finally {
+      setSwitchingId(null);
+    }
+  };
+
   const active = (assocs || []).filter((a) => a.status === "active");
   const pending = (assocs || []).filter((a) => a.status === "pending");
   const rejected = (assocs || []).filter((a) => a.status === "rejected");
@@ -216,12 +240,23 @@ export default function DoctorHospitalsSection({ profile, user, onProfileUpdated
                     </p>
                     </div>
                   </div>
-                  {!isCurrent && (
-                    <Button size="sm" variant="outline" onClick={() => workHere(a)} disabled={switchingId === a.id}>
-                      {switchingId === a.id && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-                      {t("Work Here")}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {!isCurrent && (
+                      <Button size="sm" variant="outline" onClick={() => workHere(a)} disabled={switchingId === a.id}>
+                        {switchingId === a.id && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                        {t("Work Here")}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => leave(a)}
+                      disabled={switchingId === a.id}
+                    >
+                      {t("End Affiliation")}
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
             );

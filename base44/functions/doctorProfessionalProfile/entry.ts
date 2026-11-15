@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { evaluateAccount } from '../../shared/verifiedAccounts.ts';
+import { sanitizePrivacy } from '../../shared/doctorPublicPrivacy.ts';
 
 // AMedix professional profile API.
 //
@@ -13,22 +14,8 @@ import { evaluateAccount } from '../../shared/verifiedAccounts.ts';
 // request, and a connection between two physicians grants no clinical
 // permission of any kind.
 
-const VISIBILITIES = ['network', 'connections'];
 const EDUCATION_TYPES = ['degree', 'residency', 'fellowship', 'certification'];
 const ACHIEVEMENT_TYPES = ['award', 'publication', 'conference', 'accomplishment', 'experience'];
-
-const PRIVACY_DEFAULTS = {
-  visibility: 'network',
-  show_photo: true,
-  show_title: true,
-  show_specialty: true,
-  show_workplace: true,
-  show_location: true,
-  show_bio: true,
-  show_education: true,
-  show_achievements: true,
-  show_license: false,
-};
 
 const rows = (result) => (Array.isArray(result) ? result : (result && result.items) || []);
 const text = (value, max) => String(value == null ? '' : value).trim().slice(0, max);
@@ -68,17 +55,6 @@ function sanitizeAchievements(list) {
     detail: text(item?.detail, 400),
     link: safeLink(item?.link),
   })).filter((item) => item.title);
-}
-
-function sanitizePrivacy(input) {
-  const privacy = { ...PRIVACY_DEFAULTS };
-  if (!input || typeof input !== 'object') return privacy;
-  if (VISIBILITIES.includes(input.visibility)) privacy.visibility = input.visibility;
-  Object.keys(PRIVACY_DEFAULTS).forEach((key) => {
-    if (key === 'visibility') return;
-    if (typeof input[key] === 'boolean') privacy[key] = input[key];
-  });
-  return privacy;
 }
 
 const privacyOf = (record) => sanitizePrivacy(record?.privacy);

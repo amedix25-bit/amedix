@@ -1,9 +1,10 @@
-import { Home, CalendarDays, MessageSquareMore, FolderOpen, Heart, Syringe, Stethoscope, Files, FlaskConical, ScanLine, Pill, UserCircle, User, ShieldCheck } from "lucide-react";
+import { Home, CalendarDays, MessageSquareMore, FolderOpen, Heart, Syringe, Stethoscope, Files, FlaskConical, ScanLine, Pill, UserCircle, User, ShieldCheck, Building2 } from "lucide-react";
 
 export const NAV_SECTIONS = [
   { type: "item", key: "overview", label: "Home", icon: Home },
   { type: "item", key: "appointments", label: "Appointments", icon: CalendarDays },
   { type: "item", key: "messages", label: "Messages from Doctors", icon: MessageSquareMore },
+  { type: "item", key: "directory", label: "Hospitals & Doctors", icon: Building2 },
   { type: "group", key: "record", label: "My Medical Record", icon: FolderOpen, items: [
     { key: "health", label: "Health Summary", icon: Heart },
 

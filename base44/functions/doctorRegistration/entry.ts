@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { auditEntry, isActivated, loadAuthorization, withAudit } from '../../shared/hospitalAuthorization.ts';
 import { normalizeCode } from '../../shared/registrationCodes.ts';
 import { isDocumentVerificationAccepted, isVerificationExempt } from '../../shared/documentNumberVerification.ts';
+import { clean, rows } from '../../shared/recordHelpers.ts';
 
 // Doctor registration that can be started, interrupted and resumed.
 //
@@ -18,9 +19,6 @@ const IDENTITY_DOCUMENTS = ['birth_certificate', 'personal_card', 'passport', 'n
 const LICENSE_DOCUMENTS = ['medical_license'];
 const FORM_FIELDS = ['first_name', 'middle_name', 'last_name', 'specialization', 'hospital', 'phone', 'license_number'];
 const SAVED_STEPS = ['details', 'identity_verification', 'license_verification'];
-
-const clean = (value, max) => String(value == null ? '' : value).trim().slice(0, max || 200);
-const rows = (result) => (Array.isArray(result) ? result : (result && result.items) || []);
 
 const formOf = (draft) => {
   const form = {};

@@ -15,6 +15,35 @@ export default async function(req) {
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
+
+    // A doctor can end their own affiliation. The association is resolved from
+    // the doctor's own profile, so a doctor can never end another doctor's
+    // affiliation — and the hospital's public directory drops them immediately.
+    if (body.action === "leave") {
+      const ownProfiles = await base44.entities.DoctorProfile.filter({ user_id: user.id });
+      const ownDoctor = ownProfiles[0];
+      if (!ownDoctor) return Response.json({ error: "Doctor profile not found." }, { status: 403 });
+      const active = await base44.asServiceRole.entities.HospitalDoctor.filter(
+        { doctor_id: ownDoctor.id, status: "active" },
+        { limit: 20 }
+      );
+      const assoc = active.find((a) => a.id === String(body.association_id || ""));
+      if (!assoc) return Response.json({ error: "This active affiliation could not be found." }, { status: 404 });
+      await base44.asServiceRole.entities.HospitalDoctor.update(assoc.id, {
+        status: "removed",
+        decided_datetime: new Date().toISOString(),
+        decided_by_name: ownDoctor.full_name || "",
+        decision_note: "Affiliation ended by the doctor",
+      });
+      if (
+        String(ownDoctor.hospital || "").trim().toLowerCase() ===
+        String(assoc.hospital_name || "").trim().toLowerCase()
+      ) {
+        await base44.asServiceRole.entities.DoctorProfile.update(ownDoctor.id, { hospital: "" });
+      }
+      return Response.json({ status: "removed", hospital_name: assoc.hospital_name });
+    }
+
     const code = String(body.code || "").trim().toUpperCase();
     const verifyOnly = !!body.verify_only;
     if (!code) {

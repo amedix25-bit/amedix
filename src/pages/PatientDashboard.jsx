@@ -7,6 +7,7 @@ import PatientVaccinations from "@/components/patient/PatientVaccinations";
 import PatientOverview from "@/components/patient/PatientOverview";
 import PatientAppointments from "@/components/patient/PatientAppointments";
 import PatientDoctorMessages from "@/components/patient/PatientDoctorMessages";
+import PatientDirectory from "@/components/patient/directory/PatientDirectory";
 import DoctorVisits from "@/components/patient/DoctorVisits";
 import PatientLabs from "@/components/patient/PatientLabs";
 import PatientLabResults from "@/components/patient/PatientLabResults";
@@ -173,6 +174,7 @@ function PatientPortal() {
           {activeTab === "profile" && <PatientProfileEdit profile={profile} onSaved={loadProfile} />}
           {activeTab === "appointments" && <PatientAppointments patientId={profile?.id} />}
           {activeTab === "messages" && profile && <PatientDoctorMessages profile={profile} />}
+          {activeTab === "directory" && <PatientDirectory />}
           {activeTab === "doctorvisits" && <DoctorVisits patientId={profile?.id} />}
           {activeTab === "labs" && (
             labsView === "choose" ? (
