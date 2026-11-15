@@ -72,6 +72,17 @@ module.exports = {
   				danger: 'hsl(var(--doctor-danger))',
   				'danger-deep': 'hsl(var(--doctor-danger-deep))'
   			},
+  			patient: {
+  				canvas: 'hsl(var(--pp-canvas))',
+  				ink: 'hsl(var(--pp-ink))',
+  				muted: 'hsl(var(--pp-muted))',
+  				accent: 'hsl(var(--pp-accent))',
+  				teal: 'hsl(var(--pp-teal))',
+  				green: 'hsl(var(--pp-green))',
+  				purple: 'hsl(var(--pp-purple))',
+  				amber: 'hsl(var(--pp-amber))',
+  				red: 'hsl(var(--pp-red))'
+  			},
   			portal: {
   				patient: 'hsl(var(--accent-patient))',
   				doctor: 'hsl(var(--accent-doctor))',

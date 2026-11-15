@@ -21,7 +21,7 @@ import PatientRadiologistAccessControl from "@/components/patient/PatientRadiolo
 import PatientHealth from "@/components/patient/PatientHealth";
 import PatientMedications from "@/components/patient/PatientMedications";
 import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
-import NotificationsBar from "@/components/patient/NotificationsBar";
+import PatientTopBar from "@/components/patient/shell/PatientTopBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientSidebar, { patientNavLabel } from "@/components/patient/PatientSidebar";
 import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
@@ -125,6 +125,7 @@ function PatientPortal() {
       <DashboardLayout
         activeKey={activeTab}
         sidebarWidth="w-72"
+        mainClassName="bg-patient-canvas"
         renderSidebar={({ close, onLogout }) => (
           <PatientSidebar
             activeKey={activeTab}
@@ -136,24 +137,28 @@ function PatientPortal() {
         )}
       >
         <div className="p-4 lg:p-6 max-w-5xl mx-auto">
-          <div className="mb-6 flex items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">
-                {activeTab === "overview"
-                  ? `${t("Welcome,")} ${profile?.full_name?.split(" ")[0] || ""}`
-                  : t(patientNavLabel(activeTab))}
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">{profile?.full_name} · {profile?.cin}</p>
-            </div>
-            {profile && <NotificationsBar patientId={profile.id} onNavigate={setActiveTab} />}
-          </div>
+          <PatientTopBar
+            profile={profile}
+            patientId={profile?.id}
+            title={activeTab === "overview" ? null : t(patientNavLabel(activeTab))}
+            onOpenProfile={() => setActiveTab("profile")}
+            onNavigate={setActiveTab}
+          />
 
           {(activeTab === "drugs" || activeTab === "labs") && (
             <div className="mb-4">
               <PartnerAdStrip key={activeTab} section={activeTab === "drugs" ? "pharmacy" : "laboratory"} />
             </div>
           )}
-          {activeTab === "overview" && <PatientOverview profile={profile} stats={stats} loading={loading} onGoToProfile={() => setActiveTab("profile")} />}
+          {activeTab === "overview" && (
+            <PatientOverview
+              profile={profile}
+              stats={stats}
+              loading={loading}
+              onGoToProfile={() => setActiveTab("profile")}
+              onNavigate={setActiveTab}
+            />
+          )}
           {activeTab === "health" && (
             <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} onRefreshData={loadProfile} />
           )}

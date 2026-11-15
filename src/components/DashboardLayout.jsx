@@ -8,7 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { getPortalAccent } from "@/lib/portalAccent";
 
-export default function DashboardLayout({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", sidebarTheme = "light", renderSidebar, sidebarWidth = "w-64", children }) {
+export default function DashboardLayout({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", sidebarTheme = "light", renderSidebar, sidebarWidth = "w-64", mainClassName = "", children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navy = sidebarTheme === "navy";
 
@@ -71,7 +71,7 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
           <AppLanguageSwitcher />
         </header>
 
-        <main className={`flex-1 overflow-y-auto ${navy ? "bg-doctor-surface" : ""}`}>
+        <main className={`flex-1 overflow-y-auto ${navy ? "bg-doctor-surface" : ""} ${mainClassName}`}>
           {children}
         </main>
       </div>

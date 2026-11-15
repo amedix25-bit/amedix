@@ -138,6 +138,25 @@
     --doctor-danger: 0 72% 51%;
     /* #B91C1C */
     --doctor-danger-deep: 0 74% 42%;
+    /* Patient Portal — light blue canvas with translucent glass surfaces */
+    /* #EFF4F9 */
+    --pp-canvas: 210 44% 96%;
+    /* #0B1F33 */
+    --pp-ink: 210 65% 12%;
+    /* #667085 */
+    --pp-muted: 218 11% 45%;
+    /* #007BFF */
+    --pp-accent: 211 100% 50%;
+    /* #17A2B8 */
+    --pp-teal: 188 78% 41%;
+    /* #28A745 */
+    --pp-green: 134 61% 41%;
+    /* #6F42C1 */
+    --pp-purple: 259 60% 51%;
+    /* #FFC107 */
+    --pp-amber: 45 100% 51%;
+    /* #DC3545 */
+    --pp-red: 354 70% 54%;
     --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
     --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -210,6 +229,19 @@
     --sidebar-border: 217 33% 17%;
     /* #38BDF8 */
     --sidebar-ring: 199 93% 60%;
+  }
+}
+
+@layer components {
+  /* Glass surface of the Patient Portal — translucent card over the light
+     blue canvas, the one card treatment used by every patient dashboard block. */
+  .pp-glass {
+    border-radius: 1.5rem;
+    border: 1px solid hsl(0 0% 100% / 0.7);
+    background: hsl(0 0% 100% / 0.72);
+    box-shadow: 0 12px 34px -18px hsl(213 60% 20% / 0.3);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
 }
 
