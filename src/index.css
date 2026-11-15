@@ -138,25 +138,36 @@
     --doctor-danger: 0 72% 51%;
     /* #B91C1C */
     --doctor-danger-deep: 0 74% 42%;
-    /* Patient Portal — light blue canvas with translucent glass surfaces */
-    /* #EFF4F9 */
-    --pp-canvas: 210 44% 96%;
-    /* #0B1F33 */
-    --pp-ink: 210 65% 12%;
-    /* #667085 */
-    --pp-muted: 218 11% 45%;
-    /* #007BFF */
-    --pp-accent: 211 100% 50%;
-    /* #17A2B8 */
-    --pp-teal: 188 78% 41%;
-    /* #28A745 */
-    --pp-green: 134 61% 41%;
-    /* #6F42C1 */
-    --pp-purple: 259 60% 51%;
-    /* #FFC107 */
-    --pp-amber: 45 100% 51%;
-    /* #DC3545 */
-    --pp-red: 354 70% 54%;
+    /* Patient Portal reference palette; isolated from professional portals. */
+    --pp-canvas: 207 100% 97%;
+    --pp-ink: 232 68% 13%;
+    --pp-muted: 219 23% 43%;
+    --pp-accent: 199 100% 44%;
+    --pp-teal: 180 78% 45%;
+    --pp-green: 125 76% 43%;
+    --pp-purple: 267 74% 56%;
+    --pp-amber: 42 97% 51%;
+    --pp-red: 351 78% 52%;
+    --pp-surface: 224 100% 98%;
+    --pp-edge: 217 38% 82%;
+    --pp-shadow: 217 62% 66%;
+    --pp-blue-top: 207 100% 97%;
+    --pp-blue-bottom: 213 93% 88%;
+    --pp-mint-top: 169 100% 96%;
+    --pp-mint-bottom: 171 75% 83%;
+    --pp-coral-top: 351 100% 97%;
+    --pp-coral-bottom: 352 87% 91%;
+    --pp-violet-top: 265 100% 98%;
+    --pp-violet-bottom: 268 81% 87%;
+    --pp-gold-top: 46 100% 96%;
+    --pp-gold-bottom: 44 92% 83%;
+    --pp-indigo-top: 244 100% 98%;
+    --pp-indigo-bottom: 242 84% 85%;
+    --pp-cin-top: 208 100% 94%;
+    --pp-cin-bottom: 194 90% 65%;
+    --pp-verified-bg: 122 100% 88%;
+    --pp-verified-ink: 125 76% 28%;
+    --font-patient: Arial, Helvetica, sans-serif;
     --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
     --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -180,6 +191,35 @@
   }
 
   .dark {
+    --pp-canvas: 207 100% 97%;
+    --pp-ink: 232 68% 13%;
+    --pp-muted: 219 23% 43%;
+    --pp-accent: 199 100% 44%;
+    --pp-teal: 180 78% 45%;
+    --pp-green: 125 76% 43%;
+    --pp-purple: 267 74% 56%;
+    --pp-amber: 42 97% 51%;
+    --pp-red: 351 78% 52%;
+    --pp-surface: 224 100% 98%;
+    --pp-edge: 217 38% 82%;
+    --pp-shadow: 217 62% 66%;
+    --pp-blue-top: 207 100% 97%;
+    --pp-blue-bottom: 213 93% 88%;
+    --pp-mint-top: 169 100% 96%;
+    --pp-mint-bottom: 171 75% 83%;
+    --pp-coral-top: 351 100% 97%;
+    --pp-coral-bottom: 352 87% 91%;
+    --pp-violet-top: 265 100% 98%;
+    --pp-violet-bottom: 268 81% 87%;
+    --pp-gold-top: 46 100% 96%;
+    --pp-gold-bottom: 44 92% 83%;
+    --pp-indigo-top: 244 100% 98%;
+    --pp-indigo-bottom: 242 84% 85%;
+    --pp-cin-top: 208 100% 94%;
+    --pp-cin-bottom: 194 90% 65%;
+    --pp-verified-bg: 122 100% 88%;
+    --pp-verified-ink: 125 76% 28%;
+    --font-patient: Arial, Helvetica, sans-serif;
     /* #020617 */
     --background: 222 84% 5%;
     /* #F8FAFC */
