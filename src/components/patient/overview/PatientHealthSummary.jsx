@@ -7,12 +7,19 @@ export default function PatientHealthSummary({ age, gender, nationality, conditi
   const { t } = usePatientLanguage();
   const libyan = /^(libya|libyan|ليبيا|ليبي|ليبية)$/i.test(String(nationality || "").trim());
   const female = String(gender).toLowerCase() === "female";
+  // Only the first entry is named, followed by an ellipsis — the full lists
+  // live in the Details view, so this card never becomes crowded.
+  const firstPlus = (list, pick) => {
+    const names = (list || []).map(pick).filter(Boolean);
+    if (!names.length) return "—";
+    return names.length > 1 ? `${names[0]} …` : names[0];
+  };
   const rows = [
     { label: "Age", icon: CalendarDays, color: "pp-icon-purple", value: age === null || age === undefined ? "—" : t("{age} years", { age }) },
     { label: "Sex", icon: UserRound, color: "pp-icon-red", value: gender ? t(gender) : "—", female },
     { label: "Nationality", icon: Globe2, color: "pp-icon-green", value: nationality || "—", flag: libyan },
-    { label: "Known Conditions", icon: Heart, color: "pp-icon-red", value: conditions.map((item) => item.name).join(", ") || "—" },
-    { label: "Current Medication", icon: Pill, color: "pp-icon-purple", value: medications.map((item) => item.name).join(", ") || "—" },
+    { label: "Known Conditions", icon: Heart, color: "pp-icon-red", value: firstPlus(conditions, (item) => item.name) },
+    { label: "Current Medication", icon: Pill, color: "pp-icon-purple", value: firstPlus(medications, (item) => item.name) },
   ];
   return <section className="pp-panel pp-health">
     <div className="pp-health-header"><h2 className="pp-panel-heading"><Heart />{t("Health Summary")}</h2><div className="pp-summary-switch"><button type="button" aria-pressed="true" onClick={() => onNavigate?.("overview")}>{t("Overview")}</button><button type="button" onClick={() => onNavigate?.("health")}>{t("Details")}</button></div></div>
