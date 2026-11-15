@@ -35,16 +35,7 @@ import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
-  {
-    key: "consultations",
-    label: "Consultations",
-    icon: Link2,
-    items: [
-      { key: "notes", label: "New Consultation", view: "create" },
-      { key: "notes", label: "My Consultations" },
-      { key: "notes", label: "Consultation History", view: "previous" },
-    ],
-  },
+  { key: "notes", label: "Consult", icon: Link2 },
   {
     key: "orders",
     label: "Orders & Results",
@@ -110,14 +101,7 @@ export default function DoctorDashboard() {
   const isSurgeon = isSurgicalSpecialty(profile?.specialization);
   const doctorNav = navItems.map((n) => {
     if (n.key === "communication") return { ...n, badge: messagingUnread };
-    if (n.key === "consultations" && isSurgeon) {
-      return {
-        ...n,
-        items: n.items.map((c) =>
-          c.key === "notes" ? { ...c, label: c.view === "previous" ? "Surgical Record History" : "Surgical Records" } : c
-        ),
-      };
-    }
+    if (n.key === "notes" && isSurgeon) return { ...n, label: "Surgical Records" };
     return n;
   });
   const flatItems = doctorNav.flatMap((n) => (n.items ? n.items.filter((c) => c.key) : [n]));
