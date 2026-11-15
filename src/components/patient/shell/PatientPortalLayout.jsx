@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import BrandLogo from "@/components/BrandLogo";
 import "@/components/patient/shell/patientPortal.css";
 
 export default function PatientPortalLayout({ renderSidebar, children }) {
@@ -13,8 +12,8 @@ export default function PatientPortalLayout({ renderSidebar, children }) {
         <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>
         <main className="pp-main">
           <div className="pp-mobile-header">
-            <button type="button" onClick={() => setOpen(true)} aria-label={t("My Medical Record")}><Menu /></button>
-            <span className="pp-mobile-brand"><BrandLogo className="pp-mobile-logo" /><strong>AMedix</strong><span>{t("Patient Portal")}</span></span>
+            <button type="button" className="pp-menu-button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={t("Patient Portal")}><Menu /></button>
+            <span className="pp-mobile-brand"><strong>AMedix</strong><span>{t("Patient Portal")}</span></span>
           </div>
           {children}
         </main>
