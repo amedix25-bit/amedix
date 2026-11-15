@@ -47,6 +47,9 @@ function PatientPortal() {
   const [drugsView, setDrugsView] = useState("choose"); // "choose" | "medications" | "prescriptions" | "advertisement"
   const setActiveTab = (tab) => {
     window.scrollTo({ top: 0, behavior: "auto" });
+    // The portal content area scrolls on its own, so reset it too — otherwise a
+    // newly opened tab appears part-way down the page.
+    document.querySelector(".pp-main")?.scrollTo({ top: 0, behavior: "auto" });
     // Notifications may still point at the old "My Lab Results" tab.
     if (tab === "mylabresults") {
       setLabsView("results");

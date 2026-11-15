@@ -1,20 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import "@/components/patient/shell/patientPortal.css";
 
 export default function PatientPortalLayout({ renderSidebar, children }) {
   const [open, setOpen] = useState(false);
+  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width:1023px)").matches);
   const { t } = usePatientLanguage();
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width:1023px)");
+    const sync = (event) => {
+      setNarrow(event.matches);
+      if (!event.matches) setOpen(false);
+    };
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
   return (
     <div className="pp-page">
       <div className="pp-frame">
         <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>
         <main className="pp-main">
-          <div className="pp-mobile-header">
+          {narrow && <div className="pp-mobile-header">
             <button type="button" className="pp-menu-button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={t("Patient Portal")}><Menu /></button>
             <span className="pp-mobile-brand"><strong>AMedix</strong><span>{t("Patient Portal")}</span></span>
-          </div>
+          </div>}
           {children}
         </main>
       </div>
