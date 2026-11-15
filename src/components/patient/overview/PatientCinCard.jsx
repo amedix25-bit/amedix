@@ -23,6 +23,6 @@ export default function PatientCinCard({ cin, onShowQr, onShowCard }) {
         <button type="button" onClick={onShowCard}><CreditCard />{t("View Card")}</button>
       </div>
     </div>
-    <button type="button" className="pp-cin-qr" onClick={onShowQr} aria-label={t("Show QR Code")}><QrCodeCard cin={cin} size={112} /></button>
+    <button type="button" className="pp-cin-qr" onClick={onShowQr} aria-label={t("Show QR Code")}><QrCodeCard cin={cin} size={512} /></button>
   </section>;
 }
