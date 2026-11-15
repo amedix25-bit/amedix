@@ -24,7 +24,7 @@ export default function PatientNextAppointment({ appointment, onOpenAppointments
         </div>
       </div>
       <div className="pp-appointment-buttons"><button type="button" onClick={() => setDetails(true)}><Check />{t("View Details")}</button><button type="button" onClick={onOpenAppointments}><CalendarDays />{t("Manage Appointment")}</button></div>
-    </> : <><p className="pp-empty">{t("No upcoming appointment")}</p><div className="pp-appointment-buttons"><button type="button" onClick={onOpenAppointments}><CalendarDays />{t("Book Appointment")}</button></div></>}
+    </> : <p className="pp-empty">{t("No upcoming appointment")}</p>}
     <PatientAppointmentDetails appointment={appointment} open={details} onOpenChange={setDetails} onManage={onOpenAppointments} />
   </section>;
 }
