@@ -23,6 +23,7 @@ export const SPECIALTY_HERO_ART = {
   Pulmonology: "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/c56725173_generated_image.png",
   Radiology: "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/3456803d9_generated_image.png",
   Rheumatology: "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/d0b2b320c_generated_image.png",
+  Hematology: "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/0742248f7_generated_image.png",
   Neurosurgery: "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/5b701f05c_generated_image.png",
 };
 
