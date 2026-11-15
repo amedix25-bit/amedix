@@ -354,11 +354,11 @@ export default async function (req) {
         hospital,
         phone,
         license_number: licenseNumber,
-        identity_verification_id: identity.id,
-        identity_method: identity.document_type,
-        identity_verified: true,
-        license_verification_id: license.id,
-        license_verified: true,
+        identity_verification_id: identity?.id || '',
+        identity_method: identity?.document_type || '',
+        identity_verified: !!identity,
+        license_verification_id: license?.id || '',
+        license_verified: !!license,
       };
       try {
         if (draft) await base44.entities.DoctorRegistrationDraft.update(draft.id, patch);
