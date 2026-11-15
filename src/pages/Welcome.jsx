@@ -42,10 +42,12 @@ export default function Welcome() {
         className="pointer-events-none select-none absolute inset-0 flex items-center justify-center"
         aria-hidden="true">
         
+        {/* `fit` keeps the logo's own proportions on every screen — it is scaled
+            down to the viewport instead of being stretched to fill it. */}
         <Image
           src={AMEDIX_LOGO_URL}
           alt=""
-          fittingType="fill"
+          fittingType="fit"
           className="h-full w-full opacity-[0.15]" />
         
       </div>
