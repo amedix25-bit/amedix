@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
-import { ArrowRight, LogOut } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -35,17 +34,6 @@ function AMedixBold({ text }) {
 export default function Welcome() {
   const navigate = useNavigate();
   const { t, isArabic } = useAppLanguage();
-  // The red Log out button is only meaningful for a signed-in visitor; a
-  // logged-out visitor sees just the language switcher.
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    base44.auth.isAuthenticated()
-      .then((signedIn) => { if (active) setIsAuthenticated(signedIn); })
-      .catch(() => {});
-    return () => { active = false; };
-  }, []);
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden flex items-center justify-center">
@@ -65,17 +53,7 @@ export default function Welcome() {
       </div>
 
       {/* Top navigation — language selection available before login */}
-      <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-end gap-2 px-4 py-4">
-        {isAuthenticated &&
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => base44.auth.logout(window.location.origin)}>
-
-            <LogOut className="w-4 h-4 mr-1 rtl:mr-0 rtl:ml-1" />
-            {t("Log out")}
-          </Button>
-        }
+      <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-end px-4 py-4">
         <AppLanguageSwitcher />
       </div>
 
