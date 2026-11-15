@@ -6,6 +6,8 @@ import { Image } from "@/components/ui/image";
 const SOURCE = "https://base44.app/api/apps/6a9ea24b809f9bb40f0d02bf/files/mp/public/6a9ea24b809f9bb40f0d02bf/8b09f4e81_amedix-patient-dashboard-reference.jpg";
 const REGIONS = {
   logo: [78, 38, 36, 37],
+  headerWave: [489, 29, 213, 60],
+  sidebarWave: [69, 395, 143, 192],
   labs: [330, 245, 65, 64],
   imaging: [492, 248, 71, 63],
   medications: [681, 250, 64, 60],
