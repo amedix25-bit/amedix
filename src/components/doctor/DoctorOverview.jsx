@@ -33,8 +33,10 @@ export default function DoctorOverview({
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <TodayAppointments appointments={todayAppointments} onNavigate={onNavigateTab} />
-          <RecentActivity activity={recentActivity} />
-          <MyTasks stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <RecentActivity activity={recentActivity} />
+            <MyTasks stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
+          </div>
         </div>
         <div className="space-y-4">
           <ScheduleCard now={now} />
