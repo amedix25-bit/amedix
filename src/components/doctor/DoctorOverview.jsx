@@ -31,7 +31,13 @@ export default function DoctorOverview({
       fitKey={`${todayAppointments?.length || 0}:${recentActivity?.length || 0}:${appointmentsToday || 0}:${profile?.is_verified ? 1 : 0}`}
     >
       <div className="space-y-4">
-        <WelcomeHero greeting={greeting} doctorName={doctorName} hospitalName={hospitalName} now={now} />
+        <WelcomeHero
+          greeting={greeting}
+          doctorName={doctorName}
+          specialty={profile?.specialization}
+          hospitalName={hospitalName}
+          now={now}
+        />
         <StatCards stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
 
         <div className="grid gap-4 lg:grid-cols-3">
