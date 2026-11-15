@@ -10,7 +10,9 @@ export default function PatientNextAppointment({ appointment, onOpenAppointments
   const validDate = date && !Number.isNaN(date.getTime());
   const time = appointment?.time;
   const [hour, minute] = (time || "").split(":");
-  const formattedTime = time && Number.isFinite(Number(hour)) ? `${Number(hour) % 12 || 12}:${minute || "00"} ${Number(hour) >= 12 ? "PM" : "AM"}` : time;
+  const formattedTime = time && Number.isFinite(Number(hour))
+    ? new Date(2000, 0, 1, Number(hour), Number(minute || 0)).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" })
+    : time;
   return <section className="pp-panel pp-appointment">
     <h2 className="pp-panel-heading"><CalendarDays />{t("Upcoming Appointment")}</h2>
     <svg className="pp-appointment-spark" viewBox="0 0 28 24" aria-hidden="true"><path d="M5 11L8 2M11 16L17 7M17 20L25 15" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>

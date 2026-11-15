@@ -100,6 +100,12 @@ const AR = {
   "Messages": "الرسائل",
   "No upcoming appointment": "لا يوجد موعد قادم",
   "No recent activity": "لا يوجد نشاط حديث",
+  // Recent Activity items
+  "New radiology request": "طلب أشعة جديد",
+  "New radiology report": "تقرير أشعة جديد",
+  "New prescription": "وصفة طبية جديدة",
+  "New lab request": "طلب تحاليل جديد",
+  "New lab report": "تقرير تحاليل جديد",
   "{count} total": "{count} إجمالاً",
 
   // Common actions

@@ -4,7 +4,7 @@ import PatientReferenceArt from "@/components/patient/overview/PatientReferenceA
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientHealthSummary({ age, gender, nationality, conditions = [], medications = [], onNavigate }) {
-  const { t } = usePatientLanguage();
+  const { t, lang } = usePatientLanguage();
   const libyan = /^(libya|libyan|ليبيا|ليبي|ليبية)$/i.test(String(nationality || "").trim());
   const female = String(gender).toLowerCase() === "female";
   // Only the first entry is named, followed by an ellipsis — the full lists
@@ -17,8 +17,8 @@ export default function PatientHealthSummary({ age, gender, nationality, conditi
   const rows = [
     { label: "Age", icon: CalendarDays, color: "pp-icon-purple", value: age === null || age === undefined ? "—" : t("{age} years", { age }) },
     { label: "Sex", icon: UserRound, color: "pp-icon-red", value: gender ? t(gender) : "—", female },
-    { label: "Nationality", icon: Globe2, color: "pp-icon-green", value: nationality || "—", flag: libyan },
-    { label: "Known Conditions", icon: Heart, color: "pp-icon-red", value: firstPlus(conditions, (item) => item.name) },
+    { label: "Nationality", icon: Globe2, color: "pp-icon-green", value: libyan && lang === "ar" ? "ليبيا" : nationality || "—", flag: libyan },
+    { label: "Known Conditions", icon: Heart, color: "pp-icon-red", value: firstPlus(conditions, (item) => (lang === "ar" ? item.name_ar || item.name : item.name)) },
     { label: "Current Medication", icon: Pill, color: "pp-icon-purple", value: firstPlus(medications, (item) => item.name) },
   ];
   return <section className="pp-panel pp-health">

@@ -12,7 +12,7 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
   return <header className="pp-topbar">
     <PatientReferenceArt kind="headerWave" className="pp-header-wave" />
     <div className="pp-welcome">
-      <h1>{title || <><span dir="ltr">Welcome, {firstName} <span aria-hidden="true">👋</span></span><span className="pp-welcome-ar" lang="ar" dir="rtl">مرحبا {arabicName}</span></>}</h1>
+      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">مرحبا {arabicName || firstName} <span aria-hidden="true">👋</span></span> : <span dir="ltr">Welcome, {firstName} <span aria-hidden="true">👋</span></span>)}</h1>
       <p><Heart />{t("Your personal health portal with AMedix")}</p>
     </div>
     <div className="pp-header-controls">
