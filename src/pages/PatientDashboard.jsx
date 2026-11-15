@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import DashboardLayout from "@/components/DashboardLayout";
+import PatientPortalLayout from "@/components/patient/shell/PatientPortalLayout";
+import PatientVaccinations from "@/components/patient/PatientVaccinations";
 import PatientOverview from "@/components/patient/PatientOverview";
 import PatientAppointments from "@/components/patient/PatientAppointments";
 import PatientDoctorMessages from "@/components/patient/PatientDoctorMessages";
@@ -24,7 +25,6 @@ import PatientProfileEdit from "@/components/patient/PatientProfileEdit";
 import PatientTopBar from "@/components/patient/shell/PatientTopBar";
 import { PatientLanguageProvider, usePatientLanguage } from "@/lib/patientLanguage";
 import PatientSidebar, { patientNavLabel } from "@/components/patient/PatientSidebar";
-import ProfessionalPortalSwitch from "@/components/portal/ProfessionalPortalSwitch";
 import { ChevronLeft } from "lucide-react";
 import DrugsEntry from "@/components/patient/DrugsEntry";
 import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
@@ -42,9 +42,11 @@ function PatientPortal() {
   const { t } = usePatientLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTabRaw] = useState("overview");
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [labsView, setLabsView] = useState("choose"); // "choose" | "requests" | "results"
   const [drugsView, setDrugsView] = useState("choose"); // "choose" | "medications" | "prescriptions" | "advertisement"
   const setActiveTab = (tab) => {
+    window.scrollTo({ top: 0, behavior: "auto" });
     // Notifications may still point at the old "My Lab Results" tab.
     if (tab === "mylabresults") {
       setLabsView("results");
@@ -99,20 +101,14 @@ function PatientPortal() {
       const p = profiles[0];
       setProfile(p);
       if (p && !p.medication_info_completed) ensureMedicationInfoNotification(p);
-      const [apts, labs, imaging, docs, meds] = await Promise.all([
-        base44.entities.Appointment.filter({ patient_id: p.id }),
-        base44.entities.LabRequest.filter({ patient_id: p.id }),
-        base44.entities.ImagingRequest.filter({ patient_id: p.id }),
-        base44.entities.MedicalDocument.filter({ patient_id: p.id }),
-        base44.entities.Medication.filter({ patient_id: p.id }),
+      const [appointments, labs, imaging, documents, medications] = await Promise.all([
+        base44.entities.Appointment.count({ patient_id: p.id }),
+        base44.entities.LabRequest.count({ patient_id: p.id }),
+        base44.entities.ImagingRequest.count({ patient_id: p.id }),
+        base44.entities.MedicalDocument.count({ patient_id: p.id }),
+        base44.entities.Medication.count({ patient_id: p.id }),
       ]);
-      setStats({
-        appointments: apts.length,
-        labs: labs.length,
-        imaging: imaging.length,
-        documents: docs.length,
-        medications: meds.length,
-      });
+      setStats({ appointments, labs, imaging, documents, medications });
     } catch (err) {
       console.error(err);
     } finally {
@@ -122,27 +118,20 @@ function PatientPortal() {
 
   return (
     <>
-      <DashboardLayout
-        activeKey={activeTab}
-        sidebarWidth="w-72"
-        mainClassName="bg-patient-canvas"
-        renderSidebar={({ close, onLogout }) => (
-          <PatientSidebar
-            activeKey={activeTab}
-            onNavClick={setActiveTab}
-            onLogout={onLogout}
-            close={close}
-            sidebarAction={user ? <ProfessionalPortalSwitch user={user} /> : null}
-          />
+      <PatientPortalLayout
+        renderSidebar={({ close }) => (
+          <PatientSidebar activeKey={activeTab} onNavClick={setActiveTab} close={close} />
         )}
       >
-        <div className="p-4 lg:p-6 max-w-5xl mx-auto">
+        <div>
           <PatientTopBar
             profile={profile}
             patientId={profile?.id}
             title={activeTab === "overview" ? null : t(patientNavLabel(activeTab))}
             onOpenProfile={() => setActiveTab("profile")}
             onNavigate={setActiveTab}
+            notificationOpen={notificationOpen}
+            onNotificationOpenChange={setNotificationOpen}
           />
 
           {(activeTab === "drugs" || activeTab === "labs") && (
@@ -157,11 +146,13 @@ function PatientPortal() {
               loading={loading}
               onGoToProfile={() => setActiveTab("profile")}
               onNavigate={setActiveTab}
+              onViewActivity={() => setNotificationOpen(true)}
             />
           )}
-          {activeTab === "health" && (
-            <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} onRefreshData={loadProfile} />
+          {["health", "conditions", "allergies", "surgeries"].includes(activeTab) && (
+            <PatientHealth profile={profile} onGoToProfile={() => setActiveTab("profile")} onRefreshData={loadProfile} focusSection={activeTab === "health" ? null : activeTab} />
           )}
+          {activeTab === "vaccinations" && <PatientVaccinations profile={profile} onOpenDocuments={() => setActiveTab("documents")} />}
           {activeTab === "drugs" && (
             drugsView === "choose" ? (
               <DrugsEntry onOpen={setDrugsView} />
@@ -204,7 +195,7 @@ function PatientPortal() {
             </div>
           )}
         </div>
-      </DashboardLayout>
+      </PatientPortalLayout>
     </>
   );
 }

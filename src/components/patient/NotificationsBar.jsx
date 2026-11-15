@@ -24,10 +24,12 @@ const TYPE_COLORS = {
   other: "text-muted-foreground",
 };
 
-export default function NotificationsBar({ patientId, onNavigate }) {
+export default function NotificationsBar({ patientId, onNavigate, compact = false, open: controlledOpen, onOpenChange }) {
   const { t, isArabic, locale } = usePatientLanguage();
   const [items, setItems] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = controlledOpen ?? localOpen;
+  const setOpen = onOpenChange || setLocalOpen;
 
   const dayLabel = (iso) => {
     const d = new Date(iso);
@@ -85,10 +87,11 @@ export default function NotificationsBar({ patientId, onNavigate }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="relative inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+        <button type="button" aria-label={`${t("Notifications")}${unread ? ` (${unread})` : ""}`} className={compact ? "pp-notification-trigger" : "relative inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"}>
           <Bell className="w-4 h-4" />
-          <span className="hidden sm:inline">{t("Notifications")}</span>
-          {unread > 0 && (
+          {!compact && <span className="hidden sm:inline">{t("Notifications")}</span>}
+          {compact && unread > 0 && <span className="pp-notification-dot" aria-hidden="true" />}
+          {!compact && unread > 0 && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
               {unread}
             </span>

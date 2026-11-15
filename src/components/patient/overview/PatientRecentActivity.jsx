@@ -1,58 +1,31 @@
 import React from "react";
-import { Activity } from "lucide-react";
+import { Clock, CheckCircle2, Image as ImageIcon, MessageSquareMore, CalendarDays, Pill, Info } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-const DOT_TONES = {
-  lab_results: "bg-patient-teal",
-  lab_request: "bg-patient-teal",
-  appointment: "bg-patient-accent",
-  rescheduled: "bg-patient-accent",
-  doctor_message: "bg-patient-purple",
-  medication_update: "bg-patient-green",
-  medication_reminder: "bg-patient-green",
-  recall: "bg-patient-red",
-  other: "bg-patient-muted",
+const TYPES = {
+  lab_results: [CheckCircle2, "pp-icon-green", "mylabresults"],
+  lab_request: [CheckCircle2, "pp-icon-green", "labs"],
+  imaging: [ImageIcon, "pp-icon-purple", "imaging"],
+  imaging_results: [ImageIcon, "pp-icon-purple", "imaging"],
+  doctor_message: [MessageSquareMore, "pp-icon-blue", "messages"],
+  appointment: [CalendarDays, "pp-icon-gold", "appointments"],
+  rescheduled: [CalendarDays, "pp-icon-gold", "appointments"],
+  medication_update: [Pill, "pp-icon-purple", "medications"],
+  medication_reminder: [Pill, "pp-icon-purple", "medications"],
+  recall: [Pill, "pp-icon-red", "medications"],
 };
-
-const formatWhen = (value) => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-};
-
-// The newest events on the patient's record, newest first.
-export default function PatientRecentActivity({ items }) {
-  const { t } = usePatientLanguage();
-
-  return (
-    <div className="pp-glass p-5">
-      <div className="flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-patient-purple/12 text-patient-purple">
-          <Activity className="h-4 w-4" />
-        </span>
-        <h2 className="text-sm font-bold text-patient-ink">{t("Recent Activity")}</h2>
-      </div>
-
-      {items.length === 0 ? (
-        <p className="mt-4 text-sm text-patient-muted">{t("No recent activity")}</p>
-      ) : (
-        <ul className="mt-3 space-y-3">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-start gap-2.5">
-              <span
-                className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${DOT_TONES[item.type] || DOT_TONES.other}`}
-              />
-              <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-patient-ink">
-                {item.title}
-              </span>
-              <span className="shrink-0 text-[11px] font-medium text-patient-muted">
-                {formatWhen(item.created_date)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+export default function PatientRecentActivity({ items, onNavigate, onViewAll }) {
+  const { t, locale } = usePatientLanguage();
+  return <section className="pp-panel pp-activity">
+    <div className="pp-activity-header"><h2 className="pp-panel-heading"><Clock />{t("Recent Activity")}</h2><button type="button" className="pp-view-all" onClick={onViewAll}>{t("View All")}</button></div>
+    {!items.length ? <p className="pp-empty">{t("No recent activity")}</p> : <ul className="pp-activity-list">{items.slice(0, 4).map((item) => {
+      const [Icon, color, target] = TYPES[item.type] || [Info, "pp-icon-blue", "health"];
+      const date = item.created_date ? new Date(item.created_date) : null;
+      return <li key={item.id}><button type="button" className={`pp-activity-item ${color}`} onClick={() => onNavigate?.(item.target === "radiology" ? "access" : item.target || target)}>
+        <span className="pp-timeline-dot" /><span className="pp-timeline-icon"><Icon /></span>
+        <span className="pp-activity-copy"><strong>{t(item.title)}</strong>{item.message && <small title={t(item.message)}>{t(item.message)}</small>}</span>
+        <time className="pp-activity-date" dateTime={item.created_date}>{date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString(locale, { month: "short", day: "numeric" }) : ""}</time>
+      </button></li>;
+    })}</ul>}
+  </section>;
 }

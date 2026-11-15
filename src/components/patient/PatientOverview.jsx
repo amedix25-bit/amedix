@@ -15,7 +15,7 @@ import PatientQuickAccess from "@/components/patient/overview/PatientQuickAccess
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function PatientOverview({ profile, stats, loading, onGoToProfile, onNavigate }) {
+export default function PatientOverview({ profile, stats, loading, onGoToProfile, onNavigate, onViewActivity }) {
   const { t, lang } = usePatientLanguage();
   const [showQr, setShowQr] = useState(false);
   const [showCard, setShowCard] = useState(false);
@@ -93,10 +93,11 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
       : [];
 
   return (
-    <div className="space-y-4 lg:space-y-5">
-      <PatientCinCard cin={profile?.cin} onShowQr={() => setShowQr(true)} onShowCard={() => setShowCard(true)} />
-
-      <PatientNextAppointment appointment={appointment} onOpenAppointments={() => onNavigate("appointments")} />
+    <div className="pp-overview">
+      <div className="pp-hero-row">
+        <PatientCinCard cin={profile?.cin} onShowQr={() => setShowQr(true)} onShowCard={() => setShowCard(true)} />
+        <PatientNextAppointment appointment={appointment} onOpenAppointments={() => onNavigate("appointments")} />
+      </div>
 
       <PatientQuickActions
         labs={stats.labs}
@@ -106,8 +107,7 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
         onNavigate={onNavigate}
       />
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
-        <div className="lg:col-span-2">
+      <div className="pp-summary-row">
           <PatientHealthSummary
             age={age}
             gender={profile?.gender ? capitalize(profile.gender) : ""}
@@ -115,9 +115,9 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
             conditions={med.conditions}
             medications={med.medications.filter((m) => m.is_active !== false)}
             allergies={allergyText || profile?.allergies || ""}
+            onNavigate={onNavigate}
           />
-        </div>
-        <PatientRecentActivity items={activity} />
+        <PatientRecentActivity items={activity} onNavigate={onNavigate} onViewAll={onViewActivity} />
       </div>
 
       <PatientQuickAccess onNavigate={onNavigate} />

@@ -1,5 +1,5 @@
 .pp-page { min-height:100vh; padding:2.45vw 0; color:hsl(var(--pp-ink)); background:radial-gradient(ellipse at 12% 35%,hsl(var(--pp-blue-top)),transparent 62%),radial-gradient(ellipse at 87% 82%,hsl(var(--pp-mint-top)/.38),transparent 50%),hsl(var(--pp-canvas)); font-family:var(--font-patient); }
-.pp-frame { container-type:inline-size; position:relative; display:grid; grid-template-columns:16.67% minmax(0,1fr); width:min(1320px,87vw); min-height:63.6cqw; margin:0 auto; border:1px solid hsl(var(--pp-edge)); border-radius:2.2cqw; background:linear-gradient(130deg,hsl(var(--pp-surface)/.86),hsl(var(--pp-blue-bottom)/.38)); box-shadow:inset 0 0 0 1px hsl(var(--card)/.9),0 10px 38px -20px hsl(var(--pp-shadow)/.45); }
+.pp-frame { container-type:inline-size; position:relative; display:grid; grid-template-columns:16.67% minmax(0,1fr); width:min(1320px,87vw); min-height:0; margin:0 auto; border:1px solid hsl(var(--pp-edge)); border-radius:2.2cqw; background:linear-gradient(130deg,hsl(var(--pp-surface)/.86),hsl(var(--pp-blue-bottom)/.38)); box-shadow:inset 0 0 0 1px hsl(var(--card)/.9),0 10px 38px -20px hsl(var(--pp-shadow)/.45); }
 .pp-frame h1,.pp-frame h2,.pp-frame h3 { font-family:var(--font-patient); }
 .pp-desktop-sidebar { min-width:0; align-self:stretch; }
 .pp-sidebar { position:relative; height:100%; min-height:63.6cqw; border-inline-end:1px solid hsl(var(--pp-edge)); border-radius:2.2cqw; background:linear-gradient(145deg,hsl(var(--pp-surface)/.72) 35%,hsl(var(--pp-blue-bottom)/.44)); overflow:hidden; }
@@ -107,6 +107,7 @@
 .pp-health-row dd { font-weight:600; overflow-wrap:anywhere; }
 .pp-health-art { position:absolute; inset-inline-end:-.5cqw; bottom:-.15cqw; width:26%; mask-image:linear-gradient(to right,transparent,hsl(var(--card)) 12%,hsl(var(--card))),linear-gradient(to bottom,transparent,hsl(var(--card)) 9%,hsl(var(--card)) 91%,transparent); mask-composite:intersect; }
 .pp-libya-flag { font-size:1.5cqw; line-height:1; }
+.pp-sex-icon { width:1.55cqw; }
 .pp-icon-purple { color:hsl(var(--pp-purple)); }
 .pp-icon-red { color:hsl(var(--pp-red)); }
 .pp-icon-blue { color:hsl(var(--pp-accent)); }
@@ -213,6 +214,7 @@
  .pp-health-row svg { width:16px; height:16px; }
  .pp-health-rows { width:76%; }
  .pp-libya-flag { font-size:16px; }
+ .pp-sex-icon { width:16px; }
  .pp-health-art { width:24%; inset-inline-end:-3px; bottom:-2px; }
  .pp-view-all { font-size:11px; }
  .pp-activity-list { margin-top:8px; }

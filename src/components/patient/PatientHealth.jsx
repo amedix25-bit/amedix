@@ -24,10 +24,18 @@ export default function PatientHealth({
   registrationEvents,
   doctorData,
   onRefreshData,
+  focusSection,
 }) {
   const { t } = usePatientLanguage();
   const [checkIn, setCheckIn] = useState(null);
   const editable = doctorView && checkIn?.checked_in === true;
+
+  useEffect(() => {
+    if (!focusSection) return;
+    const section = document.getElementById(`patient-health-${focusSection}`);
+    section?.querySelectorAll('button[aria-expanded="false"]').forEach((button) => button.click());
+    section?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [focusSection]);
   // Doctor Portal: records the doctor cannot read directly are supplied by the
   // authorized backend payload, so the whole record is visible here.
   const preloaded = doctorData
@@ -86,6 +94,7 @@ export default function PatientHealth({
       <MedicalHistorySection patientId={profile?.id} />
       <DemographicsSection number="1" patient={profile} doctorView={doctorView} />
 
+      <div id="patient-health-conditions" className="space-y-4 scroll-mt-4">
       <ConditionsSection
         number="2"
         title={t("Known Case Of")}
@@ -117,6 +126,8 @@ export default function PatientHealth({
         onRefresh={onRefreshData}
       />
 
+      </div>
+      <div id="patient-health-surgeries" className="scroll-mt-4">
       <SurgicalSection
         number="5"
         patient={profile}
@@ -125,6 +136,7 @@ export default function PatientHealth({
         preloadedItems={preloaded?.surgical}
         onRefresh={onRefreshData}
       />
+      </div>
       <MedicationsSection
         number="6"
         patient={profile}
@@ -133,6 +145,7 @@ export default function PatientHealth({
         preloadedItems={preloaded?.medications}
         onRefresh={onRefreshData}
       />
+      <div id="patient-health-allergies" className="scroll-mt-4">
       <AllergiesSection
         number="7"
         patient={profile}
@@ -141,6 +154,7 @@ export default function PatientHealth({
         preloadedItems={preloaded?.allergies}
         onRefresh={onRefreshData}
       />
+      </div>
       <LifestyleSection number="8" patient={profile} onEdit={onGoToProfile} doctorView={doctorView} />
       <GynaeObstetricSection
         number="9"

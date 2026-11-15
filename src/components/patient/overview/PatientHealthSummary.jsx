@@ -1,75 +1,24 @@
 import React from "react";
-import { Image } from "@/components/ui/image";
+import { Heart, CalendarDays, UserRound, Globe2, Pill } from "lucide-react";
+import PatientReferenceArt from "@/components/patient/overview/PatientReferenceArt";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-const HEART_ILLUSTRATION =
-  "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/08e7777d9_generated_image.png";
-
-const Chip = ({ children }) => (
-  <span className="rounded-full bg-patient-accent/10 px-2.5 py-1 text-xs font-medium text-patient-accent">
-    {children}
-  </span>
-);
-
-const Empty = () => <span className="text-xs font-medium text-patient-muted">—</span>;
-
-// A short read of the patient's clinical picture — who they are, what they are
-// known to have, and what they are taking right now.
-export default function PatientHealthSummary({ age, gender, nationality, conditions, medications, allergies }) {
+export default function PatientHealthSummary({ age, gender, nationality, conditions = [], medications = [], onNavigate }) {
   const { t } = usePatientLanguage();
-
-  return (
-    <div className="pp-glass flex flex-col gap-4 p-5 sm:flex-row sm:items-stretch">
-      <div className="min-w-0 flex-1">
-        <h2 className="text-sm font-bold text-patient-ink">{t("Health Summary")}</h2>
-
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {[
-            { label: t("Age"), value: age === null || age === undefined ? "—" : age },
-            { label: t("Sex"), value: gender ? t(gender) : "—" },
-            { label: t("Nationality"), value: nationality || "—" },
-          ].map((item) => (
-            <div key={item.label}>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-patient-muted">{item.label}</p>
-              <p className="mt-0.5 truncate text-sm font-bold text-patient-ink">{item.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 border-t border-border/60 pt-3">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-patient-muted">
-            {t("Known Conditions")}
-          </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {conditions.length === 0 ? <Empty /> : conditions.map((c) => <Chip key={c.id}>{c.name}</Chip>)}
-          </div>
-        </div>
-
-        <div className="mt-3 border-t border-border/60 pt-3">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-patient-muted">
-            {t("Current Medication")}
-          </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {medications.length === 0 ? <Empty /> : medications.map((m) => <Chip key={m.id}>{m.name}</Chip>)}
-          </div>
-        </div>
-
-        {allergies && (
-          <div className="mt-3 border-t border-border/60 pt-3">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-patient-muted">{t("Allergies")}</p>
-            <p className="mt-1 text-xs font-medium text-patient-red">{allergies}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="flex shrink-0 items-center justify-center sm:w-40">
-        <Image
-          src={HEART_ILLUSTRATION}
-          alt=""
-          fittingType="fit"
-          className="h-32 w-32 object-contain sm:h-40 sm:w-40"
-        />
-      </div>
+  const libyan = /^(libya|libyan|ليبيا|ليبي|ليبية)$/i.test(String(nationality || "").trim());
+  const female = String(gender).toLowerCase() === "female";
+  const rows = [
+    { label: "Age", icon: CalendarDays, color: "pp-icon-purple", value: age === null || age === undefined ? "—" : t("{age} years", { age }) },
+    { label: "Sex", icon: UserRound, color: "pp-icon-red", value: gender ? t(gender) : "—", female },
+    { label: "Nationality", icon: Globe2, color: "pp-icon-green", value: nationality || "—", flag: libyan },
+    { label: "Known Conditions", icon: Heart, color: "pp-icon-red", value: conditions.map((item) => item.name).join(", ") || "—" },
+    { label: "Current Medication", icon: Pill, color: "pp-icon-purple", value: medications.map((item) => item.name).join(", ") || "—" },
+  ];
+  return <section className="pp-panel pp-health">
+    <div className="pp-health-header"><h2 className="pp-panel-heading"><Heart />{t("Health Summary")}</h2><div className="pp-summary-switch"><button type="button" aria-pressed="true" onClick={() => onNavigate?.("overview")}>{t("Overview")}</button><button type="button" onClick={() => onNavigate?.("health")}>{t("Details")}</button></div></div>
+    <div className="pp-health-body">
+      <dl className="pp-health-rows">{rows.map(({ label, icon: Icon, color, value, flag, female: femaleIcon }) => <div key={label} className="pp-health-row">{flag ? <span className="pp-libya-flag" role="img" aria-label={t("Libya")}>🇱🇾</span> : femaleIcon ? <PatientReferenceArt kind="femaleIcon" className="pp-sex-icon" /> : <Icon className={color} />}<dt>{t(label)}</dt><dd title={value} className="line-clamp-2">{value}</dd></div>)}</dl>
+      <PatientReferenceArt kind="heart" className="pp-health-art" />
     </div>
-  );
+  </section>;
 }

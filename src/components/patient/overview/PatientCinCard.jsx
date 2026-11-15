@@ -1,52 +1,28 @@
 import React from "react";
-import { CreditCard, QrCode, Shield } from "lucide-react";
+import { CreditCard, QrCode, CheckCircle2 } from "lucide-react";
 import QrCodeCard from "@/components/QrCodeCard";
+import PatientReferenceArt from "@/components/patient/overview/PatientReferenceArt";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-// The patient's identification card on the dashboard — verified badge, the
-// permanent CIN with its QR code and the two ways to present it.
 export default function PatientCinCard({ cin, onShowQr, onShowCard }) {
   const { t } = usePatientLanguage();
-
-  return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-patient-accent to-patient-ink p-6 text-white shadow-[0_20px_45px_-24px_hsl(211_100%_45%_/_0.8)]">
-      <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-white/10" />
-      <div className="pointer-events-none absolute -bottom-24 left-10 h-40 w-40 rounded-full bg-white/5" />
-
-      <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold backdrop-blur">
-            <Shield className="h-3.5 w-3.5" />
-            {t("Verified Patient")}
-          </span>
-
-          <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">{t("My CIN")}</p>
-          <p className="mt-1 text-3xl font-bold tracking-[0.12em]">{cin || "—"}</p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onShowQr}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-patient-accent transition-colors hover:bg-white/90"
-            >
-              <QrCode className="h-4 w-4" />
-              {t("Show QR Code")}
-            </button>
-            <button
-              type="button"
-              onClick={onShowCard}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/50 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-            >
-              <CreditCard className="h-4 w-4" />
-              {t("View Card")}
-            </button>
-          </div>
-        </div>
-
-        <div className="shrink-0 self-start rounded-2xl bg-white p-2.5 shadow-lg sm:self-center">
-          <QrCodeCard cin={cin} size={112} />
-        </div>
+  return <section className="pp-panel pp-cin" aria-label={t("My CIN")}>
+    <svg className="pp-cin-waves" viewBox="0 0 364 129" preserveAspectRatio="none" aria-hidden="true">
+      <path className="pp-wave-light" d="M0 73C83 79 109 137 220 113C280 100 317 115 364 95V129H0Z" />
+      <path className="pp-wave-blue" d="M0 106C57 108 97 154 190 133C281 111 317 132 364 114V129H0Z" />
+      <path className="pp-wave-light" d="M0 10C47 7 84 38 120 25C188 2 251 21 364 5V0H0Z" />
+    </svg>
+    <PatientReferenceArt kind="cinWave" className="pp-cin-edge" />
+    <div className="pp-cin-copy">
+      <span className="pp-verified"><CheckCircle2 />{t("Verified Patient")}</span>
+      <p className="pp-cin-label">{t("My CIN")}</p>
+      <p className="pp-cin-number" dir="ltr">{cin || "—"}</p>
+      <p className="pp-cin-description">{t("Your permanent Clinical Identification Number — unique to you.")}</p>
+      <div className="pp-cin-buttons">
+        <button type="button" onClick={onShowQr}><QrCode />{t("Show QR Code")}</button>
+        <button type="button" onClick={onShowCard}><CreditCard />{t("View Card")}</button>
       </div>
     </div>
-  );
+    <button type="button" className="pp-cin-qr" onClick={onShowQr} aria-label={t("Show QR Code")}><QrCodeCard cin={cin} size={112} /></button>
+  </section>;
 }

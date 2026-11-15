@@ -11,6 +11,7 @@ const REGIONS = {
   medications: [681, 250, 64, 60],
   messages: [852, 252, 69, 58],
   heart: [498, 357, 86, 102],
+  femaleIcon: [247, 374, 14, 17],
   cinWave: [233, 100, 73, 125],
 };
 
