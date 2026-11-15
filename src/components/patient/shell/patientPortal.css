@@ -143,7 +143,7 @@
 .pp-shortcut-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:.95cqw; margin-top:.6cqw; }
 .pp-shortcut { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:5.1cqw; gap:.2cqw; padding:.45cqw .6cqw; border:1px solid hsl(var(--card)/.7); border-radius:1.35cqw; text-align:center; }
 .pp-shortcut svg { width:2.15cqw; height:2.15cqw; color:hsl(var(--pp-tone-icon)); stroke-width:2; filter:drop-shadow(0 1px 1px hsl(var(--card))); }
-.pp-shortcut span { max-width:8cqw; font-size:1.13cqw; font-weight:650; line-height:1.07; }
+.pp-shortcut span { max-width:100%; font-size:1.13cqw; font-weight:650; line-height:1.07; overflow-wrap:normal; word-break:keep-all; hyphens:none; }
 .pp-action-card:focus-visible,.pp-shortcut:focus-visible,.pp-nav-item:focus-visible,.pp-header-controls button:focus-visible { outline:2px solid hsl(var(--pp-accent)); outline-offset:2px; }
 .pp-action-card:hover,.pp-shortcut:hover { box-shadow:inset 0 0 0 1px hsl(var(--pp-accent)/.35),0 2px 4px hsl(var(--pp-shadow)/.3); }
 .pp-mobile-header { display:none; }
@@ -245,7 +245,7 @@
  .pp-shortcut-grid { gap:8px; margin-top:8px; }
  .pp-shortcut { min-height:75px; padding:8px 5px; gap:4px; border-radius:13px; }
  .pp-shortcut svg { width:24px; height:24px; }
- .pp-shortcut span { max-width:95px; font-size:11px; }
+ .pp-shortcut span { max-width:100%; font-size:11px; }
  .pp-drawer .pp-brand { height:88px; gap:10px; padding:18px; }
  .pp-drawer .pp-brand-mark { width:48px; height:48px; }
  .pp-drawer .pp-brand strong { font-size:24px; }
