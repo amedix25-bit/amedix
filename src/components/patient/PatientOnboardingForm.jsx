@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, Loader2, BadgeCheck, Lock, Fingerprint, ArrowLeft, Check } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
-  MedicalListSection, ConditionEntryForm, MedicationEntryForm, AllergyEntryForm, SurgeryEntryForm,
+  MedicalListSection, ConditionEntryForm, MedicationEntryForm, SurgeryEntryForm,
   MedicalEventEntryForm, conditionTypeLabel, medicalEventLabel, conditionStatusLabel,
 } from "@/components/patient/onboarding/EntryForms";
 import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
@@ -19,12 +19,14 @@ import VerificationMethodSelector from "@/components/verification/VerificationMe
 import { isSubmitted } from "@/components/verification/verificationStatus";
 import { isVerificationExempt } from "@/lib/verificationExemption";
 import DateField from "@/components/ui/date-field";
+import { formatDateDisplay } from "@/lib/dateFormat";
 import DietNutritionFields from "@/components/patient/lifestyle/DietNutritionFields";
 import SleepPatternFields from "@/components/patient/lifestyle/SleepPatternFields";
 import LivingSituationFields from "@/components/patient/lifestyle/LivingSituationFields";
 import VaccinationStatusFields from "@/components/patient/lifestyle/VaccinationStatusFields";
 import { vaccinationMapToRecords } from "@/lib/lifestyleOptions";
 import GynaeObstetricHistoryForm from "@/components/patient/gynae/GynaeObstetricHistoryForm";
+import StructuredAllergyForm from "@/components/patient/allergies/StructuredAllergyForm";
 import { emptyGynaeHistory, legacyGynaeFields, buildGynaeSave } from "@/lib/gynaeObstetric";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
@@ -140,10 +142,17 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const gynaeAnswered =
     !!gynae.current_pregnancy.status &&
     (gynae.current_pregnancy.status === "pregnant" || !!gynae.menopause.status);
+  // A patient who is not married — or who prefers not to answer — is not asked
+  // the obstetric questions at all: that part of the form is hidden for
+  // convenience only. Her marital status is saved separately and nothing about
+  // pregnancy is recorded on her behalf, so "not married" never becomes
+  // "never pregnant". What she entered earlier stays in the form, untouched.
+  const obstetricHidden =
+    lifestyle.marital_status === "not_married" || lifestyle.marital_status === "prefer_not_to_answer";
   const step3Valid =
     !!lifestyle.smoking_status &&
     !!lifestyle.alcohol_use &&
-    (!isFemale || (!!lifestyle.marital_status && gynaeAnswered));
+    (!isFemale || (!!lifestyle.marital_status && (obstetricHidden || gynaeAnswered)));
 
   const switchLang = (v) => {
     setLang(v);
@@ -572,7 +581,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     description={t("Existing conditions, chronic diseases, previous diagnoses and long-term conditions requiring monitoring")}
                     entries={medical.pastHistory}
                     entryLabel={(c) =>
-                      `${c.name_ar || c.name} — ${conditionTypeLabel(c.history_type, t)}${c.date ? ` · ${c.date}` : ""}${c.current_status ? ` · ${conditionStatusLabel(c.current_status, t)}` : ""}`
+                      `${c.name_ar || c.name} — ${conditionTypeLabel(c.history_type, t)}${c.date ? ` · ${formatDateDisplay(c.date)}` : ""}${c.current_status ? ` · ${conditionStatusLabel(c.current_status, t)}` : ""}`
                     }
                     onRemove={removeEntry("pastHistory")}
                     noneChecked={noneFlags.pastHistory}
@@ -588,7 +597,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     description={t("Previous hospital admissions, emergency department visits, injuries and accidents, blood transfusions, infectious diseases and complications of medical treatment")}
                     entries={medical.medicalEvents}
                     entryLabel={(e) =>
-                      `${medicalEventLabel(e.event_type, t)} — ${e.title}${e.event_date ? ` · ${e.event_date}` : ""}${e.event_type === "blood_transfusion" && e.reaction ? ` · ${t("Reaction")}: ${e.reaction}` : ""}`
+                      `${medicalEventLabel(e.event_type, t)} — ${e.title}${e.event_date ? ` · ${formatDateDisplay(e.event_date)}` : ""}${e.event_type === "blood_transfusion" && e.reaction ? ` · ${t("Reaction")}: ${e.reaction}` : ""}`
                     }
                     onRemove={removeEntry("medicalEvents")}
                     noneChecked={noneFlags.medicalEvents}
@@ -603,7 +612,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     title={`${t("Past Surgical History")} *`}
                     description={t("Every previous surgery or procedure")}
                     entries={medical.surgeries}
-                    entryLabel={(s) => `${s.surgery_type_ar || s.surgery_type}${s.surgery_date ? ` (${s.surgery_date})` : ""}`}
+                    entryLabel={(s) => `${s.surgery_type_ar || s.surgery_type}${s.surgery_date ? ` (${formatDateDisplay(s.surgery_date)})` : ""}`}
                     onRemove={removeEntry("surgeries")}
                     noneChecked={noneFlags.surgeries}
                     onNoneChange={toggleNone("surgeries")}
@@ -658,52 +667,15 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                       effect; nothing here is treated as clinically verified. */}
                   <div className="rounded-xl border border-border bg-card p-5">
                     <h3 className="text-sm font-semibold text-primary">{`${t("Allergies & Adverse Reactions")} *`}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t("Medication, food, latex, contrast-agent or other allergies and reactions. Your answers are saved as reported by you and are not treated as clinically verified.")}
+                    <p className="text-xs text-muted-foreground mt-1 mb-3">
+                      {t("Tick the food and medication allergies that apply to you. Your answers are saved as reported by you and are not treated as clinically verified.")}
                     </p>
-                    <div className="flex flex-col gap-2 mt-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="allergy_none_known"
-                          checked={allergyRecord === "no_known_allergies"}
-                          onCheckedChange={() => setAllergyAnswer("no_known_allergies")}
-                          disabled={medical.allergies.length > 0 || allergyRecord === "not_established"}
-                        />
-                        <Label htmlFor="allergy_none_known" className="text-sm font-normal text-muted-foreground">
-                          {t("I have no known allergies")}
-                        </Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="allergy_not_established"
-                          checked={allergyRecord === "not_established"}
-                          onCheckedChange={() => setAllergyAnswer("not_established")}
-                          disabled={medical.allergies.length > 0 || allergyRecord === "no_known_allergies"}
-                        />
-                        <Label htmlFor="allergy_not_established" className="text-sm font-normal text-muted-foreground">
-                          {t("My allergy status is not yet established — I am unsure")}
-                        </Label>
-                      </div>
-                    </div>
-                    {allergyRecord === "" && (
-                      <div className="mt-4 space-y-3">
-                        {medical.allergies.map((a, i) => (
-                          <div key={i} className="flex items-start justify-between gap-3 rounded-lg bg-muted px-3 py-2">
-                            <p className="text-sm">
-                              {`${a.allergen} — ${t(a.allergy_type === "drug" ? "Medication" : a.allergy_type === "latex" ? "Latex" : a.allergy_type === "contrast" ? "Contrast agent" : a.allergy_type === "food" ? "Food" : a.allergy_type === "environmental" ? "Environmental" : "Other")}${a.reaction ? ` — ${a.reaction} (${t(a.severity)})` : ""}${a.entry_type === "reported_side_effect" ? ` · ${t("Side effect / intolerance")}` : ""}`}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => removeEntry("allergies")(i)}
-                              className="text-muted-foreground hover:text-destructive shrink-0"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                        <AllergyEntryForm onAdd={addEntry("allergies")} />
-                      </div>
-                    )}
+                    <StructuredAllergyForm
+                      entries={medical.allergies}
+                      onEntriesChange={(next) => setMedical((m) => ({ ...m, allergies: next }))}
+                      status={allergyRecord}
+                      onStatusChange={setAllergyRecord}
+                    />
                   </div>
 
                   {!step2Valid && (
@@ -871,8 +843,14 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         <SelectContent>
                           <SelectItem value="married">{t("Married")}</SelectItem>
                           <SelectItem value="not_married">{t("Not Married")}</SelectItem>
+                          <SelectItem value="prefer_not_to_answer">{t("Prefer Not to Answer")}</SelectItem>
                         </SelectContent>
                       </Select>
+                      {obstetricHidden && (
+                        <p className="text-[11px] text-muted-foreground mt-2">
+                          {t("The obstetric history section is hidden. Marital status is saved on its own — it never records anything about pregnancy.")}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -892,14 +870,14 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                   {/* Female patients only: the single Gynaecological & Obstetric
                       History section — current pregnancy, menstrual history,
                       past gynaecological history, previous pregnancies, menopause. */}
-                  {isFemale && <GynaeObstetricHistoryForm value={gynae} onChange={setGynae} />}
+                  {isFemale && !obstetricHidden && <GynaeObstetricHistoryForm value={gynae} onChange={setGynae} />}
 
                   <MedicalListSection
                     id="none_immunizations"
-                    title={`${t("Immunizations & Preventive Care")} *`}
-                    description={t("Vaccinations (childhood and adult, e.g. tetanus, hepatitis B, influenza), previous screening tests with dates and results, and preventive care history")}
+                    title={`${t("Screening & Preventive Care")} *`}
+                    description={t("Previous screening tests with dates and results, and other preventive care. Your vaccinations are recorded in the checklist below.")}
                     entries={medical.immunizations}
-                    entryLabel={(i) => `${immunizationKindLabel(i.kind, t)} — ${i.name}${i.date ? ` · ${i.date}` : ""}${i.result_notes ? ` · ${i.result_notes}` : ""}`}
+                    entryLabel={(i) => `${immunizationKindLabel(i.kind, t)} — ${i.name}${i.date ? ` · ${formatDateDisplay(i.date)}` : ""}${i.result_notes ? ` · ${i.result_notes}` : ""}`}
                     onRemove={removeEntry("immunizations")}
                     noneChecked={noneFlags.immunizations}
                     onNoneChange={toggleNone("immunizations")}

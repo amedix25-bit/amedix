@@ -221,7 +221,12 @@ export function MedicalEventEntryForm({ onAdd }) {
         <Input placeholder={`${t("What happened, e.g. Appendectomy admission")} *`} value={form.title} onChange={set("title")} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        <Input placeholder={t("Approximate date")} value={form.event_date} onChange={set("event_date")} />
+        <DateField
+          value={form.event_date}
+          onChange={(event_date) => setForm((s) => ({ ...s, event_date }))}
+          disableFuture
+          placeholder={t("Approximate date")}
+        />
         <Input placeholder={t("Treating facility, if known")} value={form.treating_facility} onChange={set("treating_facility")} />
         <Select value={form.current_status} onValueChange={(v) => setForm((s) => ({ ...s, current_status: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>

@@ -8,6 +8,11 @@ import { Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { capitalize } from "@/lib/patientUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTranslations";
+import { ALLERGY_REACTIONS, FOOD_ALLERGENS, MEDICATION_ALLERGENS } from "@/components/patient/allergies/allergyOptions";
+
+const CATALOG = [...FOOD_ALLERGENS, ...MEDICATION_ALLERGENS];
+const catalogLabel = (allergen) => CATALOG.find((c) => c.label === allergen)?.label;
+const reactionLabel = (reaction) => ALLERGY_REACTIONS.find((r) => r.value === reaction)?.label;
 
 const TYPES = ["drug", "food", "latex", "contrast", "environmental", "other"];
 const SEVERITIES = ["mild", "moderate", "severe"];
@@ -208,10 +213,10 @@ export default function AllergiesSection({ number, patient, doctorView, editable
           {items.map((a) => {
             const allergen = doctorView
               ? doctorText("Allergy", a, "allergen", a.allergen) ?? <TranslatingPlaceholder />
-              : a.allergen;
+              : t(catalogLabel(a.allergen) || a.allergen);
             const reaction = doctorView
               ? doctorText("Allergy", a, "reaction", a.reaction)
-              : a.reaction;
+              : t(reactionLabel(a.reaction) || a.reaction);
             return (
               <div key={a.id} className="flex items-start justify-between gap-3 text-sm">
                 <div>
@@ -219,6 +224,9 @@ export default function AllergiesSection({ number, patient, doctorView, editable
                   <p className="text-muted-foreground text-xs mt-0.5">
                     {[a.allergy_type && t(capitalize(a.allergy_type)), reaction].filter(Boolean).join(" · ")}
                   </p>
+                  {a.source === "patient_reported" && (
+                    <p className="text-[11px] text-muted-foreground mt-1">{t("Reported by you — not clinically confirmed")}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {a.severity && <span className={severityClass(a.severity)}>{t(capitalize(a.severity))}</span>}

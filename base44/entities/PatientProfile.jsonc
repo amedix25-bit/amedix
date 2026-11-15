@@ -307,9 +307,12 @@
         "fully_vaccinated",
         "partially_vaccinated",
         "not_vaccinated",
-        "unknown"
+        "unknown",
+        "not_remembered",
+        "no_records",
+        "prefer_not_to_answer"
       ],
-      "description": "Vaccination status reported by the patient, one answer only. Optional and self-reported: an unanswered or unknown status is never treated as unvaccinated."
+      "description": "Vaccination status reported by the patient, one answer only. Optional and self-reported: an unanswered or unknown status is never treated as unvaccinated. NOT_REMEMBERED, NO_RECORDS and PREFER_NOT_TO_ANSWER are kept distinct from NOT_VACCINATED."
     },
     "vaccination_records": {
       "type": "array",
@@ -325,10 +328,13 @@
               "bcg",
               "polio",
               "dtp",
+              "tetanus",
               "hib",
               "pneumococcal",
               "mmr",
+              "measles",
               "varicella",
+              "rotavirus",
               "hpv",
               "meningococcal",
               "influenza",
@@ -370,17 +376,19 @@
       "type": "string",
       "enum": [
         "no_known_allergies",
-        "not_established"
+        "not_established",
+        "prefer_not_to_answer"
       ],
-      "description": "Section-level allergy state set at registration \u2014 NO_KNOWN_ALLERGIES: the patient reports no known allergies. NOT_ESTABLISHED: the patient is unsure / allergies not yet established. Empty when allergy entries exist. A patient's answer is never treated as clinically verified"
+      "description": "Section-level allergy state set at registration \u2014 NO_KNOWN_ALLERGIES: the patient reports no known allergies. NOT_ESTABLISHED: the patient is unsure / allergies not yet established. PREFER_NOT_TO_ANSWER: the patient declined to answer. Empty when allergy entries exist. A patient's answer is never treated as clinically verified"
     },
     "marital_status": {
       "type": "string",
       "enum": [
         "married",
-        "not_married"
+        "not_married",
+        "prefer_not_to_answer"
       ],
-      "description": "Marital status \u2014 collected at registration for female patients"
+      "description": "Marital status \u2014 collected at registration for female patients. Kept separate from the obstetric history: NOT_MARRIED only hides the obstetric questions, it never records anything about pregnancy. PREFER_NOT_TO_ANSWER means the patient declined to answer."
     },
     "pregnancy_status": {
       "type": "string",

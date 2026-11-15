@@ -40,6 +40,14 @@
       "default": "confirmed_allergy",
       "description": "CONFIRMED_ALLERGY: the patient reports a true allergy. REPORTED_SIDE_EFFECT: the patient reports an intolerance / side effect. AMedix never treats a patient entry as clinically verified \u2014 doctors must confirm"
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "patient_reported",
+        "clinician_documented"
+      ],
+      "description": "PATIENT_REPORTED: entered by the patient \u2014 shown as reported by the patient and never presented as clinically verified. CLINICIAN_DOCUMENTED: entered by a treating doctor. Patient-reported entries never overwrite a clinician's documentation"
+    },
     "reaction": {
       "type": "string",
       "description": "Reaction the patient experienced"

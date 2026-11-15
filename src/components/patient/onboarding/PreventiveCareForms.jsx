@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Upload, X } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import DateField from "@/components/ui/date-field";
 
 export const IMMUNIZATION_KINDS = [
   { value: "vaccination", label: "Vaccination" },
@@ -41,7 +42,7 @@ export const chronicCareTypeLabel = (v, t) => {
 // documents section when registration completes.
 export function ImmunizationEntryForm({ onAdd }) {
   const { t } = usePatientLanguage();
-  const EMPTY = { kind: "vaccination", name: "", date: "", result_notes: "" };
+  const EMPTY = { kind: "screening", name: "", date: "", result_notes: "" };
   const [form, setForm] = useState(EMPTY);
   const set = (f) => (e) => setForm((s) => ({ ...s, [f]: e.target.value }));
   const add = () => {
@@ -54,13 +55,18 @@ export function ImmunizationEntryForm({ onAdd }) {
         <Select value={form.kind} onValueChange={(v) => setForm((s) => ({ ...s, kind: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            {IMMUNIZATION_KINDS.map((k) => (
+            {IMMUNIZATION_KINDS.filter((k) => k.value !== "vaccination").map((k) => (
               <SelectItem key={k.value} value={k.value}>{t(k.label)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Input placeholder={`${t("e.g. Tetanus booster, Hepatitis B, Mammography")} *`} value={form.name} onChange={set("name")} />
-        <Input placeholder={t("Approximate date, if known")} value={form.date} onChange={set("date")} />
+        <Input placeholder={`${t("e.g. Mammography, Colonoscopy screening")} *`} value={form.name} onChange={set("name")} />
+        <DateField
+          value={form.date}
+          onChange={(date) => setForm((s) => ({ ...s, date }))}
+          disableFuture
+          placeholder={t("Date (optional)")}
+        />
       </div>
       <div className="grid sm:grid-cols-[3fr_auto] gap-2">
         <Input placeholder={t("Result / notes (optional)")} value={form.result_notes} onChange={set("result_notes")} />
