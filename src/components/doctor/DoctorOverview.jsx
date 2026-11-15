@@ -41,14 +41,14 @@ export default function DoctorOverview({
         <StatCards stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
+          <div className="space-y-4 lg:col-span-2 lg:h-full lg:space-y-0 lg:flex lg:flex-col lg:gap-4">
             <TodayAppointments appointments={todayAppointments} onNavigate={onNavigateTab} />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:flex-1 lg:min-h-0">
               <RecentActivity activity={recentActivity} />
               <MyTasks stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
             </div>
           </div>
-          <div className="space-y-4">
+          <div className="grid gap-4 lg:h-full lg:grid-rows-[auto_auto_1fr]">
             <ScheduleCard now={now} />
             <QuickActionsPanel onNavigate={onNavigateTab} notesLabel={notesLabel} />
             <NotificationsPanel activity={recentActivity} />
