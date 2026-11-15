@@ -1,27 +1,47 @@
 import React from "react";
 import { Clock } from "lucide-react";
-import QuickAccessGrid from "@/components/doctor/overview/QuickAccessGrid";
+import WelcomeHero from "@/components/doctor/overview/WelcomeHero";
 import StatCards from "@/components/doctor/overview/StatCards";
 import TodayAppointments from "@/components/doctor/overview/TodayAppointments";
-import MyTasks from "@/components/doctor/overview/MyTasks";
 import RecentActivity from "@/components/doctor/overview/RecentActivity";
+import MyTasks from "@/components/doctor/overview/MyTasks";
+import ScheduleCard from "@/components/doctor/overview/ScheduleCard";
+import QuickActionsPanel from "@/components/doctor/overview/QuickActionsPanel";
+import NotificationsPanel from "@/components/doctor/overview/NotificationsPanel";
 
-export default function DoctorOverview({ profile, stats, appointmentsToday, todayAppointments, loading, recentActivity, onNavigateTab, notesLabel }) {
+export default function DoctorOverview({
+  profile,
+  stats,
+  appointmentsToday,
+  todayAppointments,
+  loading,
+  recentActivity,
+  onNavigateTab,
+  notesLabel,
+  greeting,
+  doctorName,
+  hospitalName,
+  now,
+}) {
   if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>;
 
   return (
-    <div className="space-y-6">
-      <QuickAccessGrid onNavigate={onNavigateTab} notesLabel={notesLabel} />
+    <div className="space-y-4">
+      <WelcomeHero greeting={greeting} doctorName={doctorName} hospitalName={hospitalName} now={now} />
       <StatCards stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="space-y-4 lg:col-span-2">
           <TodayAppointments appointments={todayAppointments} onNavigate={onNavigateTab} />
+          <RecentActivity activity={recentActivity} />
+          <MyTasks stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
         </div>
-        <MyTasks stats={stats} appointmentsToday={appointmentsToday} onNavigate={onNavigateTab} />
+        <div className="space-y-4">
+          <ScheduleCard now={now} />
+          <QuickActionsPanel onNavigate={onNavigateTab} notesLabel={notesLabel} />
+          <NotificationsPanel activity={recentActivity} />
+        </div>
       </div>
-
-      <RecentActivity activity={recentActivity} />
 
       {!profile?.is_verified && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">

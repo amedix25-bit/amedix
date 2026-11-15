@@ -292,33 +292,21 @@ export default function DoctorDashboard() {
       />
 
       <div className="p-4 lg:p-6 max-w-7xl mx-auto">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            {activeTab === "overview" ? (
-              <>
-                <h1 className="text-2xl font-bold text-foreground">{greeting}, {doctorName}</h1>
-                <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
-                  <span>{profile?.specialization || "Specialty not set"}</span>
-                  <span aria-hidden="true" className="text-border">•</span>
-                  <span>{hospitalSession?.hospital_name || profile?.hospital || "—"}</span>
-                  {profile && !profile.specialization ? <DoctorSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="text-2xl font-bold">{t(activeItem?.label)}</h1>
-                <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
-                  {profile?.full_name}
-                  {profile ? <DoctorSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
-                </p>
-              </>
-            )}
+        {activeTab !== "overview" && (
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold">{t(activeItem?.label)}</h1>
+              <p className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2">
+                {profile?.full_name}
+                {profile ? <DoctorSpecialtySelect profile={profile} onSelected={setProfile} /> : null}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-semibold">{now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</p>
+              <p className="text-xs text-muted-foreground">{now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</p>
+            </div>
           </div>
-          <div className="text-right shrink-0">
-            <p className="text-sm font-semibold">{now.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</p>
-            <p className="text-xs text-muted-foreground">{now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</p>
-          </div>
-        </div>
+        )}
 
         {profile && profile.name_edited !== true && (
           <div className="mb-6">
@@ -336,6 +324,10 @@ export default function DoctorDashboard() {
             recentActivity={recentActivity}
             onNavigateTab={handleNavigateTab}
             notesLabel={isSurgeon ? "Surgical Records" : "Clinical Notes"}
+            greeting={greeting}
+            doctorName={doctorName}
+            hospitalName={hospitalSession?.hospital_name || profile?.hospital}
+            now={now}
           />
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}

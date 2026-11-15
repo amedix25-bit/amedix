@@ -14,7 +14,7 @@ export default function RecentActivity({ activity }) {
     <div className="rounded-xl border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
         <Activity className="h-4 w-4 text-doctor-blue" />
-        <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
+        <h3 className="text-sm font-semibold text-foreground">Recent Activity</h3>
       </div>
       {!activity || activity.length === 0 ? (
         <p className="px-5 py-8 text-center text-sm text-muted-foreground">No recent activity yet.</p>

@@ -31,7 +31,7 @@ export default function MyTasks({ stats, appointmentsToday = 0, onNavigate }) {
     <div className="rounded-xl border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
         <ListChecks className="h-4 w-4 text-doctor-blue" />
-        <h3 className="text-sm font-semibold text-foreground">My Tasks</h3>
+        <h3 className="text-sm font-semibold text-foreground">Upcoming Tasks</h3>
       </div>
       {tasks.length === 0 ? (
         <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nothing outstanding right now.</p>
