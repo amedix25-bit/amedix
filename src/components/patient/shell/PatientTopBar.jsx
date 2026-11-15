@@ -1,12 +1,15 @@
 import React from "react";
-import { Heart } from "lucide-react";
+import { Heart, LogOut } from "lucide-react";
 import NotificationsBar from "@/components/patient/NotificationsBar";
 import PatientProfileMenu from "@/components/patient/shell/PatientProfileMenu";
 import PatientReferenceArt from "@/components/patient/overview/PatientReferenceArt";
+import { base44 } from "@/api/base44Client";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
 export default function PatientTopBar({ profile, patientId, title, onOpenProfile, onNavigate, notificationOpen, onNotificationOpenChange }) {
   const { t, isArabic, setLang } = usePatientLanguage();
+  const logout = () => { clearDoctorHospitalSession(); base44.auth.logout(window.location.origin); };
   const firstName = profile?.first_name || profile?.full_name?.split(" ")[0] || "";
   const arabicName = profile?.first_name_ar || profile?.full_name_ar?.split(" ")[0] || "";
   return <header className="pp-topbar">
@@ -22,6 +25,9 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
       </div>
       {patientId && <NotificationsBar patientId={patientId} onNavigate={onNavigate} compact open={notificationOpen} onOpenChange={onNotificationOpenChange} />}
       <PatientProfileMenu name={isArabic ? arabicName || firstName : firstName} onOpenProfile={onOpenProfile} onNavigate={onNavigate} />
+      <button type="button" className="pp-logout" onClick={logout} title={t("Log out")} aria-label={t("Log out")}>
+        <LogOut /><span>{t("Log out")}</span>
+      </button>
     </div>
   </header>;
 }
