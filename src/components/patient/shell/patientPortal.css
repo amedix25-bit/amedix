@@ -69,7 +69,7 @@
 .pp-cin-qr { position:relative; display:flex; align-items:center; justify-content:center; padding:.55cqw; margin-inline-start:.65cqw; border-radius:1.25cqw; background:hsl(var(--card)); box-shadow:0 2px 10px hsl(var(--pp-shadow)/.3); width:9.2cqw; height:9.2cqw; flex-shrink:0; }
 .pp-cin-qr>div { width:100%; max-width:100%; padding:0; border:0; background:transparent; }
 .pp-cin-qr img { display:block; width:100%!important; height:auto!important; border-radius:0; }
-.pp-appointment { position:relative; display:flex; flex-direction:column; padding:.85cqw 1.55cqw .9cqw; min-height:12.2cqw; background:linear-gradient(110deg,hsl(var(--pp-coral-top)),hsl(var(--pp-coral-bottom))); }
+.pp-appointment { position:relative; display:flex; flex-direction:column; padding:.85cqw 1.55cqw .9cqw; min-height:12.2cqw; background:hsl(var(--card)); }
 .pp-panel-heading { display:flex; align-items:center; gap:.6cqw; font-size:1.45cqw; font-weight:750; line-height:1.2; }
 .pp-panel-heading>svg { width:1.95cqw; height:1.95cqw; flex-shrink:0; color:hsl(var(--pp-accent)); stroke-width:2.2; }
 .pp-appointment .pp-panel-heading { font-size:1.42cqw; letter-spacing:-.05cqw; }
@@ -85,7 +85,7 @@
 .pp-appointment-info p { display:flex; gap:.45cqw; align-items:center; padding-inline-start:3cqw; font-size:1.02cqw; line-height:1.2; }
 .pp-appointment-info p svg { width:1.25cqw; height:1.25cqw; flex-shrink:0; }
 .pp-appointment-buttons { display:grid; grid-template-columns:.85fr 1.15fr; gap:1.2cqw; }
-.pp-appointment-buttons button { display:flex; justify-content:center; align-items:center; gap:.6cqw; border-radius:3cqw; padding:.55cqw .5cqw; min-width:0; font-size:1.06cqw; font-weight:700; background:linear-gradient(hsl(var(--card)/.94),hsl(var(--pp-coral-top))); box-shadow:0 2px 4px hsl(var(--pp-shadow)/.2); white-space:normal; }
+.pp-appointment-buttons button { display:flex; justify-content:center; align-items:center; gap:.6cqw; border-radius:3cqw; padding:.55cqw .5cqw; min-width:0; font-size:1.06cqw; font-weight:700; background:hsl(var(--card)); box-shadow:0 2px 4px hsl(var(--pp-shadow)/.2); white-space:normal; }
 .pp-appointment-buttons button:first-child { color:hsl(var(--pp-purple)); background:linear-gradient(hsl(var(--pp-violet-top)),hsl(var(--pp-violet-bottom))); }
 .pp-appointment-buttons svg { width:1.4cqw; height:1.4cqw; }
 .pp-empty { color:hsl(var(--pp-muted)); font-size:1.15cqw; margin:1.5cqw 0; }
