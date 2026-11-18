@@ -13,7 +13,8 @@ import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, SurgeryEntryForm,
   MedicalEventEntryForm, conditionTypeLabel, medicalEventLabel, conditionStatusLabel,
 } from "@/components/patient/onboarding/EntryForms";
-import FamilyHistoryEntryForm, { familyConditionLabel, relationLabel } from "@/components/patient/onboarding/FamilyHistoryEntryForm";
+import FamilyHistoryEditor from "@/components/patient/family/FamilyHistoryEditor";
+import { applyMemberToEntries, familyMemberKey } from "@/lib/familyHistory";
 import VaccinationDocumentUpload, { ImmunizationEntryForm, ChronicCareEntryForm, immunizationKindLabel, chronicCareTypeLabel } from "@/components/patient/onboarding/PreventiveCareForms";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import { isSubmitted } from "@/components/verification/verificationStatus";
@@ -626,13 +627,26 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     title={`${t("Family History")} *`}
                     description={t("Diseases or medical conditions that run in your family — mother, father, siblings, children or other relatives. You are not required to provide every family member's information.")}
                     entries={medical.familyHistory}
-                    entryLabel={(c) => `${familyConditionLabel(c, lang === "ar")} — ${relationLabel(c.relation, lang === "ar")}${c.age_at_diagnosis ? ` · ${t("Age at diagnosis")}: ${c.age_at_diagnosis}` : ""}`}
+                    hideEntryList
                     onRemove={removeEntry("familyHistory")}
                     noneChecked={noneFlags.familyHistory}
                     onNoneChange={toggleNone("familyHistory")}
                     noneLabel={t("No family history of diseases")}
                   >
-                    <FamilyHistoryEntryForm onAdd={addEntry("familyHistory")} />
+                    <FamilyHistoryEditor
+                      entries={medical.familyHistory}
+                      isArabic={lang === "ar"}
+                      emptyText={t("No family member added yet.")}
+                      onSaveMember={(member, options) =>
+                        setMedical((m) => ({ ...m, familyHistory: applyMemberToEntries(m.familyHistory, member, options) }))
+                      }
+                      onRemoveMember={(group) =>
+                        setMedical((m) => ({
+                          ...m,
+                          familyHistory: m.familyHistory.filter((entry) => familyMemberKey(entry) !== group.key),
+                        }))
+                      }
+                    />
                   </MedicalListSection>
 
                   {!step1Valid && (

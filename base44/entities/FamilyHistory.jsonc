@@ -18,7 +18,7 @@
     },
     "condition": {
       "type": "string",
-      "description": "Familial disease or medical condition in standardized English terminology"
+      "description": "Familial disease or medical condition in standardized English terminology \u2014 one condition per record, so a relative's conditions are never merged with another relative's"
     },
     "condition_ar": {
       "type": "string",
@@ -31,10 +31,22 @@
         "mother",
         "brother",
         "sister",
+        "son",
+        "daughter",
+        "paternal_grandfather",
+        "paternal_grandmother",
+        "maternal_grandfather",
+        "maternal_grandmother",
+        "uncle",
+        "aunt",
         "children",
         "other"
       ],
-      "description": "Affected family member \u2014 father, mother, sibling, children (when appropriate) or other relative"
+      "description": "Affected family member \u2014 the relative this condition belongs to. Every condition of the same relative carries the same relation, so the records group back into one family-member card. 'children' is the legacy value for a child; 'other' pairs with relation_label."
+    },
+    "relation_label": {
+      "type": "string",
+      "description": "The relationship the patient specified for 'Other relative', e.g. Cousin \u2014 kept so two different other relatives are never grouped together"
     },
     "age_at_diagnosis": {
       "type": "string",

@@ -18,6 +18,9 @@ import DateField from "@/components/ui/date-field";
 // the built-in "none" checkbox when the section manages its own states.
 export function MedicalListSection({
   id, title, description, entries, entryLabel, onRemove, noneChecked, onNoneChange, noneLabel, children, headerExtra, hideNone,
+  // Sections that render their own cards instead of the default one-line rows
+  // keep `entries` for the "None" logic but skip the built-in list.
+  hideEntryList = false,
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -32,7 +35,7 @@ export function MedicalListSection({
       )}
       {!noneChecked && (
         <div className="mt-4 space-y-3">
-          {entries.map((entry, i) => (
+          {!hideEntryList && entries.map((entry, i) => (
             <div key={i} className="flex items-start justify-between gap-3 rounded-lg bg-muted px-3 py-2">
               <p className="text-sm">{entryLabel(entry)}</p>
               <button

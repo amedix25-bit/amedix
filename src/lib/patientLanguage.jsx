@@ -993,6 +993,27 @@ const AR = {
   "Age at diagnosis": "عمر التشخيص",
   "Age at diagnosis (if known)": "عمر التشخيص (إن كان معروفاً)",
   "e.g. 60s": "مثال: الستينات",
+  "Which family member has a medical condition?": "أي فرد من العائلة لديه حالة مرضية؟",
+  "Select the family member first, then choose every condition they have. You can add as many family members as you need.":
+    "اختر فرد العائلة أولاً، ثم اختر كل الحالات التي لديه. يمكنك إضافة أي عدد من أفراد العائلة.",
+  "What diseases or medical conditions does this family member have?": "ما الأمراض أو الحالات المرضية التي يعاني منها فرد العائلة هذا؟",
+  "Select one or more conditions for this family member. You can search in Arabic or English.":
+    "اختر حالة واحدة أو أكثر لفرد العائلة هذا. يمكنك البحث بالعربية أو الإنجليزية.",
+  "Add New Member": "إضافة فرد جديد",
+  "Change family member": "تغيير فرد العائلة",
+  "Save family member": "حفظ فرد العائلة",
+  "Remove family member": "إزالة فرد العائلة",
+  "Remove this family member and all of their conditions?": "هل تريد إزالة فرد العائلة هذا وجميع حالاته؟",
+  "Please specify the relationship": "يرجى تحديد صفة القرابة",
+  "e.g. Cousin": "مثال: ابن العم",
+  "Other – specify the disease": "أخرى – حدد المرض",
+  "No family history recorded yet.": "لم يُسجَّل تاريخ عائلي بعد.",
+  "No family member added yet.": "لم تتم إضافة أي فرد من العائلة بعد.",
+  "Select at least one condition.": "اختر حالة واحدة على الأقل.",
+  "This family member already has a card — the new conditions are added to it.":
+    "هذا الفرد من العائلة لديه بطاقة بالفعل — ستُضاف الحالات الجديدة إليها.",
+  "Could not save the family member. Please try again.": "تعذر حفظ فرد العائلة. يرجى المحاولة مرة أخرى.",
+  "Could not remove the family member. Please try again.": "تعذر إزالة فرد العائلة. يرجى المحاولة مرة أخرى.",
 
   // Medications section
   "Current & Previous Medications": "الأدوية الحالية والسابقة",
