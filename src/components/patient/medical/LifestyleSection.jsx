@@ -16,6 +16,14 @@ import {
   optionsLabel,
 } from "@/lib/lifestyleOptions";
 
+// How the stored consanguinity answer reads: the patient is asked whether their
+// parents are related, the doctor reads the same answer as known consanguinity.
+const CONSANGUINITY_LABELS = {
+  none: "No",
+  known: "Yes",
+  prefer_not_to_answer: "Prefer not to answer",
+};
+
 export default function LifestyleSection({ number, patient, onEdit, doctorView }) {
   const { t } = usePatientLanguage();
   const doctorText = useDoctorText();
@@ -48,6 +56,10 @@ export default function LifestyleSection({ number, patient, onEdit, doctorView }
         <InfoRow label={t("Sleep concerns")} value={dv("sleep_concerns")} />
         <InfoRow label={t("Living situation")} value={optionLabel(LIVING_SITUATIONS, patient?.living_situation_type, t)} />
         <InfoRow label={t("Living situation details")} value={dv("living_situation")} />
+        <InfoRow
+          label={t(doctorView ? "Known consanguinity" : "Are your parents related?")}
+          value={t(CONSANGUINITY_LABELS[patient?.consanguinity] || "Not specified")}
+        />
         <InfoRow
           label={t("Vaccination status")}
           value={optionLabel(VACCINATION_STATUSES, patient?.vaccination_status, t)}

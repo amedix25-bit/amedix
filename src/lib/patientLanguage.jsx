@@ -1081,6 +1081,7 @@ const AR = {
   "Mobility / functional limitations": "محددات الحركة / الوظيفة",
   "Living situation / caregiving needs": "الوضع المعيشي / احتياجات الرعاية",
   "Known consanguinity": "زواج الأقارب المعروف",
+  "Are your parents related?": "هل والديك من الأقارب؟",
   "Yes, known": "نعم، معروف",
   "Prefer not to answer": "أفضل عدم الإجابة",
 

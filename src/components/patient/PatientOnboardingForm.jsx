@@ -782,12 +782,12 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         <Input id="mobility" value={lifestyle.mobility_limitations} onChange={setL("mobility_limitations")} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>{t("Known consanguinity")}</Label>
+                        <Label>{t("Are your parents related?")}</Label>
                         <Select value={lifestyle.consanguinity} onValueChange={(v) => setLifestyle((s) => ({ ...s, consanguinity: v }))}>
                           <SelectTrigger><SelectValue placeholder={t("Select")} /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">{t("None")}</SelectItem>
-                            <SelectItem value="known">{t("Yes, known")}</SelectItem>
+                            <SelectItem value="none">{t("No")}</SelectItem>
+                            <SelectItem value="known">{t("Yes")}</SelectItem>
                             <SelectItem value="prefer_not_to_answer">{t("Prefer not to answer")}</SelectItem>
                           </SelectContent>
                         </Select>
