@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import { AlertCircle, Loader2, Siren } from "lucide-react";
 import { EMERGENCY_REASONS } from "@/lib/emergencyQr";
 
 // The patient-specific justification that must be recorded before any
-// emergency information is released.
+// emergency information is released. Both the patient name and the clinical
+// justification can be dictated, so the doctor can record them at the bedside.
 export default function EmergencyJustificationForm({ patient, onSubmit, onBack, busy, error }) {
+  const [patientName, setPatientName] = useState("");
   const [reason, setReason] = useState("");
   const [justification, setJustification] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -20,7 +24,12 @@ export default function EmergencyJustificationForm({ patient, onSubmit, onBack, 
     if (justification.trim().length < 10) return setLocalError("Give a brief clinical justification (at least 10 characters).");
     if (!confirmed) return setLocalError("Confirm that this is immediate emergency care.");
     setLocalError("");
-    onSubmit({ reason, justification: justification.trim(), confirmed: true });
+    onSubmit({
+      reason,
+      justification: justification.trim(),
+      patient_name: patientName.trim(),
+      confirmed: true,
+    });
   };
 
   return (
@@ -31,6 +40,22 @@ export default function EmergencyJustificationForm({ patient, onSubmit, onBack, 
           <p className="font-semibold">Emergency access — {patient?.name || "patient"}</p>
           <p className="text-xs text-muted-foreground">CIN {patient?.cin || "—"} · expires automatically</p>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Patient name (as confirmed at the bedside)</Label>
+        <Input
+          value={patientName}
+          onChange={(e) => setPatientName(e.target.value)}
+          maxLength={120}
+          placeholder={patient?.name || "Enter or dictate the patient name"}
+        />
+        <MedicalDictationButton
+          value={patientName}
+          onChange={setPatientName}
+          specialty="Emergency Medicine"
+          contextLabel="patient name"
+        />
       </div>
 
       <div className="space-y-1.5">
@@ -57,6 +82,12 @@ export default function EmergencyJustificationForm({ patient, onSubmit, onBack, 
           rows={3}
           maxLength={600}
           placeholder="e.g. Unresponsive patient brought in by ambulance, needs allergy and medication history before treatment."
+        />
+        <MedicalDictationButton
+          value={justification}
+          onChange={setJustification}
+          specialty="Emergency Medicine"
+          contextLabel="emergency visit clinical justification"
         />
       </div>
 

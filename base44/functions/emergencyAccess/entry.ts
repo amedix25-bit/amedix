@@ -515,6 +515,9 @@ async function handleRequest(req: Request) {
 
     const reason = String(body.reason || "").trim();
     const justification = String(body.justification || "").trim();
+    // The doctor's own confirmation of who they are treating, typed or dictated
+    // at the bedside. Recorded as-is; it never replaces the record's name.
+    const confirmedPatientName = String(body.patient_name || "").trim().slice(0, 120);
     if (!reason || !EMERGENCY_REASONS.includes(reason)) {
       return Response.json({ error: "Select a valid emergency reason." }, { status: 400 });
     }
@@ -589,6 +592,7 @@ async function handleRequest(req: Request) {
       patient_user_id: patient.user_id || "",
       patient_cin: patient.cin || "",
       patient_name: patient.full_name || "",
+      confirmed_patient_name: confirmedPatientName,
       access_status: "granted",
       access_start: new Date(now).toISOString(),
       access_expires: new Date(accessExpiry).toISOString(),

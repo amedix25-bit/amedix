@@ -93,7 +93,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
     }
   };
 
-  const submitAccess = async ({ reason, justification, confirmed }) => {
+  const submitAccess = async ({ reason, justification, patient_name, confirmed }) => {
     setBusy(true);
     setError("");
     try {
@@ -102,6 +102,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
         scan_ticket: scan?.scan_ticket,
         reason,
         justification,
+        patient_name,
         confirmed,
       });
       setRecord(data);

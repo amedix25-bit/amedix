@@ -141,6 +141,10 @@
     "patient_name": {
       "type": "string"
     },
+    "confirmed_patient_name": {
+      "type": "string",
+      "description": "The patient name the doctor entered (typed or dictated) on the emergency justification screen at the bedside. Recorded as the doctor's own confirmation only \u2014 it never replaces the patient name held on the patient record."
+    },
     "access_status": {
       "type": "string",
       "enum": [
