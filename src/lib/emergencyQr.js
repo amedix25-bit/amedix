@@ -26,15 +26,23 @@ export function isEmergencySpecialist(profile) {
   return !!active && EMERGENCY_SPECIALTIES.includes(active);
 }
 
-// Matches the unique CIN format the patient's single portal QR encodes.
-const CIN_PATTERN = /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/;
+// Matches the unique CIN format the patient's single portal QR encodes. The
+// CIN is searched inside the value, so a code that carries it with a prefix or
+// as part of a link is still recognised as the patient's own QR.
+const CIN_PATTERN = /[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}/;
+
+// The CIN carried by a patient QR, or "" when the value carries none.
+export function scannedCin(value) {
+  const match = String(value || "").trim().toUpperCase().match(CIN_PATTERN);
+  return match ? match[0] : "";
+}
 
 // Reads which kind of AMedix QR was scanned, purely so the correct server
 // action is called. The patient portal QR carries the CIN; a printed emergency
 // card carries a signed credential. Both are verified on the server only.
 export function scannedQrKind(value) {
   const raw = String(value || "").trim();
-  if (CIN_PATTERN.test(raw.toUpperCase())) return "patient_cin";
+  if (scannedCin(raw)) return "patient_cin";
   const parts = raw.split(".");
   if (parts.length !== 3 || parts[0] !== "amedix1") return null;
   try {

@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Hospital, IdCard, Loader2, QrCode, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, QrCode, ShieldAlert } from "lucide-react";
 import EmergencyScanPanel from "./EmergencyScanPanel";
 import EmergencyOptionsPanel from "./EmergencyOptionsPanel";
 import EmergencyJustificationForm from "./EmergencyJustificationForm";
 import EmergencyRecordView from "./EmergencyRecordView";
-import { dateTimeLabel, remainingLabel, scannedQrKind } from "@/lib/emergencyQr";
+import { dateTimeLabel, remainingLabel, scannedCin, scannedQrKind } from "@/lib/emergencyQr";
 
 const errorText = (err, fallback) =>
   (err && err.response && err.response.data && err.response.data.error) ||
@@ -36,37 +36,58 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
 
   const call = async (payload) => (await base44.functions.invoke("emergencyAccess", payload)).data;
 
+  const scanPatient = async (raw, cin) => {
+    const data = await call({
+      action: "patient_qr_scan",
+      token: cin ? "" : raw,
+      cin,
+      session_id: hospitalSession && new Date(hospitalSession.session_expires).getTime() > Date.now()
+        ? hospitalSession.session_id
+        : "",
+    });
+    setScan(data);
+    setScanner(null);
+    setStage("options");
+  };
+
+  const scanHospital = async (raw) => {
+    const data = await call({ action: "hospital_qr_scan", token: raw });
+    setHospitalSession(data);
+    setNotice(data.message);
+    setScanner(null);
+    setStage("scan");
+  };
+
+  // ONE scan for every AMedix QR: a patient QR opens the emergency / appointment
+  // choice, a hospital Emergency Department QR authorizes the doctor. The server
+  // decides whether the QR is genuine and what the doctor may do with it.
   const handleScan = async (value) => {
+    const raw = String(value || "").trim();
     setError("");
     setNotice("");
-    const kind = scannedQrKind(value);
-    if (!kind) {
-      setError("This is not an AMedix QR code. Use the patient's AMedix Patient Portal QR or the QR shown in the Emergency Department.");
-      return;
-    }
+    if (!raw) return;
+    const kind = scannedQrKind(raw);
     setBusy(true);
     try {
       if (kind === "hospital") {
-        const data = await call({ action: "hospital_qr_scan", token: value.trim() });
-        setHospitalSession(data);
-        setNotice(data.message);
-        setScanner(null);
-        setStage("scan");
+        await scanHospital(raw);
+      } else if (kind === "patient") {
+        await scanPatient(raw, "");
+      } else if (kind === "patient_cin") {
+        await scanPatient(raw, scannedCin(raw));
       } else {
-        const data = await call({
-          action: "patient_qr_scan",
-          token: kind === "patient" ? value.trim() : "",
-          cin: kind === "patient_cin" ? value.trim().toUpperCase() : "",
-          session_id: hospitalSession && new Date(hospitalSession.session_expires).getTime() > Date.now()
-            ? hospitalSession.session_id
-            : "",
-        });
-        setScan(data);
-        setScanner(null);
-        setStage("options");
+        // Shape not recognised in the browser — let the server decide.
+        try {
+          await scanPatient(raw, "");
+        } catch (err) {
+          if ((err && err.response && err.response.status) !== 400) throw err;
+          await scanHospital(raw);
+        }
       }
     } catch (err) {
-      setError(errorText(err, "The emergency QR check could not be completed. Please try again."));
+      setError(
+        errorText(err, "This QR code could not be read. Scan the patient's AMedix QR or the hospital Emergency Department QR again.")
+      );
     } finally {
       setBusy(false);
     }
@@ -175,48 +196,27 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
       </div>
 
       {stage === "scan" && !scanner && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button
-            size="lg"
-            className="h-auto py-5 flex-col items-start gap-1"
-            onClick={() => setScanner("hospital")}
-            disabled={busy}
-          >
-            <span className="inline-flex items-center gap-2 font-semibold">
-              <Hospital className="w-5 h-5" /> Scan hospital ER QR
-            </span>
-            <span className="text-[11px] font-normal opacity-90 text-left">
-              Any verified doctor · immediate temporary authorization · hospital alerted
-            </span>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-auto py-5 flex-col items-start gap-1"
-            onClick={() => setScanner("patient")}
-            disabled={busy}
-          >
-            <span className="inline-flex items-center gap-2 font-semibold">
-              <IdCard className="w-5 h-5" /> Scan patient QR
-            </span>
-            <span className="text-[11px] font-normal text-muted-foreground text-left">
-              {hospitalLive
-                ? "Emergency or appointment · authorized by your live hospital session"
-                : "Emergency or appointment · one QR from the patient's portal"}
-            </span>
-          </Button>
-        </div>
+        <Button
+          size="lg"
+          className="h-auto w-full py-5 flex-col items-start gap-1"
+          onClick={() => setScanner("any")}
+          disabled={busy}
+        >
+          <span className="inline-flex items-center gap-2 font-semibold">
+            <QrCode className="w-5 h-5" /> Scan QR code
+          </span>
+          <span className="text-[11px] font-normal opacity-90 text-left">
+            The patient's AMedix QR (portal or health card) or the hospital Emergency Department QR — after a patient QR
+            you choose emergency or appointment access.
+          </span>
+        </Button>
       )}
 
       {scanner && (
         <EmergencyScanPanel
-          title={scanner === "hospital" ? "Hospital Emergency Department QR" : "Patient QR"}
-          description={
-            scanner === "hospital"
-              ? "Scan the rotating QR displayed in the Emergency Department. It refreshes every two minutes."
-              : "Scan the QR shown in the patient's AMedix Patient Portal or on their health card."
-          }
-          label={scanner === "hospital" ? "Point the camera at the Emergency Department QR" : "Point the camera at the patient's QR code"}
+          title="Scan QR code"
+          description="Scan the patient's AMedix QR or the rotating QR shown in the hospital Emergency Department. The server checks what the code is and what you are authorized to do."
+          label="Point the camera at the AMedix QR code"
           onScan={handleScan}
           onClose={() => setScanner(null)}
         />
