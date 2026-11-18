@@ -9,12 +9,13 @@ import DateField from "@/components/ui/date-field";
 import { Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useDoctorText, TranslatingPlaceholder } from "@/lib/doctorMedicalTranslations";
+import ProcedurePicker from "@/components/surgery/ProcedurePicker";
 
 // My Health point 5 — Past Surgical History. Read-only for the patient; the
 // doctor may add, edit or remove entries during an active visit (check-in
 // gated, recorded with their name).
 export default function SurgicalSection({ number, patient, doctorView, editable, preloadedItems, onRefresh }) {
-  const { t } = usePatientLanguage();
+  const { t, isArabic } = usePatientLanguage();
   const doctorText = useDoctorText();
   const dv = (s, field) => (doctorView ? doctorText("SurgicalHistory", s, field, s[field]) : s[field]);
   const [items, setItems] = useState([]);
@@ -59,7 +60,17 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
 
   const startAdd = () => {
     setError("");
-    setForm({ id: null, surgery_type: "", surgery_date: "", reason: "", complications: "", outcome: "" });
+    setForm({
+      id: null,
+      surgery_type: "",
+      surgery_type_ar: "",
+      procedure_code: "",
+      procedure_specialty: "",
+      surgery_date: "",
+      reason: "",
+      complications: "",
+      outcome: "",
+    });
     setOpen(true);
   };
 
@@ -68,6 +79,9 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
     setForm({
       id: s.id,
       surgery_type: s.surgery_type || "",
+      surgery_type_ar: s.surgery_type_ar || "",
+      procedure_code: s.procedure_code || "",
+      procedure_specialty: s.procedure_specialty || "",
       surgery_date: s.surgery_date || "",
       reason: s.reason || "",
       complications: s.complications || "",
@@ -89,6 +103,10 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
         record: {
           id: form.id || undefined,
           surgery_type: form.surgery_type.trim(),
+          surgery_type_ar: form.surgery_type_ar || undefined,
+          procedure_code: form.procedure_code || undefined,
+          procedure_specialty: form.procedure_specialty || undefined,
+          procedure_status: "previous",
           surgery_date: form.surgery_date || undefined,
           reason: form.reason,
           complications: form.complications,
@@ -148,9 +166,26 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
             </button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>{t("Surgery type")} *</Label>
-              <Input value={form.surgery_type} onChange={(e) => setForm({ ...form, surgery_type: e.target.value })} placeholder={t("Type of surgery, e.g. Appendectomy")} required />
+              <ProcedurePicker
+                status="previous"
+                onPick={(p) =>
+                  setForm({
+                    ...form,
+                    surgery_type: p.name,
+                    surgery_type_ar: p.nameAr || "",
+                    procedure_code: p.code || "",
+                    procedure_specialty: p.specialty || "",
+                  })
+                }
+              />
+              {form.surgery_type && (
+                <p className="text-sm font-medium">
+                  {isArabic && form.surgery_type_ar ? form.surgery_type_ar : form.surgery_type}
+                  {form.procedure_code ? <span className="text-xs text-muted-foreground"> · {form.procedure_code}</span> : null}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>{t("Date")}</Label>

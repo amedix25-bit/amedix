@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus } from "lucide-react";
@@ -22,6 +22,17 @@ export default function ProcedurePicker({ onPick, placeholder, status, disabled 
   const [query, setQuery] = useState("");
   const [specialty, setSpecialty] = useState("all");
   const [open, setOpen] = useState(false);
+  const boxRef = useRef(null);
+
+  // Close the results when the user clicks anywhere outside the picker.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
   const groups = useMemo(
     () => groupBySpecialty(searchProcedures(query, { specialty, limit: 60 })),
@@ -43,7 +54,7 @@ export default function ProcedurePicker({ onPick, placeholder, status, disabled 
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={boxRef}>
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground rtl:left-auto rtl:right-3" />

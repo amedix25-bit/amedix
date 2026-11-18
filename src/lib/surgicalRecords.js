@@ -132,7 +132,7 @@ const SURGICAL_RECORD_TYPES_BASE = [
     fields: [
       { key: "admission_date", label: "Admission Date", type: "date" },
       { key: "discharge_date", label: "Discharge Date", type: "date", required: true },
-      { key: "procedures_performed", label: "Procedures Performed" },
+      { key: "procedures_performed", label: "Procedures Performed", type: "procedure" },
       { key: "hospital_course", label: "Hospital Course", required: true },
       { key: "complications", label: "Complications" },
       { key: "discharge_condition", label: "Condition at Discharge", required: true },
@@ -149,7 +149,7 @@ const SURGICAL_RECORD_TYPES_BASE = [
     title: "Surgical Follow-Up",
     description: "Outpatient follow-up after surgery: healing, symptoms and next steps.",
     fields: [
-      { key: "surgery_details", label: "Surgery / Procedure Details" },
+      { key: "surgery_details", label: "Surgery / Procedure Details", type: "procedure" },
       { key: "time_since_surgery", label: "Time Since Surgery (e.g. 2 weeks)" },
       { key: "current_symptoms", label: "Current Symptoms", required: true },
       { key: "wound_healing", label: "Wound Healing Status", type: "select", options: ["Healed", "Partially healed", "Not healing", "Signs of infection"] },
