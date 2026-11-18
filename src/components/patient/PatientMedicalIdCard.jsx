@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { Activity, Calendar, CreditCard, Droplet, HeartPulse, Phone, Plus, UserRound } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import QrCodeCard from "@/components/QrCodeCard";
-import EmergencyAccessQr from "@/components/patient/EmergencyAccessQr";
 import PatientCardPhoto from "@/components/patient/PatientCardPhoto";
 import ChronicConditionPicker from "@/components/patient/ChronicConditionPicker";
 import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
@@ -150,16 +149,15 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
           <div className="flex flex-wrap sm:flex-col items-center gap-3 shrink-0 justify-center">
             <div className="flex flex-col items-center gap-1">
               <div className="rounded-xl bg-info/10 p-1.5">
-                <QrCodeCard cin={profile?.cin} size={88} />
+                <QrCodeCard cin={profile?.cin} size={116} />
               </div>
               <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">{t("AMedix ID")}</p>
+                <p className="text-[10px] text-muted-foreground">{t("AMedix Patient QR")}</p>
                 <span className="inline-block rounded-full bg-info/10 px-2 py-0.5 text-[11px] font-semibold text-primary tracking-wide">
                   {cardNumber}
                 </span>
               </div>
             </div>
-            <EmergencyAccessQr size={116} />
           </div>
         </div>
 

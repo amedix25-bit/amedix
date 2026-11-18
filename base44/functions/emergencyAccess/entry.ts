@@ -142,63 +142,90 @@ async function handleRequest(req: Request) {
       );
     }
 
-    const payload = await readQrToken(body.token);
-    if (!payload || payload.k !== "p" || !payload.c) {
-      await writeEmergencyAudit(base44, {
-        event_type: "patient_qr_scan",
-        pathway: "patient_qr",
-        doctor_user_id: user.id,
-        authorization_result: "denied",
-        denial_reason: "The QR code is not a valid, current patient Emergency QR.",
-      });
-      return Response.json(
-        { error: "This is not a valid patient Emergency QR, or it has expired. Ask the patient to show their AMedix health card again." },
-        { status: 400 }
-      );
-    }
+    // The Patient Portal shows ONE QR code. It carries the patient's CIN, and
+    // any verified doctor may scan it to identify the patient and then choose
+    // the emergency or the appointment pathway. A signed emergency credential
+    // (printed cards) is still accepted and resolves to the same patient.
+    const rawValue = String(body.token || body.cin || "").trim();
+    const cinValue = /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/.test(rawValue.toUpperCase())
+      ? rawValue.toUpperCase()
+      : "";
 
-    const creds = await sr.entities.EmergencyQrToken.filter({ id: payload.c });
-    const credential = creds[0];
-    if (!credential || credential.token_kind !== "patient_emergency" || credential.status !== "active") {
-      await writeEmergencyAudit(base44, {
-        event_type: "patient_qr_scan",
-        pathway: "patient_qr",
-        qr_credential_id: payload.c,
-        doctor_user_id: user.id,
-        authorization_result: "denied",
-        denial_reason: "The patient Emergency QR is revoked or no longer active.",
-      });
-      return Response.json({ error: "This Emergency QR is no longer active (revoked or replaced)." }, { status: 403 });
-    }
-    if (credential.expires_datetime && new Date(credential.expires_datetime).getTime() < Date.now()) {
-      await writeEmergencyAudit(base44, {
-        event_type: "patient_qr_scan",
-        pathway: "patient_qr",
-        qr_credential_id: credential.id,
-        doctor_user_id: user.id,
-        authorization_result: "denied",
-        denial_reason: "The patient Emergency QR has expired.",
-      });
-      return Response.json({ error: "This Emergency QR has expired. Ask the patient to refresh it." }, { status: 403 });
-    }
+    let credential: any = null;
+    let patient: any = null;
 
-    const patients = await sr.entities.PatientProfile.filter({ id: credential.patient_id });
-    const patient = patients[0];
-    if (!patient) {
-      return Response.json({ error: "The patient record behind this QR could not be resolved." }, { status: 404 });
-    }
-    // Binding check: the credential must still belong to this exact account.
-    if (credential.patient_user_id && patient.user_id && credential.patient_user_id !== patient.user_id) {
-      await writeEmergencyAudit(base44, {
-        event_type: "patient_qr_scan",
-        pathway: "patient_qr",
-        qr_credential_id: credential.id,
-        doctor_user_id: user.id,
-        patient_id: patient.id,
-        authorization_result: "denied",
-        denial_reason: "The QR credential is not bound to this patient account.",
-      });
-      return Response.json({ error: "This Emergency QR could not be verified." }, { status: 403 });
+    if (cinValue) {
+      const rows = await sr.entities.PatientProfile.filter({ cin: cinValue });
+      patient = rows[0] || null;
+      if (!patient) {
+        await writeEmergencyAudit(base44, {
+          event_type: "patient_qr_scan",
+          pathway: "patient_qr",
+          doctor_user_id: user.id,
+          authorization_result: "denied",
+          denial_reason: "The scanned patient QR did not match an AMedix patient record.",
+        });
+        return Response.json({ error: "This AMedix patient QR could not be matched to a patient record." }, { status: 404 });
+      }
+    } else {
+      const payload = await readQrToken(body.token);
+      if (!payload || payload.k !== "p" || !payload.c) {
+        await writeEmergencyAudit(base44, {
+          event_type: "patient_qr_scan",
+          pathway: "patient_qr",
+          doctor_user_id: user.id,
+          authorization_result: "denied",
+          denial_reason: "The QR code is not a valid patient QR.",
+        });
+        return Response.json(
+          { error: "This is not a valid AMedix patient QR, or it has expired. Ask the patient to show their AMedix health card again." },
+          { status: 400 }
+        );
+      }
+
+      const creds = await sr.entities.EmergencyQrToken.filter({ id: payload.c });
+      credential = creds[0];
+      if (!credential || credential.token_kind !== "patient_emergency" || credential.status !== "active") {
+        await writeEmergencyAudit(base44, {
+          event_type: "patient_qr_scan",
+          pathway: "patient_qr",
+          qr_credential_id: payload.c,
+          doctor_user_id: user.id,
+          authorization_result: "denied",
+          denial_reason: "The patient Emergency QR is revoked or no longer active.",
+        });
+        return Response.json({ error: "This Emergency QR is no longer active (revoked or replaced)." }, { status: 403 });
+      }
+      if (credential.expires_datetime && new Date(credential.expires_datetime).getTime() < Date.now()) {
+        await writeEmergencyAudit(base44, {
+          event_type: "patient_qr_scan",
+          pathway: "patient_qr",
+          qr_credential_id: credential.id,
+          doctor_user_id: user.id,
+          authorization_result: "denied",
+          denial_reason: "The patient Emergency QR has expired.",
+        });
+        return Response.json({ error: "This Emergency QR has expired. Ask the patient to refresh it." }, { status: 403 });
+      }
+
+      const patients = await sr.entities.PatientProfile.filter({ id: credential.patient_id });
+      patient = patients[0];
+      if (!patient) {
+        return Response.json({ error: "The patient record behind this QR could not be resolved." }, { status: 404 });
+      }
+      // Binding check: the credential must still belong to this exact account.
+      if (credential.patient_user_id && patient.user_id && credential.patient_user_id !== patient.user_id) {
+        await writeEmergencyAudit(base44, {
+          event_type: "patient_qr_scan",
+          pathway: "patient_qr",
+          qr_credential_id: credential.id,
+          doctor_user_id: user.id,
+          patient_id: patient.id,
+          authorization_result: "denied",
+          denial_reason: "The QR credential is not bound to this patient account.",
+        });
+        return Response.json({ error: "This Emergency QR could not be verified." }, { status: 403 });
+      }
     }
 
     const doctor = await evaluateEmergencyDoctor(base44, user.id);
@@ -206,7 +233,7 @@ async function handleRequest(req: Request) {
       await writeEmergencyAudit(base44, {
         event_type: "patient_qr_scan",
         pathway: "patient_qr",
-        qr_credential_id: credential.id,
+        qr_credential_id: credential ? credential.id : "",
         qr_kind: "patient_emergency",
         doctor_user_id: user.id,
         patient_id: patient.id,
@@ -233,30 +260,11 @@ async function handleRequest(req: Request) {
       }
     }
 
-    const specialty = doctor.emergencySpecialty;
-    if (!parentSession && !specialty) {
-      const reason =
-        "The patient Emergency QR is limited to verified Emergency Medicine and Trauma Surgery doctors. Scan the hospital Emergency Department QR for the hospital emergency pathway instead.";
-      await writeEmergencyAudit(base44, {
-        event_type: "patient_qr_scan",
-        pathway: "patient_qr",
-        qr_kind: "patient_emergency",
-        qr_credential_id: credential.id,
-        qr_identifier: credential.id,
-        doctor_user_id: user.id,
-        doctor_id: doctor.doctor.id,
-        doctor_name: doctor.doctor.full_name || "",
-        doctor_license: doctor.licence,
-        doctor_specialty: doctor.primarySpecialty,
-        patient_id: patient.id,
-        patient_cin: patient.cin || "",
-        patient_name: patient.full_name || "",
-        authorization_result: "denied",
-        denial_reason: reason,
-        detail: "Ineligible specialty attempted the patient Emergency QR.",
-      });
-      return Response.json({ error: reason, denial_reason: reason }, { status: 403 });
-    }
+    // Scanning identifies the patient for ANY verified doctor, but emergency
+    // access stays restricted to Emergency Medicine and Trauma Surgery doctors,
+    // and to any doctor inside a live hospital ER authorization. Every other
+    // doctor is offered the ordinary appointment pathway instead.
+    const emergencyEligible = !!parentSession || !!doctor.emergencySpecialty;
 
     const ticket = await signScanTicket({
       d: user.id,
@@ -269,9 +277,9 @@ async function handleRequest(req: Request) {
       event_type: "patient_qr_scan",
       pathway: parentSession ? "hospital_er" : "patient_qr",
       qr_kind: "patient_emergency",
-      qr_credential_id: credential.id,
-      qr_identifier: credential.id,
-      qr_token_fingerprint: await tokenFingerprint(body.token),
+      qr_credential_id: credential ? credential.id : "",
+      qr_identifier: credential ? credential.id : cinValue,
+      qr_token_fingerprint: credential ? await tokenFingerprint(body.token) : "",
       doctor_user_id: user.id,
       doctor_id: doctor.doctor.id,
       doctor_name: doctor.doctor.full_name || "",
@@ -287,24 +295,29 @@ async function handleRequest(req: Request) {
       session_id: parentSession ? parentSession.id : "",
       session_ref: parentSession ? parentSession.session_ref : "",
       authorization_result: "granted",
-      detail: parentSession
-        ? "Patient Emergency QR scanned under a live hospital ER authorization."
-        : "Patient Emergency QR scanned by an eligible emergency specialty doctor.",
+      detail: emergencyEligible
+        ? parentSession
+          ? "Patient QR scanned under a live hospital ER authorization."
+          : "Patient QR scanned by an eligible emergency specialty doctor."
+        : "Patient QR scanned for identification only; emergency access not available to this specialty.",
     });
 
     return Response.json({
       scan_ticket: ticket,
       pathway: parentSession ? "hospital_er" : "patient_qr",
+      emergency_eligible: emergencyEligible,
       patient: {
         name: patient.full_name || "",
         cin: patient.cin || "",
         date_of_birth: patient.date_of_birth || "",
         gender: patient.gender || "",
       },
-      options: [
-        { key: "emergency", label: "EMERGENCY ACCESS" },
-        { key: "regular", label: "REGULAR APPOINTMENT" },
-      ],
+      options: emergencyEligible
+        ? [
+            { key: "emergency", label: "EMERGENCY ACCESS" },
+            { key: "regular", label: "REGULAR APPOINTMENT" },
+          ]
+        : [{ key: "regular", label: "REGULAR APPOINTMENT" }],
     });
   }
 
@@ -540,7 +553,7 @@ async function handleRequest(req: Request) {
       return Response.json(
         {
           error:
-            "The patient Emergency QR pathway is limited to Emergency Medicine and Trauma Surgery doctors. Use the hospital Emergency Department QR.",
+            "Emergency access is limited to Emergency Medicine and Trauma Surgery doctors, or to a doctor inside a live hospital Emergency Department authorization. Use the regular appointment pathway, or scan the hospital Emergency Department QR first.",
         },
         { status: 403 }
       );

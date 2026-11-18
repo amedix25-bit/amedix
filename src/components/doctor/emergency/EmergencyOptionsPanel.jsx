@@ -10,12 +10,15 @@ import { dateTimeLabel } from "@/lib/emergencyQr";
 export default function EmergencyOptionsPanel({ scan, hospitalSession, onEmergency, onRegular, onRescan }) {
   const patient = scan?.patient || {};
   const underHospital = scan?.pathway === "hospital_er";
+  // The server decides eligibility: Emergency Medicine / Trauma Surgery, or any
+  // doctor inside a live hospital ER authorization.
+  const emergencyEligible = scan?.emergency_eligible === true;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
       <div className="flex items-center gap-2">
         <IdCard className="w-5 h-5 text-primary" />
-        <p className="font-semibold">Patient identified by Emergency QR</p>
+        <p className="font-semibold">Patient identified by QR</p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-1">
@@ -42,15 +45,17 @@ export default function EmergencyOptionsPanel({ scan, hospitalSession, onEmergen
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Button size="lg" className="h-auto py-4 flex-col items-start gap-1" onClick={onEmergency}>
-          <span className="inline-flex items-center gap-2 font-semibold">
-            <Siren className="w-5 h-5" /> EMERGENCY ACCESS
-          </span>
-          <span className="text-[11px] font-normal opacity-90 text-left">
-            Immediate minimum-necessary medical information. A reason and justification are required.
-          </span>
-        </Button>
+      <div className={`grid gap-3 ${emergencyEligible ? "sm:grid-cols-2" : ""}`}>
+        {emergencyEligible && (
+          <Button size="lg" className="h-auto py-4 flex-col items-start gap-1" onClick={onEmergency}>
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <Siren className="w-5 h-5" /> EMERGENCY ACCESS
+            </span>
+            <span className="text-[11px] font-normal opacity-90 text-left">
+              Immediate minimum-necessary medical information. A reason and justification are required.
+            </span>
+          </Button>
+        )}
         <Button size="lg" variant="outline" className="h-auto py-4 flex-col items-start gap-1" onClick={onRegular}>
           <span className="font-semibold">REGULAR APPOINTMENT</span>
           <span className="text-[11px] font-normal text-muted-foreground text-left">
@@ -58,6 +63,17 @@ export default function EmergencyOptionsPanel({ scan, hospitalSession, onEmergen
           </span>
         </Button>
       </div>
+
+      {!emergencyEligible && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800">
+            Emergency access is limited to Emergency Medicine and Trauma Surgery doctors, and to any doctor inside a live
+            hospital emergency authorization. Scan the hospital Emergency Department QR first, or continue with the
+            regular appointment pathway.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />

@@ -26,10 +26,16 @@ export function isEmergencySpecialist(profile) {
   return !!active && EMERGENCY_SPECIALTIES.includes(active);
 }
 
-// Reads which kind of AMedix emergency QR was scanned, purely so the correct
-// server action is called. The signature is verified on the server only.
+// Matches the unique CIN format the patient's single portal QR encodes.
+const CIN_PATTERN = /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/;
+
+// Reads which kind of AMedix QR was scanned, purely so the correct server
+// action is called. The patient portal QR carries the CIN; a printed emergency
+// card carries a signed credential. Both are verified on the server only.
 export function scannedQrKind(value) {
-  const parts = String(value || "").trim().split(".");
+  const raw = String(value || "").trim();
+  if (CIN_PATTERN.test(raw.toUpperCase())) return "patient_cin";
+  const parts = raw.split(".");
   if (parts.length !== 3 || parts[0] !== "amedix1") return null;
   try {
     const body = parts[1].replace(/-/g, "+").replace(/_/g, "/");

@@ -7,7 +7,7 @@ import EmergencyScanPanel from "./EmergencyScanPanel";
 import EmergencyOptionsPanel from "./EmergencyOptionsPanel";
 import EmergencyJustificationForm from "./EmergencyJustificationForm";
 import EmergencyRecordView from "./EmergencyRecordView";
-import { dateTimeLabel, isEmergencySpecialist, remainingLabel, scannedQrKind } from "@/lib/emergencyQr";
+import { dateTimeLabel, remainingLabel, scannedQrKind } from "@/lib/emergencyQr";
 
 const errorText = (err, fallback) =>
   (err && err.response && err.response.data && err.response.data.error) ||
@@ -41,13 +41,13 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
     setNotice("");
     const kind = scannedQrKind(value);
     if (!kind) {
-      setError("This is not an AMedix emergency QR code. Use the patient's AMedix health card Emergency QR or the QR shown in the Emergency Department.");
+      setError("This is not an AMedix QR code. Use the patient's AMedix Patient Portal QR or the QR shown in the Emergency Department.");
       return;
     }
     setBusy(true);
     try {
       if (kind === "hospital") {
-        const data = await call({ action: "hospital_qr_scan", token: value });
+        const data = await call({ action: "hospital_qr_scan", token: value.trim() });
         setHospitalSession(data);
         setNotice(data.message);
         setScanner(null);
@@ -55,7 +55,8 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
       } else {
         const data = await call({
           action: "patient_qr_scan",
-          token: value,
+          token: kind === "patient" ? value.trim() : "",
+          cin: kind === "patient_cin" ? value.trim().toUpperCase() : "",
           session_id: hospitalSession && new Date(hospitalSession.session_expires).getTime() > Date.now()
             ? hospitalSession.session_id
             : "",
@@ -120,11 +121,6 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
   };
 
   const hospitalLive = hospitalSession && new Date(hospitalSession.session_expires).getTime() > Date.now();
-  // Pathway A (the patient's own Emergency QR) is offered only to Emergency
-  // Medicine and Trauma Surgery doctors — every other specialty first scans the
-  // hospital Emergency Department QR, and then reaches the patient's QR.
-  const emergencySpecialist = isEmergencySpecialist(doctorProfile);
-  const canScanPatientQr = emergencySpecialist || !!hospitalLive;
 
   return (
     <div className="space-y-4">
@@ -134,10 +130,10 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
           <div className="min-w-0">
             <h2 className="font-heading text-lg font-bold">Emergency Access</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Two separate routes. The hospital Emergency Department QR authorizes any verified doctor immediately. The
-              patient's Emergency QR is offered to verified Emergency Medicine and Trauma Surgery doctors, and to any
-              other doctor once a hospital emergency authorization is live. Both give temporary, patient-specific,
-              logged access only.
+              The patient's single QR identifies them and offers two routes: emergency access for Emergency Medicine and
+              Trauma Surgery doctors, or for any doctor inside a live hospital emergency authorization — otherwise the
+              regular appointment pathway. The hospital Emergency Department QR authorizes any verified doctor
+              immediately. Everything is temporary, patient-specific and logged.
             </p>
           </div>
         </div>
@@ -179,7 +175,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
       </div>
 
       {stage === "scan" && !scanner && (
-        <div className={`grid gap-3 ${canScanPatientQr ? "sm:grid-cols-2" : ""}`}>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Button
             size="lg"
             className="h-auto py-5 flex-col items-start gap-1"
@@ -193,43 +189,34 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
               Any verified doctor · immediate temporary authorization · hospital alerted
             </span>
           </Button>
-          {canScanPatientQr && (
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-auto py-5 flex-col items-start gap-1"
-              onClick={() => setScanner("patient")}
-              disabled={busy}
-            >
-              <span className="inline-flex items-center gap-2 font-semibold">
-                <IdCard className="w-5 h-5" /> Scan patient Emergency QR
-              </span>
-              <span className="text-[11px] font-normal text-muted-foreground text-left">
-                {hospitalLive
-                  ? "Authorized by your live hospital emergency session"
-                  : "Emergency Medicine and Trauma Surgery doctors only"}
-              </span>
-            </Button>
-          )}
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-auto py-5 flex-col items-start gap-1"
+            onClick={() => setScanner("patient")}
+            disabled={busy}
+          >
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <IdCard className="w-5 h-5" /> Scan patient QR
+            </span>
+            <span className="text-[11px] font-normal text-muted-foreground text-left">
+              {hospitalLive
+                ? "Emergency or appointment · authorized by your live hospital session"
+                : "Emergency or appointment · one QR from the patient's portal"}
+            </span>
+          </Button>
         </div>
-      )}
-
-      {stage === "scan" && !scanner && !canScanPatientQr && (
-        <p className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-          Your specialty does not open the patient Emergency QR directly. Scan the Emergency Department QR of the
-          hospital you are working in — once that authorization is live, you can scan the patient's Emergency QR under it.
-        </p>
       )}
 
       {scanner && (
         <EmergencyScanPanel
-          title={scanner === "hospital" ? "Hospital Emergency Department QR" : "Patient Emergency QR"}
+          title={scanner === "hospital" ? "Hospital Emergency Department QR" : "Patient QR"}
           description={
             scanner === "hospital"
               ? "Scan the rotating QR displayed in the Emergency Department. It refreshes every two minutes."
-              : "Scan the Emergency QR on the patient's AMedix health card."
+              : "Scan the QR shown in the patient's AMedix Patient Portal or on their health card."
           }
-          label={scanner === "hospital" ? "Point the camera at the Emergency Department QR" : "Point the camera at the patient's Emergency QR"}
+          label={scanner === "hospital" ? "Point the camera at the Emergency Department QR" : "Point the camera at the patient's QR code"}
           onScan={handleScan}
           onClose={() => setScanner(null)}
         />
