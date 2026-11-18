@@ -1,0 +1,170 @@
+{
+  "name": "EmergencyAuditLog",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "patient_qr_issued",
+        "patient_qr_scan",
+        "hospital_qr_scan",
+        "access_granted",
+        "access_denied",
+        "session_revoked",
+        "session_ended",
+        "qr_revoked",
+        "rate_limited",
+        "notification_failed",
+        "notification_retried",
+        "suspicious_activity"
+      ],
+      "enumColors": [
+        "blue",
+        "blue",
+        "purple",
+        "green",
+        "red",
+        "red",
+        "gray",
+        "red",
+        "yellow",
+        "red",
+        "yellow",
+        "yellow"
+      ],
+      "description": "The event recorded. Every scan, authorization decision, denial, revocation, notification outcome and suspicious pattern is one immutable record."
+    },
+    "pathway": {
+      "type": "string",
+      "description": "patient_qr / hospital_er / none \u2014 which emergency pathway the event belongs to"
+    },
+    "qr_kind": {
+      "type": "string",
+      "description": "Kind of QR scanned or issued"
+    },
+    "qr_credential_id": {
+      "type": "string",
+      "description": "EmergencyQrToken credential id the event concerns"
+    },
+    "qr_identifier": {
+      "type": "string",
+      "description": "Identifier of the scanned QR instance \u2014 the rotation window for a hospital ER token, the credential id for a patient QR"
+    },
+    "qr_token_fingerprint": {
+      "type": "string",
+      "description": "SHA-256 fingerprint of the scanned token value \u2014 the token itself is never stored or logged"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "Doctor's AMedix account id"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_license": {
+      "type": "string",
+      "description": "Medical licence number as verified on the server for this event"
+    },
+    "doctor_specialty": {
+      "type": "string",
+      "description": "Verified specialty at the time of the event"
+    },
+    "hospital_id": {
+      "type": "string"
+    },
+    "hospital_user_id": {
+      "type": "string"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient id \u2014 written only when patient-specific access is concerned"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "authorization_result": {
+      "type": "string",
+      "description": "granted / denied / refused \u2014 the server's decision for this event"
+    },
+    "denial_reason": {
+      "type": "string",
+      "description": "Why the request was refused, in the server's own words"
+    },
+    "emergency_reason": {
+      "type": "string"
+    },
+    "justification": {
+      "type": "string"
+    },
+    "data_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Categories of patient information released"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "session_ref": {
+      "type": "string"
+    },
+    "session_start": {
+      "type": "string"
+    },
+    "session_expires": {
+      "type": "string"
+    },
+    "notification_status": {
+      "type": "string",
+      "description": "Delivery status recorded for the related notification, exactly as it happened"
+    },
+    "suspicious": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this event is part of a pattern flagged for review"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Short server-written detail of what happened"
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the event (ISO datetime), set server-side"
+    }
+  },
+  "required": [
+    "event_type",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "id": "__immutable_audit_record__"
+    },
+    "delete": {
+      "id": "__immutable_audit_record__"
+    }
+  }
+}

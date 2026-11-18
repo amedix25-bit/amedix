@@ -1,0 +1,128 @@
+{
+  "name": "EmergencyQrToken",
+  "type": "object",
+  "properties": {
+    "token_kind": {
+      "type": "string",
+      "enum": [
+        "patient_emergency",
+        "hospital_er"
+      ],
+      "enumColors": [
+        "red",
+        "blue"
+      ],
+      "description": "PATIENT_EMERGENCY: the credential behind a patient's Emergency QR on their AMedix health card \u2014 Pathway A, Emergency Medicine and Trauma Surgery only. HOSPITAL_ER: the credential behind a hospital's Emergency Department QR \u2014 Pathway B, any verified doctor."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "revoked",
+        "expired"
+      ],
+      "enumColors": [
+        "green",
+        "red",
+        "gray"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the credential validates. REVOKED: withdrawn \u2014 every signed token minted from it is refused immediately. EXPIRED: past its expiry. Written only by the server."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the patient Emergency QR belongs to \u2014 the ONLY patient the credential can ever identify"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account, recorded so access events can be bound to the exact account"
+    },
+    "patient_cin": {
+      "type": "string",
+      "description": "Clinical Identification Number of the patient the credential belongs to, recorded for audit only \u2014 it is never used as proof of authorization"
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Patient name at issue time, for audit readability"
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id the Emergency Department QR belongs to"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital account that owns the Emergency Department QR \u2014 every alert from this credential is routed to this facility's portal"
+    },
+    "hospital_name": {
+      "type": "string",
+      "description": "Hospital name at issue time"
+    },
+    "department": {
+      "type": "string",
+      "default": "Emergency Department",
+      "description": "Department the QR belongs to \u2014 always the Emergency Department"
+    },
+    "rotation_seconds": {
+      "type": "integer",
+      "description": "How long one signed hospital ER token stays valid before the next rotation window replaces it"
+    },
+    "issued_datetime": {
+      "type": "string",
+      "description": "Date and time the credential was issued (ISO datetime)"
+    },
+    "issued_by_name": {
+      "type": "string"
+    },
+    "expires_datetime": {
+      "type": "string",
+      "description": "Date and time the credential stops validating (ISO datetime)"
+    },
+    "revoked_datetime": {
+      "type": "string",
+      "description": "Date and time the credential was revoked (ISO datetime)"
+    },
+    "revoked_by_name": {
+      "type": "string",
+      "description": "Hospital administrator or AMedix administrator who revoked the credential"
+    },
+    "revoke_reason": {
+      "type": "string",
+      "description": "Reason recorded when the QR was revoked"
+    },
+    "last_used_datetime": {
+      "type": "string",
+      "description": "Date and time of the most recent successful validation (ISO datetime)"
+    },
+    "use_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many times a token minted from this credential was accepted by the server"
+    }
+  },
+  "required": [
+    "token_kind",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

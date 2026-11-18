@@ -13,13 +13,15 @@ import HospitalProfileCard from "@/components/hospital/portal/HospitalProfileCar
 import HospitalLabPanelsSection from "@/components/hospital/portal/HospitalLabPanelsSection";
 import HospitalRadiologySection from "@/components/hospital/portal/HospitalRadiologySection";
 import HospitalMessagingSection from "@/components/hospital/portal/HospitalMessagingSection";
+import HospitalEmergencySection from "@/components/hospital/portal/HospitalEmergencySection";
 import HospitalAuthorizationGate from "@/components/hospital/authorization/HospitalAuthorizationGate";
 import PartnerSubscriptionSection from "@/components/partner/PartnerSubscriptionSection";
 import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 import { Loader2 } from "lucide-react";
-import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone, Radiation, MessagesSquare } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UserCog, Building2, Stethoscope, FlaskConical, Megaphone, Radiation, MessagesSquare, ShieldAlert } from "lucide-react";
 
 const COMMAND_CENTER = { key: "dashboard", label: "Command Center", icon: LayoutDashboard };
+const EMERGENCY_QR = { key: "emergency", label: "Emergency QR", icon: ShieldAlert };
 
 const navItems = [
   COMMAND_CENTER,
@@ -31,12 +33,13 @@ const navItems = [
   { key: "staff", label: "Receptionists", icon: UserCog },
   { key: "partnership", label: "Partnership", icon: Megaphone },
   { key: "profile", label: "Profile", icon: Building2 },
+  EMERGENCY_QR,
 ];
 
 // Grouped navigation, the same workspaces organised by operational area.
 const NAV_GROUPS = [
   { title: "Overview", items: [COMMAND_CENTER, navItems[1]] },
-  { title: "Clinical Operations", items: [navItems[2], navItems[3], navItems[4], navItems[5]] },
+  { title: "Clinical Operations", items: [navItems[2], navItems[3], navItems[4], navItems[5], EMERGENCY_QR] },
   { title: "Administration", items: [navItems[6], navItems[7], navItems[8]] },
 ];
 
@@ -140,6 +143,7 @@ export default function HospitalPortal() {
         {activeTab === "partnership" && (
           <PartnerSubscriptionSection partnerType="hospital" profile={profile} />
         )}
+        {activeTab === "emergency" && <HospitalEmergencySection profile={profile} />}
         {activeTab === "profile" && <HospitalProfileSection profile={profile} onUpdate={setProfile} />}
       </div>
     </DashboardLayout>

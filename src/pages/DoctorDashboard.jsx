@@ -22,7 +22,8 @@ import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
 import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
-import { LayoutDashboard, Search, Building2, Pill, MessageSquare, Link2, Scale, BedDouble, BookOpen, Settings, HelpCircle, IdCard } from "lucide-react";
+import { LayoutDashboard, Search, Building2, Pill, MessageSquare, Link2, Scale, BedDouble, BookOpen, Settings, HelpCircle, IdCard, ShieldAlert } from "lucide-react";
+import EmergencyAccessSection from "@/components/doctor/emergency/EmergencyAccessSection";
 import EncountersSection from "@/components/doctor/encounters/EncountersSection";
 import DoctorSettingsSection from "@/components/doctor/settings/DoctorSettingsSection";
 import DoctorHelpSection from "@/components/doctor/help/DoctorHelpSection";
@@ -35,6 +36,7 @@ import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
+  { key: "emergency", label: "Emergency Access", icon: ShieldAlert },
   { key: "notes", label: "Consult", icon: Link2 },
   {
     key: "orders",
@@ -315,6 +317,15 @@ export default function DoctorDashboard() {
           />
         )}
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
+        {activeTab === "emergency" && (
+          <EmergencyAccessSection
+            onOpenPatientSearch={(cin) => {
+              setSearchPrefill({ cin, ts: Date.now() });
+              setTabView(null);
+              setActiveTab("search");
+            }}
+          />
+        )}
         {activeTab === "communication" && profile && (
           <DoctorCommunication
             profile={profile}

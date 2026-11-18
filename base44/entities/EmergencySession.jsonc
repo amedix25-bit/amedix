@@ -1,0 +1,246 @@
+{
+  "name": "EmergencySession",
+  "type": "object",
+  "properties": {
+    "session_ref": {
+      "type": "string",
+      "description": "Human-readable reference of the emergency session, e.g. EMG-20261118-8F3K"
+    },
+    "pathway": {
+      "type": "string",
+      "enum": [
+        "patient_qr",
+        "hospital_er"
+      ],
+      "enumColors": [
+        "red",
+        "blue"
+      ],
+      "description": "PATIENT_QR: Pathway A \u2014 the doctor scanned the patient's Emergency QR (Emergency Medicine / Trauma Surgery only). HOSPITAL_ER: Pathway B \u2014 the doctor scanned a valid hospital Emergency Department QR (any verified doctor), then initiated patient-specific access."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "revoked"
+      ],
+      "enumColors": [
+        "green",
+        "gray",
+        "red"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the authorization is live until its expiry. EXPIRED: the authorization ended by time. REVOKED: ended early by an authorized reviewer or the doctor."
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the authenticated doctor who holds this session \u2014 every read of the session is bound to this account"
+    },
+    "doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the doctor"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_email": {
+      "type": "string"
+    },
+    "doctor_license": {
+      "type": "string",
+      "description": "Medical licence number verified on the server at authorization time"
+    },
+    "doctor_specialty": {
+      "type": "string",
+      "description": "The doctor's verified specialty at authorization time"
+    },
+    "doctor_specialties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "All of the doctor's verified specialties at authorization time"
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id the emergency authorization is attributed to"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital account whose portal monitors this session"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string",
+      "default": "Emergency Department"
+    },
+    "qr_credential_id": {
+      "type": "string",
+      "description": "EmergencyQrToken credential the scanned token was minted from"
+    },
+    "qr_token_fingerprint": {
+      "type": "string",
+      "description": "SHA-256 fingerprint of the scanned token value \u2014 the token itself is never stored"
+    },
+    "qr_token_window": {
+      "type": "string",
+      "description": "Rotation window of a hospital ER token (hospital pathway only)"
+    },
+    "authorization_result": {
+      "type": "string",
+      "enum": [
+        "granted",
+        "denied"
+      ],
+      "enumColors": [
+        "green",
+        "red"
+      ],
+      "description": "Server decision recorded for this authorization event"
+    },
+    "denial_reason": {
+      "type": "string",
+      "description": "Why the authorization was refused, when it was"
+    },
+    "session_start": {
+      "type": "string",
+      "description": "Date and time the authorization started (ISO datetime)"
+    },
+    "session_expires": {
+      "type": "string",
+      "description": "Date and time the authorization ends \u2014 never extended silently (ISO datetime)"
+    },
+    "ended_datetime": {
+      "type": "string",
+      "description": "Date and time the authorization ended (expiry, revocation or early end) (ISO datetime)"
+    },
+    "ended_reason": {
+      "type": "string"
+    },
+    "revoked_by_name": {
+      "type": "string",
+      "description": "Who ended the session early"
+    },
+    "parent_session_id": {
+      "type": "string",
+      "description": "The hospital ER authorization this patient-specific access was initiated under, when the hospital pathway was used"
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id this access is bound to \u2014 the ONLY patient the session can ever serve. Empty on a hospital authorization until patient-specific access begins"
+    },
+    "patient_user_id": {
+      "type": "string"
+    },
+    "patient_cin": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "access_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "granted",
+        "expired",
+        "revoked"
+      ],
+      "enumColors": [
+        "gray",
+        "green",
+        "gray",
+        "red"
+      ],
+      "default": "none",
+      "description": "NONE: no patient-specific access yet. GRANTED: the doctor may read this patient's minimum necessary emergency information. EXPIRED/REVOKED: access is closed and must be re-authorized."
+    },
+    "access_start": {
+      "type": "string",
+      "description": "Date and time patient-specific access started (ISO datetime)"
+    },
+    "access_expires": {
+      "type": "string",
+      "description": "Date and time patient-specific access ends (ISO datetime)"
+    },
+    "emergency_reason": {
+      "type": "string",
+      "description": "Emergency reason selected by the doctor before access was granted"
+    },
+    "justification": {
+      "type": "string",
+      "description": "The doctor's brief clinical justification for the emergency access"
+    },
+    "immediate_confirmed": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the doctor explicitly confirmed the request is for immediate emergency care"
+    },
+    "data_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Categories of minimum necessary information released in this session \u2014 documents, imaging archives, private notes and historical encounters are never included"
+    },
+    "patient_notification_status": {
+      "type": "string",
+      "enum": [
+        "not_required",
+        "pending",
+        "delivered",
+        "failed"
+      ],
+      "enumColors": [
+        "gray",
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "not_required",
+      "description": "Delivery status of the patient notification about this emergency access. Never marked delivered unless the notification record was actually written."
+    },
+    "patient_notification_error": {
+      "type": "string"
+    },
+    "suspicious_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Patterns the server flagged for review on this session \u2014 flagging never delays or blocks legitimate emergency care"
+    }
+  },
+  "required": [
+    "pathway",
+    "status",
+    "doctor_user_id",
+    "doctor_id",
+    "authorization_result"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

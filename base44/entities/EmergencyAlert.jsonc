@@ -1,0 +1,144 @@
+{
+  "name": "EmergencyAlert",
+  "type": "object",
+  "properties": {
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id of the facility whose Emergency Department QR was scanned"
+    },
+    "hospital_user_id": {
+      "type": "string",
+      "description": "User id of the hospital account \u2014 the facility whose portal shows this alert"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string",
+      "default": "Emergency Department"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "EmergencySession id created by the scan"
+    },
+    "session_ref": {
+      "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "The doctor's AMedix account id"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string",
+      "description": "Doctor's full name"
+    },
+    "doctor_license": {
+      "type": "string",
+      "description": "Medical licence number verified at scan time"
+    },
+    "doctor_specialty": {
+      "type": "string",
+      "description": "Doctor's verified specialty at scan time"
+    },
+    "scanned_datetime": {
+      "type": "string",
+      "description": "Date and exact time the hospital ER QR was scanned (ISO datetime)"
+    },
+    "authorization_status": {
+      "type": "string",
+      "enum": [
+        "granted",
+        "denied",
+        "expired",
+        "revoked"
+      ],
+      "enumColors": [
+        "green",
+        "red",
+        "gray",
+        "red"
+      ],
+      "default": "granted",
+      "description": "Authorization state of the emergency session this alert reports"
+    },
+    "session_expires": {
+      "type": "string",
+      "description": "Date and time the temporary authorization ends (ISO datetime)"
+    },
+    "patient_access_initiated": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the doctor subsequently initiated patient-specific emergency access under this authorization"
+    },
+    "patient_access_datetime": {
+      "type": "string",
+      "description": "When patient-specific access was initiated (ISO datetime)"
+    },
+    "patient_access_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many patient-specific emergency accesses were initiated under this authorization \u2014 never more than one per patient"
+    },
+    "delivery_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "delivered",
+        "failed"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "pending",
+      "description": "Delivery state of the hospital notification. FAILED alerts stay queued for retry and are never shown as sent."
+    },
+    "delivery_attempts": {
+      "type": "integer",
+      "default": 0
+    },
+    "last_attempt_datetime": {
+      "type": "string"
+    },
+    "last_error": {
+      "type": "string",
+      "description": "Why the last delivery attempt failed"
+    },
+    "delivered_datetime": {
+      "type": "string",
+      "description": "Date and time the alert was confirmed readable in the hospital portal (ISO datetime)"
+    }
+  },
+  "required": [
+    "hospital_user_id",
+    "session_id",
+    "scanned_datetime",
+    "delivery_status"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
