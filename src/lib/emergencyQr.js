@@ -13,6 +13,20 @@ export const EMERGENCY_REASONS = [
   "Other emergency",
 ];
 
+// The two specialties the server accepts for the patient Emergency QR
+// pathway (Pathway A) — kept identical to the server-side list.
+export const EMERGENCY_SPECIALTIES = ["emergency medicine", "trauma surgery"];
+
+// True only for a doctor whose verified specialty is Emergency Medicine or
+// Trauma Surgery. Every other specialty reaches patients through the hospital
+// Emergency Department QR instead. The server re-checks this on every scan.
+export function isEmergencySpecialist(profile) {
+  const list = [profile?.specialization, ...(Array.isArray(profile?.specialties) ? profile.specialties : [])]
+    .filter(Boolean)
+    .map((s) => String(s).trim().toLowerCase());
+  return list.some((s) => EMERGENCY_SPECIALTIES.includes(s));
+}
+
 // Reads which kind of AMedix emergency QR was scanned, purely so the correct
 // server action is called. The signature is verified on the server only.
 export function scannedQrKind(value) {

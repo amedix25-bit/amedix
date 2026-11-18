@@ -7,7 +7,7 @@ import EmergencyScanPanel from "./EmergencyScanPanel";
 import EmergencyOptionsPanel from "./EmergencyOptionsPanel";
 import EmergencyJustificationForm from "./EmergencyJustificationForm";
 import EmergencyRecordView from "./EmergencyRecordView";
-import { dateTimeLabel, remainingLabel, scannedQrKind } from "@/lib/emergencyQr";
+import { dateTimeLabel, isEmergencySpecialist, remainingLabel, scannedQrKind } from "@/lib/emergencyQr";
 
 const errorText = (err, fallback) =>
   (err && err.response && err.response.data && err.response.data.error) ||
@@ -120,6 +120,11 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
   };
 
   const hospitalLive = hospitalSession && new Date(hospitalSession.session_expires).getTime() > Date.now();
+  // Pathway A (the patient's own Emergency QR) is offered only to Emergency
+  // Medicine and Trauma Surgery doctors — every other specialty first scans the
+  // hospital Emergency Department QR, and then reaches the patient's QR.
+  const emergencySpecialist = isEmergencySpecialist(doctorProfile);
+  const canScanPatientQr = emergencySpecialist || !!hospitalLive;
 
   return (
     <div className="space-y-4">
@@ -130,8 +135,9 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
             <h2 className="font-heading text-lg font-bold">Emergency Access</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Two separate routes. The hospital Emergency Department QR authorizes any verified doctor immediately. The
-              patient's Emergency QR is limited to verified Emergency Medicine and Trauma Surgery doctors. Both give
-              temporary, patient-specific, logged access only.
+              patient's Emergency QR is offered to verified Emergency Medicine and Trauma Surgery doctors, and to any
+              other doctor once a hospital emergency authorization is live. Both give temporary, patient-specific,
+              logged access only.
             </p>
           </div>
         </div>
@@ -173,7 +179,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
       </div>
 
       {stage === "scan" && !scanner && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className={`grid gap-3 ${canScanPatientQr ? "sm:grid-cols-2" : ""}`}>
           <Button
             size="lg"
             className="h-auto py-5 flex-col items-start gap-1"
@@ -187,23 +193,32 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
               Any verified doctor · immediate temporary authorization · hospital alerted
             </span>
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-auto py-5 flex-col items-start gap-1"
-            onClick={() => setScanner("patient")}
-            disabled={busy}
-          >
-            <span className="inline-flex items-center gap-2 font-semibold">
-              <IdCard className="w-5 h-5" /> Scan patient Emergency QR
-            </span>
-            <span className="text-[11px] font-normal text-muted-foreground text-left">
-              {hospitalLive
-                ? "Authorized by your live hospital emergency session"
-                : "Emergency Medicine and Trauma Surgery doctors only"}
-            </span>
-          </Button>
+          {canScanPatientQr && (
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-auto py-5 flex-col items-start gap-1"
+              onClick={() => setScanner("patient")}
+              disabled={busy}
+            >
+              <span className="inline-flex items-center gap-2 font-semibold">
+                <IdCard className="w-5 h-5" /> Scan patient Emergency QR
+              </span>
+              <span className="text-[11px] font-normal text-muted-foreground text-left">
+                {hospitalLive
+                  ? "Authorized by your live hospital emergency session"
+                  : "Emergency Medicine and Trauma Surgery doctors only"}
+              </span>
+            </Button>
+          )}
         </div>
+      )}
+
+      {stage === "scan" && !scanner && !canScanPatientQr && (
+        <p className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          Your specialty does not open the patient Emergency QR directly. Scan the Emergency Department QR of the
+          hospital you are working in — once that authorization is live, you can scan the patient's Emergency QR under it.
+        </p>
       )}
 
       {scanner && (
