@@ -178,7 +178,10 @@ export async function evaluateEmergencyDoctor(base44: any, userId: string) {
     user: snapshot.user,
     specialties,
     licence: licence || "verification exempt",
-    emergencySpecialty: emergencySpecialtyOf(specialties),
+    // Pathway A is governed by the doctor's ACTIVE specialty only. The
+    // `specialties` list is the account's history of previously chosen
+    // specialties, so it can never grant emergency privileges.
+    emergencySpecialty: emergencySpecialtyOf(doctor.specialization),
     primarySpecialty: doctor.specialization || specialties[0] || "",
   };
 }
