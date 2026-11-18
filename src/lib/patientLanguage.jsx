@@ -1094,6 +1094,7 @@ const AR = {
   "Vegetarian": "نباتي (يمتنع عن اللحوم)",
   "Vegan": "نباتي صرف",
   "Mediterranean diet": "النظام الغذائي المتوسطي",
+  "Traditional Libyan food": "الطعام الليبي التقليدي",
   "Low-carbohydrate diet": "نظام قليل الكربوهيدرات",
   "High-protein diet": "نظام عالي البروتين",
   "Low-salt diet": "نظام قليل الملح",

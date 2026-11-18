@@ -8,6 +8,7 @@ export const DIET_TYPES = [
   { value: "vegetarian", label: "Vegetarian" },
   { value: "vegan", label: "Vegan" },
   { value: "mediterranean", label: "Mediterranean diet" },
+  { value: "libyan_traditional", label: "Traditional Libyan food" },
   { value: "low_carb", label: "Low-carbohydrate diet" },
   { value: "high_protein", label: "High-protein diet" },
   { value: "low_salt", label: "Low-salt diet" },

@@ -225,7 +225,7 @@
     },
     "diet_types": {
       "type": "array",
-      "description": "Diet types the patient reports following \u2014 several may apply. Optional and patient-reported; 'other' pairs with the typical_diet details field.",
+      "description": "Diet types the patient reports following \u2014 several may apply. Optional and patient-reported; 'other' pairs with the typical_diet details field. LIBYAN_TRADITIONAL records that the patient follows a traditional Libyan diet.",
       "items": {
         "type": "string",
         "enum": [
@@ -233,6 +233,7 @@
           "vegetarian",
           "vegan",
           "mediterranean",
+          "libyan_traditional",
           "low_carb",
           "high_protein",
           "low_salt",
