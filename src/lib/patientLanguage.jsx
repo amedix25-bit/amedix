@@ -1138,7 +1138,7 @@ const AR = {
   // Pregnancy history
   "Significant pregnancy complications": "مضاعفات حمل مهمة",
   "Menstrual history": "تاريخ الحيض",
-  "Contraception history": "تاريخ منع الحمل",
+  "Contraception history": "تاريخ استخدام موانع الحمل",
   "Fertility-related history": "تاريخ متعلق بالخصوبة",
   "Relevant gynecological history": "تاريخ نسائي ذو صلة",
 
@@ -1179,7 +1179,7 @@ const AR = {
   "Menstrual History": "تاريخ الحيض",
   "Past Gynaecological History": "التاريخ النسائي السابق",
   "Gynaecological History": "التاريخ النسائي",
-  "Contraception History": "تاريخ منع الحمل",
+  "Contraception History": "تاريخ استخدام موانع الحمل",
   "What type of contraception are you currently using?": "ما نوع وسيلة منع الحمل التي تستخدمينها حالياً؟",
   "Which type of oral contraception are you using?": "أي نوع من حبوب منع الحمل تستخدمينه؟",
   "Current contraception": "وسيلة منع الحمل الحالية",
