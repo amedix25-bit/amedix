@@ -137,6 +137,11 @@ export default function VerificationMethodSelector({
       <p className="text-xs text-muted-foreground">
         {t("Choose one document — the number printed on it is checked automatically against the number you enter. The other documents are not required.")}
       </p>
+      {config?.twoSided && (
+        <p className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs font-medium">
+          {t("You must photograph both sides of this document — the front and the back.")}
+        </p>
+      )}
       {config && (
         <DocumentVerificationCard
           profileType={profileType}

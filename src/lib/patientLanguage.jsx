@@ -606,6 +606,8 @@ const AR = {
   "Upload a clear photo or PDF of the front side": "ارفع صورة أو ملف PDF واضحاً للوجه الأمامي",
   "Upload a clear photo or PDF of the back side": "ارفع صورة أو ملف PDF واضحاً للوجه الخلفي",
   "Upload clear photos of both sides, or one PDF containing both sides": "ارفع صوراً واضحة للوجهين، أو ملف PDF واحداً يحتوي على الوجهين",
+  "You must photograph both sides of this document — the front and the back.":
+    "يجب تصوير وجهي هذا المستند — الوجه الأمامي ثم الخلفي.",
   "Upload a clear photo or PDF of the identification page": "ارفع صورة أو ملف PDF واضحاً لصفحة التعريف",
   "One PDF containing both sides": "ملف PDF واحد يحتوي على الوجهين",
   "Please upload the back side of your Personal Card, or upload one PDF containing both sides.": "يرجى رفع الوجه الخلفي للبطاقة الشخصية، أو رفع ملف PDF واحد يحتوي على الوجهين.",
