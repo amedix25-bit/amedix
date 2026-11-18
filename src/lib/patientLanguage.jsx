@@ -831,6 +831,13 @@ const AR = {
   "Additional notes": "ملاحظات إضافية",
   "Reason / indication": "السبب / الدافع",
   "Recovery / outcome": "التعافي / النتيجة",
+  "Date of surgery, if known": "تاريخ العملية، إن كان معروفاً",
+  "Reason / indication (if known)": "السبب / الدافع (إن كان معروفاً)",
+  "Complications (if known)": "المضاعفات (إن كانت معروفة)",
+  "Recovery / outcome (if known)": "التعافي / النتيجة (إن كان معروفاً)",
+  "Hospital stay, if known": "مدة الإقامة في المستشفى، إن كانت معروفة",
+  "Leave any detail you do not know blank — only the type of surgery is needed.":
+    "اترك أي تفصيل لا تعرفه فارغاً — يُطلب فقط نوع العملية الجراحية.",
   "Stop": "إيقاف",
   "Lipid Panel": "دهون الدم",
 

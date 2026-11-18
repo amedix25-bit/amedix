@@ -459,16 +459,18 @@ export function SurgeryEntryForm({ onAdd }) {
       surgery_type_en: term.en,
       surgery_type_ar: isArabic ? term.ar : "",
     }));
+  // Only the type of surgery is required. Every other detail — the date, the
+  // reason, complications, recovery and hospital stay — may be left blank when
+  // the patient does not know it, and a blank value is simply not stored.
   const add = () => {
-    onAdd({
-      surgery_type: form.surgery_type_en || form.surgery_type,
-      ...(form.surgery_type_ar ? { surgery_type_ar: form.surgery_type_ar } : {}),
-      surgery_date: form.surgery_date,
-      reason: form.reason,
-      complications: form.complications,
-      outcome: form.outcome,
-      hospitalization_duration: form.hospitalization_duration,
-    });
+    const entry = { surgery_type: form.surgery_type_en || form.surgery_type };
+    if (form.surgery_type_ar) entry.surgery_type_ar = form.surgery_type_ar;
+    if (form.surgery_date) entry.surgery_date = form.surgery_date;
+    if (form.reason.trim()) entry.reason = form.reason.trim();
+    if (form.complications.trim()) entry.complications = form.complications.trim();
+    if (form.outcome.trim()) entry.outcome = form.outcome.trim();
+    if (form.hospitalization_duration.trim()) entry.hospitalization_duration = form.hospitalization_duration.trim();
+    onAdd(entry);
     setForm({
       surgery_type: "", surgery_type_en: "", surgery_type_ar: "", surgery_date: "", reason: "", complications: "", outcome: "", hospitalization_duration: "",
     });
@@ -489,7 +491,8 @@ export function SurgeryEntryForm({ onAdd }) {
             terms={AR_SURGERY_TERMS}
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-1">
+          <Label className="text-[11px] text-muted-foreground">{t("Date of surgery, if known")}</Label>
           <DateField
             value={form.surgery_date}
             onChange={(date) => setForm((s) => ({ ...s, surgery_date: date }))}
@@ -497,18 +500,21 @@ export function SurgeryEntryForm({ onAdd }) {
           />
         </div>
         <div className="min-w-0">
-          <Input placeholder={t("Reason / indication")} value={form.reason} onChange={set("reason")} />
+          <Input placeholder={t("Reason / indication (if known)")} value={form.reason} onChange={set("reason")} />
         </div>
         <div className="min-w-0">
-          <Input placeholder={t("Complications")} value={form.complications} onChange={set("complications")} />
+          <Input placeholder={t("Complications (if known)")} value={form.complications} onChange={set("complications")} />
         </div>
         <div className="min-w-0">
-          <Input placeholder={t("Recovery / outcome")} value={form.outcome} onChange={set("outcome")} />
+          <Input placeholder={t("Recovery / outcome (if known)")} value={form.outcome} onChange={set("outcome")} />
         </div>
         <div className="min-w-0">
-          <Input placeholder={t("Hospital stay, e.g. 3 days")} value={form.hospitalization_duration} onChange={set("hospitalization_duration")} />
+          <Input placeholder={t("Hospital stay, if known")} value={form.hospitalization_duration} onChange={set("hospitalization_duration")} />
         </div>
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        {t("Leave any detail you do not know blank — only the type of surgery is needed.")}
+      </p>
       <Button type="button" variant="outline" onClick={add} disabled={!form.surgery_type} className="w-full sm:w-auto">
         <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
         {t("Add")}
