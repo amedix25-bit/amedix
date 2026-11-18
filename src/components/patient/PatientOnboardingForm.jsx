@@ -16,6 +16,7 @@ import {
 import FamilyHistoryEditor from "@/components/patient/family/FamilyHistoryEditor";
 import { applyMemberToEntries, familyMemberKey } from "@/lib/familyHistory";
 import VaccinationDocumentUpload, { ImmunizationEntryForm, ChronicCareEntryForm, immunizationKindLabel, chronicCareTypeLabel } from "@/components/patient/onboarding/PreventiveCareForms";
+import PatientPhotoField from "@/components/patient/onboarding/PatientPhotoField";
 import VerificationMethodSelector from "@/components/verification/VerificationMethodSelector";
 import { isSubmitted } from "@/components/verification/verificationStatus";
 import { isVerificationExempt } from "@/lib/verificationExemption";
@@ -100,6 +101,9 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   // { status, outcome, message, verification_id }. Decided by the engine when
   // the document is submitted; nothing is queued for review.
   const [verification, setVerification] = useState(null);
+  // The patient's own photograph — uploaded privately during registration and
+  // saved on the profile as photo_uri (shown on the Medical ID card).
+  const [photoUri, setPhotoUri] = useState("");
   // The one account AMedix administration exempted from document verification.
   const verificationExempt = isVerificationExempt(user?.email);
   const set = (field) => (e) => {
@@ -225,6 +229,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         address: form.address,
         blood_type: form.blood_type,
         identification_number: form.identification_number,
+        ...(photoUri ? { photo_uri: photoUri } : {}),
         preferred_language: form.preferred_language,
         emergency_contact_name: form.emergency_contact_name,
         emergency_contact_phone: form.emergency_contact_phone,
@@ -493,6 +498,11 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         <Input id="email" value={user?.email || ""} disabled />
                       </div>
                     </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold text-primary mb-3">{t("Your photo")}</h3>
+                    <PatientPhotoField value={photoUri} onChange={setPhotoUri} />
                   </section>
 
                   <section>

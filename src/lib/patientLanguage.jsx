@@ -482,6 +482,15 @@ const AR = {
   "Contact & Medical Details": "التواصل والتفاصيل الطبية",
   "Blood type": "فصيلة الدم",
   "Address": "العنوان",
+  // Registration — the patient's own photograph
+  "Your photo": "صورتك الشخصية",
+  "Add a recent photo of yourself. It appears on your AMedix Medical ID card. This is optional — you can add it later.":
+    "أضف صورة حديثة لنفسك. تظهر على بطاقة AMedix الطبية. هذه الخطوة اختيارية — يمكنك إضافتها لاحقاً.",
+  "Add a photo": "إضافة صورة",
+  "Change photo": "تغيير الصورة",
+  "Remove photo": "إزالة الصورة",
+  "Choose an image file.": "اختر ملف صورة.",
+  "Could not upload your picture. Please try again.": "تعذر رفع صورتك. يرجى المحاولة مرة أخرى.",
   "Your medical history (conditions, medications, allergies, surgeries, lifestyle) was recorded at registration and is locked. Contact your doctor or an administrator for any corrections.":
     "تم تسجيل تاريخك الطبي (الأمراض، الأدوية، الحساسية، العمليات، نمط الحياة) عند التسجيل وهو مُقفل. تواصل مع طبيبك أو مع مسؤول لإجراء أي تصحيحات.",
   "Emergency Contact": "جهة الاتصال للطوارئ",
