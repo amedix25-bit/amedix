@@ -17,7 +17,6 @@ export default function EmergencyMedicationSection({ data = {}, section }) {
       title="Medication summary"
       status={data.status}
       meta={`${(data.current || []).length} current`}
-      defaultOpen
     >
       {groups.length === 0 && <Empty>No medication documented in AMedix.</Empty>}
       {groups.map((g) => (

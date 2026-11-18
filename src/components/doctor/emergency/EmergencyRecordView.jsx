@@ -1,28 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Droplet, Loader2, RefreshCw, ShieldAlert, Square } from "lucide-react";
-import { dateTimeLabel, remainingLabel } from "@/lib/emergencyQr";
+import { dateTimeLabel } from "@/lib/emergencyQr";
 import EmergencyPatientSummary from "./summary/EmergencyPatientSummary";
 
 // The live emergency screen: the session banner (who, how long, how to stop) and
 // the Emergency Patient Summary assembled for this one patient-bound session.
-export default function EmergencyRecordView({ record, onRefresh, onEnd, busy, error, onExpired, doctorProfile, onStartEncounter }) {
-  const [, setTick] = useState(0);
+// Access has no short countdown — it stays open, 24/7, until the patient is
+// checked out or the doctor ends it.
+export default function EmergencyRecordView({ record, onRefresh, onEnd, busy, error, doctorProfile, onStartEncounter }) {
   const [reload, setReload] = useState(0);
 
-  useEffect(() => {
-    const timer = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const patient = (record && record.bundle && record.bundle.patient) || {};
-  const remaining = remainingLabel(record?.access_expires);
-  const expired = remaining === "Expired";
-
-  useEffect(() => {
-    if (expired && onExpired) onExpired();
-  }, [expired, onExpired]);
 
   const refreshAll = () => {
     setReload((n) => n + 1);
@@ -46,11 +36,9 @@ export default function EmergencyRecordView({ record, onRefresh, onEnd, busy, er
           </div>
           <div className="text-sm text-red-900 space-y-1 text-right">
             <p className="font-mono text-xs">{record?.session_ref}</p>
-            <p>
-              {expired ? "Access expired" : "Expires in"} <strong>{remaining}</strong>
-            </p>
+            <p className="font-semibold">Open until the patient is checked out</p>
             <p className="text-xs opacity-80">Started {dateTimeLabel(record?.access_start)}</p>
-            <p className="text-xs opacity-80">Ends {dateTimeLabel(record?.access_expires)}</p>
+            <p className="text-xs opacity-80">Available 24/7 — end it yourself with &ldquo;End access now&rdquo;.</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -64,7 +52,7 @@ export default function EmergencyRecordView({ record, onRefresh, onEnd, busy, er
           ))}
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" variant="outline" onClick={refreshAll} disabled={busy || expired}>
+          <Button size="sm" variant="outline" onClick={refreshAll} disabled={busy}>
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Refresh
           </Button>

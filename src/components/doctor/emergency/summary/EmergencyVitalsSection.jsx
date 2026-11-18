@@ -40,7 +40,7 @@ export default function EmergencyVitalsSection({ data = {}, onDocumentVitals }) 
         )}
       </Section>
 
-      <Section title="Current emergency assessment" status={current.status} meta={current.at ? formatStamp(current.at) : ""} defaultOpen>
+      <Section title="Current emergency assessment" status={current.status} meta={current.at ? formatStamp(current.at) : ""}>
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           <Activity className="h-3.5 w-3.5" /> This emergency episode
         </div>

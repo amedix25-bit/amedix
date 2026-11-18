@@ -59,6 +59,12 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
       rec.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
+      // The stop handler is attached before recording starts, so pressing Stop
+      // always submits the recording — never a dead button.
+      rec.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
+        process(blob);
+      };
       rec.start(1000);
       recorderRef.current = rec;
       setSeconds(0);
@@ -94,7 +100,11 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
         specialty: specialty || "General",
         field_context: contextLabel || "clinical documentation",
       });
-      setFinalText(res.data.corrected_text || "");
+      if (res.data && res.data.error) {
+        setError(res.data.error);
+        return;
+      }
+      setFinalText(res.data.corrected_text || res.data.transcript || "");
       setReview(res.data);
       setApplied({});
     } catch (err) {
@@ -109,8 +119,16 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
     const rec = recorderRef.current;
     if (!rec) return;
     recorderRef.current = null;
-    rec.onstop = () => process(new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
-    rec.stop();
+    if (rec.state === "inactive") {
+      process(new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
+      return;
+    }
+    try {
+      rec.stop();
+    } catch (err) {
+      console.error(err);
+      process(new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" }));
+    }
   };
 
   const applyCorrection = (c) => {
@@ -122,13 +140,17 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
 
   const confirmInsert = () => {
     const text = finalText.trim();
-    if (text && onChange) {
+    if (!text) {
+      setError("No text to insert. Record again and speak clearly.");
+      return;
+    }
+    if (onChange) {
       const existing = String(value || "").trimEnd();
       onChange(existing ? `${existing} ${text}` : text);
     }
     setReview(null);
     setFinalText("");
-    setReview(null);
+    setApplied({});
   };
 
   const chooseLang = (v) => {

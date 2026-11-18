@@ -24,7 +24,6 @@ export default function EmergencyAllergySection({ data = {}, section }) {
       title="Allergies and intolerances"
       status={data.status}
       meta={section?.last_updated ? `Last recorded ${formatStamp(section.last_updated)}` : ""}
-      defaultOpen
     >
       <div className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-red-800">
         Critical safety information

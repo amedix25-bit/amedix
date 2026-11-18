@@ -9,7 +9,7 @@ export default function EmergencyProblemSection({ data = {}, section }) {
   const active = data.active || [];
   const family = data.family_history || [];
   return (
-    <Section title="Active problems and medical history" status={active.length ? "documented" : "not_documented"} meta={`${active.length} active`} defaultOpen>
+    <Section title="Active problems and medical history" status={active.length ? "documented" : "not_documented"} meta={`${active.length} active`}>
       {active.length === 0 && (data.resolved || []).length === 0 && <Empty>No medical problem documented in AMedix.</Empty>}
       {(data.active || []).map((c) => (
         <div key={c.id} className="border-b border-border/60 py-1.5 last:border-0">

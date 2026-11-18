@@ -17,8 +17,10 @@ import { loadAccountSnapshot, evaluateSnapshot } from "./verifiedAccounts.ts";
 
 // ── Policy constants ────────────────────────────────────────────────────────
 export const HOSPITAL_QR_ROTATION_SECONDS = 120;
-export const HOSPITAL_SESSION_MINUTES = 20;
-export const PATIENT_ACCESS_MINUTES = 15;
+// Emergency access is not a stopwatch. A session stays open around the clock
+// (24/7) until the patient is checked out or the doctor ends it; the 24-hour
+// ceiling only ensures an abandoned session can never outlive the visit.
+export const EMERGENCY_ACCESS_HOURS = 24;
 export const PATIENT_QR_VALID_DAYS = 365;
 export const EMERGENCY_DEPARTMENT = "Emergency Department";
 export const EMERGENCY_SPECIALTIES = ["emergency medicine", "trauma surgery"];
@@ -130,6 +132,30 @@ export function hospitalWindow(now = Date.now()) {
 
 export function addMinutes(minutes: number, from = Date.now()): string {
   return new Date(from + minutes * 60000).toISOString();
+}
+
+export function addHours(hours: number, from = Date.now()): string {
+  return new Date(from + hours * 3600000).toISOString();
+}
+
+// The visit ends when the patient is checked out. A session therefore ends with
+// the patient's check-out record — never on a short countdown. A patient with no
+// check-in record (seen outside a hospital visit) is not treated as checked out.
+export async function patientCheckedOut(base44: any, session: any) {
+  if (!session || !session.patient_id) return false;
+  const sr = base44.asServiceRole || base44;
+  const started = new Date(session.access_start || session.session_start || 0).getTime();
+  try {
+    const query: any = { patient_id: session.patient_id, status: "completed" };
+    if (session.hospital_id) query.hospital_id = session.hospital_id;
+    const rows = pageRows(await sr.entities.HospitalCheckIn.filter(query, { limit: 5 }));
+    return rows.some((r: any) => {
+      const at = new Date(r.completed_datetime || 0).getTime();
+      return Number.isFinite(at) && at >= started;
+    });
+  } catch (e) {
+    return false;
+  }
 }
 
 export function newEmergencySessionRef(): string {

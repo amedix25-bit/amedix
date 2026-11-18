@@ -32,7 +32,6 @@ export default function EmergencyCriticalOverview({ critical = {}, allergies = {
           title="Allergies and intolerances"
           status={allergies.status}
           meta={`${(allergies.items || []).length} entr${(allergies.items || []).length === 1 ? "y" : "ies"}`}
-          defaultOpen
           tone="border-red-200"
         >
           <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-red-700">
@@ -69,7 +68,7 @@ export default function EmergencyCriticalOverview({ critical = {}, allergies = {
           {allergies.status === "unable_to_obtain" && <Empty>Patient unable to provide allergy information and no reliable source is available.</Empty>}
         </Section>
 
-        <Section title="High-risk medications" status={critical.high_risk_medications && critical.high_risk_medications.length ? "documented" : "not_documented"} defaultOpen>
+        <Section title="High-risk medications" status={critical.high_risk_medications && critical.high_risk_medications.length ? "documented" : "not_documented"}>
           {(critical.high_risk_medications || []).length === 0 ? (
             <Empty>No high-risk medication recorded as current.</Empty>
           ) : (
@@ -88,7 +87,7 @@ export default function EmergencyCriticalOverview({ critical = {}, allergies = {
           )}
         </Section>
 
-        <Section title="Active medical problems" status={(critical.active_problems || []).length ? "documented" : "not_documented"} defaultOpen>
+        <Section title="Active medical problems" status={(critical.active_problems || []).length ? "documented" : "not_documented"}>
           {(critical.active_problems || []).length === 0 ? (
             <Empty>No active problem documented in AMedix.</Empty>
           ) : (
@@ -105,7 +104,7 @@ export default function EmergencyCriticalOverview({ critical = {}, allergies = {
           )}
         </Section>
 
-        <Section title="Blood group and emergency contact" defaultOpen>
+        <Section title="Blood group and emergency contact">
           <div className="flex items-start gap-2 text-sm">
             <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0">

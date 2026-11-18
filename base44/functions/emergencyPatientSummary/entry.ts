@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
-import { evaluateEmergencyDoctor, accessLive, writeEmergencyAudit } from "../../shared/emergencyAccess.ts";
+import { evaluateEmergencyDoctor, accessLive, patientCheckedOut, writeEmergencyAudit } from "../../shared/emergencyAccess.ts";
 import { buildEmergencyPatientSummary } from "../../shared/emergencyPatientSummary.ts";
 
 // The Emergency Patient Summary for ONE live, patient-bound emergency session.
@@ -44,6 +44,25 @@ async function handleRequest(req: Request) {
   }
   if (!session || session.doctor_user_id !== user.id) {
     return Response.json({ error: "This emergency session could not be found for your account." }, { status: 403 });
+  }
+
+  // Emergency access ends with the visit: once the patient is checked out, the
+  // summary is closed until the patient is re-authorized.
+  if (await patientCheckedOut(base44, session)) {
+    try {
+      await sr.entities.EmergencySession.update(session.id, {
+        status: "expired",
+        access_status: "expired",
+        ended_datetime: new Date().toISOString(),
+        ended_reason: "Patient checked out.",
+      });
+    } catch (e) {
+      /* the check above still refuses the read */
+    }
+    return Response.json(
+      { error: "The patient has been checked out, so this emergency access has ended.", checked_out: true },
+      { status: 403 }
+    );
   }
 
   if (!accessLive(session)) {

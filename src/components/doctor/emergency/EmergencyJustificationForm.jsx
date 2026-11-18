@@ -38,7 +38,9 @@ export default function EmergencyJustificationForm({ patient, onSubmit, onBack, 
         <Siren className="w-5 h-5 text-red-600" />
         <div>
           <p className="font-semibold">Emergency access — {patient?.name || "patient"}</p>
-          <p className="text-xs text-muted-foreground">CIN {patient?.cin || "—"} · expires automatically</p>
+          <p className="text-xs text-muted-foreground">
+            CIN {patient?.cin || "—"} · stays open until the patient is checked out
+          </p>
         </div>
       </div>
 

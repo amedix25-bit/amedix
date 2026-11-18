@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import {
-  HOSPITAL_SESSION_MINUTES,
-  PATIENT_ACCESS_MINUTES,
+  EMERGENCY_ACCESS_HOURS,
+  addHours,
   PATIENT_QR_VALID_DAYS,
   EMERGENCY_DEPARTMENT,
   EMERGENCY_REASONS,
@@ -21,6 +21,7 @@ import {
   distinctPatientPattern,
   sessionLive,
   accessLive,
+  patientCheckedOut,
   buildEmergencyBundle,
   notifyPatientOfEmergencyAccess,
   pageRows,
@@ -429,7 +430,7 @@ async function handleRequest(req: Request) {
       qr_token_window: String(payload.w || ""),
       authorization_result: "granted",
       session_start: now.toISOString(),
-      session_expires: addMinutes(HOSPITAL_SESSION_MINUTES, now.getTime()),
+      session_expires: addHours(EMERGENCY_ACCESS_HOURS, now.getTime()),
       parent_session_id: "",
       patient_id: "",
       access_status: "none",
@@ -563,9 +564,11 @@ async function handleRequest(req: Request) {
     }
 
     const now = Date.now();
+    // Access stays open around the clock and ends when the patient is checked
+    // out or the doctor ends it — never on a short countdown.
     const accessExpiry = parent
-      ? Math.min(now + PATIENT_ACCESS_MINUTES * 60000, new Date(parent.session_expires).getTime())
-      : now + PATIENT_ACCESS_MINUTES * 60000;
+      ? Math.min(now + EMERGENCY_ACCESS_HOURS * 3600000, new Date(parent.session_expires).getTime())
+      : now + EMERGENCY_ACCESS_HOURS * 3600000;
 
     const session = await sr.entities.EmergencySession.create({
       session_ref: newEmergencySessionRef(),
@@ -757,6 +760,38 @@ async function handleRequest(req: Request) {
         detail: "The doctor ended the emergency access session.",
       });
       return Response.json({ ended: true });
+    }
+
+    // The visit is over at check-out: the access ends with it, not on a timer.
+    if (await patientCheckedOut(base44, session)) {
+      try {
+        await sr.entities.EmergencySession.update(session.id, {
+          status: "expired",
+          access_status: "expired",
+          ended_datetime: new Date().toISOString(),
+          ended_reason: "Patient checked out.",
+        });
+      } catch (e) {
+        /* the check above still refuses the read */
+      }
+      await writeEmergencyAudit(base44, {
+        event_type: "session_ended",
+        pathway: session.pathway,
+        doctor_user_id: user.id,
+        doctor_name: session.doctor_name,
+        hospital_id: session.hospital_id,
+        hospital_user_id: session.hospital_user_id,
+        hospital_name: session.hospital_name,
+        patient_id: session.patient_id,
+        session_id: session.id,
+        session_ref: session.session_ref,
+        authorization_result: "ended",
+        detail: "The patient was checked out; emergency access ended.",
+      });
+      return Response.json(
+        { error: "The patient has been checked out, so this emergency access has ended.", checked_out: true },
+        { status: 403 }
+      );
     }
 
     if (!accessLive(session)) {

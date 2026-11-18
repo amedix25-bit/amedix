@@ -7,15 +7,21 @@ import EmergencyScanPanel from "./EmergencyScanPanel";
 import EmergencyOptionsPanel from "./EmergencyOptionsPanel";
 import EmergencyJustificationForm from "./EmergencyJustificationForm";
 import EmergencyRecordView from "./EmergencyRecordView";
-import { dateTimeLabel, remainingLabel, scannedCin, scannedQrKind } from "@/lib/emergencyQr";
+import { scannedCin, scannedQrKind } from "@/lib/emergencyQr";
 
 const errorText = (err, fallback) =>
   (err && err.response && err.response.data && err.response.data.error) ||
   (err && err.data && err.data.error) ||
   fallback;
 
+// The active emergency access is remembered on this device, so a phone call, a
+// different tab or closing the app never forces the doctor to scan and
+// re-justify the same patient. The server still decides whether it is live.
+const ACCESS_KEY = "amedix_emergency_active_session";
+const HOSPITAL_KEY = "amedix_emergency_hospital_session";
+
 // Doctor entry point for BOTH emergency pathways:
-//  · hospital Emergency Department QR → immediate temporary authorization
+//  · hospital Emergency Department QR → immediate authorization, open 24/7
 //  · patient Emergency QR → Emergency Medicine / Trauma Surgery only
 // Every check is repeated on the server; this screen only drives the flow.
 export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProfile, onStartEncounter }) {
@@ -36,6 +42,42 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
 
   const call = async (payload) => (await base44.functions.invoke("emergencyAccess", payload)).data;
 
+  // Resume an access that is still live when the screen is opened again.
+  useEffect(() => {
+    let cancelled = false;
+    const restore = async () => {
+      const savedHospital = localStorage.getItem(HOSPITAL_KEY);
+      if (savedHospital) {
+        try {
+          const held = JSON.parse(savedHospital);
+          if (held && new Date(held.session_expires).getTime() > Date.now()) setHospitalSession(held);
+          else localStorage.removeItem(HOSPITAL_KEY);
+        } catch (e) {
+          localStorage.removeItem(HOSPITAL_KEY);
+        }
+      }
+      const savedId = localStorage.getItem(ACCESS_KEY);
+      if (!savedId) return;
+      setBusy(true);
+      try {
+        const data = await call({ action: "session_bundle", session_id: savedId });
+        if (cancelled) return;
+        setRecord({ ...data, session_id: data.session_id || savedId });
+        setStage("record");
+      } catch (err) {
+        localStorage.removeItem(ACCESS_KEY);
+        if (!cancelled) setNotice("Your previous emergency access has ended. Scan the patient's QR again if you still need it.");
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    };
+    restore();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const scanPatient = async (raw, cin) => {
     const data = await call({
       action: "patient_qr_scan",
@@ -52,6 +94,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
 
   const scanHospital = async (raw) => {
     const data = await call({ action: "hospital_qr_scan", token: raw });
+    localStorage.setItem(HOSPITAL_KEY, JSON.stringify(data));
     setHospitalSession(data);
     setNotice(data.message);
     setScanner(null);
@@ -105,6 +148,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
         patient_name,
         confirmed,
       });
+      localStorage.setItem(ACCESS_KEY, data.session_id);
       setRecord(data);
       setStage("record");
     } catch (err) {
@@ -121,7 +165,11 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
       const data = await call({ action: "session_bundle", session_id: record?.session_id });
       setRecord({ ...record, ...data });
     } catch (err) {
-      setError(errorText(err, "This emergency access has ended. Scan the patient's Emergency QR again."));
+      localStorage.removeItem(ACCESS_KEY);
+      setRecord(null);
+      setScan(null);
+      setStage("scan");
+      setError(errorText(err, "This emergency access has ended. Scan the patient's QR again."));
     } finally {
       setBusy(false);
     }
@@ -131,6 +179,7 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
     setBusy(true);
     try {
       await call({ action: "end_session", session_id: record?.session_id });
+      localStorage.removeItem(ACCESS_KEY);
       setRecord(null);
       setScan(null);
       setStage("scan");
@@ -155,7 +204,8 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
               The patient's single QR identifies them and offers two routes: emergency access for Emergency Medicine and
               Trauma Surgery doctors, or for any doctor inside a live hospital emergency authorization — otherwise the
               regular appointment pathway. The hospital Emergency Department QR authorizes any verified doctor
-              immediately. Everything is temporary, patient-specific and logged.
+              immediately. Access is patient-specific, logged, and stays open 24/7 until the patient is checked out or
+              you end it.
             </p>
           </div>
         </div>
@@ -167,8 +217,8 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-emerald-900">Emergency authorization granted</p>
                 <p className="text-xs text-emerald-800">
-                  {hospitalSession.hospital_name} · {hospitalSession.department} · expires in{" "}
-                  {remainingLabel(hospitalSession.session_expires)}
+                  {hospitalSession.hospital_name} · {hospitalSession.department} · open 24/7 until the patient is checked
+                  out
                 </p>
                 <p className="text-xs text-emerald-800 mt-1">
                   You may now initiate patient-specific emergency access. Each patient still needs their own Emergency QR
@@ -295,9 +345,9 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
       )}
 
       <p className="text-xs text-muted-foreground">
-        Every scan, authorization, denial, revocation and notification is written to an immutable audit log. Expired or
-        revoked sessions must be re-authorized; nothing here becomes permanent patient permission.
-        {hospitalSession ? ` Hospital authorization checked ${dateTimeLabel(hospitalSession.session_expires)}.` : ""}
+        Every scan, authorization, denial, revocation and notification is written to an immutable audit log. Access ends
+        when the patient is checked out or you end it, and nothing here becomes permanent patient permission. Your active
+        access is remembered on this device, so switching tabs or apps never asks you to scan again.
       </p>
     </div>
   );
