@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DoctorScanPatientQr from "@/components/doctor/DoctorScanPatientQr";
 import MyPatientsList from "@/components/doctor/MyPatientsList";
+import MyAssignedPatients from "@/components/doctor/assigned/MyAssignedPatients";
 import DoctorPatientRecordView from "@/components/doctor/DoctorPatientRecordView";
 import DoctorPatientClinicalNotesView from "@/components/doctor/DoctorPatientClinicalNotesView";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
@@ -120,7 +121,13 @@ export default function DoctorPatientSearch({ doctorProfile, prefill }) {
       </div>
 
       {tab === "mypatients" ? (
-        <MyPatientsList doctorProfile={doctorProfile} onSelect={setSelectedPatient} />
+        <div className="space-y-6">
+          <MyAssignedPatients onSelectPatient={setSelectedPatient} />
+          <div>
+            <h3 className="font-semibold mb-3">Doctors with Your Approval</h3>
+            <MyPatientsList doctorProfile={doctorProfile} onSelect={setSelectedPatient} />
+          </div>
+        </div>
       ) : (
         <>
           <form onSubmit={handleSearch} className="flex gap-3">

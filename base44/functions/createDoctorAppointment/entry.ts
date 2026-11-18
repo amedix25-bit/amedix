@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { createPatientNotification } from '../../shared/patientNotifications.ts';
+import { findLiveAccess } from '../../shared/patientAccess.ts';
 
 export default async function(req) {
   try {
@@ -31,10 +32,11 @@ export default async function(req) {
     const doctorProfiles = await base44.entities.DoctorProfile.filter({ id: doctor_id });
     const doctorProfile = doctorProfiles[0];
 
-    // Verify the doctor has approved access to this patient.
-    const accessReqs = await base44.entities.AccessRequest.filter({ patient_id: patient.id, doctor_id, status: 'approved' });
-    if (accessReqs.length === 0) {
-      return Response.json({ error: "You need approved access to this patient's record" }, { status: 403 });
+    // Verify the doctor holds a LIVE authorization for this patient — one that
+    // has expired or been removed by the patient no longer counts.
+    const liveAccess = await findLiveAccess(base44, doctor_id, patient.id);
+    if (!liveAccess) {
+      return Response.json({ error: "You need active access to this patient's record" }, { status: 403 });
     }
 
     // Duplicate protection: the same doctor, patient, date and time must never create a second appointment.

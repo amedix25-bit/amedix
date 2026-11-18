@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { findLiveAccess } from "../../shared/patientAccess.ts";
 import {
   computeDating,
   evaluateSchedule,
@@ -85,12 +86,10 @@ export default async function(req) {
     }
     if (!doctor) return Response.json({ error: "Doctor profile not found." }, { status: 403 });
 
-    const accessPage = await sr.entities.AccessRequest.filter(
-      { patient_id: patientId, doctor_id: doctor.id, status: "approved" },
-      { limit: 1 }
-    );
-    const access = accessPage.items || [];
-    if (access.length === 0) {
+    // Only a LIVE authorization counts — an expired one, or one the patient
+    // removed, is refused here exactly as in the clinical record reads.
+    const liveAccess = await findLiveAccess(base44, doctor.id, patientId);
+    if (!liveAccess) {
       return Response.json({ error: "You do not have authorized access to this patient's record." }, { status: 403 });
     }
 

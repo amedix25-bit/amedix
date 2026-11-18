@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
+import { accessLive } from "../../shared/patientAccess.ts";
 
 // Protected clinical file access (Phase 13 security hardening). Clinical
 // documents, lab results, referral letters, imaging results and radiology
@@ -14,10 +15,11 @@ function isPublicUrl(ref) {
 }
 
 async function doctorUserIdsForPatient(svc, patientId) {
-  // Approved doctors for a patient: resolve each approved AccessRequest's
-  // doctor profile to its user id.
+  // Approved doctors for a patient: resolve each LIVE approved AccessRequest's
+  // doctor profile to its user id. An authorization that expired or was removed
+  // by the patient is excluded, so their old session cannot fetch the file.
   const reqs = await svc.entities.AccessRequest.filter({ patient_id: patientId, status: "approved" });
-  const doctorIds = reqs.map((r) => r.doctor_id).filter(Boolean);
+  const doctorIds = reqs.filter((r) => accessLive(r)).map((r) => r.doctor_id).filter(Boolean);
   const out = new Set();
   for (const did of doctorIds) {
     const prof = await svc.entities.DoctorProfile.get(did);

@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import QrScanner from "@/components/lab/technician/QrScanner";
+import SelectTreatingDoctor from "@/components/hospital/receptionist/SelectTreatingDoctor";
 import { clearReceptionistSession } from "@/lib/receptionistSession";
 import {
   Search, ScanLine, Keyboard, CheckCircle2, Loader2, UserRound, Calendar,
-  Phone, MapPin, BadgeCheck, Lock, Banknote,
+  Phone, MapPin, BadgeCheck, Lock, Banknote, Stethoscope, UserCog,
 } from "lucide-react";
 
 // The receptionist can search for a patient by CIN or by scanning the
@@ -31,11 +32,45 @@ export default function ReceptionistWorkspace({ session }) {
   const [method, setMethod] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(null);
+  // Treating doctor — mandatory at check-in. Selecting the doctor is what
+  // authorizes that doctor's patient-specific access, automatically.
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [doctorsError, setDoctorsError] = useState("");
+  const [doctorId, setDoctorId] = useState("");
+  const [changeOpen, setChangeOpen] = useState(false);
+  const [changeDoctorId, setChangeDoctorId] = useState("");
+  const [changeConfirm, setChangeConfirm] = useState(false);
 
   const handleUnauthorized = () => {
     clearReceptionistSession();
     window.location.href = "/hospital/receptionist";
   };
+
+  // Only the active, verified doctors of this receptionist's own hospital.
+  useEffect(() => {
+    const load = async () => {
+      setDoctorsLoading(true);
+      setDoctorsError("");
+      try {
+        const res = await base44.functions.invoke("hospitalReceptionistDoctors", {
+          receptionist_id: session.receptionist_id,
+          session_token: session.session_token,
+        });
+        setDoctors(res.data.doctors || []);
+      } catch (err) {
+        if (err.response?.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+        setDoctorsError(err.response?.data?.error || "Could not load the doctors of your hospital.");
+      } finally {
+        setDoctorsLoading(false);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The QR contains the patient CIN (possibly inside a longer string).
   const extractCin = (raw) => {
@@ -64,6 +99,10 @@ export default function ReceptionistWorkspace({ session }) {
       setCheckOutOpen(false);
       setAmount("");
       setMethod("");
+      setDoctorId("");
+      setChangeOpen(false);
+      setChangeDoctorId("");
+      setChangeConfirm(false);
     } catch (err) {
       if (err.response?.status === 401) {
         handleUnauthorized();
@@ -84,21 +123,58 @@ export default function ReceptionistWorkspace({ session }) {
         receptionist_id: session.receptionist_id,
         session_token: session.session_token,
         patient_id: patient.patient_id,
+        doctor_id: doctorId,
         payment_amount: amount,
         payment_method: method,
       });
-      setSuccess(res.data.checkin);
+      setSuccess({
+        ...res.data.checkin,
+        message: res.data.message,
+        doctor_name: res.data.doctor_name,
+      });
       setPatient(null);
       setCin("");
       setCheckInOpen(false);
       setAmount("");
       setMethod("");
+      setDoctorId("");
     } catch (err) {
       if (err.response?.status === 401) {
         handleUnauthorized();
         return;
       }
       setError(err.response?.data?.error || "Check-in failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Changing the assigned treating doctor of an active visit. The change needs
+  // an explicit confirmation: the previous doctor's visit access is revoked and
+  // the newly selected doctor receives the authorization.
+  const handleChangeDoctor = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await base44.functions.invoke("hospitalAssignTreatingDoctor", {
+        receptionist_id: session.receptionist_id,
+        session_token: session.session_token,
+        patient_id: patient.patient_id,
+        doctor_id: changeDoctorId,
+        confirm: changeConfirm,
+      });
+      setSuccess({ ...res.data.checkin, message: res.data.message, doctor_name: res.data.doctor_name });
+      setActiveCheckIn(res.data.checkin);
+      setAlreadyCheckedIn(true);
+      setChangeOpen(false);
+      setChangeDoctorId("");
+      setChangeConfirm(false);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setError(err.response?.data?.error || "The treating doctor could not be changed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -167,12 +243,17 @@ export default function ReceptionistWorkspace({ session }) {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <p className="font-semibold text-emerald-800">
-              {success.checked_out ? "Patient Checked Out ✓" : "Patient Checked In ✓"}
+              {success.message || (success.checked_out ? "Patient Checked Out ✓" : "Patient Checked In ✓")}
             </p>
           </div>
           <p className="text-xs text-emerald-700 mt-1">
             {success.patient_name} · {success.checkin_time} · {success.payment_amount} LYD via {success.payment_method}
           </p>
+          {!success.checked_out && success.encounter_ref && (
+            <p className="text-xs text-emerald-700 mt-1">
+              Encounter {success.encounter_ref} · access is for this visit only and ends when the patient is checked out.
+            </p>
+          )}
         </div>
       )}
 
@@ -255,13 +336,89 @@ export default function ReceptionistWorkspace({ session }) {
             ) : (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="flex-1">
+                <div className="flex-1 space-y-2">
                   <p className="text-sm text-amber-800">
                     Checked in at {activeCheckIn?.checkin_time || "—"} · {activeCheckIn?.payment_amount || "—"} LYD via {activeCheckIn?.payment_method || "—"}
                   </p>
-                  <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => setCheckOutOpen(true)}>
-                    Check Out
-                  </Button>
+                  <p className="text-sm text-amber-900 flex items-center gap-1.5">
+                    <Stethoscope className="w-4 h-4 shrink-0" />
+                    <span className="min-w-0">
+                      Treating doctor:{" "}
+                      <span className="font-semibold">
+                        {activeCheckIn?.assigned_doctor_name ? `Dr. ${activeCheckIn.assigned_doctor_name}` : "—"}
+                      </span>
+                    </span>
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    Access:{" "}
+                    {activeCheckIn?.access_status === "granted"
+                      ? "Granted for this visit"
+                      : activeCheckIn?.access_status === "revoked"
+                        ? "Removed"
+                        : activeCheckIn?.access_status === "expired"
+                          ? "Ended"
+                          : "Not granted"}
+                    {activeCheckIn?.encounter_ref ? ` · Encounter ${activeCheckIn.encounter_ref}` : ""}
+                  </p>
+                  {!changeOpen && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={() => setCheckOutOpen(true)}>
+                        Check Out
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setChangeOpen(true);
+                          setChangeDoctorId("");
+                          setChangeConfirm(false);
+                        }}
+                      >
+                        <UserCog className="w-4 h-4 mr-1" />
+                        Change Treating Doctor
+                      </Button>
+                    </div>
+                  )}
+
+                  {changeOpen && (
+                    <div className="rounded-xl border border-amber-300 bg-card p-4 space-y-3">
+                      <p className="text-sm font-semibold text-amber-900">Change the treating doctor?</p>
+                      <SelectTreatingDoctor
+                        doctors={doctors}
+                        value={changeDoctorId}
+                        onChange={setChangeDoctorId}
+                        loading={doctorsLoading}
+                        error={doctorsError}
+                      />
+                      <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={changeConfirm}
+                          onChange={(e) => setChangeConfirm(e.target.checked)}
+                        />
+                        <span>
+                          I confirm this change. The previous doctor's access to this visit ends, and the newly selected
+                          doctor receives access to this patient's record for this visit only.
+                        </span>
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleChangeDoctor}
+                          disabled={submitting || !changeDoctorId || !changeConfirm}
+                        >
+                          {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserCog className="w-4 h-4 mr-2" />}
+                          Confirm Change
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setChangeOpen(false)} disabled={submitting}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -271,6 +428,13 @@ export default function ReceptionistWorkspace({ session }) {
                 <Banknote className="w-4 h-4 text-primary" />
                 Visit Payment — required before check-in
               </p>
+              <SelectTreatingDoctor
+                doctors={doctors}
+                value={doctorId}
+                onChange={setDoctorId}
+                loading={doctorsLoading}
+                error={doctorsError}
+              />
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Payment Amount (LYD) *</Label>
@@ -298,8 +462,12 @@ export default function ReceptionistWorkspace({ session }) {
                   </Select>
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Confirming the check-in grants the selected doctor access to this patient's record for this visit only.
+                The patient does not need to approve it on their phone.
+              </p>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" onClick={handleCheckIn} disabled={submitting || !amount || !method}>
+                <Button type="button" onClick={handleCheckIn} disabled={submitting || !amount || !method || !doctorId}>
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
                   Confirm Check In
                 </Button>

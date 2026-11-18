@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
+import { findLiveAccess } from "../../shared/patientAccess.ts";
 
 // The longitudinal patient record — server-side assembly of the patient's
 // complete clinical history (encounters, clinical documents, consents) for a
@@ -30,15 +31,18 @@ export default async function(req) {
       return Response.json({ error: "Doctor profile not found." }, { status: 403 });
     }
 
-    // Role-based, permission-based access: an approved AccessRequest is
-    // required before any patient information is returned.
-    const accessReqs = await base44.asServiceRole.entities.AccessRequest.filter({
-      doctor_id: doctor.id,
-      patient_id: String(payload.patient_id),
-      status: "approved",
-    });
-    if (accessReqs.length === 0) {
-      return Response.json({ error: "You do not have authorized access to this patient's record." }, { status: 403 });
+    // Role-based, permission-based access: a LIVE approved authorization is
+    // required before any patient information is returned — one that has
+    // expired or been removed by the patient refuses immediately.
+    const access = await findLiveAccess(base44, doctor.id, String(payload.patient_id));
+    if (!access) {
+      return Response.json(
+        {
+          error:
+            "Your authorization to this patient's record is no longer active. The visit may have ended, or the patient removed your access.",
+        },
+        { status: 403 }
+      );
     }
 
     const patients = await base44.asServiceRole.entities.PatientProfile.filter({ id: String(payload.patient_id) });

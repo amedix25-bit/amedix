@@ -12,6 +12,10 @@
     "doctor_id": {
       "type": "string"
     },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the doctor account \u2014 lets the doctor see the access granted to them and is used for Row Level Security"
+    },
     "patient_cin": {
       "type": "string"
     },
@@ -37,7 +41,66 @@
         "suspended"
       ],
       "default": "pending",
-      "description": "PENDING: doctor requested access, awaiting patient decision. APPROVED: patient accepted \u2014 doctor can view the record. DECLINED: patient declined \u2014 stays recorded so the patient can re-accept later. REVOKED: patient removed the doctor from their Doctor Access list. SUSPENDED: patient turned the eye control off \u2014 the doctor remains in the Doctor Access list but cannot view the record until access is restored."
+      "description": "PENDING: doctor requested access, awaiting patient decision. APPROVED: access granted \u2014 by the patient, or automatically by an authorized hospital reception check-in \u2014 the doctor can view the record until the authorization expires or is removed. DECLINED: patient declined \u2014 stays recorded so the patient can re-accept later. REVOKED: access was removed (by the patient, or because the visit ended or the treating doctor was reassigned). SUSPENDED: patient turned the eye control off \u2014 the doctor remains in the Doctor Access list but cannot view the record until access is restored."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "patient_approved",
+        "hospital_checkin"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "default": "patient_approved",
+      "description": "PATIENT_APPROVED: the doctor requested access and the patient accepted it. HOSPITAL_CHECKIN: the authorization was created automatically by an authorized hospital reception check-in that selected this doctor as the treating doctor for that visit \u2014 the patient never has to approve it on their phone."
+    },
+    "hospital_id": {
+      "type": "string",
+      "description": "HospitalProfile id the visit (and therefore this authorization) belongs to \u2014 set only for a hospital check-in authorization"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "checkin_id": {
+      "type": "string",
+      "description": "HospitalCheckIn record of the visit this authorization was granted for. The authorization covers this encounter only and ends when the visit ends"
+    },
+    "encounter_ref": {
+      "type": "string",
+      "description": "Human-readable reference of the visit encounter the authorization belongs to, e.g. VIS-20261118-8F3K"
+    },
+    "access_scope": {
+      "type": "string",
+      "description": "Plain description of exactly what this authorization covers \u2014 this one patient, this doctor, this hospital and this encounter. It never grants access to other doctors, other patients or the hospital's wider records"
+    },
+    "granted_by_name": {
+      "type": "string",
+      "description": "Name of the hospital receptionist whose check-in granted this authorization (empty when the patient granted it themselves)"
+    },
+    "granted_by_role": {
+      "type": "string",
+      "description": "hospital_receptionist for a check-in authorization, patient when the patient approved it"
+    },
+    "granted_datetime": {
+      "type": "string",
+      "description": "Exact date and time the access was granted (ISO datetime)"
+    },
+    "expires_datetime": {
+      "type": "string",
+      "description": "Date and time the authorization stops being valid automatically (ISO datetime). Access is also ended when the visit ends or the treating doctor is reassigned"
+    },
+    "revoked_datetime": {
+      "type": "string",
+      "description": "Date and time the access was removed (ISO datetime)"
+    },
+    "revoked_by": {
+      "type": "string",
+      "description": "Who ended the access \u2014 patient, hospital_receptionist, hospital_checkout or system"
+    },
+    "revoke_reason": {
+      "type": "string"
     },
     "date_requested": {
       "type": "string",
@@ -46,7 +109,7 @@
     "date_responded": {
       "type": "string",
       "format": "date",
-      "description": "Date the patient granted access (set when the request is accepted or re-accepted)"
+      "description": "Date the access was granted (set when the request is accepted, re-accepted or granted by a check-in)"
     }
   },
   "required": [
@@ -60,6 +123,9 @@
       "$or": [
         {
           "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "data.doctor_user_id": "{{user.id}}"
         },
         {
           "created_by_id": "{{user.id}}"

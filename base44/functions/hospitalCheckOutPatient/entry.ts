@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { verifyReceptionistSession, touchReceptionistActivity, unauthorized } from "../../shared/hospitalAuth.ts";
+import { revokeAccess, accessLive } from "../../shared/patientAccess.ts";
 
 // Hospital check-out. The receptionist who checked a patient in (or any
 // receptionist of the same hospital) can also end the active visit — the
@@ -29,14 +30,49 @@ export default async function(req) {
     }
 
     const now = new Date().toISOString();
-    const checkout = await base44.asServiceRole.entities.HospitalCheckIn.update(active[0].id, {
+    const visit = active[0];
+
+    // The visit is over: the treating doctor's visit authorization ends with it.
+    // The authorization is revoked (never deleted) so the history stays readable.
+    let accessRevoked = false;
+    if (visit.access_request_id) {
+      const rows = await base44.asServiceRole.entities.AccessRequest.filter({ id: visit.access_request_id });
+      const request = (rows || [])[0];
+      if (request && accessLive(request)) {
+        await revokeAccess(base44, {
+          request,
+          reason: "Visit ended — the patient was checked out.",
+          byName: rec.full_name || "",
+          byRole: "hospital_checkout",
+        });
+        accessRevoked = true;
+      }
+    }
+
+    const history = Array.isArray(visit.assignment_history) ? [...visit.assignment_history] : [];
+    history.push({
+      action: "visit_ended",
+      doctor_id: visit.assigned_doctor_id || "",
+      doctor_name: visit.assigned_doctor_name || "",
+      by_name: rec.full_name || "",
+      by_role: "hospital_receptionist",
+      reason: accessRevoked ? "Visit ended; the treating doctor's access was ended." : "Visit ended.",
+      datetime: now,
+    });
+
+    const checkout = await base44.asServiceRole.entities.HospitalCheckIn.update(visit.id, {
       status: "completed",
       completed_datetime: now,
       completed_by_name: rec.full_name,
+      access_status: visit.access_status === "revoked" ? "revoked" : accessRevoked ? "expired" : visit.access_status || "none",
+      access_revoked_datetime: accessRevoked ? now : visit.access_revoked_datetime || "",
+      access_revoked_by: accessRevoked ? "hospital_checkout" : visit.access_revoked_by || "",
+      access_revoke_reason: accessRevoked ? "Visit ended — the patient was checked out." : visit.access_revoke_reason || "",
+      assignment_history: history,
     });
 
     await touchReceptionistActivity(base44, rec.id);
-    return Response.json({ status: "checked_out", checkout });
+    return Response.json({ status: "checked_out", checkout, access_revoked: accessRevoked });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

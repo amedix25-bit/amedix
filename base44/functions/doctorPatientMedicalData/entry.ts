@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 import { partitionOwnedRecords, logOwnershipDenial } from "../../shared/patientOwnership.ts";
+import { findLiveAccess } from "../../shared/patientAccess.ts";
 
 // Doctor-side clinical data refresh for a patient. PERMISSIONS AND ACCESS
 // CONTROL: the backend verifies the signed-in user owns a DoctorProfile AND
@@ -20,14 +21,15 @@ export default async function (req) {
     const doctor = doctors[0] || null;
     if (!doctor) return Response.json({ error: "Doctor profile not found." }, { status: 403 });
 
-    const accessReqs = await base44.asServiceRole.entities.AccessRequest.filter({
-      doctor_id: doctor.id,
-      patient_id: patientId,
-      status: "approved",
-    });
-    if (accessReqs.length === 0) {
+    // Access is re-checked on EVERY request: an approved authorization that has
+    // expired, or that the patient removed, refuses immediately.
+    const access = await findLiveAccess(base44, doctor.id, patientId);
+    if (!access) {
       return Response.json(
-        { error: "You do not have authorized access to this patient's record." },
+        {
+          error:
+            "Your authorization to this patient's record is no longer active. The visit may have ended, or the patient removed your access.",
+        },
         { status: 403 }
       );
     }

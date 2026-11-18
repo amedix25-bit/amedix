@@ -37,6 +37,103 @@
     "receptionist_name": {
       "type": "string"
     },
+    "encounter_ref": {
+      "type": "string",
+      "description": "Human-readable reference of this visit encounter, e.g. VIS-20261118-8F3K \u2014 the encounter the treating doctor's access is granted for"
+    },
+    "assigned_doctor_id": {
+      "type": "string",
+      "description": "DoctorProfile id of the treating doctor the receptionist selected for this visit"
+    },
+    "assigned_doctor_user_id": {
+      "type": "string",
+      "description": "User id of the treating doctor account \u2014 the doctor's 'My Assigned Patients' list is keyed on this"
+    },
+    "assigned_doctor_name": {
+      "type": "string"
+    },
+    "assigned_doctor_specialty": {
+      "type": "string"
+    },
+    "assigned_doctor_title": {
+      "type": "string",
+      "description": "The treating doctor's professional title at assignment time, when available"
+    },
+    "access_request_id": {
+      "type": "string",
+      "description": "AccessRequest created automatically for the assigned doctor \u2014 the single authorization this visit granted"
+    },
+    "access_status": {
+      "type": "string",
+      "enum": [
+        "none",
+        "granted",
+        "expired",
+        "revoked"
+      ],
+      "enumColors": [
+        "gray",
+        "green",
+        "gray",
+        "red"
+      ],
+      "default": "none",
+      "description": "NONE: no treating doctor authorized yet. GRANTED: the assigned doctor currently holds patient-specific access for this visit. EXPIRED: the authorization ended automatically (visit ended or its period ran out). REVOKED: access was removed \u2014 by the patient, or because the treating doctor was reassigned"
+    },
+    "access_granted_datetime": {
+      "type": "string",
+      "description": "Date and time the treating doctor's access was granted (ISO datetime)"
+    },
+    "access_expires_datetime": {
+      "type": "string",
+      "description": "Date and time the treating doctor's access ends automatically (ISO datetime)"
+    },
+    "access_revoked_datetime": {
+      "type": "string",
+      "description": "Date and time the access was ended (ISO datetime)"
+    },
+    "access_revoked_by": {
+      "type": "string",
+      "description": "Who ended the access \u2014 patient, hospital_checkout or hospital_receptionist"
+    },
+    "access_revoke_reason": {
+      "type": "string"
+    },
+    "assignment_history": {
+      "type": "array",
+      "description": "Append-only history of every treating-doctor assignment for this visit \u2014 who assigned whom, when, and why the previous authorization ended",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "assigned / reassigned / access_revoked / visit_ended"
+          },
+          "doctor_id": {
+            "type": "string"
+          },
+          "doctor_name": {
+            "type": "string"
+          },
+          "by_name": {
+            "type": "string"
+          },
+          "by_role": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "datetime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "datetime"
+        ]
+      }
+    },
     "checkin_datetime": {
       "type": "string",
       "description": "Date and time the patient was checked in (ISO datetime)"
@@ -94,6 +191,9 @@
       "$or": [
         {
           "data.hospital_user_id": "{{user.id}}"
+        },
+        {
+          "data.assigned_doctor_user_id": "{{user.id}}"
         },
         {
           "user_condition": {

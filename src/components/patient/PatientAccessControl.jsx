@@ -80,6 +80,21 @@ export default function PatientAccessControl({ patientId }) {
       ? updateAccess(req, "suspended", "access_suspended")
       : updateAccess(req, "approved", "access_restored");
 
+  // Remove Access is a server-side decision: the backend revokes exactly this
+  // one authorization, ends the visit assignment it came from, records the
+  // revocation in the audit trail and notifies the doctor. Every other
+  // authorized doctor keeps their access.
+  const removeAccess = async (req) => {
+    setBusyId(req.id);
+    try {
+      await base44.functions.invoke("patientRevokeDoctorAccess", { access_request_id: req.id });
+    } catch (err) {
+      console.error(err);
+    }
+    await load();
+    setBusyId(null);
+  };
+
   if (requests === null) {
     return (
       <div className="flex items-center text-muted-foreground text-sm">
@@ -187,6 +202,23 @@ export default function PatientAccessControl({ patientId }) {
                         <p className="text-sm text-muted-foreground">{doctorSubline(req)}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">{t("Access granted on")} {req.date_responded || "—"}</p>
+                      {req.hospital_name && (
+                        <p className="text-xs text-muted-foreground">
+                          {req.hospital_name}
+                          {req.encounter_ref ? ` · ${t("Encounter")} ${req.encounter_ref}` : ""}
+                        </p>
+                      )}
+                      {req.source === "hospital_checkin" && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("Granted automatically by hospital reception at check-in")}
+                          {req.granted_by_name ? ` · ${req.granted_by_name}` : ""}
+                        </p>
+                      )}
+                      {req.expires_datetime && granted && (
+                        <p className="text-xs text-muted-foreground">
+                          {t("Access ends")} {new Date(req.expires_datetime).toLocaleString()}
+                        </p>
+                      )}
                       </div>
                     </div>
                     <button
@@ -212,11 +244,11 @@ export default function PatientAccessControl({ patientId }) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => updateAccess(req, "revoked", "access_revoked")}
+                      onClick={() => removeAccess(req)}
                       disabled={busyId === req.id}
                     >
                       <X className="w-4 h-4 mr-1" />
-                      {t("Remove Doctor")}
+                      {t("Remove Access")}
                     </Button>
                   </div>
                 </div>
