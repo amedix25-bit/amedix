@@ -134,7 +134,7 @@ export default function ProfessionalProfileSection({ profile, onProfileUpdated }
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
-          <div className="flex items-center gap-1 overflow-x-auto border-b border-border" role="tablist">
+          <div className="flex flex-wrap items-center gap-1 border-b border-border" role="tablist">
             {TABS.map(({ key, label, icon: Icon }) => {
               const active = tab === key;
               return (

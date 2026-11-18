@@ -20,7 +20,7 @@ export default function DoctorCommunication({ profile, hospitalSession, tab = "m
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-border" role="tablist">
+      <div className="flex flex-wrap items-center gap-1 border-b border-border" role="tablist">
         {TABS.map(({ key, label, icon: Icon }) => {
           const isActive = active === key;
           return (

@@ -50,7 +50,7 @@ export default function DoctorPatientRecordView({ patient, onBack, doctorProfile
 
       <DoctorPatientSummary patient={patient} />
 
-      <div className="flex flex-nowrap w-full overflow-x-auto rounded-xl border border-border bg-card p-1 gap-1">
+      <div className="flex flex-wrap w-full rounded-xl border border-border bg-card p-1 gap-1">
         {tabButton("history", "Patient History", History)}
         {isObgyn && patient.gender === "female" && tabButton("antenatal", "Antenatal Care", Baby)}
         {tabButton("notes", "Clinical Notes", FileText)}
