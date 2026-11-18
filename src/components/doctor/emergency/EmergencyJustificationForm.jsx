@@ -21,7 +21,7 @@ export default function EmergencyJustificationForm({ patient, onSubmit, onBack, 
 
   const submit = () => {
     if (!reason) return setLocalError("Select the emergency reason.");
-    if (justification.trim().length < 10) return setLocalError("Give a brief clinical justification (at least 10 characters).");
+    if (justification.trim().length < 3) return setLocalError("Give a brief clinical justification (at least 3 characters).");
     if (!confirmed) return setLocalError("Confirm that this is immediate emergency care.");
     setLocalError("");
     onSubmit({

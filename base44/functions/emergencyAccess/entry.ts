@@ -521,8 +521,8 @@ async function handleRequest(req: Request) {
     if (!reason || !EMERGENCY_REASONS.includes(reason)) {
       return Response.json({ error: "Select a valid emergency reason." }, { status: 400 });
     }
-    if (justification.length < 10) {
-      return Response.json({ error: "Give a brief clinical justification (at least 10 characters)." }, { status: 400 });
+    if (justification.length < 3) {
+      return Response.json({ error: "Give a brief clinical justification (at least 3 characters)." }, { status: 400 });
     }
     if (body.confirmed !== true) {
       return Response.json({ error: "Confirm that this request is for immediate emergency care." }, { status: 400 });
