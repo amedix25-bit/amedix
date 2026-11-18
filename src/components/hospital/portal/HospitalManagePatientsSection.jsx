@@ -85,8 +85,8 @@ export default function HospitalManagePatientsSection({ profile }) {
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card overflow-x-auto">
-          <Table className="min-w-[640px]">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("Patient Name")}</TableHead>

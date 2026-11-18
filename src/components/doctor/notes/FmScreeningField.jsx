@@ -78,7 +78,7 @@ export default function FmScreeningField({ value, onChange, values, patientId })
             </p>
           </div>
           <Select value={decision.status || undefined} onValueChange={(v) => setDecision(item.key, v)}>
-            <SelectTrigger className="h-7 w-[190px] shrink-0 text-[11px]">
+            <SelectTrigger className="h-7 w-full text-[11px] sm:w-[190px] sm:shrink-0">
               <SelectValue placeholder="Record decision" />
             </SelectTrigger>
             <SelectContent>

@@ -190,7 +190,7 @@ export default function HospitalInbox({ actor, staff = [], departments = [], ini
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[180px] flex-1">
+        <div className="relative min-w-0 flex-1 sm:min-w-[180px]">
           <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search subject, doctor, staff or reference…" className="pl-8" />
         </div>

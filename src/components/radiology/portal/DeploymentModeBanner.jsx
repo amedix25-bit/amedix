@@ -17,7 +17,7 @@ export default function DeploymentModeBanner({ mode, onOpenDemo }) {
   return (
     <div className={`rounded-xl border px-4 py-3 mb-5 flex flex-wrap items-start gap-3 ${tone}`}>
       <Icon className="w-4 h-4 mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-[220px]">
+      <div className="flex-1 min-w-0 sm:min-w-[220px]">
         <p className="text-sm font-semibold">
           {demonstration ? "Demonstration environment" : "Verification environment"}
         </p>

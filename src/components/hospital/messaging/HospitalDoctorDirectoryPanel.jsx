@@ -61,7 +61,7 @@ export default function HospitalDoctorDirectoryPanel({ departments = [], onOpenI
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[200px] flex-1">
+        <div className="relative min-w-0 flex-1 sm:min-w-[200px]">
           <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, specialty, department or doctor ID…" className="pl-8" />
         </div>

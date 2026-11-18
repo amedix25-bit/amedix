@@ -5,6 +5,7 @@ import { ResolvedFileButton } from "@/components/radiology/ResolvedFile";
 import { STAGE_LABELS, STAGE_CHIP } from "@/lib/radiologyWorkflow";
 import { formatDate, formatDateTime, reportStatus, studyMatch } from "@/lib/radiologistWorklist";
 import RadiAntRequestLink from "@/components/radiologist/imaging/RadiAntRequestLink";
+import WorklistCard from "./WorklistCard";
 
 const OWNERSHIP = {
   mine: { label: "Yours", chip: "bg-blue-500/15 text-blue-700" },
@@ -39,9 +40,18 @@ export default function WorklistTable({ rows, loading, claiming, onOpen, onClaim
     );
   }
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="overflow-x-auto max-h-[calc(100vh-360px)] overflow-y-auto">
-        <table className="w-full min-w-[1270px] border-collapse text-sm">
+    <>
+      {/* Phones and small tablets: the same study information as stacked
+          cards, so no clinical field needs horizontal swiping. */}
+      <div className="md:hidden space-y-3">
+        {rows.map((r) => (
+          <WorklistCard key={r.id} row={r} claiming={claiming} onOpen={onOpen} onClaim={onClaim} />
+        ))}
+      </div>
+
+      <div className="hidden md:block rounded-xl border border-border bg-card overflow-hidden">
+        <div className="overflow-x-auto max-h-[calc(100vh-360px)] overflow-y-auto">
+          <table className="w-full min-w-[1270px] border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
             <tr className="border-b border-border">
               <th className={TH}>Patient</th>
@@ -154,8 +164,9 @@ export default function WorklistTable({ rows, loading, claiming, onOpen, onClaim
               );
             })}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

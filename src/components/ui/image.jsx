@@ -151,12 +151,24 @@ const Image = React.forwardRef(
       onError: handleError,
     }
 
+    // Every render path must honour fittingType: a plain <img> stretched to
+    // fill its box distorts the picture (that is exactly how a logo loses its
+    // proportions). `fit` = contain, `fill` = cover, on both paths.
+    const fitClass = fittingType === "fit" ? "object-contain" : "object-cover"
+
     if (!src) {
       // Renders as a real <img> (not a <div>) — the visual editor's
       // click-to-edit toolbar keys its "Replace Image" action off the DOM
       // tag being `img`, so a placeholder div would be unrecoverable in the
       // editor. FALLBACK_IMAGE_URL doubles as the "no image chosen" graphic.
-      return <img ref={ref} src={FALLBACK_IMAGE_URL} {...imageProps} data-empty-image />
+      return (
+        <img
+          ref={ref}
+          src={FALLBACK_IMAGE_URL}
+          {...imageProps}
+          className={cn(fitClass, props.className)}
+          data-empty-image />
+      )
     }
 
     // A failed transform retries the underlying original as a plain image.
@@ -167,7 +179,12 @@ const Image = React.forwardRef(
       const isErrorMode = mode === IMAGE_LOAD_MODE.FALLBACK
       const imageSrc = isErrorMode ? FALLBACK_IMAGE_URL : getOriginalImageUrl(src, parsedSource)
       return (
-        <img ref={ref} src={imageSrc} {...imageProps} data-error-image={isErrorMode || undefined} />
+        <img
+          ref={ref}
+          src={imageSrc}
+          {...imageProps}
+          className={cn(fitClass, props.className)}
+          data-error-image={isErrorMode || undefined} />
       )
     }
 

@@ -247,7 +247,7 @@ export default function LabTechniciansSection({ profile }) {
               </div>
               {resetId === t.id && (
                 <div className="flex flex-wrap gap-2 items-end border-t border-border mt-3 pt-3">
-                  <div className="space-y-1.5 flex-1 min-w-[200px]">
+                  <div className="space-y-1.5 flex-1 min-w-0 sm:min-w-[200px]">
                     <Label className="text-xs">New password</Label>
                     <Input
                       type="password"

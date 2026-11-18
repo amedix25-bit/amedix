@@ -286,6 +286,32 @@
 }
 
 @layer base {
+  /* Responsive safety net — no page may be wider than the device.
+     `clip` (not `hidden`) so sticky headers keep working. */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  /* Media can never push its container wider than the screen. */
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  /* Long identifiers (CINs, references, emails, URLs) wrap instead of
+     widening the page. Only breaks a word that cannot fit on its own line. */
+  body {
+    overflow-wrap: break-word;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

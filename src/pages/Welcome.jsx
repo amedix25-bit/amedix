@@ -43,12 +43,13 @@ export default function Welcome() {
         aria-hidden="true">
         
         {/* `fit` keeps the logo's own proportions on every screen — it is scaled
-            down to the viewport instead of being stretched to fill it. */}
+            down to the viewport instead of being stretched to fill it. The
+            object-contain class makes that explicit on every render path. */}
         <Image
           src={AMEDIX_LOGO_URL}
           alt=""
           fittingType="fit"
-          className="h-full w-full opacity-[0.15]" />
+          className="h-full w-full object-contain opacity-[0.15]" />
         
       </div>
 
