@@ -35,7 +35,7 @@ const SURGICAL_RECORD_TYPES_BASE = [
     title: "Pre-Operative Assessment",
     description: "Fitness-for-surgery evaluation: comorbidities, optimization and prophylaxis.",
     fields: [
-      { key: "planned_procedure", label: "Planned Procedure", required: true },
+      { key: "planned_procedure", label: "Planned Procedure", type: "procedure", required: true },
       { key: "indication_for_surgery", label: "Indication for Surgery", required: true },
       { key: "comorbidities", label: "Comorbidities" },
       { key: "current_medications", label: "Current Medications" },
@@ -54,7 +54,7 @@ const SURGICAL_RECORD_TYPES_BASE = [
     title: "Operative Note",
     description: "Intra-operative documentation of the procedure, findings, specimens and closure.",
     fields: [
-      { key: "procedure_performed", label: "Procedure Performed", required: true },
+      { key: "procedure_performed", label: "Procedure Performed", type: "procedure", required: true },
       { key: "preoperative_diagnosis", label: "Pre-Operative Diagnosis" },
       { key: "postoperative_diagnosis", label: "Post-Operative Diagnosis" },
       { key: "surgeon", label: "Surgeon" },
@@ -77,7 +77,7 @@ const SURGICAL_RECORD_TYPES_BASE = [
     title: "Procedure Note",
     description: "Documentation of minor surgical procedures performed outside the operating theatre.",
     fields: [
-      { key: "procedure_name", label: "Procedure Name", required: true },
+      { key: "procedure_name", label: "Procedure Name", type: "procedure", required: true },
       { key: "indication", label: "Indication", required: true },
       { key: "consent", label: "Consent", type: "select", options: ["Obtained", "Pending"] },
       { key: "anesthesia", label: "Anesthesia", type: "select", options: ["None", "Local", "Sedation", "Regional", "Other"] },
@@ -96,7 +96,7 @@ const SURGICAL_RECORD_TYPES_BASE = [
     description: "Immediate post-operative condition: vitals, wound, drains, medications and plan.",
     fields: [
       { key: "procedure_date", label: "Date of Surgery", type: "date" },
-      { key: "procedure_performed", label: "Procedure Performed" },
+      { key: "procedure_performed", label: "Procedure Performed", type: "procedure" },
       { key: "general_condition", label: "General Condition", required: true },
       { key: "vital_signs", label: "Vital Signs" },
       { key: "pain_assessment", label: "Pain Assessment" },

@@ -6,6 +6,8 @@
 // Matching works on normalized Arabic text (diacritics/alef variants removed),
 // so "السكرى", "السكري" and "السكري" all match داء السكري → Diabetes Mellitus.
 
+import { arabicProcedureTerms } from "@/lib/surgicalProcedures";
+
 export const ARABIC_REGEX = /[\u0600-\u06FF]/;
 
 export function normalizeArabicText(text) {
@@ -72,8 +74,10 @@ export const AR_CONDITION_TERMS = [
   { ar: "العنقز", en: "Chickenpox", aliases: ["عنقز", "الجدري المائي", "جدري مائي", "حماق"] },
 ];
 
-// Surgeries / procedures
-export const AR_SURGERY_TERMS = [
+// Surgeries / procedures — the hand-curated patient-friendly terms below are
+// extended with every procedure in the AMedix surgical catalogue, so any
+// operation can be found by its Arabic or English name during registration.
+const BASE_SURGERY_TERMS = [
   { ar: "استئصال الزائدة الدودية", en: "Appendectomy", aliases: ["الزايدة", "الزائدة", "عملية الزايدة", "عملية الزايدة الدودية", "زائدة", "استئصال الزايدة", "الزايدة الدودية"] },
   { ar: "استئصال المرارة", en: "Cholecystectomy", aliases: ["مرارة", "عملية المرارة", "استئصال المراره", "ازالة المرارة", "حصوة المرارة عملية"] },
   { ar: "إصلاح الفتق الجراحي", en: "Hernia Repair", aliases: ["فتق", "الفتق", "عملية الفتق", "اصلاح فتق", "فتق اربي"] },
@@ -99,6 +103,13 @@ export const AR_SURGERY_TERMS = [
   { ar: "استئصال الأمعاء", en: "Bowel Resection", aliases: ["امعاء", "عملية امعاء", "ازالة جزء من الامعاء", "استئصال القولون", "قطع الامعاء"] },
   { ar: "جراحة الشبكية", en: "Retinal Surgery", aliases: ["شبكية", "عملية الشبكية", "انفصال الشبكية", "تثبيت الشبكية"] },
   { ar: "جراحة القلب للأطفال", en: "Congenital Heart Defect Repair", aliases: ["عيوب القلب الخلقية", "عملية قلب لطفل", "ثقب في القلب", "ثقب القلب"] },
+];
+
+const CURATED_SURGERY_NAMES = new Set(BASE_SURGERY_TERMS.map((t) => normalizeArabicText(t.en)));
+
+export const AR_SURGERY_TERMS = [
+  ...BASE_SURGERY_TERMS,
+  ...arabicProcedureTerms().filter((t) => !CURATED_SURGERY_NAMES.has(normalizeArabicText(t.en))),
 ];
 
 // Returns up to `limit` terms matching the patient's input. Matches against the

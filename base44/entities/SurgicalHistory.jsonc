@@ -23,6 +23,29 @@
       "type": "string",
       "description": "Standardized Arabic surgical term selected by the patient during registration \u2014 shown in the Patient Portal when present"
     },
+    "procedure_code": {
+      "type": "string",
+      "description": "Procedure code from the AMedix surgical catalogue (CPT) when the selected procedure has one \u2014 recorded so the entry stays traceable to the standard name"
+    },
+    "procedure_specialty": {
+      "type": "string",
+      "description": "Surgical specialty the recorded procedure belongs to, from the AMedix surgical catalogue"
+    },
+    "procedure_status": {
+      "type": "string",
+      "enum": [
+        "previous",
+        "planned",
+        "performed"
+      ],
+      "enumColors": [
+        "gray",
+        "yellow",
+        "green"
+      ],
+      "default": "previous",
+      "description": "PREVIOUS: an operation the patient has already had (this is the past surgical history). PLANNED: an operation that is planned but not yet performed \u2014 never presented as completed. PERFORMED: an operation recorded as carried out"
+    },
     "surgery_date": {
       "type": "string",
       "format": "date"

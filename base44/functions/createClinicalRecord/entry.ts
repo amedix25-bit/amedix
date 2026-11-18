@@ -153,7 +153,7 @@ export default async function(req) {
       const action = String(body.action || "create");
       const map = {
         condition: { entity: base44.asServiceRole.entities.MedicalCondition, section: "known_case", required: "name", allowed: ["name", "name_ar", "category", "current_status", "details", "date"], label: "condition" },
-        surgery: { entity: base44.asServiceRole.entities.SurgicalHistory, section: "surgical_history", required: "surgery_type", allowed: ["surgery_type", "surgery_date", "reason", "complications", "outcome"], label: "surgery" },
+        surgery: { entity: base44.asServiceRole.entities.SurgicalHistory, section: "surgical_history", required: "surgery_type", allowed: ["surgery_type", "surgery_type_ar", "procedure_code", "procedure_specialty", "procedure_status", "surgery_date", "reason", "complications", "outcome"], label: "surgery" },
         allergy: { entity: base44.asServiceRole.entities.Allergy, section: "allergies", required: "allergen", allowed: ["allergen", "allergy_type", "entry_type", "reaction", "severity"], label: "allergy" },
       };
       const cfg = map[kind];

@@ -26,6 +26,14 @@ const AR = {
   "Add conditions": "إضافة حالات",
   "Already added": "مضافة مسبقًا",
   "Searchable in Arabic and English — select several at once.": "قابل للبحث بالعربية والإنجليزية — اختر عدة حالات معًا.",
+  // Surgical procedure catalogue
+  "Search a surgical procedure (Arabic or English)": "ابحث عن عملية أو إجراء جراحي (بالعربية أو الإنجليزية)",
+  "No matching procedure. Choose the closest specialty or use “Other – specify”.": "لا توجد عملية مطابقة. اختر التخصص الأقرب أو استخدم «أخرى – يرجى التحديد».",
+  "Other – specify the procedure": "أخرى – حدد العملية",
+  "Previous surgery": "عملية سابقة",
+  "Planned procedure": "عملية مخططة",
+  "Performed procedure": "عملية منفذة",
+  "Surgical procedure": "العملية الجراحية",
   // Sidebar navigation
   "Home": "الرئيسية",
   "My Health": "صحتي",

@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LOCKED_MESSAGE, fetchCheckInStatus } from "@/lib/checkInGate";
 import { Loader2, Lock, ChevronDown, ChevronRight } from "lucide-react";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
+import ProcedurePicker from "@/components/surgery/ProcedurePicker";
+import { appendProcedure } from "@/lib/surgicalProcedures";
 
 // Structured documentation form for one surgical record type. The surgeon's
 // equivalent of a clinical note: the patient's medical information stays
@@ -88,6 +90,25 @@ export default function SurgicalRecordForm({ doctorProfile, patient, recordType,
             ))}
           </SelectContent>
         </Select>
+      );
+    }
+    if (f.type === "procedure") {
+      // A planned operation and a performed operation are recorded in their own
+      // fields and never copied into one another. Several procedures may be
+      // recorded in the same field.
+      return (
+        <div className="space-y-1.5">
+          <ProcedurePicker
+            status={f.key === "planned_procedure" ? "planned" : "performed"}
+            onPick={(p) => setField(f.key, appendProcedure(values[f.key], p))}
+          />
+          <Textarea
+            rows={2}
+            value={values[f.key] || ""}
+            onChange={(e) => setField(f.key, e.target.value)}
+            placeholder="Selected procedures"
+          />
+        </div>
       );
     }
     if (f.type === "date" || f.type === "input") {
