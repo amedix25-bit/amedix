@@ -543,6 +543,7 @@ const AR = {
   // ─── Demographics editing ───
   "Demographics": "البيانات الديموغرافية",
   "Nationality": "الجنسية",
+  "e.g. Libyan": "مثال: ليبي",
   "Nationality, e.g. Libyan": "الجنسية، مثال: ليبي",
   "Occupation": "المهنة",
   "Occupations": "المهن",

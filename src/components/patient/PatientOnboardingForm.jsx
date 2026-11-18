@@ -53,6 +53,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     gender: "",
     phone: "",
     address: "",
+    nationality: "",
     blood_type: "Unknown",
     emergency_contact_name: "",
     emergency_contact_phone: "",
@@ -227,6 +228,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
         gender: form.gender,
         phone: form.phone,
         address: form.address,
+        nationality: form.nationality,
         blood_type: form.blood_type,
         identification_number: form.identification_number,
         ...(photoUri ? { photo_uri: photoUri } : {}),
@@ -507,9 +509,15 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
                   <section>
                     <h3 className="text-sm font-semibold text-primary mb-3">{t("Address")}</h3>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="address">{t("Address")} *</Label>
-                      <Input id="address" placeholder={t("Street, city, country")} value={form.address} onChange={set("address")} required />
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="address">{t("Address")} *</Label>
+                        <Input id="address" placeholder={t("Street, city, country")} value={form.address} onChange={set("address")} required />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="nationality">{t("Nationality")}</Label>
+                        <Input id="nationality" placeholder={t("e.g. Libyan")} value={form.nationality} onChange={set("nationality")} />
+                      </div>
                     </div>
                   </section>
 
