@@ -16,6 +16,7 @@
 // `findLiveAccess`, so a revoked or expired authorization refuses immediately.
 import { logClinicalAudit } from "./clinicalAudit.ts";
 import { buildEligibilityIndex } from "./verifiedAccounts.ts";
+import { findActiveCheckIn } from "./hospitalAuth.ts";
 
 // Absolute ceiling of a check-in authorization. The visit ends the access much
 // earlier (check-out), so this only stops a forgotten open visit granting for
@@ -56,6 +57,32 @@ export async function findLiveAccess(base44: any, doctorId: string, patientId: s
     status: "approved",
   });
   return (rows || []).find((r: any) => accessLive(r)) || null;
+}
+
+// The check-in that authorizes THIS doctor to work in THIS patient's record.
+// First the visit the receptionist assigned them as treating doctor of (the
+// encounter authorization); otherwise the hospital's own active check-in, so a
+// doctor working under a hospital check-in keeps exactly the access they had.
+// Every clinical write resolves its gate through this one helper.
+export async function findClinicalCheckIn(base44: any, doctor: any, patientId: string) {
+  const sr = svc(base44);
+  if (!doctor || !patientId) return { checkin: null, via: "" };
+
+  const live = await findLiveAccess(base44, doctor.id, patientId);
+  if (live && live.checkin_id) {
+    try {
+      const rows = await sr.entities.HospitalCheckIn.filter({ id: live.checkin_id });
+      const checkin = (rows || [])[0];
+      if (checkin && checkin.status === "active") {
+        return { checkin, via: "assigned_doctor", access: live };
+      }
+    } catch (e) {
+      /* fall through to the hospital check-in */
+    }
+  }
+
+  const checkin = await findActiveCheckIn(base44, patientId, doctor.hospital);
+  return { checkin: checkin || null, via: checkin ? "hospital" : "" };
 }
 
 // ── Doctor eligibility at one hospital ──────────────────────────────────────

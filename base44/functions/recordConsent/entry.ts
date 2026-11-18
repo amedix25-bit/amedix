@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { gateBlocked } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Centralized consent management. Records who obtained the consent, when,
@@ -42,7 +43,7 @@ export default async function(req) {
       return Response.json({ error: "Doctor profile not found." }, { status: 403 });
     }
 
-    const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
+    const { checkin } = await findClinicalCheckIn(base44, doctor, payload.patient_id);
     if (!checkin) return gateBlocked();
 
     const patients = await base44.asServiceRole.entities.PatientProfile.filter({ id: String(payload.patient_id) });

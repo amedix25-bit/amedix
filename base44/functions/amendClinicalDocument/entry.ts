@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { gateBlocked } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { logNeurologyAudit } from "../../shared/neurologyAudit.ts";
 
@@ -35,7 +36,11 @@ export default async function(req) {
     }
 
     // Mandatory check-in security gate — the patient must still be checked in.
-    const checkin = await findActiveCheckIn(base44, original.patient_id, original.hospital);
+    const { checkin } = await findClinicalCheckIn(
+      base44,
+      { id: original.doctor_id, hospital: original.hospital },
+      original.patient_id
+    );
     if (!checkin) return gateBlocked();
 
     const now = new Date();

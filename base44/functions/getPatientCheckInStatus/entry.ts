@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { findActiveCheckIn } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 
 // Doctor-portal check-in status for a patient. The verdict comes from the
-// backend — the frontend only renders it. Doctors whose hospital has no active
-// check-in for the patient see the clinical functions locked.
+// backend — the frontend only renders it. A doctor holds the clinical functions
+// when the hospital assigned them as the treating doctor of an active visit, or
+// when their hospital has an active check-in for the patient.
 export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -20,15 +21,19 @@ export default async function(req) {
     }
     const doctor = doctors[0];
 
-    const checkin = await findActiveCheckIn(base44, patientId, doctor.hospital);
+    const { checkin, via } = await findClinicalCheckIn(base44, doctor, patientId);
     return Response.json({
       checked_in: !!checkin,
-      hospital: doctor.hospital || "",
+      hospital: checkin?.hospital_name || doctor.hospital || "",
+      access_via: via,
+      assigned_doctor: via === "assigned_doctor" ? doctor.full_name || "" : "",
       checkin: checkin
         ? {
             hospital_name: checkin.hospital_name,
             checkin_datetime: checkin.checkin_datetime,
             payment_method: checkin.payment_method,
+            encounter_ref: checkin.encounter_ref || "",
+            assigned_doctor_name: checkin.assigned_doctor_name || "",
           }
         : null,
     });

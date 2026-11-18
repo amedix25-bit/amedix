@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { gateBlocked } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 import { generateClinicalRef, logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Clinical note creation with the mandatory check-in gate. The backend
@@ -37,7 +38,9 @@ export default async function(req) {
     }
     const doctor = doctors[0];
 
-    const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
+    // Authorized by the visit the receptionist assigned this doctor to (or the
+    // hospital's own active check-in) — verified server-side on every note.
+    const { checkin } = await findClinicalCheckIn(base44, doctor, payload.patient_id);
     if (!checkin) return gateBlocked();
 
     const patients = await base44.asServiceRole.entities.PatientProfile.filter({ id: String(payload.patient_id) });
@@ -162,7 +165,9 @@ export default async function(req) {
     notePayload.patient_name = patient.full_name || "";
     notePayload.patient_dob = patient.date_of_birth || "";
     notePayload.doctor_name = doctor.full_name || "";
-    notePayload.hospital = doctor.hospital || "";
+    // The visit hospital authorizes the note when the doctor's profile carries
+    // no hospital of its own (assigned through the reception check-in).
+    notePayload.hospital = doctor.hospital || checkin.hospital_name || "";
     notePayload.department = doctor.specialization || "";
     notePayload.encounter_id = encounter.encounter_id || "";
     notePayload.note_reference = generateClinicalRef("CN");

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { gateBlocked } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 import { createPatientNotification } from "../../shared/patientNotifications.ts";
 import { todayStr } from "../../shared/pharmacyPrescription.ts";
@@ -33,7 +34,7 @@ export default async function(req) {
     const med = (meds.items || meds)[0];
     if (!med) return Response.json({ error: 'Medication record not found.' }, { status: 404 });
 
-    const checkin = await findActiveCheckIn(base44, med.patient_id, doctor.hospital);
+    const { checkin } = await findClinicalCheckIn(base44, doctor, med.patient_id);
     if (!checkin) return gateBlocked();
 
     const today = todayStr();

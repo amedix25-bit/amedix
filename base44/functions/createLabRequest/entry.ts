@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { gateBlocked } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 import { logClinicalAudit } from "../../shared/clinicalAudit.ts";
 
 // Lab request creation with the mandatory check-in gate. The backend
@@ -26,7 +27,7 @@ export default async function(req) {
     }
     const doctor = doctors[0];
 
-    const checkin = await findActiveCheckIn(base44, payload.patient_id, doctor.hospital);
+    const { checkin } = await findClinicalCheckIn(base44, doctor, payload.patient_id);
     if (!checkin) return gateBlocked();
 
     // Idempotency: an identical request_id already persisted (replayed/retried

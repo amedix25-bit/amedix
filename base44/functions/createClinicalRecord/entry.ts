@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { findActiveCheckIn, gateBlocked } from "../../shared/hospitalAuth.ts";
+import { gateBlocked } from "../../shared/hospitalAuth.ts";
+import { findClinicalCheckIn } from "../../shared/patientAccess.ts";
 import { logSectionEdit } from "../../shared/sectionEditLog.ts";
 
 // The check-in-gated clinical record creator. Examinations, prescribed
@@ -72,7 +73,7 @@ export default async function(req) {
     }
 
     // Doctor mode — the mandatory check-in security gate.
-    const checkin = await findActiveCheckIn(base44, patient.id, doctor.hospital);
+    const { checkin } = await findClinicalCheckIn(base44, doctor, patient.id);
     if (!checkin) return gateBlocked();
 
     if (kind === "examination") {
