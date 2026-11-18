@@ -319,6 +319,8 @@ export default function DoctorDashboard() {
         {activeTab === "search" && profile && <DoctorPatientSearch doctorProfile={profile} prefill={searchPrefill} />}
         {activeTab === "emergency" && (
           <EmergencyAccessSection
+            doctorProfile={profile}
+            onStartEncounter={(patient) => handleNavigateTab("notes", { patient })}
             onOpenPatientSearch={(cin) => {
               setSearchPrefill({ cin, ts: Date.now() });
               setTabView(null);

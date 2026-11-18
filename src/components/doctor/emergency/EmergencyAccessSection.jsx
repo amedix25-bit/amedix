@@ -18,7 +18,7 @@ const errorText = (err, fallback) =>
 //  · hospital Emergency Department QR → immediate temporary authorization
 //  · patient Emergency QR → Emergency Medicine / Trauma Surgery only
 // Every check is repeated on the server; this screen only drives the flow.
-export default function EmergencyAccessSection({ onOpenPatientSearch }) {
+export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProfile, onStartEncounter }) {
   const [stage, setStage] = useState("scan");
   const [scanner, setScanner] = useState(null);
   const [hospitalSession, setHospitalSession] = useState(null);
@@ -280,7 +280,15 @@ export default function EmergencyAccessSection({ onOpenPatientSearch }) {
       )}
 
       {stage === "record" && record && (
-        <EmergencyRecordView record={record} onRefresh={refreshRecord} onEnd={endRecord} busy={busy} error={error} />
+        <EmergencyRecordView
+          record={record}
+          onRefresh={refreshRecord}
+          onEnd={endRecord}
+          busy={busy}
+          error={error}
+          doctorProfile={doctorProfile}
+          onStartEncounter={onStartEncounter}
+        />
       )}
 
       <p className="text-xs text-muted-foreground">
