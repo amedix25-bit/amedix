@@ -35,8 +35,13 @@ async function handleRequest(req: Request) {
   const sessionId = String((body && body.session_id) || "").trim();
   if (!sessionId) return Response.json({ error: "An emergency session is required." }, { status: 400 });
 
-  const rows = await sr.entities.EmergencySession.filter({ id: sessionId });
-  const session = rows[0];
+  let session: any = null;
+  try {
+    const rows = await sr.entities.EmergencySession.filter({ id: sessionId });
+    session = rows[0] || null;
+  } catch (e) {
+    session = null;
+  }
   if (!session || session.doctor_user_id !== user.id) {
     return Response.json({ error: "This emergency session could not be found for your account." }, { status: 403 });
   }

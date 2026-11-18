@@ -460,10 +460,16 @@ export async function buildEmergencyPatientSummary(base44: any, patient: any, se
     : { status: "not_applicable" };
 
   // ── Social and functional information ─────────────────────────────────────
+  const smokingValue = txt(patient.smoking_status);
+  const alcoholValue = txt(patient.alcohol_use);
   const social = {
-    smoking: txt(patient.smoking_status),
+    // A registration default ("never" / "none") with nothing behind it is shown
+    // as recorded but not reconfirmed — never as a verified negative history.
+    smoking: smokingValue
+      ? `${smokingValue}${smokingValue === "never" && !txt(patient.tobacco_details) && !txt(patient.vaping_history) ? " (recorded, not reconfirmed)" : ""}`
+      : "",
     tobacco_details: txt(patient.tobacco_details),
-    alcohol: txt(patient.alcohol_use),
+    alcohol: alcoholValue ? `${alcoholValue}${alcoholValue === "none" && !txt(patient.substance_use) ? " (recorded)" : ""}` : "",
     substance_use: txt(patient.substance_use),
     living_situation: txt(patient.living_situation_type).replace(/_/g, " "),
     living_details: txt(patient.living_situation),
