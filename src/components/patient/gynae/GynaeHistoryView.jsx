@@ -13,6 +13,8 @@ import {
   DELIVERY_MODES,
   NEONATAL_OUTCOMES,
   MENOPAUSE_SYMPTOMS,
+  CONTRACEPTION_METHODS,
+  ORAL_CONTRACEPTION_TYPES,
   sectionHasAnswers,
 } from "@/lib/gynaeObstetric";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -142,10 +144,29 @@ export default function GynaeHistoryView({ gynae, profile, showRecordInfo = true
           <InfoRow label={t("Previous gynaecological operations")} value={value(g.past.surgeries)} />
           <InfoRow label={t("Treatments received")} value={value(g.past.treatments)} />
           <InfoRow label={t("Relevant investigations")} value={value(g.past.investigations)} />
-          <InfoRow label={t("Contraception history")} value={value(g.past.contraception)} />
           <InfoRow label={t("Fertility-related history")} value={value(g.past.fertility)} />
         </div>
         {g.past.other_details && <p className="text-sm">{g.past.other_details}</p>}
+      </section>
+
+      <section className="space-y-2 border-t border-border pt-4">
+        <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">{t("Contraception History")}</h4>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+          <InfoRow
+            label={t("Current contraception")}
+            value={value(labelFor(CONTRACEPTION_METHODS, g.past.contraception_method))}
+          />
+          {g.past.contraception_method === "oral" && (
+            <InfoRow
+              label={t("Oral contraception type")}
+              value={value(labelFor(ORAL_CONTRACEPTION_TYPES, g.past.contraception_oral_type))}
+            />
+          )}
+          {g.past.contraception_method === "oral" && g.past.contraception_oral_type === "other" && (
+            <InfoRow label={t("Details")} value={value(g.past.contraception_oral_other)} />
+          )}
+          {g.past.contraception && <InfoRow label={t("Contraception history")} value={g.past.contraception} />}
+        </div>
       </section>
 
       <section className="space-y-2 border-t border-border pt-4">

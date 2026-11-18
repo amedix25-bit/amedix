@@ -1,6 +1,7 @@
 import React from "react";
 import MenstrualHistoryFields from "./MenstrualHistoryFields";
 import GynaePastHistoryFields from "./GynaePastHistoryFields";
+import ContraceptionHistoryFields from "./ContraceptionHistoryFields";
 import ObstetricHistoryFields from "./ObstetricHistoryFields";
 import CurrentPregnancyFields from "./CurrentPregnancyFields";
 import MenopauseFields from "./MenopauseFields";
@@ -61,6 +62,11 @@ export default function GynaeObstetricHistoryForm({ value, onChange }) {
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary">{t("Gynaecological History")}</h4>
         <GynaePastHistoryFields value={value.past} onChange={update("past")} />
+      </section>
+
+      <section className="space-y-2 border-t border-border pt-4">
+        <h4 className="text-xs font-semibold text-primary">{t("Contraception History")}</h4>
+        <ContraceptionHistoryFields value={value.past} onChange={update("past")} />
       </section>
     </div>
   );

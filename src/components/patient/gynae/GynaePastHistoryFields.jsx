@@ -73,11 +73,6 @@ export default function GynaePastHistoryFields({ value, onChange }) {
           placeholder="e.g. Ultrasound, cervical smear, biopsy"
         />
         <TextField
-          label="Contraception history"
-          value={value.contraception}
-          onChange={(contraception) => onChange({ contraception })}
-        />
-        <TextField
           label="Fertility-related history"
           value={value.fertility}
           onChange={(fertility) => onChange({ fertility })}

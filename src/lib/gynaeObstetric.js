@@ -85,6 +85,40 @@ export const MENOPAUSE_STATUS_OPTIONS = [
   { value: "unknown", label: "Unknown" },
 ];
 
+// Contraception she is currently using — asked once, in its own section. An
+// unanswered question is left empty, never written as "None".
+export const CONTRACEPTION_METHODS = [
+  { value: "none", label: "None" },
+  { value: "oral", label: "Oral contraception" },
+  { value: "injectable", label: "Injectable contraception" },
+  { value: "iud", label: "Intrauterine device (IUD)" },
+  { value: "implant", label: "Implant" },
+  { value: "patch", label: "Contraceptive patch" },
+  { value: "vaginal_ring", label: "Vaginal ring" },
+  { value: "barrier", label: "Condoms / Barrier methods" },
+  { value: "natural", label: "Natural / Fertility awareness methods" },
+  { value: "permanent", label: "Permanent contraception" },
+  { value: "other", label: "Other" },
+];
+
+// The second question, asked only when she selected Oral contraception.
+export const ORAL_CONTRACEPTION_TYPES = [
+  { value: "combined", label: "Combined oral contraceptive pill (COC – Estrogen + Progestin)" },
+  { value: "progestin_only", label: "Progestin-only pill (POP / Mini-pill)" },
+  { value: "emergency", label: "Emergency contraceptive pill" },
+  { value: "other", label: "Other / Not sure" },
+];
+
+// Readable contraception answer for the profile and for treating doctors.
+export const contraceptionSummary = (past = {}) => {
+  const method = labelFor(CONTRACEPTION_METHODS, past.contraception_method);
+  if (!method) return "";
+  if (past.contraception_method !== "oral") return method;
+  const oral = labelFor(ORAL_CONTRACEPTION_TYPES, past.contraception_oral_type);
+  const detail = past.contraception_oral_type === "other" ? (past.contraception_oral_other || "").trim() : "";
+  return [method, oral, detail].filter(Boolean).join(" · ");
+};
+
 // A structured, empty history. Everything starts unanswered — an empty field is
 // saved as "unknown", never as a negative history.
 export const emptyGynaeHistory = () => ({
@@ -107,6 +141,9 @@ export const emptyGynaeHistory = () => ({
     treatments: "",
     investigations: "",
     contraception: "",
+    contraception_method: "",
+    contraception_oral_type: "",
+    contraception_oral_other: "",
     fertility: "",
     other_details: "",
   },
@@ -227,7 +264,19 @@ export function buildGynaeSave(previous, next, actor = {}, options = {}) {
 
   const sections = {
     menstrual: { ...incoming.menstrual },
-    past: { ...incoming.past, conditions },
+    // The oral-contraception answers exist only while Oral contraception is the
+    // method she chose — switching method clears them instead of leaving a
+    // stale answer behind.
+    past: {
+      ...incoming.past,
+      conditions,
+      contraception_oral_type:
+        incoming.past.contraception_method === "oral" ? incoming.past.contraception_oral_type : "",
+      contraception_oral_other:
+        incoming.past.contraception_method === "oral" && incoming.past.contraception_oral_type === "other"
+          ? incoming.past.contraception_oral_other
+          : "",
+    },
     obstetric: {
       ...obstetricAnswers,
       gravida: gravida === null ? "" : String(gravida),
@@ -369,12 +418,15 @@ export function legacyGynaeFields(gynae, isFemale) {
     })
     .join("; ");
 
+  const contraception = contraceptionSummary(p) || p.contraception || "";
+
   const gynaecological = [
     gynaeConditions,
     p.infections ? `Previous pelvic infections: ${p.infections}` : "",
     p.surgeries ? `Gynaecological operations: ${p.surgeries}` : "",
     p.treatments ? `Treatments: ${p.treatments}` : "",
     p.investigations ? `Investigations: ${p.investigations}` : "",
+    contraception ? `Contraception: ${contraception}` : "",
     p.other_details,
   ].filter(Boolean).join(" · ");
 
