@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Search } from "lucide-react";
 import { MED_ROUTES, MEAL_OPTIONS, routeLabel } from "@/lib/medicationUtils";
 import { AR_CONDITION_TERMS, AR_SURGERY_TERMS, ARABIC_REGEX } from "@/lib/arabicMedicalTerms";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import ArabicMedicalInput from "./ArabicMedicalInput";
+import ConditionCatalogPicker from "./ConditionCatalogPicker";
 import DateField from "@/components/ui/date-field";
 
 // Structured list section: optional "none of the above" flag, saved entry
@@ -93,8 +94,9 @@ export const conditionStatusLabel = (v, t) => {
 
 // Structured condition entry: diagnosis, approximate date of diagnosis,
 // treating facility, current status and notes.
-export function ConditionEntryForm({ onAdd }) {
+export function ConditionEntryForm({ onAdd, existing = [] }) {
   const { t, isArabic } = usePatientLanguage();
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const EMPTY = {
     name: "", name_en: "", name_ar: "", history_type: "existing_condition",
     date: "", treating_facility: "", current_status: "unknown", details: "",
@@ -128,17 +130,43 @@ export function ConditionEntryForm({ onAdd }) {
     setOpen(false);
   };
 
+  const catalog = (
+    <ConditionCatalogPicker
+      open={catalogOpen}
+      onOpenChange={setCatalogOpen}
+      existing={existing}
+      onAdd={(items) => items.forEach((item) => onAdd(item))}
+    />
+  );
+
   if (!open) {
     return (
-      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
-        <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
-        {t("Add")}
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+          <Plus className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+          {t("Add")}
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setCatalogOpen(true)}>
+          <Search className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+          {t("Browse by specialty")}
+        </Button>
+        {catalog}
+      </div>
     );
   }
 
   return (
     <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="secondary" size="sm" onClick={() => setCatalogOpen(true)}>
+          <Search className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+          {t("Browse conditions by specialty")}
+        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          {t("Searchable in Arabic and English — select several at once.")}
+        </span>
+      </div>
+      {catalog}
       <div className="grid sm:grid-cols-[1fr_1fr] gap-2">
         <ArabicMedicalInput
           value={form.name}

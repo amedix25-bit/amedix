@@ -588,7 +588,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     onNoneChange={toggleNone("pastHistory")}
                     noneLabel={t("No medical conditions or diagnoses")}
                   >
-                    <ConditionEntryForm onAdd={addEntry("pastHistory")} />
+                    <ConditionEntryForm onAdd={addEntry("pastHistory")} existing={medical.pastHistory} />
                   </MedicalListSection>
 
                   <MedicalListSection

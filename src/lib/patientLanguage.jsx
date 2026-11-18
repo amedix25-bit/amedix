@@ -9,6 +9,23 @@ const LANG_STORAGE_KEY = "amedix_patient_lang";
 // "CIN" is intentionally NOT translated: it is the patient's unique identifier
 // and always stays exactly as CIN.
 const AR = {
+  // Condition catalog during registration
+  "Browse conditions by specialty": "تصفح الأمراض حسب التخصص",
+  "Browse by specialty": "تصفح حسب التخصص",
+  "Select every condition that applies to you. You can search in Arabic or English, and mark each one as current or historical.": "اختر كل حالة تنطبق عليك. يمكنك البحث بالعربية أو الإنجليزية، وتحديد كل حالة كحالية أو سابقة.",
+  "conditions": "حالة",
+  "selected": "محددة",
+  "conditions across": "حالة موزعة على",
+  "specialties": "تخصصًا",
+  "Search a disease or condition (Arabic or English)": "ابحث عن مرض أو حالة (بالعربية أو الإنجليزية)",
+  "No matching condition. Choose the closest specialty and use “Other – please specify”.": "لا توجد حالة مطابقة. اختر التخصص الأقرب واستخدم «أخرى – يرجى التحديد».",
+  "Other – please specify": "أخرى – يرجى التحديد",
+  "Current": "حالية",
+  "Historical": "سابقة",
+  "Tap the Current / Historical tag on a selected condition to change it.": "اضغط على وسم «حالية / سابقة» لتغييرها.",
+  "Add conditions": "إضافة حالات",
+  "Already added": "مضافة مسبقًا",
+  "Searchable in Arabic and English — select several at once.": "قابل للبحث بالعربية والإنجليزية — اختر عدة حالات معًا.",
   // Sidebar navigation
   "Home": "الرئيسية",
   "My Health": "صحتي",
