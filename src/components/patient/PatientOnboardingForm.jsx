@@ -148,17 +148,18 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const gynaeAnswered =
     !!gynae.current_pregnancy.status &&
     (gynae.current_pregnancy.status === "pregnant" || !!gynae.menopause.status);
-  // A patient who is not married — or who prefers not to answer — is not asked
-  // the obstetric questions at all: that part of the form is hidden for
-  // convenience only. Her marital status is saved separately and nothing about
-  // pregnancy is recorded on her behalf, so "not married" never becomes
-  // "never pregnant". What she entered earlier stays in the form, untouched.
-  const obstetricHidden =
-    lifestyle.marital_status === "not_married" || lifestyle.marital_status === "prefer_not_to_answer";
+  // A patient who prefers not to answer is not asked the reproductive
+  // questions at all. A patient who has never been married is asked her
+  // gynaecological history but not the past obstetric history; a married or
+  // divorced patient is asked both. Marital status is saved separately and
+  // nothing about pregnancy is ever recorded on her behalf, so "never married"
+  // never becomes "never pregnant". What she entered earlier stays untouched.
+  const gynaeHidden = lifestyle.marital_status === "prefer_not_to_answer";
+  const obstetricHidden = lifestyle.marital_status === "not_married";
   const step3Valid =
     !!lifestyle.smoking_status &&
     !!lifestyle.alcohol_use &&
-    (!isFemale || (!!lifestyle.marital_status && (obstetricHidden || gynaeAnswered)));
+    (!isFemale || (!!lifestyle.marital_status && (gynaeHidden || gynaeAnswered)));
 
   const switchLang = (v) => {
     setLang(v);
@@ -875,12 +876,18 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                         <SelectContent>
                           <SelectItem value="married">{t("Married")}</SelectItem>
                           <SelectItem value="not_married">{t("Not Married")}</SelectItem>
+                          <SelectItem value="divorced">{t("Divorced")}</SelectItem>
                           <SelectItem value="prefer_not_to_answer">{t("Prefer Not to Answer")}</SelectItem>
                         </SelectContent>
                       </Select>
-                      {obstetricHidden && (
+                      {gynaeHidden && (
                         <p className="text-[11px] text-muted-foreground mt-2">
-                          {t("The obstetric history section is hidden. Marital status is saved on its own — it never records anything about pregnancy.")}
+                          {t("The reproductive history sections are hidden. Marital status is saved on its own — it never records anything about pregnancy.")}
+                        </p>
+                      )}
+                      {!gynaeHidden && obstetricHidden && (
+                        <p className="text-[11px] text-muted-foreground mt-2">
+                          {t("The past obstetric history section is hidden. Marital status is saved on its own — it never records anything about pregnancy.")}
                         </p>
                       )}
                     </div>
@@ -902,7 +909,9 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                   {/* Female patients only: the single Gynaecological & Obstetric
                       History section — current pregnancy, menstrual history,
                       past gynaecological history, previous pregnancies, menopause. */}
-                  {isFemale && !obstetricHidden && <GynaeObstetricHistoryForm value={gynae} onChange={setGynae} />}
+                  {isFemale && !gynaeHidden && (
+                    <GynaeObstetricHistoryForm value={gynae} onChange={setGynae} hideObstetric={obstetricHidden} />
+                  )}
 
                   <MedicalListSection
                     id="none_immunizations"

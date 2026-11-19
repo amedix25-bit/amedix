@@ -78,7 +78,11 @@ export default function GynaeHistoryEditorDialog({ open, onOpenChange, profile, 
           </DialogDescription>
         </DialogHeader>
 
-        <GynaeObstetricHistoryForm value={current} onChange={setValue} />
+        <GynaeObstetricHistoryForm
+          value={current}
+          onChange={setValue}
+          hideObstetric={profile.marital_status === "not_married"}
+        />
         <GynaeUpdateHistory history={current} />
 
         {error && (

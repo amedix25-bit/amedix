@@ -579,6 +579,7 @@ const AR = {
   "Marital Status": "الحالة الزوجية",
   "Married": "متزوجة",
   "Not Married": "غير متزوجة",
+  "Divorced": "مطلقة",
   "Pregnancy History": "تاريخ الحمل",
   "Answer about previous pregnancies even if you are not pregnant now.": "أجيبي عن الحمول السابقة حتى لو لم تكوني حاملًا الآن.",
   "Number of pregnancies (Gravida)": "عدد مرات الحمل (Gravida)",
@@ -1427,9 +1428,14 @@ const AR = {
   // Marital status and the obstetric section
   "Married": "متزوجة",
   "Not Married": "غير متزوجة",
+  "Divorced": "مطلقة",
   "Prefer Not to Answer": "أفضل عدم الإجابة",
   "The obstetric history section is hidden. Marital status is saved on its own — it never records anything about pregnancy.":
     "تم إخفاء قسم التاريخ التوليدي. تُحفظ الحالة الاجتماعية بشكل منفصل — ولا تسجّل أي شيء عن الحمل.",
+  "The past obstetric history section is hidden. Marital status is saved on its own — it never records anything about pregnancy.":
+    "تم إخفاء قسم التاريخ التوليدي السابق. تُحفظ الحالة الاجتماعية بشكل منفصل — ولا تسجّل أي شيء عن الحمل.",
+  "The reproductive history sections are hidden. Marital status is saved on its own — it never records anything about pregnancy.":
+    "تم إخفاء أقسام التاريخ الإنجابي. تُحفظ الحالة الاجتماعية بشكل منفصل — ولا تسجّل أي شيء عن الحمل.",
   // Structured allergy form
   "Allergies & Adverse Reactions": "الحساسية وردود الفعل الضارة",
   "Tick the food and medication allergies that apply to you. Your answers are saved as reported by you and are not treated as clinically verified.":

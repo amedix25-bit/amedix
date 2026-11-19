@@ -13,7 +13,9 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 // shown only while she is pregnant. Menopause status comes next: a patient
 // recorded as postmenopausal is never asked about her menstrual cycle. A
 // pregnant patient can never be recorded as postmenopausal.
-export default function GynaeObstetricHistoryForm({ value, onChange }) {
+// hideObstetric: a patient who has never been married is not asked the past
+// obstetric history; her gynaecological history is still asked.
+export default function GynaeObstetricHistoryForm({ value, onChange, hideObstetric = false }) {
   const { t } = usePatientLanguage();
   const update = (key) => (patch) => onChange({ ...value, [key]: { ...value[key], ...patch } });
   const pregnant = value.current_pregnancy.status === "pregnant";
@@ -35,15 +37,17 @@ export default function GynaeObstetricHistoryForm({ value, onChange }) {
         <CurrentPregnancyFields value={value.current_pregnancy} onChange={update("current_pregnancy")} />
       </section>
 
-      <section className="space-y-2 border-t border-border pt-4">
-        <h4 className="text-xs font-semibold text-primary">{t("Past Obstetric History")}</h4>
-        <ObstetricHistoryFields
-          value={value.obstetric}
-          onChange={update("obstetric")}
-          pregnant={pregnant}
-          postmenopausal={postmenopausal}
-        />
-      </section>
+      {!hideObstetric && (
+        <section className="space-y-2 border-t border-border pt-4">
+          <h4 className="text-xs font-semibold text-primary">{t("Past Obstetric History")}</h4>
+          <ObstetricHistoryFields
+            value={value.obstetric}
+            onChange={update("obstetric")}
+            pregnant={pregnant}
+            postmenopausal={postmenopausal}
+          />
+        </section>
+      )}
 
       <section className="space-y-2 border-t border-border pt-4">
         <h4 className="text-xs font-semibold text-primary">{t("Menopause")}</h4>

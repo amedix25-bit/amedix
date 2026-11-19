@@ -387,9 +387,10 @@
       "enum": [
         "married",
         "not_married",
+        "divorced",
         "prefer_not_to_answer"
       ],
-      "description": "Marital status \u2014 collected at registration for female patients. Kept separate from the obstetric history: NOT_MARRIED only hides the obstetric questions, it never records anything about pregnancy. PREFER_NOT_TO_ANSWER means the patient declined to answer."
+      "description": "Marital status \u2014 collected at registration for female patients. Kept separate from the obstetric history: NOT_MARRIED (never married) hides only the past obstetric questions, her gynaecological history is still asked; MARRIED and DIVORCED are asked the full gynaecological and obstetric history. PREFER_NOT_TO_ANSWER means the patient declined to answer, so no reproductive history questions are asked. Marital status never records anything about pregnancy."
     },
     "pregnancy_status": {
       "type": "string",
