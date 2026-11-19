@@ -45,7 +45,7 @@ export const ADDITIONAL_CATEGORIES = [
   { key: "referral", label: "Referral Letters", icon: Mail, buttons: [{ id: "doc", label: "Document" }] },
   { key: "pathology", label: "Pathology / Biopsy Reports", icon: Microscope, buttons: [{ id: "doc", label: "Document" }] },
   { key: "other", label: "Other Medical Documents", icon: FolderOpen, buttons: [{ id: "doc", label: "Document" }] },
-];
+].map((category) => ({ ...category, upload: true }));
 
 // Legacy documents created before the category field — map their old type
 // onto the matching category so they still appear in the right section.

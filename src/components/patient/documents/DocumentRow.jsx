@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { useResolvedFileUrl, ClinicalFileButton } from "@/components/common/ClinicalFile";
+import { formatDateDisplay } from "@/lib/dateFormat";
 
 // One saved patient document row. The stored file reference is resolved to a
 // short-lived signed URL through the access-checked backend before the
@@ -10,10 +11,12 @@ import { useResolvedFileUrl, ClinicalFileButton } from "@/components/common/Clin
 export default function DocumentRow({ doc, icon: Icon, onView, onDelete }) {
   const { t } = usePatientLanguage();
   const resolved = useResolvedFileUrl("medical_document", doc.id, doc.file_url);
+  // PDFs have no thumbnail — they keep the category icon and open in the viewer.
+  const isPdf = /\.pdf($|\?)/i.test(doc.file_name || doc.file_url || "");
 
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-background p-2">
-      {resolved ? (
+      {resolved && !isPdf ? (
         <Image
           src={resolved}
           alt={doc.title}
@@ -26,7 +29,7 @@ export default function DocumentRow({ doc, icon: Icon, onView, onDelete }) {
       )}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{doc.title}</p>
-        <p className="text-xs text-muted-foreground">{doc.date}</p>
+        <p className="text-xs text-muted-foreground">{formatDateDisplay(doc.date)}</p>
       </div>
       {doc.file_url && (
         <ClinicalFileButton

@@ -1,9 +1,10 @@
 import React, { useRef, useState } from "react";
-import { Camera, Loader2, Trash2 } from "lucide-react";
+import { Camera, FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import DocumentRow from "@/components/patient/documents/DocumentRow";
+import DocumentUploadDialog from "@/components/patient/documents/DocumentUploadDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,11 +18,13 @@ import {
 
 // One capture card: category header, "Take a Picture" buttons (front/back for
 // the insurance card), and the saved documents belonging to the category.
-export default function DocumentCaptureCard({ category, docs, uploadingButton, onCapture, onDelete, onView }) {
+export default function DocumentCaptureCard({ category, docs, uploadingButton, onCapture, onUpload, onDelete, onView }) {
   const { t } = usePatientLanguage();
   const inputRefs = useRef({});
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const multi = category.buttons.length > 1;
+  const uploadMode = !!category.upload;
 
   const handleFile = (button, e) => {
     const file = e.target.files?.[0];
@@ -52,34 +55,50 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
       </div>
 
       <div className={`mt-4 flex flex-wrap gap-2 ${docs.length === 0 ? "" : "mb-4"}`}>
-        {category.buttons.map((button) => {
-          const busy = uploadingButton === `${category.key}:${button.id}`;
-          return (
-            <React.Fragment key={button.id}>
-              <input
-                ref={(el) => (inputRefs.current[button.id] = el)}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => handleFile(button, e)}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!!uploadingButton}
-                onClick={() => inputRefs.current[button.id]?.click()}
-              >
-                {busy ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Camera className="w-4 h-4" />
-                )}
-                {multi ? `${t("Take a Picture")} — ${t(button.label)}` : t("Take a Picture")}
-              </Button>
-            </React.Fragment>
-          );
-        })}
+        {uploadMode ? (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!!uploadingButton}
+            onClick={() => setUploadOpen(true)}
+          >
+            {uploadingButton === `${category.key}:upload` ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileUp className="w-4 h-4" />
+            )}
+            {t("Upload Document")}
+          </Button>
+        ) : (
+          category.buttons.map((button) => {
+            const busy = uploadingButton === `${category.key}:${button.id}`;
+            return (
+              <React.Fragment key={button.id}>
+                <input
+                  ref={(el) => (inputRefs.current[button.id] = el)}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => handleFile(button, e)}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!!uploadingButton}
+                  onClick={() => inputRefs.current[button.id]?.click()}
+                >
+                  {busy ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                  {multi ? `${t("Take a Picture")} — ${t(button.label)}` : t("Take a Picture")}
+                </Button>
+              </React.Fragment>
+            );
+          })
+        )}
       </div>
 
       {docs.length > 0 && (
@@ -118,6 +137,15 @@ export default function DocumentCaptureCard({ category, docs, uploadingButton, o
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {uploadMode && (
+        <DocumentUploadDialog
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+          category={category}
+          onSubmit={(file, meta) => onUpload(category, file, meta)}
+        />
+      )}
     </div>
   );
 }

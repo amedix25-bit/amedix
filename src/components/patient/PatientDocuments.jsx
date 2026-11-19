@@ -70,32 +70,42 @@ export default function PatientDocuments({ patient }) {
   const docsFor = (key) =>
     docs.filter((d) => (d.category || LEGACY_TYPE_TO_CATEGORY[d.type] || "other") === key);
 
-  const handleCapture = async (category, button, file) => {
+  const handleCapture = async (category, button, file, meta) => {
     const buttonId = `${category.key}:${button.id}`;
     setUploadingButton(buttonId);
     setError("");
     try {
       const { file_uri: file_url } = await base44.integrations.Core.UploadPrivateFile({ file }); // stored privately
       const multi = category.buttons.length > 1;
+      const categoryTitle = multi ? `${category.label} — ${button.label}` : category.label;
+      // Whatever the patient names it, the document keeps its category name
+      // (e.g. "Imaging & Radiology") so it stays identifiable.
+      const customName = (meta?.name || "").trim();
       await base44.entities.MedicalDocument.create({
         patient_id: patient.id,
         patient_cin: patient.cin,
         patient_name: patient.full_name,
-        title: multi ? `${category.label} — ${button.label}` : category.label,
+        title: customName ? `${customName} — ${categoryTitle}` : categoryTitle,
         type: CATEGORY_TO_TYPE[category.key] || "other",
         category: category.key,
         file_url,
         file_name: file.name,
-        date: new Date().toISOString().slice(0, 10),
+        date: meta?.date || new Date().toISOString().slice(0, 10),
       });
       await load();
+      return true;
     } catch (err) {
       console.error(err);
       setError(t("Could not save the picture. Please try again."));
+      return false;
     } finally {
       setUploadingButton(null);
     }
   };
+
+  // Uploaded image / PDF with the patient's own name and the date it was done.
+  const handleUpload = (category, file, meta) =>
+    handleCapture(category, { id: "upload", label: "Document" }, file, meta);
 
   const handleDelete = async (doc) => {
     setDocs((prev) => prev.filter((d) => d.id !== doc.id));
@@ -171,6 +181,7 @@ export default function PatientDocuments({ patient }) {
               docs={docsFor(category.key)}
               uploadingButton={uploadingButton}
               onCapture={handleCapture}
+              onUpload={handleUpload}
               onDelete={handleDelete}
               onView={category.key === "referral" ? handleReferralView : undefined}
             />
