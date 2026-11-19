@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import PatientHealth from "@/components/patient/PatientHealth";
 import DoctorPatientLabResultsView from "@/components/doctor/DoctorPatientLabResultsView";
+import PatientDocumentsList from "@/components/documents/PatientDocumentsList";
 import { Stethoscope, Image as ImageIcon, FlaskConical, CalendarDays, ExternalLink, Loader2 } from "lucide-react";
 import resolveClinicalFile from "@/lib/clinicalFileUrl";
 import resolveRadiologyFile from "@/lib/radiologyFileUrl";
@@ -108,6 +109,13 @@ export default function DoctorPatientHistorySection({ patient }) {
         registrationEvents={reportedEvents}
         doctorData={recordData}
         onRefreshData={reload}
+      />
+
+      <PatientDocumentsList
+        documents={(recordData?.documents || []).filter((d) => !d.doctor_id)}
+        title="Reports & Documents added by the patient"
+        emptyText="No documents added by the patient yet."
+        limit={50}
       />
 
       <div>

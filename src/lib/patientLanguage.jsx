@@ -537,6 +537,9 @@ const AR = {
   "Delete this document?": "حذف هذا المستند؟",
   '"{title}" will be permanently removed from your documents.': 'سيتم حذف "{title}" نهائياً من مستنداتك.',
   "Delete document": "حذف المستند",
+  "Open": "فتح",
+  "Reports & Documents added by the patient": "التقارير والمستندات التي أضافها المريض",
+  "No documents added by the patient yet.": "لم يُضف المريض أي مستندات بعد.",
   "Clinical Notes": "الملاحظات السريرية",
   "Switch Portal": "تبديل البوابة",
 

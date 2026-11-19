@@ -1,9 +1,10 @@
 import React from "react";
 import { Heart, CalendarDays, UserRound, Globe2, Pill } from "lucide-react";
 import PatientReferenceArt from "@/components/patient/overview/PatientReferenceArt";
+import PatientDocumentsList from "@/components/documents/PatientDocumentsList";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-export default function PatientHealthSummary({ age, gender, nationality, conditions = [], medications = [], onNavigate }) {
+export default function PatientHealthSummary({ age, gender, nationality, conditions = [], medications = [], documents = [], onNavigate }) {
   const { t, lang } = usePatientLanguage();
   const libyan = /^(libya|libyan|ليبيا|ليبي|ليبية)$/i.test(String(nationality || "").trim());
   const female = String(gender).toLowerCase() === "female";
@@ -27,5 +28,13 @@ export default function PatientHealthSummary({ age, gender, nationality, conditi
       <dl className="pp-health-rows">{rows.map(({ label, icon: Icon, color, value, flag, female: femaleIcon }) => <div key={label} className="pp-health-row">{flag ? <span className="pp-libya-flag" role="img" aria-label={t("Libya")}>🇱🇾</span> : femaleIcon ? <PatientReferenceArt kind="femaleIcon" className="pp-sex-icon" /> : <Icon className={color} />}<dt>{t(label)}</dt><dd title={value} className="line-clamp-2">{value}</dd></div>)}</dl>
       <PatientReferenceArt kind="heart" className="pp-health-art" />
     </div>
+    {documents.length > 0 && (
+      <PatientDocumentsList
+        documents={documents}
+        title="Reports & Documents"
+        limit={3}
+        className="pp-health-documents px-4 pb-4"
+      />
+    )}
   </section>;
 }

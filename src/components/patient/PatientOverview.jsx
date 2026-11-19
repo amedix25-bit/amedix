@@ -23,6 +23,7 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
   const [appointment, setAppointment] = useState(null);
   const [activity, setActivity] = useState([]);
   const [messages, setMessages] = useState(0);
+  const [documents, setDocuments] = useState([]);
 
   const loadMedical = useCallback(async () => {
     if (!profile?.id) return;
@@ -66,13 +67,29 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
     }
   }, [profile?.id, profile?.user_id]);
 
+  // Files the patient added in Reports & Documents — shown in the Health Summary.
+  const loadDocuments = useCallback(async () => {
+    if (!profile?.id) return;
+    try {
+      const page = await base44.entities.MedicalDocument.filter(
+        { patient_id: profile.id },
+        { sort: "-date", limit: 10 },
+      );
+      const items = page?.items || page || [];
+      setDocuments(items.filter((d) => !d.doctor_id));
+    } catch (err) {
+      console.error(err);
+    }
+  }, [profile?.id]);
+
   useEffect(() => {
     if (!profile?.id) return;
     loadMedical();
     loadDashboard();
+    loadDocuments();
     const unsubscribe = base44.entities.Medication.subscribe(() => loadMedical());
     return unsubscribe;
-  }, [profile?.id, loadMedical, loadDashboard]);
+  }, [profile?.id, loadMedical, loadDashboard, loadDocuments]);
 
   if (loading) {
     return <div className="text-sm text-patient-muted">{t("Loading...")}</div>;
@@ -115,6 +132,7 @@ export default function PatientOverview({ profile, stats, loading, onGoToProfile
             conditions={med.conditions}
             medications={med.medications.filter((m) => m.is_active !== false)}
             allergies={allergyText || profile?.allergies || ""}
+            documents={documents}
             onNavigate={onNavigate}
           />
         <PatientRecentActivity items={activity} onNavigate={onNavigate} onViewAll={onViewActivity} />
