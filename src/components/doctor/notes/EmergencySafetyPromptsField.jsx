@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { AlertTriangle, BellRing, FileCheck2, Info, ShieldCheck } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/doctor/dictation/DictationTextarea";
 import {
   EMERGENCY_SAFETY_CONCERNS,
   EMERGENCY_SAFETY_PROVENANCE,

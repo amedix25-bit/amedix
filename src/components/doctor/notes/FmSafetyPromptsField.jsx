@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/doctor/dictation/DictationTextarea";
 import { AlertTriangle, ExternalLink, ShieldCheck } from "lucide-react";
 import { buildFmSafetyPrompts } from "@/lib/fmSafetyRules";
 

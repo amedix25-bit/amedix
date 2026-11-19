@@ -1,7 +1,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/doctor/dictation/DictationTextarea";
 import { AlertTriangle, Info, ShieldCheck } from "lucide-react";
 import {
   ISNCSCI_DERMATOMES,

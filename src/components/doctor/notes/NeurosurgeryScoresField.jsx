@@ -1,6 +1,6 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/doctor/dictation/DictationTextarea";
 import { AlertTriangle, Calculator, ExternalLink, Info, Plus, X } from "lucide-react";
 import { NSG_SCORES, calculateScore, indicatedScores } from "@/lib/neurosurgeryScores";
 

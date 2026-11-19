@@ -24,8 +24,48 @@ import { AlertTriangle, Check, Loader2, Mic, Square } from "lucide-react";
 // instructions) are never changed automatically, only offered as flagged
 // suggestions to accept or keep. Existing field text is preserved: the
 // confirmed text is appended after it.
+// The doctor's own verified specialty, resolved once per session. Used when a
+// dictation control is placed on a field that does not carry the specialty
+// prop itself (the specialty structured note fields), so correction is
+// specialty-aware for every specialty instead of falling back to "General".
+let specialtyLookup = null;
+const loadDoctorSpecialty = () => {
+  if (specialtyLookup) return specialtyLookup;
+  specialtyLookup = (async () => {
+    try {
+      const cached = sessionStorage.getItem("amedix_dictation_specialty");
+      if (cached) return cached;
+      const me = await base44.auth.me();
+      const profiles = await base44.entities.DoctorProfile.filter({ user_id: me.id });
+      const sp = (profiles && profiles[0] && profiles[0].specialization) || "";
+      if (sp) sessionStorage.setItem("amedix_dictation_specialty", sp);
+      return sp;
+    } catch (err) {
+      return "";
+    }
+  })();
+  return specialtyLookup;
+};
+
 export default function MedicalDictationButton({ value = "", onChange, specialty = "", contextLabel = "" }) {
+  const [ownSpecialty, setOwnSpecialty] = useState(specialty);
   const [lang, setLang] = useState(() => localStorage.getItem("amedix_dictation_lang") || "mixed");
+
+  // Every specialty works: an explicit specialty always wins, otherwise the
+  // signed-in doctor's own specialty is used.
+  useEffect(() => {
+    if (specialty) {
+      setOwnSpecialty(specialty);
+      return;
+    }
+    let cancelled = false;
+    loadDoctorSpecialty().then((sp) => {
+      if (!cancelled) setOwnSpecialty(sp);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [specialty]);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [processing, setProcessing] = useState(false);
@@ -97,7 +137,7 @@ export default function MedicalDictationButton({ value = "", onChange, specialty
       const res = await base44.functions.invoke("medicalDictation", {
         audio_uri: file_uri,
         language: lang,
-        specialty: specialty || "General",
+        specialty: ownSpecialty || specialty || "General",
         field_context: contextLabel || "clinical documentation",
       });
       if (res.data && res.data.error) {

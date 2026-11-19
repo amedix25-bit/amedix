@@ -1,6 +1,6 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/doctor/dictation/DictationTextarea";
 import { AlertTriangle, Info, ShieldCheck } from "lucide-react";
 import { buildOphthSafetyPrompts } from "@/lib/ophthalmologySafetyRules";
 import { asObject } from "@/lib/ophthFieldKit";
