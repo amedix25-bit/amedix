@@ -1,44 +1,46 @@
-// AMedix multi-pass document recognition engine.
+// AMedix multi-pass document recognition engine (job pipeline).
 //
-// One reading is never trusted. Every verification attempt runs several
-// independent recognisers over two different pictures of the same document
-// (the camera original and a server-rectified render), then decides only when
-// the readings agree. A number is never accepted because it looks similar:
-// agreement must be on the complete number, character for character.
+// One reading is never trusted. A document is read by independent recognisers
+// over two different pictures of the same page (the camera original and a
+// server-rectified render), and a number is accepted only when the readings
+// agree on the complete value, character for character.
 //
-//   PASS A  document · vision engine 1 (structured extraction)
-//   PASS B  document · vision engine 2 (transcription first)
-//   PASS C  document · vision engine 1 (character by character, guided by the
-//            lines of text located by the server-side pixel analysis)
-//   PASS D  document · vision engine 2 (zone / MRZ focused)
-//   PASS E  document · independent extraction pipeline (fallback, only when
-//            the vision passes produced no agreement)
+// Three things changed with the job pipeline:
+//   1. The model ids come from the platform's current catalog. The previous
+//      engine asked for `gemini_3_1_pro`, which the gateway no longer serves —
+//      half the passes silently returned nothing, so valid documents were
+//      reported as unreadable.
+//   2. Every pass is bounded by ONE overall budget instead of one minute each.
+//      A slow model can no longer push the request past the platform limit and
+//      kill the whole verification with no record written.
+//   3. A scanned PDF that cannot be turned into page pixels is read as a PDF
+//      (native document input) instead of being declared unopenable.
 //
-// Every pass reads the document itself. The rectified copy is produced in
-// memory and given to the passes that benefit from it (C and D): both renditions
-// travel inline as base64 inside the request, so there is no URL a model could
-// fail to open and no server-side render to store.
-//
-// Zero retention: the document never leaves memory. Nothing is written to
-// storage, a temporary file, a cache or a log; only the decision is recorded.
+// Nothing here writes a document anywhere: bytes are held in the worker's
+// memory and released when the job finishes.
 
 import {
   NUMBER_PROFILES, normalizeNumber, validateFormat, readMrzTd3, characterDistance,
   type NumberProfile,
 } from './documentOcrProfiles.ts';
-import { readDocumentWithVision, type InlineImage } from './inlineVision.ts';
+import { readDocumentWithVisionResult, type InlineImage } from './inlineVision.ts';
+import { readPdfDocument } from './verificationPdfRead.ts';
 
-export const OCR_ENGINE_VERSION = 'amedix_document_number_v3_inmemory';
+export const OCR_ENGINE_VERSION = 'amedix_document_number_v4_job';
 
-// One submitted page, prepared twice in memory: as the camera original
-// (grayscale, size-capped) and as the rectified, contrast-corrected render. Both
-// are base64 held in the request — never a file, never a URL.
+// Current platform vision models. Two independent vendors must agree before a
+// number is trusted, so one provider drifting or degrading cannot verify or
+// reject a document on its own.
+export const MODEL_PRIMARY = 'gemini_3_8_flash';
+export const MODEL_SECONDARY = 'claude-sonnet-5';
+export const MODEL_TERTIARY = 'gpt_6_sol';
+
 export type Side = { side: 'front' | 'back'; original: InlineImage; enhanced: InlineImage };
 
 export type Reading = {
   pass: string;
   engine: string;
-  source: 'original' | 'enhanced' | 'binary' | 'mrz';
+  source: 'original' | 'enhanced' | 'binary' | 'mrz' | 'pdf';
   side: 'front' | 'back';
   raw: string;
   normalized: string;
@@ -59,25 +61,16 @@ export type Diagnosis = {
   nearMiss: boolean;
   characterDistance: number;
   notes: string;
+  /** True when no recogniser answered at all — a technical failure, not an unreadable document. */
+  technical: boolean;
+  passErrors: string[];
 };
 
-// A pass reads an inline image and reasons about small print; a slow model must
-// not be mistaken for an unreadable document, so the budget is generous and the
-// request is aborted only when the model genuinely overruns.
-const PASS_TIMEOUT_MS = 60000;
+const PASS_TIMEOUT_MS = 25000;
+export const DEFAULT_BUDGET_MS = 95000;
+const MAX_BUDGET_MS = 140000;
 
-const NUMBER_SCHEMA = {
-  type: 'object',
-  properties: {
-    number: { type: 'string', description: 'The identification number exactly as printed on the document, every character, without spaces or separators. Empty string if it truly cannot be read.' },
-    all_numbers: { type: 'array', items: { type: 'string' }, description: 'Every other number printed on the document (dates, serials, codes), transcribed exactly.' },
-    script: { type: 'string', description: 'latin, arabic or mixed' },
-    confidence: { type: 'number', description: 'How certain the reading of the identification number is, 0 to 100' },
-    readable: { type: 'boolean', description: 'Whether the identification number is legible at all in this image' },
-    notes: { type: 'string', description: 'Anything that blocks reading: blur, glare, crop, angle, obscured digits' },
-  },
-  required: ['number', 'confidence', 'readable'],
-};
+const NUMBER_SCHEMA_HINT = 'Reply with JSON only, in exactly this shape: {"number": string, "all_numbers": string[], "script": string, "confidence": number, "readable": boolean, "notes": string}';
 
 function bandHint(bands: { y0: number; y1: number; x0: number; x1: number; heightPct: number }[]): string {
   if (!bands || !bands.length) return '';
@@ -104,196 +97,85 @@ function basePrompt(profile: NumberProfile, hint: string, extra: string): string
     hint,
     extra,
     '',
-    `Return the number with no spaces, hyphens or slashes. Confidence below 85 means you are guessing — report it honestly.`,
+    'Return the number with no spaces, hyphens or slashes. Confidence below 85 means you are guessing — report it honestly.',
   ].filter(Boolean).join('\n');
-}
-
-async function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label}_timeout`)), PASS_TIMEOUT_MS)),
-  ]);
 }
 
 async function visionPass(
   base44: any,
-  params: { pass: string; model: string; engine: string; image: InlineImage; source: Reading['source']; side: 'front' | 'back'; prompt: string }
-): Promise<Reading | null> {
-  try {
-    const data: any = await withTimeout(
-      readDocumentWithVision(base44, {
-        model: params.model,
-        prompt: `${params.prompt}\n\nReply with JSON only, in exactly this shape: {"number": string, "all_numbers": string[], "script": string, "confidence": number, "readable": boolean, "notes": string}`,
-        images: [params.image],
-        timeoutMs: PASS_TIMEOUT_MS - 5000,
-      }),
-      params.pass
-    );
-    if (!data || typeof data !== 'object') return null;
-    return {
-      pass: params.pass,
-      engine: params.engine,
-      source: params.source,
-      side: params.side,
-      raw: typeof data.number === 'string' ? data.number : '',
-      normalized: '',
-      confidence: Math.max(0, Math.min(100, Number(data.confidence) || 0)),
-      readable: data.readable !== false,
-      validFormat: true,
-      note: [data.notes, Array.isArray(data.all_numbers) ? `other numbers: ${data.all_numbers.slice(0, 6).join(', ')}` : ''].filter(Boolean).join(' · '),
-    };
-  } catch {
-    return null;
-  }
+  params: { pass: string; model: string; image: InlineImage; source: Reading['source']; side: 'front' | 'back'; prompt: string; profile: NumberProfile },
+  timeoutMs: number
+): Promise<{ reading: Reading | null; error: string }> {
+  const result = await readDocumentWithVisionResult(base44, {
+    model: params.model,
+    prompt: `${params.prompt}\n\n${NUMBER_SCHEMA_HINT}`,
+    images: [params.image],
+    timeoutMs,
+  });
+  if (!result.data || typeof result.data !== 'object') return { reading: null, error: result.error || 'no_reply' };
+
+  const data = result.data;
+  const raw = typeof data.number === 'string' ? data.number : '';
+  const reading: Reading = {
+    pass: params.pass,
+    engine: params.model,
+    source: params.source,
+    side: params.side,
+    raw,
+    normalized: normalizeNumber(raw, params.profile),
+    confidence: Math.max(0, Math.min(100, Number(data.confidence) || 0)),
+    readable: data.readable !== false,
+    validFormat: validateFormat(raw, params.profile).ok,
+    note: [data.notes, Array.isArray(data.all_numbers) ? `other numbers: ${data.all_numbers.slice(0, 6).join(', ')}` : ''].filter(Boolean).join(' · '),
+  };
+  return { reading, error: '' };
 }
 
-async function extractorPass(
-  base44: any,
-  params: { image: InlineImage; side: 'front' | 'back'; profile: NumberProfile }
-): Promise<Reading | null> {
-  try {
-    const out: any = await withTimeout(
-      readDocumentWithVision(base44, {
-        model: 'gpt_6_sol',
-        prompt: [
-          `Transcribe the ${params.profile.numberLabel.toLowerCase()} printed on this document, character by character, exactly as printed.`,
-          `Where it is normally printed: ${params.profile.regions.join('; ')}.`,
-          `Numbers that are not it: ${params.profile.distractors.join('; ')}.`,
-          'Digits may be printed as Arabic-Indic numerals; convert them to 0-9. Do not complete a character you cannot see.',
-          'Reply with JSON only: {"number": string, "readable": boolean}',
-        ].join('\n'),
-        images: [params.image],
-        timeoutMs: PASS_TIMEOUT_MS - 5000,
-      }),
-      'pass_e'
-    );
-    if (!out || typeof out !== 'object') return null;
-    return {
-      pass: 'E',
-      engine: 'amedix_inmemory_transcription',
-      source: 'original',
-      side: params.side,
-      raw: typeof out.number === 'string' ? out.number : '',
-      normalized: '',
-      confidence: 70,
-      readable: out.readable !== false,
-      validFormat: true,
-      note: 'independent in-memory transcription pass',
-    };
-  } catch {
-    return null;
-  }
+function pdfPrompt(profile: NumberProfile, hint: string): string {
+  return [
+    basePrompt(profile, hint, 'The document is a PDF that may contain several pages, possibly scanned. Inspect every page, including any page that carries a second side or a machine-readable zone.'),
+    'Set pages_scanned to the number of pages you inspected.',
+  ].join('\n');
 }
 
-export async function recogniseDocument(
+// Reads the stored PDF itself — the path that rescues scanned PDFs whose pages
+// are CCITT/JBIG2/JPX compressed and therefore have no extractable JPEG.
+async function pdfReadings(
   base44: any,
-  params: { documentType: string; expectedNumber: string; sides: Side[]; bandHint?: string }
-): Promise<Diagnosis> {
-  const profile = NUMBER_PROFILES[params.documentType];
-  const expectedNormalized = normalizeNumber(params.expectedNumber, profile);
-  const hint = params.bandHint || '';
+  url: string,
+  profile: NumberProfile,
+  hint: string,
+  timeoutMs: number
+): Promise<{ readings: Reading[]; errors: string[] }> {
   const readings: Reading[] = [];
-
-  type Spec = { pass: string; model: string; engine: string; image: InlineImage; source: Reading['source']; side: 'front' | 'back'; prompt: string };
-  const specs: Spec[] = [];
-  for (const side of params.sides) {
-    const renditions: { image: InlineImage; source: Reading['source'] }[] = [
-      { image: side.original, source: 'original' },
-      { image: side.enhanced, source: 'enhanced' },
-    ];
-    for (const rendition of renditions) {
-      specs.push({
-        pass: rendition.source === 'original' ? 'A' : 'C',
-        model: 'gemini_3_1_pro',
-        engine: 'gemini_3_1_pro',
-        image: rendition.image,
-        source: rendition.source,
-        side: side.side,
-        prompt: basePrompt(profile, hint, rendition.source === 'original'
-          ? 'Extract the number structurally, and list every other number on the document.'
-          : 'Work character by character, digit by digit, from the printed field itself. State each character you are unsure of rather than choosing one.'),
-      });
-      specs.push({
-        pass: rendition.source === 'original' ? 'B' : 'D',
-        model: 'claude-sonnet-5',
-        engine: 'claude-sonnet-5',
-        image: rendition.image,
-        source: rendition.source,
-        side: side.side,
-        prompt: basePrompt(profile, hint, rendition.source === 'original'
-          ? 'Transcribe the document line by line first, then take the number from your transcription.'
-          : profile.mrz
-            ? 'Read the machine-readable zone at the bottom character by character, including any fill characters, and take the document number from it. If the zone is unreadable, read the printed number field instead.'
-            : 'Focus on each numeric field in turn, decide which one is the identification number, and transcribe it character by character.'),
-      });
-    }
-  }
-
-  // Batches of four keep the worker's concurrent outbound connections in budget.
-  for (let i = 0; i < specs.length; i += 4) {
-    const settled = await Promise.allSettled(specs.slice(i, i + 4).map((spec) => visionPass(base44, spec)));
-    for (const entry of settled) {
-      if (entry.status === 'fulfilled' && entry.value) readings.push(entry.value);
-    }
-  }
-
-  // Machine-readable zone: a check-digit-validated reading outranks a plain one.
-  let mrzNumber = '';
-  for (const reading of readings) {
-    if (!profile.mrz) break;
-    const mrz = readMrzTd3(reading.raw);
-    if (mrz && mrz.valid) {
-      mrzNumber = mrz.number;
-      readings.push({
-        pass: 'MRZ', engine: 'mrz_check_digits', source: 'mrz', side: reading.side,
-        raw: mrz.number, normalized: '', confidence: 99, readable: true, validFormat: true,
-        note: `TD3 check digits verified (${mrz.checks.join(', ')})`,
-      });
-      break;
-    }
-  }
-
-  for (const reading of readings) {
-    reading.normalized = normalizeNumber(reading.raw, profile);
-    reading.validFormat = validateFormat(reading.raw, profile).ok;
-  }
-
-  // The independent extraction pipeline runs when the vision passes have not
-  // already produced enough evidence to decide — it costs a second pipeline, so
-  // it is skipped only when the readings already agree convincingly.
-  const usable = readings.filter((r) => r.normalized && r.validFormat);
-  const quickGroups = new Map<string, { supporters: number; engines: Set<string>; confidence: number }>();
-  for (const reading of usable) {
-    const group = quickGroups.get(reading.normalized);
-    if (group) {
-      group.supporters += 1;
-      group.engines.add(reading.engine);
-      group.confidence = Math.max(group.confidence, reading.confidence);
-    } else {
-      quickGroups.set(reading.normalized, { supporters: 1, engines: new Set([reading.engine]), confidence: reading.confidence });
-    }
-  }
-  // Two independent renditions of the same page agreeing on the complete number
-  // at high confidence is evidence in its own right: the camera original and the
-  // rectified render are different pictures, and a misreading rarely survives both.
-  const clearAgreement = [...quickGroups.values()].some(
-    (g) => (g.engines.size >= 2 && g.supporters >= 2 && g.confidence >= 70) || (g.supporters >= 2 && g.confidence >= 85)
+  const errors: string[] = [];
+  const models = ['automatic', MODEL_TERTIARY];
+  const settled = await Promise.allSettled(
+    models.map((model) => readPdfDocument(base44, { url, prompt: pdfPrompt(profile, hint), model, timeoutMs }))
   );
-  if (!clearAgreement) {
-    const extra = await Promise.allSettled(
-      params.sides.map((side) => extractorPass(base44, { image: side.original, side: side.side, profile }))
-    );
-    for (const entry of extra) {
-      if (entry.status === 'fulfilled' && entry.value) {
-        const reading = entry.value;
-        reading.normalized = normalizeNumber(reading.raw, profile);
-        reading.validFormat = validateFormat(reading.raw, profile).ok;
-        readings.push(reading);
-      }
-    }
-  }
+  settled.forEach((entry, index) => {
+    const label = `pdf_${index === 0 ? 'a' : 'b'}`;
+    if (entry.status !== 'fulfilled') { errors.push(`${label}:rejected`); return; }
+    const { data, error } = entry.value;
+    if (!data || typeof data !== 'object') { errors.push(`${label}:${error || 'no_reply'}`); return; }
+    const raw = typeof data.number === 'string' ? data.number : '';
+    readings.push({
+      pass: label.toUpperCase(),
+      engine: models[index],
+      source: 'pdf',
+      side: index === 0 ? 'front' : 'back',
+      raw,
+      normalized: normalizeNumber(raw, profile),
+      confidence: Math.max(0, Math.min(100, Number(data.confidence) || (raw ? 75 : 0))),
+      readable: data.readable !== false,
+      validFormat: validateFormat(raw, profile).ok,
+      note: `PDF read · pages ${Number(data.pages_scanned) || '—'}${data.notes ? ` · ${data.notes}` : ''}`,
+    });
+  });
+  return { readings, errors };
+}
 
-  // ---- consensus ----------------------------------------------------------
+function groupReadings(readings: Reading[]) {
   const groups = new Map<string, { raw: string; supporters: number; engines: Set<string>; confidence: number }>();
   for (const reading of readings) {
     if (!reading.normalized) continue;
@@ -308,6 +190,17 @@ export async function recogniseDocument(
       });
     }
   }
+  return groups;
+}
+
+function decide(
+  readings: Reading[],
+  expectedNormalized: string,
+  profile: NumberProfile,
+  passErrors: string[]
+): Diagnosis {
+  const usable = readings.filter((r) => r.normalized && r.validFormat);
+  const groups = groupReadings(readings);
 
   let best: { value: string; supporters: number; engines: number; confidence: number; raw: string } | null = null;
   for (const [value, group] of groups) {
@@ -319,26 +212,31 @@ export async function recogniseDocument(
     if (better) best = candidate;
   }
 
+  // A machine-readable zone reading is validated by its own check digits, so it
+  // outranks consensus: it is the one reading that proves itself.
+  const mrzReading = readings.find((r) => r.source === 'mrz' && r.normalized);
+  if (mrzReading) {
+    const group = groups.get(mrzReading.normalized);
+    best = {
+      value: mrzReading.normalized,
+      supporters: group?.supporters || 1,
+      engines: group?.engines.size || 1,
+      confidence: 99,
+      raw: mrzReading.raw,
+    };
+  }
+
   const totalReadings = readings.length;
   const detection = totalReadings ? usable.length / totalReadings : 0;
-  const readability = totalReadings
-    ? readings.filter((r) => r.readable || r.normalized).length / totalReadings
-    : 0;
+  const readability = totalReadings ? readings.filter((r) => r.readable || r.normalized).length / totalReadings : 0;
   const character = best ? best.confidence / 100 : 0;
 
-  // A reading is trusted when independent recognisers agree on the whole number,
-  // when several readings agree, or when two separate renditions of the same page
-  // — the camera original and the rectified render — agree on the complete,
-  // well-formed number at high confidence. A single unconfirmed reading is never
-  // enough, however certain it claims to be.
-  const mrzConfirms = !!mrzNumber && !!best && best.value === normalizeNumber(mrzNumber, profile);
   const bestFormatValid = !!best && usable.some((r) => r.normalized === best!.value);
-  const enoughEvidence = !!best && (
+  const enoughEvidence = !!mrzReading || (!!best && (
     (best.engines >= 2 && best.supporters >= 2 && best.confidence >= 70)
     || (best.supporters >= 3 && best.confidence >= 85)
     || (best.supporters >= 2 && best.confidence >= 85 && bestFormatValid)
-    || mrzConfirms
-  );
+  ));
 
   const matching = enoughEvidence && best ? (best.value === expectedNormalized ? 1 : 0) : 0;
   const overall = Math.round(
@@ -377,5 +275,117 @@ export async function recogniseDocument(
     nearMiss,
     characterDistance: distance,
     notes,
+    technical: totalReadings === 0,
+    passErrors,
   };
+}
+
+export async function recogniseDocument(
+  base44: any,
+  params: {
+    documentType: string;
+    expectedNumber: string;
+    sides: Side[];
+    pdf?: { url: string } | null;
+    bandHint?: string;
+    budgetMs?: number;
+  }
+): Promise<Diagnosis> {
+  const profile = NUMBER_PROFILES[params.documentType];
+  const expectedNormalized = normalizeNumber(params.expectedNumber, profile);
+  const hint = params.bandHint || bandHint([]) || '';
+  const budget = Math.min(MAX_BUDGET_MS, Math.max(20000, params.budgetMs || DEFAULT_BUDGET_MS));
+  const startedAt = Date.now();
+  const remaining = () => budget - (Date.now() - startedAt);
+
+  const readings: Reading[] = [];
+  const passErrors: string[] = [];
+
+  const sides = (params.sides || []).slice(0, 2);
+  if (sides.length) {
+    type Spec = { pass: string; model: string; image: InlineImage; source: Reading['source']; side: 'front' | 'back'; prompt: string };
+    const specs: Spec[] = [];
+    for (const side of sides) {
+      specs.push({
+        pass: side.side === 'front' ? 'A' : 'A2',
+        model: MODEL_PRIMARY,
+        image: side.original,
+        source: 'original',
+        side: side.side,
+        prompt: basePrompt(profile, hint, 'Extract the number structurally, and list every other number on the document.'),
+      });
+      specs.push({
+        pass: side.side === 'front' ? 'B' : 'B2',
+        model: MODEL_SECONDARY,
+        image: side.enhanced,
+        source: 'enhanced',
+        side: side.side,
+        prompt: basePrompt(profile, hint, 'Work character by character, digit by digit, from the printed field itself. State each character you are unsure of rather than choosing one.'),
+      });
+    }
+
+    const perPass = Math.max(8000, Math.min(PASS_TIMEOUT_MS, remaining() - 4000));
+    // At most four passes, one batch: the worker's outbound budget is six.
+    const settled = await Promise.allSettled(specs.map((spec) => visionPass(base44, { ...spec, profile }, perPass)));
+    settled.forEach((entry, index) => {
+      const label = specs[index].pass;
+      if (entry.status !== 'fulfilled') { passErrors.push(`${label}:rejected`); return; }
+      if (entry.value.reading) readings.push(entry.value.reading);
+      else passErrors.push(`${label}:${entry.value.error}`);
+    });
+
+    // A third, independent pipeline runs only when the first two did not already
+    // agree — it costs a call, so it is not spent on a settled reading.
+    const needsMore = decide(readings, expectedNormalized, profile, []).outcome === 'unreadable';
+    if (needsMore && remaining() > 12000) {
+      const third = await Promise.allSettled(
+        sides.map((side) => visionPass(base44, {
+          pass: 'C', model: MODEL_TERTIARY, image: side.original, source: 'original',
+          side: side.side, prompt: basePrompt(profile, hint, 'Transcribe the document line by line first, then take the number from your transcription.'),
+          profile,
+        }, Math.min(PASS_TIMEOUT_MS, remaining() - 4000)))
+      );
+      third.forEach((entry, index) => {
+        if (entry.status !== 'fulfilled') { passErrors.push(`C${index || ''}:rejected`); return; }
+        if (entry.value.reading) readings.push(entry.value.reading);
+        else passErrors.push(`C${index || ''}:${entry.value.error}`);
+      });
+    }
+  }
+
+  // Machine-readable zone: a check-digit-validated reading outranks a plain one.
+  let mrzNumber = '';
+  if (profile.mrz) {
+    for (const reading of readings) {
+      const mrz = readMrzTd3(reading.raw);
+      if (mrz && mrz.valid) {
+        mrzNumber = mrz.number;
+        readings.push({
+          pass: 'MRZ', engine: 'mrz_check_digits', source: 'mrz', side: reading.side,
+          raw: mrz.number, normalized: normalizeNumber(mrz.number, profile), confidence: 99,
+          readable: true, validFormat: validateFormat(mrz.number, profile).ok,
+          note: `TD3 check digits verified (${mrz.checks.join(', ')})`,
+        });
+        break;
+      }
+    }
+  }
+
+  const mrzConfirms = !!mrzNumber && readings.some((r) => r.normalized === normalizeNumber(mrzNumber, profile) && r.source === 'mrz');
+  const afterMrz = decide(readings, expectedNormalized, profile, passErrors);
+  const settled = mrzConfirms || afterMrz.outcome !== 'unreadable';
+
+  // Last resort: read the stored PDF itself. This is the path that rescues
+  // scanned and multi-page PDFs whose pages are not plain JPEGs.
+  if (!settled && params.pdf?.url && remaining() > 15000) {
+    const pdf = await pdfReadings(base44, params.pdf.url, profile, hint, Math.min(50000, remaining() - 3000));
+    readings.push(...pdf.readings);
+    passErrors.push(...pdf.errors);
+  }
+
+  const diagnosis = decide(readings, expectedNormalized, profile, passErrors);
+  if (diagnosis.outcome === 'unreadable' && !diagnosis.technical) {
+    diagnosis.notes = `${diagnosis.notes} ${profile.numberLabel} was visible but no two recognisers agreed.`;
+  }
+  return diagnosis;
 }

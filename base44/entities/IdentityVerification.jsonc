@@ -25,117 +25,33 @@
         "medical_license",
         "professional_card"
       ],
-      "description": "Document category used for verification \u2014 Passport, Driver's Licence, Birth Certificate, National ID, Medical License or Professional identification card. The category is kept after verification; the document itself never is."
+      "description": "Document category used for verification \u2014 Passport, Driver's Licence, Birth Certificate, National ID, Medical License or Professional identification card."
     },
-    "document_retained": {
-      "type": "boolean",
-      "default": false,
-      "description": "Always false under the AMedix Zero-Retention Document Verification Policy. A submitted document exists only long enough to read the number printed on it; this record never carries the document, an image, a PDF, a storage reference or a copy of its contents."
-    },
-    "retention_policy": {
+    "job_id": {
       "type": "string",
-      "description": "Retention policy the record was written under, e.g. zero_retention_v1"
+      "description": "Human-readable reference of this verification job, e.g. VRF-20261120-8F3K. One job per submitted document; the job outlives the browser session so a check can always be resumed."
     },
-    "retention_method": {
-      "type": "string",
-      "description": "How verification was performed, e.g. automated_document_number_matching. Recorded instead of the document"
-    },
-    "document_purged_datetime": {
-      "type": "string",
-      "description": "Date and time every trace of the submitted document was removed from this record (ISO datetime)"
-    },
-    "file_uri": {
-      "type": "string",
-      "description": "LEGACY \u2014 never written by the current engine and cleared from older records by the zero-retention sweep. Storage reference of a document submitted before the policy existed"
-    },
-    "file_name": {
-      "type": "string",
-      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
-    },
-    "file_mime": {
-      "type": "string",
-      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
-    },
-    "file_size": {
-      "type": "number",
-      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
-    },
-    "page_count": {
-      "type": "integer",
-      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
-    },
-    "source": {
+    "job_status": {
       "type": "string",
       "enum": [
-        "camera",
-        "gallery",
-        "pdf"
+        "uploaded",
+        "processing",
+        "processing_failed",
+        "manual_review",
+        "pending_approval",
+        "approved",
+        "rejected"
       ],
-      "description": "How the document was acquired: CAMERA (photographed in the integrated scanner), GALLERY (an existing photo chosen from the device) or PDF (an existing PDF uploaded as it is). Acquisition metadata only \u2014 no part of the document is kept"
-    },
-    "original_file_uri": {
-      "type": "string",
-      "description": "LEGACY \u2014 the unedited original is no longer uploaded at all; cleared from older records by the zero-retention sweep"
-    },
-    "original_file_name": {
-      "type": "string",
-      "description": "LEGACY \u2014 the unedited original is no longer uploaded at all; cleared by the zero-retention sweep"
-    },
-    "file_uri_back": {
-      "type": "string",
-      "description": "LEGACY \u2014 a two-sided document is submitted as one PDF and nothing is stored; cleared by the zero-retention sweep"
-    },
-    "file_name_back": {
-      "type": "string",
-      "description": "LEGACY \u2014 never written by the current engine; cleared by the zero-retention sweep"
-    },
-    "expected_date_of_birth": {
-      "type": "string",
-      "description": "LEGACY \u2014 cleared by the zero-retention sweep; the comparison result is kept instead"
-    },
-    "extracted_date_of_birth": {
-      "type": "string",
-      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
-    },
-    "expected_national_id_number": {
-      "type": "string",
-      "description": "National ID / certificate number, MASKED to its last four characters \u2014 enough to show the user what was compared, never a complete identifier"
-    },
-    "extracted_national_id_number": {
-      "type": "string",
-      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
-    },
-    "expected_license_number": {
-      "type": "string",
-      "description": "Medical licence / professional number, MASKED to its last four characters"
-    },
-    "extracted_license_number": {
-      "type": "string",
-      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
-    },
-    "expected_full_name": {
-      "type": "string",
-      "description": "LEGACY \u2014 cleared by the zero-retention sweep; the name lives on the patient or doctor profile, never here"
-    },
-    "extracted_full_name": {
-      "type": "string",
-      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
-    },
-    "expected_personal_card_number": {
-      "type": "string",
-      "description": "Personal card number, MASKED to its last four characters"
-    },
-    "extracted_personal_card_number": {
-      "type": "string",
-      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
-    },
-    "expected_passport_number": {
-      "type": "string",
-      "description": "Passport number, MASKED to its last four characters"
-    },
-    "extracted_passport_number": {
-      "type": "string",
-      "description": "LEGACY \u2014 what the document said is never stored; cleared by the zero-retention sweep"
+      "enumColors": [
+        "blue",
+        "yellow",
+        "red",
+        "purple",
+        "yellow",
+        "green",
+        "red"
+      ],
+      "description": "Lifecycle of the verification job. UPLOADED: the original document is safely in private storage, processing has not started. PROCESSING: a worker holds the job. PROCESSING_FAILED: a technical failure interrupted processing \u2014 the document is intact and the job can be retried without re-uploading. MANUAL_REVIEW: the automated engine could not read the document, or a reviewer must look at it \u2014 the document is preserved and queued for an administrator. PENDING_APPROVAL: a reviewer accepted the document and the account activation is in progress. APPROVED: the document is verified. REJECTED: the number on the document does not match the number entered."
     },
     "status": {
       "type": "string",
@@ -151,11 +67,182 @@
         "red",
         "red"
       ],
-      "description": "Decided automatically by the AMedix document-verification engine: VERIFIED \u2014 the number printed on the document matched the number entered, registration continues. REJECTED \u2014 the numbers did not match. FAILED \u2014 the number could not be read from the document, so a clearer document is required. PENDING exists only on legacy records submitted before the automated engine; no human decides those, and a pending record counts only when its own automated run already matched the number."
+      "description": "Verification decision used by every consumer of this record. VERIFIED \u2014 the document number matched (automatically or by an administrator), registration continues. PENDING \u2014 submitted and awaiting a decision (processing, processing failed or in manual review). REJECTED \u2014 the numbers did not match. FAILED \u2014 a legacy record whose document could not be read before manual review existed."
+    },
+    "decision_source": {
+      "type": "string",
+      "enum": [
+        "automatic",
+        "administrator",
+        "legacy"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "gray"
+      ],
+      "default": "automatic",
+      "description": "Who made the decision recorded in status: AUTOMATIC (the document-number engine), ADMINISTRATOR (manual review), or LEGACY (a record from before the job pipeline)."
+    },
+    "attempts": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many times processing has been started for this job. Bounded by max_attempts so a permanently failing job moves to manual review instead of looping."
+    },
+    "max_attempts": {
+      "type": "integer",
+      "default": 2,
+      "description": "Processing attempts allowed before the job is handed to an administrator."
+    },
+    "processing_token": {
+      "type": "string",
+      "description": "Random token written when a worker claims the job. A worker only writes results when its own token is still the one on the record, so two concurrent workers can never both decide the same job."
+    },
+    "job_started_datetime": {
+      "type": "string",
+      "description": "Date and time the current processing attempt started (ISO datetime). Used to detect a worker that died mid-flight."
+    },
+    "job_completed_datetime": {
+      "type": "string",
+      "description": "Date and time processing finished (ISO datetime)"
+    },
+    "next_retry_datetime": {
+      "type": "string",
+      "description": "Date and time the job may be retried (ISO datetime)"
+    },
+    "last_error": {
+      "type": "string",
+      "description": "Machine-readable code of the last technical failure, e.g. storage_unavailable, engine_unreachable, timeout. Never carries document content or an identification number."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Derived from the account, document category, stored file and the number entered. Submitting the same document again returns the existing open job instead of creating a duplicate."
+    },
+    "file_uri": {
+      "type": "string",
+      "description": "Private storage reference of the submitted document (PDF or image). The original is saved before any processing starts and is never deleted by a processing failure. Only ever readable through a short-lived signed link minted server-side for the owner or an administrator."
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Name of the stored document"
+    },
+    "file_mime": {
+      "type": "string",
+      "description": "Media type detected from the file's own signature (never from the browser's claim), e.g. application/pdf, image/jpeg, image/png"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Size of the stored document in bytes"
+    },
+    "page_count": {
+      "type": "integer",
+      "description": "Number of pages in the submitted document"
+    },
+    "pages_read": {
+      "type": "integer",
+      "description": "How many pages the engine actually read"
+    },
+    "detected_format": {
+      "type": "string",
+      "description": "Format the server detected from the file signature: pdf, jpeg, png, heic or unknown"
+    },
+    "document_retained": {
+      "type": "boolean",
+      "default": true,
+      "description": "True when the original document is held in private storage for this verification. A job never loses its document because processing failed."
+    },
+    "retention_policy": {
+      "type": "string",
+      "description": "Retention policy the record was written under: verification_v2_private_storage (current) or zero_retention_v1 (legacy records that never stored a document)"
+    },
+    "retention_method": {
+      "type": "string",
+      "description": "How verification was performed, e.g. automated_document_number_matching_with_manual_review"
+    },
+    "document_purged_datetime": {
+      "type": "string",
+      "description": "Date and time the stored document was removed from storage. Empty while the document is retained."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "camera",
+        "gallery",
+        "pdf"
+      ],
+      "description": "How the document was acquired: CAMERA (photographed in the integrated scanner), GALLERY (an existing photo chosen from the device) or PDF (an existing PDF uploaded as it is)."
+    },
+    "expected_number": {
+      "type": "string",
+      "description": "The number the user entered, kept so a job can be resumed and reprocessed from any session without asking for the document again. Server-only: never returned to the browser, every response and every screen shows the masked form instead."
+    },
+    "expected_national_id_number": {
+      "type": "string",
+      "description": "National ID / certificate number as entered, MASKED to its last four characters"
+    },
+    "expected_license_number": {
+      "type": "string",
+      "description": "Medical licence / professional number as entered, MASKED to its last four characters"
+    },
+    "expected_personal_card_number": {
+      "type": "string",
+      "description": "Personal card number as entered, MASKED to its last four characters"
+    },
+    "expected_passport_number": {
+      "type": "string",
+      "description": "Passport number as entered, MASKED to its last four characters"
+    },
+    "expected_full_name": {
+      "type": "string",
+      "description": "LEGACY \u2014 the name lives on the patient or doctor profile, never here"
+    },
+    "expected_date_of_birth": {
+      "type": "string",
+      "description": "LEGACY \u2014 kept empty; the date of birth lives on the profile"
+    },
+    "extracted_national_id_number": {
+      "type": "string",
+      "description": "LEGACY \u2014 what the document said is never stored; the comparison result is kept instead"
+    },
+    "extracted_license_number": {
+      "type": "string",
+      "description": "LEGACY \u2014 what the document said is never stored"
+    },
+    "extracted_personal_card_number": {
+      "type": "string",
+      "description": "LEGACY \u2014 what the document said is never stored"
+    },
+    "extracted_passport_number": {
+      "type": "string",
+      "description": "LEGACY \u2014 what the document said is never stored"
+    },
+    "extracted_full_name": {
+      "type": "string",
+      "description": "LEGACY \u2014 what the document said is never stored"
+    },
+    "extracted_date_of_birth": {
+      "type": "string",
+      "description": "LEGACY \u2014 what the document said is never stored"
+    },
+    "original_file_uri": {
+      "type": "string",
+      "description": "LEGACY \u2014 an unedited second copy of the original submitted before the job pipeline existed"
+    },
+    "original_file_name": {
+      "type": "string",
+      "description": "LEGACY \u2014 name of that second copy"
+    },
+    "file_uri_back": {
+      "type": "string",
+      "description": "LEGACY \u2014 a two-sided document is now submitted as one document; kept unchanged on older records"
+    },
+    "file_name_back": {
+      "type": "string",
+      "description": "LEGACY \u2014 kept unchanged on older records"
     },
     "reason": {
       "type": "string",
-      "description": "Machine-readable outcome of the automated comparison \u2014 match / mismatch / unreadable (legacy values unreadable / mismatch / card_mismatch are kept unchanged)"
+      "description": "Machine-readable outcome of the automated comparison \u2014 match / mismatch / unreadable / storage_unavailable / engine_unreachable / unsupported_format / blank_page / timeout"
     },
     "verification_outcome": {
       "type": "string",
@@ -169,7 +256,7 @@
         "red",
         "yellow"
       ],
-      "description": "Result of the automated document-number comparison. MATCH: the number printed on the document equals the number entered. MISMATCH: they differ. UNREADABLE: the number could not be read from the document. Never set from the browser \u2014 written by the verification function."
+      "description": "Result of the automated document-number comparison. MATCH: the number printed on the document equals the number entered. MISMATCH: they differ. UNREADABLE: the number could not be read. Never set from the browser."
     },
     "auto_verified": {
       "type": "boolean",
@@ -178,35 +265,36 @@
     },
     "engine": {
       "type": "string",
-      "description": "Identifier and version of the verification engine that produced this result, e.g. amedix_document_number_v1"
+      "description": "Identifier and version of the verification engine that produced this result, e.g. amedix_document_number_v4_job"
     },
     "auto_check": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Record of the automated comparison, with every number masked: { outcome, checked_datetime, engine, number_field, number_label, entered_number (masked), read_number (masked), sides_read, checks: [{ field, label, entered (masked), read (masked), matched, decisive }], note }. No full number, and nothing else the document said, is ever written here"
+      "description": "Record of the automated comparison, with every number masked: { outcome, checked_datetime, engine, number_field, number_label, entered_number (masked), read_number (masked), sides_read, readings, agreement, checks, note }. No full number and nothing else the document said is ever written here"
     },
     "review_reason": {
       "type": "string",
-      "description": "Message shown to the user when the automated engine refused the document (numbers do not match, or the document could not be read). Legacy records may hold an administrator's reason."
+      "description": "Message shown to the user explaining the current state (why the document is in review, or why it was refused)"
     },
     "review_notes": {
       "type": "string",
-      "description": "Legacy field \u2014 internal reviewer notes from the former manual review process. Empty on every automated decision"
+      "description": "Internal notes written by the administrator who decided the manual review"
     },
     "reviewed_by_user_id": {
-      "type": "string"
+      "type": "string",
+      "description": "User id of the administrator who decided the manual review"
     },
     "reviewed_by_name": {
       "type": "string",
-      "description": "Legacy field \u2014 the administrator who decided a record submitted before the automated engine existed. Empty on every automated decision"
+      "description": "Name of the administrator who decided the manual review"
     },
     "reviewed_datetime": {
       "type": "string",
-      "description": "Legacy field \u2014 date and time of a manual decision on a record submitted before the automated engine (ISO datetime)"
+      "description": "Date and time the manual review was decided (ISO datetime)"
     },
     "review_history": {
       "type": "array",
-      "description": "Append-only automated audit trail \u2014 every event on this submission: auto_verified (number matched), auto_rejected (number did not match or could not be read), plus legacy submitted/approved/rejected events kept unchanged",
+      "description": "Append-only audit trail of every event on this submission: submitted, processing_started, auto_verified, auto_rejected, processing_failed, manual_review, document_viewed, approved, rejected",
       "items": {
         "type": "object",
         "properties": {
@@ -215,13 +303,14 @@
           },
           "action": {
             "type": "string",
-            "description": "auto_verified / auto_rejected for automated decisions; submitted / document_viewed / approved / rejected on legacy records"
+            "description": "submitted / processing_started / auto_verified / auto_rejected / processing_failed / manual_review / document_viewed / approved / rejected"
           },
           "actor_name": {
             "type": "string"
           },
           "actor_role": {
-            "type": "string"
+            "type": "string",
+            "description": "system / user / administrator"
           },
           "detail": {
             "type": "string"
@@ -235,7 +324,7 @@
     },
     "document_access_log": {
       "type": "array",
-      "description": "Legacy audit trail of document openings from the former manual review process \u2014 kept unchanged; the automated engine never exposes documents to a person and no document exists to open",
+      "description": "Every time the stored document was opened: who, when and for what. Written server-side by the review endpoint.",
       "items": {
         "type": "object",
         "properties": {
@@ -246,6 +335,9 @@
             "type": "string"
           },
           "actor_name": {
+            "type": "string"
+          },
+          "actor_role": {
             "type": "string"
           },
           "side": {
@@ -259,11 +351,11 @@
     },
     "attempted_datetime": {
       "type": "string",
-      "description": "Date and time the document was submitted (ISO datetime)"
+      "description": "Date and time the document was first submitted (ISO datetime)"
     },
     "verified_datetime": {
       "type": "string",
-      "description": "Date and time the automated engine matched the document number (ISO datetime)"
+      "description": "Date and time the document was verified (ISO datetime)"
     },
     "patient_id": {
       "type": "string",

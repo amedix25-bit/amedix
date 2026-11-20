@@ -13,9 +13,9 @@ export type InlineImage = { mime: string; base64: string };
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png']);
 // A single inline image is capped so one oversized page can never exhaust the
 // request budget; the caller refuses the document instead of truncating it.
-const MAX_BASE64_CHARS = 9_000_000;
-const DEFAULT_TIMEOUT_MS = 45000;
-const MAX_TIMEOUT_MS = 90000;
+const MAX_BASE64_CHARS = 12_000_000;
+const DEFAULT_TIMEOUT_MS = 25000;
+const MAX_TIMEOUT_MS = 45000;
 
 function toDataUrl(image: InlineImage): string {
   const mime = ALLOWED_MIME.has(image.mime) ? image.mime : 'image/jpeg';
@@ -52,43 +52,71 @@ function messageText(content: unknown): string {
  * JSON reply, or null when the model could not be reached or did not answer in
  * the expected shape. Nothing about the document is persisted or logged here.
  */
+export type VisionResult = { data: any | null; error: string };
+
+/**
+ * Same read, but reports WHY it produced nothing. Every failure used to be
+ * swallowed, which is why a drifting model id looked exactly like an unreadable
+ * document. Callers log `error` (never the document, never a number).
+ */
+export async function readDocumentWithVisionResult(
+  base44: any,
+  request: { model: string; prompt: string; images: InlineImage[]; timeoutMs?: number }
+): Promise<VisionResult> {
+  const images = (request.images || []).filter(
+    (image) => image && typeof image.base64 === 'string' && image.base64.length > 0 && image.base64.length <= MAX_BASE64_CHARS
+  );
+  if (!images.length) return { data: null, error: 'no_image' };
+  if (typeof request.prompt !== 'string' || !request.prompt) return { data: null, error: 'no_prompt' };
+
+  const timeoutMs = Math.min(MAX_TIMEOUT_MS, Math.max(5000, request.timeoutMs || DEFAULT_TIMEOUT_MS));
+
+  try {
+    const connection = base44.asServiceRole.aiGateway.connection();
+    const endpoint = `${String(connection.baseURL).replace(/\/$/, '')}/chat/completions`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(connection.headers || {}) };
+    if (connection.token) headers.Authorization = `Bearer ${connection.token}`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: request.model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: request.prompt },
+              ...images.map((image) => ({ type: 'image_url', image_url: { url: toDataUrl(image) } })),
+            ],
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (!response.ok) {
+      // The status is enough to tell a bad model id (400/404) from an outage
+      // (5xx) or a rate limit (429) — the body may echo the prompt, so it is
+      // not read.
+      return { data: null, error: `http_${response.status}` };
+    }
+    const payload: any = await response.json().catch(() => null);
+    const data = parseJsonReply(messageText(payload?.choices?.[0]?.message?.content));
+    return data ? { data, error: '' } : { data: null, error: 'unparsable_reply' };
+  } catch (err: any) {
+    const message = String(err?.message || err || '');
+    if (/timeout|abort/i.test(message)) return { data: null, error: 'timeout' };
+    return { data: null, error: 'request_failed' };
+  }
+}
+
 export async function readDocumentWithVision(
   base44: any,
   request: { model: string; prompt: string; images: InlineImage[]; timeoutMs?: number }
 ): Promise<any | null> {
-  const images = (request.images || []).filter(
-    (image) => image && typeof image.base64 === 'string' && image.base64.length > 0 && image.base64.length <= MAX_BASE64_CHARS
-  );
-  if (!images.length || typeof request.prompt !== 'string' || !request.prompt) return null;
-
-  const connection = base44.asServiceRole.aiGateway.connection();
-  const endpoint = `${String(connection.baseURL).replace(/\/$/, '')}/chat/completions`;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(connection.headers || {}) };
-  if (connection.token) headers.Authorization = `Bearer ${connection.token}`;
-
-  const timeoutMs = Math.min(MAX_TIMEOUT_MS, Math.max(5000, request.timeoutMs || DEFAULT_TIMEOUT_MS));
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: request.model,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: request.prompt },
-            ...images.map((image) => ({ type: 'image_url', image_url: { url: toDataUrl(image) } })),
-          ],
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-
-  if (!response.ok) return null;
-  const payload: any = await response.json().catch(() => null);
-  return parseJsonReply(messageText(payload?.choices?.[0]?.message?.content));
+  const result = await readDocumentWithVisionResult(base44, request);
+  return result.data;
 }
 
 // Byte helpers for the in-memory document container. Both directions stay in

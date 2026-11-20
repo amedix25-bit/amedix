@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import {
   Loader2, ScanLine, UploadCloud, FileUp, Check, AlertTriangle, RefreshCw, Image as ImageIcon,
@@ -7,8 +8,8 @@ import DocumentScannerCamera from "@/components/verification/DocumentScannerCame
 import ScanReview from "@/components/verification/ScanReview";
 import { documentFileName } from "@/lib/documentScanner";
 import {
-  IMAGE_ACCEPT, PDF_ACCEPT, MAX_INLINE_DOCUMENT_BYTES, isPdfFile, fileSizeLabel,
-  prepareImageFile, rotateImageDataUrl, readFileAsDataUrl, dataUrlToBase64,
+  IMAGE_ACCEPT, PDF_ACCEPT, MAX_DOCUMENT_BYTES, isPdfFile, fileSizeLabel,
+  prepareImageFile, rotateImageDataUrl, pagesToPdf,
 } from "@/lib/documentImage";
 
 // THE unified document acquisition flow for every verification document —
@@ -52,9 +53,10 @@ export default function DocumentScanUpload({
     setPages((prev) => [...prev, { ...page, label: pageLabel(prev.length) }]);
   };
 
-  // NOTHING IS UPLOADED. The pages are held in memory and handed to the
-  // verification request as base64, where they are read and released. No file is
-  // written to private storage, public storage or anywhere else.
+  // The document is uploaded to private storage HERE, before anything is
+  // checked. That is what makes a failed check recoverable: the stored file is
+  // the single copy the verification job refers to from then on, so a dropped
+  // connection, a closed tab or a slow model never costs the user a re-upload.
   const handOverPending = async () => {
     const pending = pendingRef.current;
     if (!pending || busyRef.current) return;
@@ -63,14 +65,7 @@ export default function DocumentScanUpload({
     setRetryable(false);
     try {
       setStage("upload");
-      onFile({
-        pages: pending.pages,
-        name: pending.name,
-        source: pending.source,
-        page_count: pending.pages.length,
-        size: pending.size,
-        mime: pending.pages.length === 1 ? pending.pages[0].mime : "application/pdf",
-      });
+      onFile({ ...pending.fileInfo, source: pending.source });
       pendingRef.current = null;
       setPages([]);
       setOriginals([]);
@@ -79,7 +74,7 @@ export default function DocumentScanUpload({
       setTimeout(() => setStage(""), 1200);
     } catch (err) {
       console.error(err);
-      setError(t("The document could not be prepared. Please try again."));
+      setError(t("The document could not be saved. Check your connection and try again."));
       setRetryable(true);
       setMode(pages.length ? "review" : "idle");
     } finally {
@@ -88,13 +83,8 @@ export default function DocumentScanUpload({
     }
   };
 
-  const queue = async (inlinePages, name, source) => {
-    pendingRef.current = {
-      pages: inlinePages,
-      name,
-      source,
-      size: inlinePages.reduce((sum, p) => sum + Math.round((p.base64.length * 3) / 4), 0),
-    };
+  const queue = async (fileInfo, source) => {
+    pendingRef.current = { fileInfo, source };
     await handOverPending();
   };
 
@@ -102,19 +92,30 @@ export default function DocumentScanUpload({
     if (!pages.length || busyRef.current) return;
     setPreparing(true);
     setError("");
+    setRetryable(false);
     try {
-      const inlinePages = pages.map((page) => ({ mime: "image/jpeg", base64: dataUrlToBase64(page.dataUrl) }));
-      const bytes = inlinePages.reduce((sum, p) => sum + Math.round((p.base64.length * 3) / 4), 0);
-      if (bytes > MAX_INLINE_DOCUMENT_BYTES) {
-        setError(t("These pages are too large to check at once. Photograph the document with the camera so it is compressed for reading."));
-        setRetryable(false);
+      const pdfBlob = await pagesToPdf(pages);
+      if (pdfBlob.size > MAX_DOCUMENT_BYTES) {
+        setError(t("These pages are larger than 30 MB. Retake them with the camera so the file stays small."));
         return;
       }
-      await queue(inlinePages, fileName, pages[0]?.source === "camera" ? "camera" : "gallery");
+      const fileToUpload = new File([pdfBlob], fileName, { type: "application/pdf" });
+      const uploaded = await base44.integrations.Core.UploadPrivateFile({ file: fileToUpload });
+      if (!uploaded?.file_uri) throw new Error("upload_failed");
+      await queue(
+        {
+          uri: uploaded.file_uri,
+          name: fileName,
+          mime: "application/pdf",
+          size: fileToUpload.size,
+          page_count: pages.length,
+        },
+        pages[0]?.source === "camera" ? "camera" : "gallery"
+      );
     } catch (err) {
       console.error(err);
-      setError(t("The document could not be prepared. Please try again."));
-      setRetryable(false);
+      setError(t("The document could not be saved. Check your connection and try again."));
+      setRetryable(true);
     } finally {
       setPreparing(false);
     }
@@ -129,17 +130,22 @@ export default function DocumentScanUpload({
 
     const pdf = files.find(isPdfFile);
     if (pdf) {
-      if (pdf.size > MAX_INLINE_DOCUMENT_BYTES) {
-        setError(t("This PDF is larger than 8 MB. Nothing is uploaded, so the document has to travel inside the check itself — photograph the pages instead."));
+      if (pdf.size > MAX_DOCUMENT_BYTES) {
+        setError(t("This PDF is larger than 30 MB. Please choose a smaller file."));
         return;
       }
       setPreparing(true);
       try {
-        const dataUrl = await readFileAsDataUrl(pdf);
-        await queue([{ mime: "application/pdf", base64: dataUrlToBase64(dataUrl) }], fileName, "pdf");
+        const uploaded = await base44.integrations.Core.UploadPrivateFile({ file: pdf });
+        if (!uploaded?.file_uri) throw new Error("upload_failed");
+        await queue(
+          { uri: uploaded.file_uri, name: pdf.name || fileName, mime: "application/pdf", size: pdf.size, page_count: 0 },
+          "pdf"
+        );
       } catch (err) {
         console.error(err);
-        setError(t("This PDF could not be opened. Please choose another file."));
+        setRetryable(false);
+        setError(t("This PDF could not be saved. Check your connection and choose it again."));
       } finally {
         setPreparing(false);
       }
@@ -181,17 +187,22 @@ export default function DocumentScanUpload({
       setError(t("Please select a PDF file."));
       return;
     }
-    if (picked.size > MAX_INLINE_DOCUMENT_BYTES) {
-      setError(t("This PDF is larger than 8 MB. Nothing is uploaded, so the document has to travel inside the check itself — photograph the pages instead."));
+    if (picked.size > MAX_DOCUMENT_BYTES) {
+      setError(t("This PDF is larger than 30 MB. Please choose a smaller file."));
       return;
     }
     setPreparing(true);
     try {
-      const dataUrl = await readFileAsDataUrl(picked);
-      await queue([{ mime: "application/pdf", base64: dataUrlToBase64(dataUrl) }], fileName, "pdf");
+      const uploaded = await base44.integrations.Core.UploadPrivateFile({ file: picked });
+      if (!uploaded?.file_uri) throw new Error("upload_failed");
+      await queue(
+        { uri: uploaded.file_uri, name: picked.name || fileName, mime: "application/pdf", size: picked.size, page_count: 0 },
+        "pdf"
+      );
     } catch (err) {
       console.error(err);
-      setError(t("This PDF could not be opened. Please choose another file."));
+      setRetryable(false);
+      setError(t("This PDF could not be saved. Check your connection and choose it again."));
     } finally {
       setPreparing(false);
     }
@@ -301,7 +312,7 @@ export default function DocumentScanUpload({
             <p className="text-sm text-destructive">{error}</p>
           </div>
           {retryable && (
-            <Button type="button" size="sm" variant="outline" onClick={handOverPending} disabled={busy}>
+            <Button type="button" size="sm" variant="outline" onClick={pages.length ? confirmPages : handOverPending} disabled={busy}>
               <RefreshCw className="w-3.5 h-3.5 mr-2 rtl:ml-2 rtl:mr-0" />
               {t("Try again")}
             </Button>

@@ -7,12 +7,14 @@ import { buildPdfFromImages } from "@/lib/documentScanner";
 
 export const IMAGE_ACCEPT = "image/*,.heic,.heif";
 export const PDF_ACCEPT = "application/pdf,.pdf";
-export const MAX_PDF_BYTES = 25 * 1024 * 1024;
+export const MAX_PDF_BYTES = 30 * 1024 * 1024;
 export const MAX_IMAGE_BYTES = 30 * 1024 * 1024;
 
-// In-memory verification: the document travels INSIDE the verification request,
-// so its size is bounded by the request rather than by a storage upload.
-export const MAX_INLINE_DOCUMENT_BYTES = 8 * 1024 * 1024;
+// The document is uploaded to private storage before it is checked, so its size
+// is bounded by the upload and not by a request body. The server enforces the
+// same limit and identifies the real format from the file's own signature.
+export const MAX_DOCUMENT_BYTES = 30 * 1024 * 1024;
+export const MAX_INLINE_DOCUMENT_BYTES = MAX_DOCUMENT_BYTES;
 
 export function dataUrlToBase64(dataUrl) {
   const value = String(dataUrl || "");

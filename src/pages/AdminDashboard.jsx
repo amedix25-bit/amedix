@@ -12,11 +12,13 @@ import AdminHospitalAuthorizations from "@/components/admin/hospital/AdminHospit
 import AdminAccountGovernance from "@/components/admin/accounts/AdminAccountGovernance";
 import AdminAccessCodes from "@/components/admin/AdminAccessCodes";
 import AdminInstitutionApprovals from "@/components/admin/AdminInstitutionApprovals";
+import AdminVerificationReview from "@/components/admin/verification/AdminVerificationReview";
 import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound, ClipboardCheck } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "users", label: "Users", icon: Users },
+  { key: "document_review", label: "Document Review", icon: ShieldCheck },
   { key: "hospitals", label: "Hospital Approvals", icon: Building2 },
   { key: "institution_approvals", label: "Institution Approvals", icon: ClipboardCheck },
   { key: "access_codes", label: "Access Codes", icon: KeyRound },
@@ -47,6 +49,7 @@ export default function AdminDashboard() {
 
         {activeTab === "overview" && <AdminOverview />}
         {activeTab === "users" && <AdminUsers />}
+        {activeTab === "document_review" && <AdminVerificationReview />}
         {activeTab === "hospitals" && <AdminHospitalAuthorizations />}
         {activeTab === "institution_approvals" && <AdminInstitutionApprovals />}
         {activeTab === "access_codes" && <AdminAccessCodes />}

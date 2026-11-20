@@ -14,6 +14,22 @@
 export const RETENTION_POLICY = 'zero_retention_v1';
 export const RETENTION_METHOD = 'automated_document_number_matching';
 
+// Current policy. A submitted document is saved to private storage BEFORE any
+// processing starts, so a failed check never destroys the only copy and an
+// administrator can review it. The document is reachable only through a
+// short-lived signed link minted server-side for its owner or an administrator.
+export const RETENTION_POLICY_V2 = 'verification_v2_private_storage';
+export const RETENTION_METHOD_V2 = 'automated_document_number_matching_with_manual_review';
+
+export function retainedFields() {
+  return {
+    document_retained: true,
+    retention_policy: RETENTION_POLICY_V2,
+    retention_method: RETENTION_METHOD_V2,
+    document_purged_datetime: '',
+  };
+}
+
 const MASK = '•';
 
 // A number reduced to its last four characters — enough for the user to see
@@ -88,6 +104,9 @@ export function scrubAutoCheck(autoCheck: any): any {
 // Whether a stored record still carries any part of the document.
 export function hasRetainedDocument(record: any): boolean {
   if (!record) return false;
+  // Records written by the private-storage pipeline retain their document on
+  // purpose. The legacy sweep must never strip them.
+  if (record.retention_policy === RETENTION_POLICY_V2) return false;
   if (DOCUMENT_VESTIGE_FIELDS.some((f) => typeof record[f] === 'string' && record[f] !== '')) return true;
   if (typeof record.file_size === 'number' && record.file_size > 0) return true;
   if (NUMBER_FIELDS.some((f) => {
