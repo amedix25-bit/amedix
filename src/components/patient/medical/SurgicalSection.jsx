@@ -140,6 +140,67 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
     }
   };
 
+  // Both the patient (their own record) and the treating doctor during an
+  // active visit may maintain these entries.
+  const canEdit = doctorView ? editable : true;
+
+  // The entry form. It is shown at the top of the list when adding a new entry
+  // and directly under the entry being edited, with its Save button beneath it.
+  const renderForm = () => (
+    <form onSubmit={save} className="mb-4 rounded-lg border border-border p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">{form.id ? t("Edit Surgery") : t("Add Surgery")}</p>
+        <button type="button" onClick={() => setForm(null)} className="text-muted-foreground">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label>{t("Surgery type")} *</Label>
+          <ProcedurePicker
+            status="previous"
+            onPick={(p) =>
+              setForm({
+                ...form,
+                surgery_type: p.name,
+                surgery_type_ar: p.nameAr || "",
+                procedure_code: p.code || "",
+                procedure_specialty: p.specialty || "",
+              })
+            }
+          />
+          {form.surgery_type && (
+            <p className="text-sm font-medium">
+              {isArabic && form.surgery_type_ar ? form.surgery_type_ar : form.surgery_type}
+              {form.procedure_code ? <span className="text-xs text-muted-foreground"> · {form.procedure_code}</span> : null}
+            </p>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Date")}</Label>
+          <DateField value={form.surgery_date} onChange={(surgery_date) => setForm({ ...form, surgery_date })} disableFuture />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Reason / Indication")}</Label>
+          <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Complications")}</Label>
+          <Input value={form.complications} onChange={(e) => setForm({ ...form, complications: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Recovery / Outcome")}</Label>
+          <Input value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })} />
+        </div>
+      </div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <Button type="submit" size="sm" disabled={saving}>
+        {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
+        {t("Save")}
+      </Button>
+    </form>
+  );
+
   return (
     <SectionCard
       number={number}
@@ -150,67 +211,14 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
       sectionKey="surgical_history"
       editLogRefresh={logRefresh}
       action={
-        editable && !form ? (
+        canEdit && !form ? (
           <Button size="sm" variant="outline" onClick={startAdd}>
             <Plus className="w-4 h-4 mr-1" /> {t("Add")}
           </Button>
         ) : undefined
       }
     >
-      {form && (
-        <form onSubmit={save} className="mb-4 rounded-lg border border-border p-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{form.id ? t("Edit Surgery") : t("Add Surgery")}</p>
-            <button type="button" onClick={() => setForm(null)} className="text-muted-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>{t("Surgery type")} *</Label>
-              <ProcedurePicker
-                status="previous"
-                onPick={(p) =>
-                  setForm({
-                    ...form,
-                    surgery_type: p.name,
-                    surgery_type_ar: p.nameAr || "",
-                    procedure_code: p.code || "",
-                    procedure_specialty: p.specialty || "",
-                  })
-                }
-              />
-              {form.surgery_type && (
-                <p className="text-sm font-medium">
-                  {isArabic && form.surgery_type_ar ? form.surgery_type_ar : form.surgery_type}
-                  {form.procedure_code ? <span className="text-xs text-muted-foreground"> · {form.procedure_code}</span> : null}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Date")}</Label>
-              <DateField value={form.surgery_date} onChange={(surgery_date) => setForm({ ...form, surgery_date })} disableFuture />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Reason / Indication")}</Label>
-              <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Complications")}</Label>
-              <Input value={form.complications} onChange={(e) => setForm({ ...form, complications: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Recovery / Outcome")}</Label>
-              <Input value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })} />
-            </div>
-          </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" size="sm" disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
-            {t("Save")}
-          </Button>
-        </form>
-      )}
+      {form && !form.id && renderForm()}
 
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
@@ -222,6 +230,7 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
       ) : (
         <div className="space-y-4">
           {items.map((s) => {
+            if (form?.id === s.id) return <div key={s.id}>{renderForm()}</div>;
             const hasAnesthesia = s.anesthesia_history || s.anesthesia_complications;
             const hasTransfusion =
               s.transfusion_count || s.transfusion_type || s.transfusion_amount ||
@@ -236,7 +245,7 @@ export default function SurgicalSection({ number, patient, doctorView, editable,
                   </p>
                   <div className="flex items-center gap-2 shrink-0">
                     {s.surgery_date && <span className="text-xs text-muted-foreground">{s.surgery_date}</span>}
-                    {editable && (
+                    {canEdit && (
                       <>
                         <button type="button" onClick={() => startEdit(s)} className="text-muted-foreground hover:text-foreground">
                           <Pencil className="w-3.5 h-3.5" />

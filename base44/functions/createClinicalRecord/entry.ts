@@ -48,24 +48,69 @@ export default async function(req) {
       return Response.json({ record_id: med.id });
     }
 
-    // Patient mode — the patient records a chronic condition from their own
-    // Medical ID card. Category is fixed server-side and the entry is stored
-    // as patient-reported, never presented as clinically verified.
-    if (isPatient && kind === "condition" && !doctor) {
-      const name = String(record.name || "").trim();
-      if (!name) return Response.json({ error: "Condition name is required." }, { status: 400 });
-      const condition = await base44.asServiceRole.entities.MedicalCondition.create({
+    // Patient mode — the patient maintains their own reported history from the
+    // Medical ID card and My Health: a current condition (known case), a past
+    // medical entry, a past operation or a family member. Every write is
+    // verified to belong to their own record and is stored as patient-reported,
+    // never presented as clinically verified.
+    const patientKinds = {
+      condition: {
+        entity: base44.asServiceRole.entities.MedicalCondition,
+        required: "name",
+        allowed: ["name", "name_ar", "category", "current_status", "details", "date"],
+      },
+      surgery: {
+        entity: base44.asServiceRole.entities.SurgicalHistory,
+        required: "surgery_type",
+        allowed: ["surgery_type", "surgery_type_ar", "procedure_code", "procedure_specialty", "procedure_status", "surgery_date", "reason", "complications", "outcome"],
+      },
+      family: {
+        entity: base44.asServiceRole.entities.FamilyHistory,
+        required: "condition",
+        allowed: ["condition", "condition_ar", "relation", "relation_label", "age_at_diagnosis", "notes"],
+      },
+    };
+
+    if (isPatient && !doctor && patientKinds[kind]) {
+      const cfg = patientKinds[kind];
+      const action = String(body.action || "create");
+      let owned = null;
+      if (record.id) {
+        const mine = await cfg.entity.filter({ patient_id: patient.id });
+        owned = (mine || []).find((r) => r.id === record.id) || null;
+        if (!owned) return Response.json({ error: "Not authorized to change this entry." }, { status: 403 });
+      }
+      if (action === "delete") {
+        await cfg.entity.delete(owned.id);
+        return Response.json({ record_id: owned.id });
+      }
+      const payload = {};
+      for (const field of cfg.allowed) {
+        if (record[field] !== undefined && record[field] !== null) payload[field] = record[field];
+      }
+      if (kind === "condition") {
+        payload.category = payload.category === "past_history" ? "past_history" : "known_case";
+        if (!payload.date) payload.date = new Date().toISOString().slice(0, 10);
+        if (!payload.current_status) payload.current_status = "active";
+      }
+      if (!String(payload[cfg.required] || "").trim()) {
+        return Response.json({ error: `${cfg.required} is required.` }, { status: 400 });
+      }
+      if (kind === "family" && !String(payload.relation || "").trim()) {
+        return Response.json({ error: "relation is required." }, { status: 400 });
+      }
+      if (owned) {
+        await cfg.entity.update(owned.id, payload);
+        return Response.json({ record_id: owned.id });
+      }
+      const saved = await cfg.entity.create({
+        ...payload,
         patient_id: patient.id,
         patient_user_id: patient.user_id,
         patient_cin: patient.cin,
         patient_name: patient.full_name,
-        name,
-        name_ar: String(record.name_ar || "").trim() || undefined,
-        category: "known_case",
-        current_status: record.current_status || "active",
-        date: record.date || new Date().toISOString().slice(0, 10),
       });
-      return Response.json({ record_id: condition.id });
+      return Response.json({ record_id: saved.id });
     }
 
     if (!doctor) {
@@ -149,12 +194,13 @@ export default async function(req) {
     // Doctors may correct the patient's recorded history during an active
     // visit. Every change is recorded in the HealthSectionEdit log and shown
     // in both portals as "Dr. <name> edited <datetime>".
-    if (kind === "condition" || kind === "surgery" || kind === "allergy") {
+    if (kind === "condition" || kind === "surgery" || kind === "allergy" || kind === "family") {
       const action = String(body.action || "create");
       const map = {
         condition: { entity: base44.asServiceRole.entities.MedicalCondition, section: "known_case", required: "name", allowed: ["name", "name_ar", "category", "current_status", "details", "date"], label: "condition" },
         surgery: { entity: base44.asServiceRole.entities.SurgicalHistory, section: "surgical_history", required: "surgery_type", allowed: ["surgery_type", "surgery_type_ar", "procedure_code", "procedure_specialty", "procedure_status", "surgery_date", "reason", "complications", "outcome"], label: "surgery" },
         allergy: { entity: base44.asServiceRole.entities.Allergy, section: "allergies", required: "allergen", allowed: ["allergen", "allergy_type", "entry_type", "reaction", "severity"], label: "allergy" },
+        family: { entity: base44.asServiceRole.entities.FamilyHistory, section: "family_history", required: "condition", allowed: ["condition", "condition_ar", "relation", "relation_label", "age_at_diagnosis", "notes"], label: "family history" },
       };
       const cfg = map[kind];
 

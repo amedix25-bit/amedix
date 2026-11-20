@@ -145,6 +145,54 @@ export default function ConditionsSection({ number, title, category, patient, em
     }
   };
 
+  // Both the patient (their own record) and the treating doctor during an
+  // active visit may maintain these entries.
+  const canEdit = doctorView ? editable : true;
+
+  // The entry form. It is shown at the top of the list when adding a new entry
+  // and directly under the entry being edited, with its Save button beneath it.
+  const renderForm = () => (
+    <form onSubmit={save} className="mb-4 rounded-lg border border-border p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">{form.id ? t("Edit Condition") : t("Add Condition")}</p>
+        <button type="button" onClick={() => setForm(null)} className="text-muted-foreground">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label>{t("Condition name")} *</Label>
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Condition, e.g. Hypertension")} required />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Status")}</Label>
+          <select
+            value={form.current_status}
+            onChange={(e) => setForm({ ...form, current_status: e.target.value })}
+            className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>{t(capitalize(s))}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Date")}</Label>
+          <DateField value={form.date} onChange={(date) => setForm({ ...form, date })} disableFuture />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("Details (optional)")}</Label>
+          <Input value={form.details} onChange={(e) => setForm({ ...form, details: e.target.value })} />
+        </div>
+      </div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <Button type="submit" size="sm" disabled={saving}>
+        {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
+        {t("Save")}
+      </Button>
+    </form>
+  );
+
   return (
     <SectionCard
       number={number}
@@ -155,54 +203,14 @@ export default function ConditionsSection({ number, title, category, patient, em
       sectionKey={category}
       editLogRefresh={logRefresh}
       action={
-        editable && !form ? (
+        canEdit && !form ? (
           <Button size="sm" variant="outline" onClick={startAdd}>
             <Plus className="w-4 h-4 mr-1" /> {t("Add")}
           </Button>
         ) : undefined
       }
     >
-      {form && (
-        <form onSubmit={save} className="mb-4 rounded-lg border border-border p-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{form.id ? t("Edit Condition") : t("Add Condition")}</p>
-            <button type="button" onClick={() => setForm(null)} className="text-muted-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{t("Condition name")} *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("Condition, e.g. Hypertension")} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Status")}</Label>
-              <select
-                value={form.current_status}
-                onChange={(e) => setForm({ ...form, current_status: e.target.value })}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{t(capitalize(s))}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Date")}</Label>
-              <DateField value={form.date} onChange={(date) => setForm({ ...form, date })} disableFuture />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("Details (optional)")}</Label>
-              <Input value={form.details} onChange={(e) => setForm({ ...form, details: e.target.value })} />
-            </div>
-          </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" size="sm" disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
-            {t("Save")}
-          </Button>
-        </form>
-      )}
+      {form && !form.id && renderForm()}
 
       {loading ? (
         <div className="flex items-center text-sm text-muted-foreground">
@@ -213,7 +221,10 @@ export default function ConditionsSection({ number, title, category, patient, em
         <p className="text-sm text-muted-foreground">{emptyText}</p>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => (
+          {items.map((item) =>
+            form?.id === item.id ? (
+              <div key={item.id}>{renderForm()}</div>
+            ) : (
             <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
               <div>
                 <p className="font-medium">
@@ -230,7 +241,7 @@ export default function ConditionsSection({ number, title, category, patient, em
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {item.date && <span className="text-xs text-muted-foreground">{item.date}</span>}
-                {editable && (
+                {canEdit && (
                   <>
                     <button type="button" onClick={() => startEdit(item)} className="text-muted-foreground hover:text-foreground">
                       <Pencil className="w-3.5 h-3.5" />
@@ -242,7 +253,8 @@ export default function ConditionsSection({ number, title, category, patient, em
                 )}
               </div>
             </div>
-          ))}
+            )
+          )}
           {events.map((event) => (
             <div key={event.id} className="flex items-start justify-between gap-3 text-sm">
               <div>

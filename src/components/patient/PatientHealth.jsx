@@ -67,7 +67,7 @@ export default function PatientHealth({
           <Lock className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {t(
-              "Your medical history was recorded at registration and is shown to your treating doctors. You can complete or update your Gynaecological & Obstetric History at any time — earlier answers are kept and every update is recorded."
+              "Your medical history is shown to your treating doctors. You can add or update your own conditions, past medical history, surgeries, family history and Gynaecological & Obstetric History at any time — earlier entries are kept and every update is recorded."
             )}
           </span>
         </div>
@@ -167,6 +167,8 @@ export default function PatientHealth({
         number="10"
         patient={profile}
         doctorView={doctorView}
+        editable={editable}
+        onRefresh={onRefreshData}
         records={preloaded?.familyHistory}
       />
     </div>
