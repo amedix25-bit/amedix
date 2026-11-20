@@ -1,123 +1,131 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ArrowRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Image } from "@/components/ui/image";
-import { ArrowRight } from "lucide-react";
 import { AMEDIX_LOGO_URL } from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
-import { AR_PARAGRAPHS, AR_VISION_HEADING, AR_VISION_LINE, AR_FOUNDERS } from "@/lib/amedixStoryArabic";
+import FoundersCredit from "@/components/welcome/FoundersCredit";
+import VisionPreview from "@/components/welcome/VisionPreview";
+
+// The mark's own proportions (1334 × 1179). The logo is always rendered with
+// `fit` (object-contain) inside a box of this ratio, so it is scaled — never
+// stretched, cropped or recoloured — on any screen.
+const LOGO_WIDTH = 1334;
+const LOGO_HEIGHT = 1179;
+
+const rise = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0 },
+};
 
 // Welcome screen — the first screen anyone sees when opening AMedix.
-// The AMedix logo sits behind the message as a large, low-opacity watermark
-// so the text and button stay fully readable. Get Started leads to the
-// existing role-choice page. The language switcher is available from here,
-// before any login or registration.
-// Renders text with every brand name and founder name bolded. The founder
-// names only occur in the Arabic story, so the English version is untouched.
-const BOLD_PHRASES = ["AMedix", ...AR_FOUNDERS];
-const BOLD_PATTERN = new RegExp(
-  `(${BOLD_PHRASES.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`
-);
-
-function AMedixBold({ text }) {
-  const parts = String(text || "").split(BOLD_PATTERN);
-  return (
-    <>
-      {parts.map((part, i) =>
-        BOLD_PHRASES.includes(part) ? <strong key={i}>{part}</strong> : part
-      )}
-    </>
-  );
-}
-
+// Get Started leads to the existing portal choice page; Our Vision opens the
+// story and a presentation preview of the home screen. Nothing here touches
+// authentication, registration or any patient record.
 export default function Welcome() {
   const navigate = useNavigate();
-  const { t, isArabic } = useAppLanguage();
+  const { t } = useAppLanguage();
+  const [visionOpen, setVisionOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden flex items-center justify-center">
-      {/* AMedix logo watermark */}
-      <div
-        className="pointer-events-none select-none absolute inset-0 flex items-center justify-center"
-        aria-hidden="true">
-        
-        {/* `fit` keeps the logo's own proportions on every screen — it is scaled
-            down to the viewport instead of being stretched to fill it. The
-            object-contain class makes that explicit on every render path. */}
-        <Image
-          src={AMEDIX_LOGO_URL}
-          alt=""
-          fittingType="fit"
-          className="h-full w-full object-contain opacity-[0.15]" />
-        
+    <div className="relative flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-background">
+      {/* Ambient brand glow — decorative only */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -bottom-32 end-[-6rem] h-80 w-80 rounded-full bg-accent/70 blur-3xl" />
       </div>
 
-      {/* Top navigation — language selection available before login */}
-      <div className="absolute top-0 inset-x-0 z-10 flex items-center justify-end px-4 py-4">
+      {/* Language selection is available before any login or registration. */}
+      <header className="relative z-10 flex justify-end px-4 py-4 sm:px-6">
         <AppLanguageSwitcher />
-      </div>
+      </header>
 
-      <div className="relative max-w-2xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-4xl sm:text-5xl">{t("Welcome to AMedix")}</h1>
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 pb-6 sm:px-6 sm:pb-8">
+        <div className="w-full max-w-3xl text-center">
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={rise}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="mx-auto w-fit"
+          >
+            <div className="rounded-[1.75rem] border border-border/70 bg-card/80 p-3 shadow-[0_30px_80px_-42px_hsl(var(--primary)/0.6)] backdrop-blur sm:rounded-[2rem] sm:p-5">
+              <Image
+                src={AMEDIX_LOGO_URL}
+                alt="AMedix"
+                fittingType="fit"
+                originWidth={LOGO_WIDTH}
+                originHeight={LOGO_HEIGHT}
+                className="block h-auto w-[min(64vw,14rem)] sm:w-[min(48vw,18rem)] md:w-[min(38vw,20rem)] lg:w-[min(26rem,40vh)]"
+              />
+            </div>
+          </motion.div>
 
-        {isArabic ?
-        // Official, manually provided Arabic version — displayed verbatim,
-        // never auto-translated, with the same design as the English
-        // version and proper RTL alignment.
-        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-normal" dir="rtl">
-            {AR_PARAGRAPHS.map((p, i) =>
-          <p key={i}><AMedixBold text={p} /></p>
-          )}
-            <p>{AR_VISION_HEADING}</p>
-            <p className="text-primary text-lg sm:text-xl">{AR_VISION_LINE}</p>
-          </div> :
+          <motion.h1
+            initial="hidden"
+            animate="show"
+            variants={rise}
+            transition={{ duration: 0.5, delay: 0.08, ease: "easeOut" }}
+            className="mt-5 font-heading text-3xl font-bold tracking-tight sm:mt-8 sm:text-4xl lg:text-5xl"
+          >
+            {t("Welcome to AMedix")}
+          </motion.h1>
 
-        <div className="mt-6 space-y-4 text-foreground leading-relaxed font-normal">
-            <p className="font-normal"><strong>AMedix</strong> was founded by two medical students:<br /> <strong>Ayatallah Abed Elallegy</strong> and <strong>Mohammed Saad Alsaba</strong>,<br />with a clear vision: to make healthcare connected, organized, and accessible for both patients and healthcare professionals.
+          <motion.p
+            initial="hidden"
+            animate="show"
+            variants={rise}
+            transition={{ duration: 0.5, delay: 0.14, ease: "easeOut" }}
+            className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base lg:text-lg"
+          >
+            {t("Connected Care. Better Health.")}
+          </motion.p>
 
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={rise}
+            transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+          >
+            <FoundersCredit className="mt-5 sm:mt-7" />
+          </motion.div>
 
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={rise}
+            transition={{ duration: 0.5, delay: 0.26, ease: "easeOut" }}
+            className="mx-auto mt-6 flex w-full max-w-sm flex-col items-stretch gap-2.5 sm:mt-8 sm:gap-3"
+          >
+            {/* Primary action — the first thing a visitor notices. */}
+            <Button
+              size="lg"
+              onClick={() => navigate("/landing")}
+              className="group h-14 w-full rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/95 hover:shadow-[0_24px_50px_-20px_hsl(var(--primary)/0.9)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:translate-y-0"
+            >
+              {t("Get Started")}
+              <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+            </Button>
 
-          </p>
-            <p>
-              At the heart of <strong>AMedix</strong> is the idea that a patient’s healthcare information
-              should be securely organized and readily accessible whenever and wherever
-              it is needed. The platform brings essential health information together in
-              one place, including medical appointments, laboratory results, diagnostic
-              imaging, medical documents, prescriptions, and medications, creating a
-              comprehensive and accessible digital health record.
-            </p>
-            <p>
-              Beyond record management, <strong>AMedix</strong> is designed to create an interconnected
-              healthcare ecosystem that brings patients, physicians, laboratories,
-              radiology services, and other healthcare providers together through a
-              unified platform. By enabling healthcare information to move efficiently
-              and securely across different points of care, <strong>AMedix</strong> aims to improve
-              communication, support continuity of care, and reduce the fragmentation
-              that often exists within the healthcare system.
-            </p>
-            <p>
-              Most importantly, <strong>AMedix</strong> keeps the patient at the center of the healthcare
-              journey. By connecting healthcare professionals, services, and information
-              around each patient, the platform aims to create a simpler, more
-              coordinated, and more informed healthcare experience.
-            </p>
-            <p>Our vision is simple:</p>
-            <p className="text-primary text-lg sm:text-xl">
-              One patient. One connected healthcare journey. All in one place.
-            </p>
-          </div>
-        }
+            {/* Secondary action — deliberately smaller and outlined. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={() => setVisionOpen(true)}
+              className="h-11 w-full rounded-2xl border-border bg-card/70 text-sm font-medium backdrop-blur transition-colors hover:bg-accent hover:text-accent-foreground sm:h-12"
+            >
+              <Eye className="h-4 w-4" />
+              {t("Our Vision")}
+            </Button>
+          </motion.div>
+        </div>
+      </main>
 
-        <p className="mt-8 text-xl">
-          <AMedixBold text={t("AMedix — Your Healthcare, All in One Place.")} />
-        </p>
-
-        <Button size="lg" className="mt-8" onClick={() => navigate("/landing")}>
-          {t("Get Started")}
-          <ArrowRight className="w-4 h-4 ml-1 rtl:ml-0 rtl:mr-1" />
-        </Button>
-      </div>
-    </div>);
-
+      {visionOpen && <VisionPreview onClose={() => setVisionOpen(false)} />}
+    </div>
+  );
 }

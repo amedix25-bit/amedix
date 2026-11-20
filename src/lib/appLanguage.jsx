@@ -22,6 +22,26 @@ const AR = {
   "From medical information and doctors' notes to laboratory requests and results, AMedix is designed to make healthcare more organized, accessible, and connected.":
     "من المعلومات الطبية وملاحظات الأطباء إلى طلبات المختبر ونتائجها، صُمم AMedix لجعل الرعاية الصحية أكثر تنظيماً وإتاحةً وترابطاً.",
   "AMedix — Your Healthcare, All in One Place.": "AMedix — رعايتك الصحية، كلها في مكان واحد.",
+  // ─── Welcome page — actions, founders credit, vision preview ───
+  "Our Vision": "رؤيتنا",
+  "Founded by": "المؤسسان",
+  "Close": "إغلاق",
+  "Presentation preview": "عرض تقديمي",
+  "Demo data only — no real patient information": "بيانات تجريبية فقط — لا توجد معلومات مرضى حقيقية",
+  "AMedix Home Screen": "الشاشة الرئيسية في AMedix",
+  "This is a presentation preview of the AMedix patient home screen. Every value shown is sample data.":
+    "هذا عرض تقديمي للشاشة الرئيسية لمريض AMedix. جميع القيم المعروضة بيانات تجريبية.",
+  "Home": "الرئيسية",
+  "Lab Tests & Results": "التحاليل المخبرية والنتائج",
+  "Imaging & Scans": "الأشعة والتصوير",
+  "Medications & Prescriptions": "الأدوية والوصفات الطبية",
+  "Reports & Documents": "التقارير والمستندات",
+  "Quick access": "وصول سريع",
+  "Next appointment": "الموعد القادم",
+  "Recent activity": "النشاط الأخير",
+  "Cardiology clinic": "عيادة القلب",
+  "Lab result released": "صدور نتيجة تحليل",
+  "Prescription dispensed": "صرف وصفة طبية",
   "Get Started": "ابدأ الآن",
 
   // ─── Landing (role choice) ───
