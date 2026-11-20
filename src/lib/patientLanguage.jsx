@@ -1635,11 +1635,15 @@ export function PatientLanguageProvider({ children }) {
     };
   }, [user?.id]);
 
-  const setLang = (next) => {
+  // `persist: false` switches the displayed language only. The admin
+  // registration preview uses it so inspecting the Arabic layout never writes a
+  // language preference to a real profile or to this device.
+  const setLang = (next, options = {}) => {
     if (next !== "ar" && next !== "en") return;
     setLangState(next);
-    localStorage.setItem(LANG_STORAGE_KEY, next);
     window.dispatchEvent(new CustomEvent("amedix-lang-change", { detail: next }));
+    if (options.persist === false) return;
+    localStorage.setItem(LANG_STORAGE_KEY, next);
     if (profileIdRef.current) {
       base44.entities.PatientProfile.update(profileIdRef.current, { preferred_language: next }).catch(console.error);
     }

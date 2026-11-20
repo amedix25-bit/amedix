@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Loader2, BadgeCheck, Lock, Fingerprint, ArrowLeft, Check } from "lucide-react";
+import { X, Loader2, BadgeCheck, Lock, Fingerprint, ArrowLeft, Check, RotateCcw } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import {
   MedicalListSection, ConditionEntryForm, MedicationEntryForm, SurgeryEntryForm,
@@ -31,10 +31,14 @@ import { vaccinationMapToRecords } from "@/lib/lifestyleOptions";
 import GynaeObstetricHistoryForm from "@/components/patient/gynae/GynaeObstetricHistoryForm";
 import StructuredAllergyForm from "@/components/patient/allergies/StructuredAllergyForm";
 import { emptyGynaeHistory, legacyGynaeFields, buildGynaeSave } from "@/lib/gynaeObstetric";
+import { sampleRegistration } from "@/lib/registrationPreviewSample";
 
 const STEPS = ["Personal Information", "Medical History", "Medications & Allergies", "Lifestyle & Preventive Care"];
 
-export default function PatientOnboardingForm({ user, onComplete, onClose }) {
+// `previewMode` renders this exact form for an administrator without creating
+// anything: no draft, no profile, no CIN, no uploads, no verification, no audit
+// events. The patient journey is unchanged.
+export default function PatientOnboardingForm({ user, onComplete, onClose, previewMode = false, onResetPreview }) {
   const { lang, t, setLang } = usePatientLanguage();
   const nameParts = (user?.full_name || "").split(" ").filter(Boolean);
   const [step, setStep] = useState(0);
@@ -114,6 +118,11 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const [resumedNotice, setResumedNotice] = useState(false);
 
   useEffect(() => {
+    // A preview never reads a saved registration — it always starts empty.
+    if (previewMode) {
+      setResuming(false);
+      return undefined;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -148,7 +157,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
   // Autosave after a short pause on every change.
   useEffect(() => {
-    if (resuming || submitting || cin) return;
+    if (previewMode || resuming || submitting || cin) return;
     const timer = setTimeout(() => {
       savePatientRegistration({
         step,
@@ -181,7 +190,32 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     setError("");
   };
 
+  // Fills the form with obviously fake answers so every step can be inspected
+  // quickly. Preview only — these values are never sent anywhere.
+  const fillSample = () => {
+    const sample = sampleRegistration();
+    setForm((f) => ({ ...f, ...sample.form }));
+    setLifestyle((l) => ({ ...l, ...sample.lifestyle }));
+    setNoneFlags(sample.noneFlags);
+    setAllergyRecord(sample.allergyRecord);
+    setGynae(sample.gynae);
+    setMedical((m) => ({
+      ...m,
+      familyHistory: [], pastHistory: [], medicalEvents: [], allergies: [],
+      medications: [], surgeries: [], immunizations: [], chronicCare: [], uploadedDocs: [],
+    }));
+    setError("");
+  };
+
   const handleVaxFile = async (file) => {
+    // Preview never uploads: no document is stored for a sample registration.
+    if (previewMode) {
+      setMedical((m) => ({
+        ...m,
+        uploadedDocs: [...m.uploadedDocs, { file_url: "", file_name: file?.name || "Demo document" }],
+      }));
+      return;
+    }
     setUploadingVaxDoc(true);
     setError("");
     try {
@@ -219,7 +253,8 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     (!isFemale || (!!lifestyle.marital_status && (gynaeHidden || gynaeAnswered)));
 
   const switchLang = (v) => {
-    setLang(v);
+    // A preview changes only what is on screen — never a profile or device setting.
+    setLang(v, { persist: !previewMode });
     setForm((f) => ({ ...f, preferred_language: v }));
   };
 
@@ -233,7 +268,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       setError(t("Please select your sex."));
       return;
     }
-    if (!verificationExempt && !isSubmitted(verification)) {
+    if (!previewMode && !verificationExempt && !isSubmitted(verification)) {
       setError(t("Verify your identity document to continue — the number on it must match the number you entered."));
       return;
     }
@@ -241,6 +276,13 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   };
 
   const handleSubmit = async () => {
+    // Preview stops here: no CIN, profile, clinical record, document link or
+    // audit event is created, and no verification is triggered.
+    if (previewMode) {
+      setError("");
+      setStep(4);
+      return;
+    }
     setSubmitting(true);
     setError("");
     // A pregnant patient is never classified as postmenopausal. The history is
@@ -426,6 +468,29 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
     <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto">
       <div className="flex items-start sm:items-center justify-center p-4 min-h-full">
         <div className="bg-card rounded-2xl shadow-xl border border-border w-full max-w-2xl my-4">
+          {previewMode && (
+            <div className="mx-6 mt-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wide text-amber-800">
+                    {t("Demo / test data — nothing is saved")}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-amber-700">
+                    {t("No account, patient profile, CIN, verification email, document or clinical record is created.")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={fillSample}>
+                    {t("Fill sample data")}
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={onResetPreview}>
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    {t("Reset")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {resumedNotice && step < 4 && (
             <div className="mx-6 mt-6 rounded-lg bg-accent px-4 py-3 text-sm text-accent-foreground">
               {t("Welcome back. Your saved answers have been restored — continue where you stopped.")}
@@ -581,7 +646,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
                   <section>
                     <h3 className="text-sm font-semibold text-primary mb-3">{t("Your photo")}</h3>
-                    <PatientPhotoField value={photoUri} onChange={setPhotoUri} />
+                    <PatientPhotoField value={photoUri} onChange={setPhotoUri} previewMode={previewMode} />
                   </section>
 
                   <section>
@@ -637,7 +702,19 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                     </div>
                   </section>
 
-                  {verificationExempt ? (
+                  {previewMode ? (
+                    <section className="rounded-lg border border-dashed border-border bg-muted/40 p-4">
+                      <h3 className="text-sm font-semibold text-primary">{t("Verification Process")} *</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("Before an account is created the patient photographs or uploads one identity document — national ID, passport, driver's licence, birth certificate or personal card — and the number printed on it must match the identification number entered above. Document verification is switched off in this preview: no document is uploaded, checked, reviewed or stored.")}
+                      </p>
+                      <ul className="mt-2 space-y-1 text-[11px] text-muted-foreground">
+                        <li>• {t("Accepted: a PDF or a photo of the document, both sides where the document has two.")}</li>
+                        <li>• {t("Checked automatically: the number on the document against the number entered.")}</li>
+                        <li>• {t("Stored privately — readable only by the patient and AMedix administrators.")}</li>
+                      </ul>
+                    </section>
+                  ) : verificationExempt ? (
                     <section className="rounded-lg border border-border bg-muted/40 p-3">
                       <p className="text-sm font-medium text-primary">{t("Verification Process")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -1074,7 +1151,7 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
                           {t("Creating your profile...")}
                         </>
                       ) : (
-                        t("Complete Registration")
+                        previewMode ? t("Complete Preview") : t("Complete Registration")
                       )}
                     </Button>
                   )}
@@ -1083,6 +1160,29 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
               {step > 0 && error && <p className="text-sm text-destructive px-6 pb-6">{error}</p>}
             </>
+          ) : previewMode ? (
+            <div className="p-8 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                <BadgeCheck className="h-8 w-8 text-amber-600" />
+              </div>
+              <h2 className="mt-4 text-2xl font-bold">{t("Preview Complete — DEMO")}</h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+                {t("This is the screen a patient sees when registration finishes. Nothing was created: no account, no patient profile, no CIN, no clinical records and no audit events.")}
+              </p>
+              <p className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("Clinical Identification Number — not generated in preview")}
+              </p>
+              <p className="mt-1 text-2xl font-bold tracking-widest text-muted-foreground">DEMO-0000-0000</p>
+              <div className="mx-auto mt-6 flex max-w-xs flex-col gap-2">
+                <Button type="button" size="lg" onClick={onResetPreview}>
+                  <RotateCcw className="h-4 w-4" />
+                  {t("Restart preview")}
+                </Button>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  {t("Close preview")}
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">

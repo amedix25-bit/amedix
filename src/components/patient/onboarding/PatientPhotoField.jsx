@@ -9,7 +9,7 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 // privately — shown through a short-lived signed link, never a public URL — and
 // saved on the patient profile as photo_uri, so the same picture appears on the
 // AMedix Medical ID card. Optional: registration is never blocked by it.
-export default function PatientPhotoField({ value, onChange }) {
+export default function PatientPhotoField({ value, onChange, previewMode = false }) {
   const { t } = usePatientLanguage();
   const inputRef = useRef(null);
   const [preview, setPreview] = useState("");
@@ -35,6 +35,8 @@ export default function PatientPhotoField({ value, onChange }) {
   }, [value]);
 
   const handleFile = async (file) => {
+    // A preview never uploads a file to storage.
+    if (previewMode) return;
     if (!file || uploading) return;
     if (!file.type.startsWith("image/")) {
       setError(t("Choose an image file."));
@@ -81,7 +83,7 @@ export default function PatientPhotoField({ value, onChange }) {
             type="button"
             variant="outline"
             onClick={() => inputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || previewMode}
           >
             <Camera className="h-4 w-4" />
             {value ? t("Change photo") : t("Add a photo")}
@@ -93,6 +95,11 @@ export default function PatientPhotoField({ value, onChange }) {
             </Button>
           )}
         </div>
+        {previewMode && (
+          <p className="text-[11px] text-amber-700">
+            {t("Photo upload is disabled in preview — no file is stored.")}
+          </p>
+        )}
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       </div>
 

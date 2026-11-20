@@ -13,7 +13,8 @@ import AdminAccountGovernance from "@/components/admin/accounts/AdminAccountGove
 import AdminAccessCodes from "@/components/admin/AdminAccessCodes";
 import AdminInstitutionApprovals from "@/components/admin/AdminInstitutionApprovals";
 import AdminVerificationReview from "@/components/admin/verification/AdminVerificationReview";
-import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound, ClipboardCheck } from "lucide-react";
+import AdminRegistrationPreview from "@/components/admin/preview/AdminRegistrationPreview";
+import { LayoutDashboard, Users, ShieldCheck, FlaskConical, Megaphone, Building2, KeyRound, ClipboardCheck, Eye } from "lucide-react";
 
 const navItems = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -25,6 +26,7 @@ const navItems = [
   { key: "verification_network", label: "Verified Network", icon: KeyRound },
   { key: "lab_panels", label: "Lab Panels", icon: FlaskConical },
   { key: "partner_ads", label: "Partner Ads", icon: Megaphone },
+  { key: "registration_preview", label: "Registration Preview", icon: Eye },
 ];
 
 export default function AdminDashboard() {
@@ -56,6 +58,7 @@ export default function AdminDashboard() {
         {activeTab === "verification_network" && <AdminAccountGovernance />}
         {activeTab === "lab_panels" && <AdminLabPanels />}
         {activeTab === "partner_ads" && <AdminPartnerAds />}
+        {activeTab === "registration_preview" && <AdminRegistrationPreview />}
       </div>
     </DashboardLayout>
   );
