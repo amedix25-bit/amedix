@@ -22,13 +22,17 @@ export default async function (req: any) {
     if (action === 'list') {
       const wanted = Array.isArray(body.statuses) && body.statuses.length
         ? body.statuses
-        : [JOB.MANUAL_REVIEW, JOB.FAILED, JOB.PENDING_APPROVAL];
+        : [JOB.MANUAL_REVIEW, JOB.FAILED, JOB.PENDING_APPROVAL, JOB.PROCESSING];
       const page = await base44.asServiceRole.entities.IdentityVerification.filter(
         { job_status: { $in: wanted } },
         { sort: '-created_date', limit: 50 }
       );
       const rows = (page?.items || []).map((row: any) => recoverIfStale(base44, row));
-      const resolved = (await Promise.all(rows)).filter(Boolean);
+      // recoverIfStale turns a job abandoned by a dead worker into manual
+      // review; anything still genuinely running is left out of the queue.
+      const resolved = (await Promise.all(rows))
+        .filter(Boolean)
+        .filter((row: any) => row.job_status !== JOB.PROCESSING);
 
       const userIds = [...new Set(resolved.map((row: any) => row.user_id).filter(Boolean))];
       let names: Record<string, string> = {};

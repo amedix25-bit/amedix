@@ -69,6 +69,28 @@ export default async function (req: any) {
       record = await base44.asServiceRole.entities.IdentityVerification.update(record.id, patch);
     }
 
+    // An explicit retry from review re-opens the SAME stored document: the
+    // attempt counter is reset because a person asked for it, and the document
+    // is still the one already in storage.
+    if (record.job_status === JOB.MANUAL_REVIEW) {
+      record = await base44.asServiceRole.entities.IdentityVerification.update(record.id, {
+        job_status: JOB.UPLOADED,
+        attempts: 0,
+        review_reason: '',
+        last_error: '',
+        review_history: [
+          ...(Array.isArray(record.review_history) ? record.review_history.slice(-60) : []),
+          {
+            datetime: new Date().toISOString(),
+            action: 'processing_started',
+            actor_name: user.full_name || user.email || '',
+            actor_role: 'user',
+            detail: 'another check of the stored document was requested',
+          },
+        ],
+      });
+    }
+
     const recovered = await recoverIfStale(base44, record);
     if (recovered?.job_status === JOB.PROCESSING && !isStale(recovered)) {
       return Response.json({ ...publicJobView(recovered), busy: true, message: 'This document is already being checked.' });

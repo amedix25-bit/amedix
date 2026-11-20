@@ -17,7 +17,9 @@ import { verificationState } from "@/components/verification/verificationStatus"
 // fields: [{ key, label, placeholder?, type?, readOnly? }]
 // values: { [key]: currentValue } — readOnly fields are shown as text
 // result: the job view returned by the verification functions
-const OPEN_STATUSES = ["uploaded", "processing"];
+// Only a job that a worker is actually holding is worth polling; a saved job
+// that no worker has started yet is resumed with "Start check".
+const OPEN_STATUSES = ["processing"];
 const POLL_MS = 4000;
 
 export default function DocumentVerificationCard({
@@ -79,7 +81,9 @@ export default function DocumentVerificationCard({
   }, [profileType, documentType]);
 
   const state = verificationState(result);
-  const isOpen = !!result && OPEN_STATUSES.includes(result.job_status);
+  const isRunning = result?.job_status === "processing";
+  const isUploaded = result?.job_status === "uploaded";
+  const isOpen = isRunning || isUploaded;
   const isVerified = state.key === "verified";
   const formVisible = replacing || !result;
 
@@ -137,10 +141,9 @@ export default function DocumentVerificationCard({
         if (processed?.error) setError(processed.error);
         else settle(processed);
       } catch (err) {
-        // The worker may have been cut off mid-flight: the job survives, so we
-        // poll it instead of showing a failure the user cannot act on.
-        setError(t("Your document is saved. The check is still running — you can leave this page."));
-        startPolling(submitted.verification_id);
+        // The document is saved and the job exists — only the check was cut
+        // off, so the user resumes it instead of uploading anything again.
+        setError(t('Your document is saved. Press "Start check" to continue — you do not need to upload it again.'));
       }
     } catch (err) {
       console.error(err);
@@ -197,8 +200,9 @@ export default function DocumentVerificationCard({
     isVerified ? <ShieldCheck className="w-4 h-4 shrink-0" />
       : state.key === "rejected" ? <ShieldX className="w-4 h-4 shrink-0" />
         : state.key === "processing" ? <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
-          : state.key === "review" ? <Clock className="w-4 h-4 shrink-0" />
-            : <AlertTriangle className="w-4 h-4 shrink-0" />;
+          : state.key === "uploaded" ? <Clock className="w-4 h-4 shrink-0" />
+            : state.key === "review" ? <Clock className="w-4 h-4 shrink-0" />
+              : <AlertTriangle className="w-4 h-4 shrink-0" />;
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -241,19 +245,25 @@ export default function DocumentVerificationCard({
           )}
 
           <div className="mt-2 flex flex-wrap gap-2">
+            {isUploaded && result.can_resume && (
+              <Button type="button" size="sm" className="h-8" disabled={busy} onClick={handleRetry}>
+                {busy ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
+                {t("Start check")}
+              </Button>
+            )}
             {state.key === "retry" && result.can_retry && (
               <Button type="button" size="sm" variant="outline" className="h-8" disabled={busy} onClick={handleRetry}>
                 {busy ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
                 {t("Check again")}
               </Button>
             )}
-            {state.key === "review" && result.can_retry && (
+            {result.job_status === "manual_review" && result.can_retry && (
               <Button type="button" size="sm" variant="outline" className="h-8" disabled={busy} onClick={handleRetry}>
                 {busy ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
                 {t("Check again")}
               </Button>
             )}
-            {isOpen && (
+            {isRunning && (
               <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 {t("You can close this page — the check continues.")}

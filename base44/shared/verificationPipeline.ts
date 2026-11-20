@@ -309,10 +309,15 @@ export async function runJob(base44: any, claimed: any) {
   let analysis: any = null;
   let pdfFallback: { url: string } | null = null;
 
+  // A large PDF is not turned into pixels here: base64-ing tens of megabytes
+  // only to hunt for embedded JPEGs is slow and pointless when the PDF itself
+  // can be read natively. Small PDFs still take the cheaper pixel path.
+  const tooLargeForPixels = kind === 'pdf' && loaded.bytes.length > 12 * 1024 * 1024;
+
   try {
-    const prepared = await prepareInMemoryDocument([
-      { mime: detectedMime, base64: bytesToBase64(loaded.bytes) },
-    ]);
+    const prepared = tooLargeForPixels
+      ? { reason: 'undecodable' as const, sides: [] as Side[], analysis: null }
+      : await prepareInMemoryDocument([{ mime: detectedMime, base64: bytesToBase64(loaded.bytes) }]);
     if (prepared.reason === '' && prepared.sides.length) {
       sides = prepared.sides;
       analysis = prepared.analysis;
@@ -505,7 +510,7 @@ export function publicJobView(record: any) {
     max_attempts: record.max_attempts || MAX_ATTEMPTS,
     submitted_datetime: record.attempted_datetime || record.created_date || '',
     verified_datetime: record.verified_datetime || '',
-    message: record.review_reason || check.note || '',
+    message: record.review_reason || (record.status === 'pending' ? check.note || '' : ''),
     entered_number: check.entered_number || '',
     read_number: check.read_number || '',
     auto_check: record.auto_check || null,

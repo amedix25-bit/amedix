@@ -14,7 +14,7 @@ export const VERIFICATION_STATES = {
     dot: "bg-muted-foreground",
   },
   uploaded: {
-    key: "processing",
+    key: "uploaded",
     label: "Saved",
     description: "Your document is saved. Checking starts automatically.",
     box: "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40",
