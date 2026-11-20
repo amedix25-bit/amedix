@@ -6,11 +6,38 @@ export const RESALA_BASE_URL = 'https://dev.resala.ly/api/v1';
 export const RESALA_SERVICE_NAME = 'AMedix';
 
 export const CODE_TTL_MINUTES = 10;
+// A recovery code is read from an inbox that may be checked later, so it lives
+// longer than a signup code.
+export const RECOVERY_CODE_TTL_MINUTES = 15;
 export const RESEND_COOLDOWN_SECONDS = 60;
 export const SEND_WINDOW_MINUTES = 15;
 export const MAX_SENDS_PER_WINDOW = 3;
 export const MAX_ATTEMPTS = 5;
 export const GLOBAL_HOURLY_CAP = 200;
+
+export function codeTtlMinutes(purpose) {
+  return purpose === 'recovery' ? RECOVERY_CODE_TTL_MINUTES : CODE_TTL_MINUTES;
+}
+
+// Fingerprint of a destination for the delivery log. The log measures delivery
+// per destination without ever holding the address itself.
+export async function hashDestination(value) {
+  const data = new TextEncoder().encode(String(value || ''));
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// Writes one funnel event. Monitoring must never break the flow it measures.
+export async function logRegistrationEvent(store, kind, extra = {}) {
+  try {
+    await store.create({ kind, datetime: new Date().toISOString(), ...extra });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Libyan mobile: 091 / 092 / 093 / 094 followed by 7 digits.
 // Accepts 0911234567, 218911234567, +218 91 123 4567 and spaced or dashed forms.
@@ -113,7 +140,8 @@ export async function sendEmailCode(serviceRole, email, code) {
           <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:#17334f;">Verify your email address</p>
           <p style="margin:0 0 20px;font-size:14px;color:#667185;line-height:1.6;">Enter this code to continue creating your AMedix account.</p>
           <p style="margin:0 0 20px;font-size:34px;font-weight:700;letter-spacing:8px;color:#17334f;">${code}</p>
-          <p style="margin:0;font-size:13px;color:#667185;line-height:1.6;">This code expires in ${CODE_TTL_MINUTES} minutes. If you did not request it, you can ignore this email.</p>
+          <p style="margin:0 0 8px;font-size:13px;color:#667185;line-height:1.6;">This code expires in ${CODE_TTL_MINUTES} minutes. If you requested another code, only the newest one works.</p>
+          <p style="margin:0;font-size:13px;color:#667185;line-height:1.6;">If you cannot find this email, check your spam or junk folder. If you did not request it, you can ignore this email.</p>
         </td></tr>
       </table>
     </div>`;
@@ -122,14 +150,21 @@ export async function sendEmailCode(serviceRole, email, code) {
     to: email,
     subject: 'Your AMedix verification code',
     html,
-    text: `Your AMedix verification code is ${code}. It expires in ${CODE_TTL_MINUTES} minutes.`,
+    text: `Your AMedix verification code is ${code}. It expires in ${CODE_TTL_MINUTES} minutes. If you requested another code, only the newest one works. If you cannot find this email, check your spam or junk folder.`,
     category: 'transactional',
   });
 
+  // A refused send is reported to the caller with its reason, so a bounce or an
+  // unsubscribe is never mistaken for a code the user should keep waiting for.
   if (result && result.success === false) {
     const error = new Error('The email could not be sent right now. Please try again or use phone verification.');
     error.code = 502;
+    error.delivery = String(result.reason || 'provider_rejected');
     throw error;
   }
-  return result;
+
+  return {
+    accepted: true,
+    provider_message_id: String(result?.message_id || result?.id || ''),
+  };
 }

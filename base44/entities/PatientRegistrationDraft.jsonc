@@ -1,0 +1,111 @@
+{
+  "name": "PatientRegistrationDraft",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User id of the account the registration belongs to \u2014 the only account that may read or continue it"
+    },
+    "email": {
+      "type": "string",
+      "description": "Registration email, set server-side from the signed-in account"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "incomplete",
+        "completed"
+      ],
+      "enumColors": [
+        "yellow",
+        "green"
+      ],
+      "default": "incomplete",
+      "description": "INCOMPLETE: the patient started onboarding and has not finished it \u2014 the saved steps are restored when the same account returns. COMPLETED: the PatientProfile was created and the draft is closed."
+    },
+    "step": {
+      "type": "integer",
+      "default": 0,
+      "description": "Last onboarding step the patient reached (0 Personal Information, 1 Medical History, 2 Medications & Allergies, 3 Lifestyle & Preventive Care), so a returning patient continues where they stopped"
+    },
+    "form": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Saved Personal Information answers"
+    },
+    "medical": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Saved medical-history answers: family history, past history, medical events, allergies, medications, surgeries, immunizations, chronic care and uploaded document references"
+    },
+    "lifestyle": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Saved lifestyle and preventive-care answers"
+    },
+    "gynae": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Saved Gynaecological & Obstetric History answers"
+    },
+    "allergy_record": {
+      "type": "string",
+      "description": "The section-level allergy answer (no known allergies / not yet established), preserved exactly as the patient chose it"
+    },
+    "none_flags": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Which history sections the patient explicitly marked as none"
+    },
+    "photo_uri": {
+      "type": "string",
+      "description": "Private storage URI of the patient's photo, saved before registration completes so it is never uploaded twice"
+    },
+    "identity_verification_id": {
+      "type": "string",
+      "description": "IdentityVerification job already completed for this account \u2014 validated server-side against the signed-in user, never taken on trust from the browser"
+    },
+    "last_saved_datetime": {
+      "type": "string",
+      "description": "Date and time progress was last saved (ISO datetime)"
+    }
+  },
+  "required": [
+    "user_id",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

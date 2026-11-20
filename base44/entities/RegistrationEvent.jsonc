@@ -1,0 +1,82 @@
+{
+  "name": "RegistrationEvent",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "state_lookup",
+        "code_requested",
+        "code_resent",
+        "code_verified",
+        "code_rejected",
+        "code_delivery_failed",
+        "registration_resumed",
+        "registration_completed"
+      ],
+      "enumColors": [
+        "gray",
+        "blue",
+        "blue",
+        "green",
+        "red",
+        "red",
+        "yellow",
+        "green"
+      ],
+      "description": "The registration funnel event recorded. Every code request, resend, successful or rejected verification, delivery failure and resumed registration is one immutable row, so first-attempt delivery and resend rates can be measured."
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "sms"
+      ],
+      "enumColors": [
+        "purple",
+        "blue"
+      ],
+      "description": "How the code was delivered"
+    },
+    "destination_hash": {
+      "type": "string",
+      "description": "SHA-256 fingerprint of the normalised email address or phone number. The address itself is never stored here, so delivery can be measured per destination without keeping a list of addresses in an analytics table."
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What the code was for: signup or recovery"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Short server-written detail \u2014 an error code, a provider reason or the state that was resolved. Never contains a code, a password or document content."
+    },
+    "datetime": {
+      "type": "string",
+      "description": "Exact date and time of the event (ISO datetime), set server-side"
+    }
+  },
+  "required": [
+    "kind",
+    "datetime"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "id": "__immutable_audit_record__"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

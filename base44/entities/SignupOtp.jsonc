@@ -14,13 +14,26 @@
       ],
       "description": "Which channel the code was delivered on. SMS: a Libyan mobile number verified through Resala. EMAIL: a verification code sent by email."
     },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "signup",
+        "recovery"
+      ],
+      "enumColors": [
+        "blue",
+        "yellow"
+      ],
+      "default": "signup",
+      "description": "What the code is for. SIGNUP: confirming a destination before creating an account. RECOVERY: proving ownership of an existing account before continuing a saved registration. A recovery code lives longer than a signup code."
+    },
     "destination": {
       "type": "string",
       "description": "Where the code was sent: the normalised phone number (2189XXXXXXXX) or the normalised email address"
     },
     "challenge_token": {
       "type": "string",
-      "description": "Random reference given to the browser so it can verify the code without ever learning the code or the record id"
+      "description": "Random reference given to the browser so it can verify the code without ever learning the code or the record id. A resend keeps the SAME token, so the screen the user already has keeps working."
     },
     "code_hash": {
       "type": "string",
@@ -57,6 +70,27 @@
       "default": 5,
       "description": "Wrong attempts allowed before the challenge locks"
     },
+    "send_count": {
+      "type": "integer",
+      "default": 1,
+      "description": "How many times a code has been dispatched for this challenge. Used to measure resend behaviour and to bound repeated sends."
+    },
+    "delivery_status": {
+      "type": "string",
+      "enum": [
+        "sent",
+        "failed"
+      ],
+      "enumColors": [
+        "green",
+        "red"
+      ],
+      "description": "Whether the provider accepted the message. FAILED challenges are never left looking like a code the user should be waiting for."
+    },
+    "delivery_error": {
+      "type": "string",
+      "description": "Machine-readable reason the last dispatch failed, e.g. provider_rejected, unsubscribed, bounced. Never contains the code."
+    },
     "expires_datetime": {
       "type": "string",
       "description": "Date and time the code stops being valid (ISO datetime)"
@@ -67,7 +101,11 @@
     },
     "sent_datetime": {
       "type": "string",
-      "description": "Date and time the code was sent (ISO datetime)"
+      "description": "Date and time the code was first sent (ISO datetime)"
+    },
+    "last_sent_datetime": {
+      "type": "string",
+      "description": "Date and time the most recent code for this challenge was dispatched (ISO datetime)"
     },
     "verified_datetime": {
       "type": "string",

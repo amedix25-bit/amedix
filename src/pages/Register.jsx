@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,11 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
-import { lookupDoctorRegistration } from "@/lib/doctorRegistration";
+import { logRegistrationStep, lookupRegistrationState } from "@/lib/registrationRecovery";
+
+// A resend is held back on the client too: several codes in flight at once is
+// exactly what makes a valid code look wrong.
+const RESEND_SECONDS = 45;
 
 export default function Register({ embedded = false, onLogin = null }) {
   const [email, setEmail] = useState("");
@@ -25,7 +29,16 @@ export default function Register({ embedded = false, onLogin = null }) {
   // instead of reporting that the account already exists.
   const [existingState, setExistingState] = useState("");
   const [continuing, setContinuing] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  const [otpAttempts, setOtpAttempts] = useState(0);
   const { t } = useAppLanguage();
+
+  // Counts the resend cooldown down. The setter returns the same value at zero,
+  // so the page does not re-render while no cooldown is running.
+  useEffect(() => {
+    const timer = setInterval(() => setResendIn((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,14 +50,25 @@ export default function Register({ embedded = false, onLogin = null }) {
     setLoading(true);
     try {
       await base44.auth.register({ email, password });
+      logRegistrationStep("code_requested", email, "first_send");
+      setOtpCode("");
+      setOtpAttempts(0);
+      setResendIn(RESEND_SECONDS);
       setShowOtp(true);
     } catch (err) {
-      // The account may already exist. Ask what state that registration is in:
-      // an unfinished one is offered for continuation, a finished one is sent
-      // to the login — never reported as a bare "already exists" dead end.
-      const existing = await lookupDoctorRegistration(email).catch(() => null);
-      if (existing?.state && existing.state !== "none") {
-        setExistingState(existing.state);
+      // The account may already exist. The backend says which state that
+      // registration is in — an unfinished one is offered for continuation, a
+      // finished one is sent to sign-in. Never a bare "already exists" dead end.
+      const info = await lookupRegistrationState(email).catch(() => null);
+      const state = info?.state || "unknown";
+      // If the backend reports a brand-new address but the platform refused the
+      // sign-up because the account exists, the account still exists — send the
+      // person to sign-in rather than back to a dead end.
+      const existsPerPlatform = /exist|already|registered/i.test(String(err?.message || ""));
+      if (state === "new" && existsPerPlatform) {
+        setExistingState("active");
+      } else if (["unverified", "incomplete", "pending_verification", "active", "rejected", "blocked", "rate_limited"].includes(state)) {
+        setExistingState(state);
       } else {
         setError(err.message || t("Registration failed"));
       }
@@ -60,7 +84,11 @@ export default function Register({ embedded = false, onLogin = null }) {
     setLoading(true);
     try {
       await base44.auth.resendOtp(email);
+      logRegistrationStep("code_resent", email, "resume");
       setContinuing(true);
+      setOtpCode("");
+      setOtpAttempts(0);
+      setResendIn(RESEND_SECONDS);
       setShowOtp(true);
     } catch (err) {
       setError(t("We could not send a code to this email. Please log in to continue your registration."));
@@ -74,6 +102,7 @@ export default function Register({ embedded = false, onLogin = null }) {
     setLoading(true);
     try {
       const result = await base44.auth.verifyOtp({ email, otpCode });
+      logRegistrationStep("code_verified", email, continuing ? "resumed" : "signup");
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
@@ -81,22 +110,35 @@ export default function Register({ embedded = false, onLogin = null }) {
       // steps are restored.
       window.location.href = continuing ? "/home" : safeReturnTo();
     } catch (err) {
+      logRegistrationStep("code_rejected", email, "wrong_code");
+      setOtpAttempts((n) => n + 1);
       setError(err.message || t("Invalid verification code"));
     } finally {
       setLoading(false);
     }
   };
 
+  // One resend at a time, then a cooldown. Every resend replaces the previous
+  // code, so tapping repeatedly is what leaves people typing a code that is no
+  // longer valid.
   const handleResend = async () => {
+    if (loading || resendIn > 0) return;
     setError("");
+    setLoading(true);
     try {
       await base44.auth.resendOtp(email);
+      logRegistrationStep("code_resent", email, "resend");
+      setOtpCode("");
+      setOtpAttempts(0);
+      setResendIn(RESEND_SECONDS);
       toast({
-        title: t("Code sent"),
-        description: t("Check your email for the new code."),
+        title: t("New code sent"),
+        description: t("Only the newest code works. If you cannot find the email, check your spam or junk folder."),
       });
     } catch (err) {
-      setError(err.message || t("Failed to resend code"));
+      setError(t("We could not resend the code right now. Please try again in a moment."));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -160,12 +202,38 @@ export default function Register({ embedded = false, onLogin = null }) {
             t("Verify")
           )}
         </Button>
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          {t("Didn't receive the code?")}{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
-            {t("Resend")}
+        <div className="mt-4 space-y-2 text-center">
+          <p className="text-xs text-muted-foreground">
+            {t("The code can take a minute to arrive. Check your spam or junk folder. If you asked for more than one code, only the newest one works.")}
+          </p>
+          {otpAttempts >= 2 && (
+            <p className="text-xs text-muted-foreground">
+              {t("Still not working? Request a new code — an older one may have been replaced.")}
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {resendIn > 0 ? (
+              t("Resend code in {seconds}s", { seconds: resendIn })
+            ) : (
+              <button onClick={handleResend} disabled={loading} className="text-primary font-medium hover:underline">
+                {t("Resend code")}
+              </button>
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setShowOtp(false);
+              setOtpCode("");
+              setOtpAttempts(0);
+              setContinuing(false);
+              setError("");
+            }}
+            className="text-xs text-muted-foreground hover:text-primary"
+          >
+            {t("Use a different email")}
           </button>
-        </p>
+        </div>
       </AuthLayout>
     );
   }
@@ -175,20 +243,34 @@ export default function Register({ embedded = false, onLogin = null }) {
   // finished one. Saved registration information is never shown here — it is
   // only restored after the email address has been verified.
   if (existingState && !showOtp) {
-    const canContinue = existingState === "incomplete";
+    // An unconfirmed account is resumed with a fresh code. A confirmed one is
+    // resumed by signing in — its saved registration is restored from the
+    // server after login. Neither is a dead end.
+    const canContinue = existingState === "unverified";
+    const title = {
+      unverified: t("Finish creating your account"),
+      incomplete: t("Continue your registration"),
+      pending_verification: t("Your registration is under review"),
+      active: t("This email is already registered"),
+      rejected: t("Registration not approved"),
+      blocked: t("Account unavailable"),
+      rate_limited: t("Please wait a moment"),
+    }[existingState] || t("This email is already registered");
     const message = {
-      incomplete: t("An unfinished doctor registration was found for this email. Verify your email address to continue from the step you stopped at."),
-      pending_verification: t("This registration was submitted and is awaiting verification. Log in to check its status."),
-      active: t("This email is already registered. Log in to continue."),
-      other_account: t("This email is already registered. Log in to continue."),
+      unverified: t("This email has an account that has not been confirmed yet. Send a new code to confirm it and continue where you stopped."),
+      incomplete: t("Your registration for this email is saved. Log in with your password and we will take you back to the step you stopped at."),
+      pending_verification: t("This registration was submitted and is waiting for AMedix verification. Log in to see its status."),
+      active: t("Log in to continue to your account. If you have forgotten your password, you can reset it."),
       rejected: t("This registration was not approved. Please contact AMedix administration for help."),
-    }[existingState] || t("This email is already registered. Log in to continue.");
+      blocked: t("This account is not available. Please contact AMedix administration."),
+      rate_limited: t("Too many attempts from this device. Please try again in a few minutes."),
+    }[existingState] || t("Log in to continue.");
 
     return (
       <AuthLayout
         embedded={embedded}
         icon={canContinue ? RotateCcw : ShieldCheck}
-        title={canContinue ? t("Continue your registration") : t("Account already registered")}
+        title={title}
         subtitle={t("Connected Care. Better Health.")}
       >
         {error && (
@@ -206,14 +288,14 @@ export default function Register({ embedded = false, onLogin = null }) {
                   {t("Sending code...")}
                 </>
               ) : (
-                t("Verify email and continue")
+                t("Send code and continue")
               )}
             </Button>
             <Button variant="outline" className="w-full h-12 font-medium" asChild>
               <Link to="/login">{t("Log in to continue")}</Link>
             </Button>
           </div>
-        ) : existingState !== "rejected" ? (
+        ) : !["rejected", "blocked", "rate_limited"].includes(existingState) ? (
           <Button className="w-full h-12 font-medium" asChild>
             <Link to="/login">{t("Go to login")}</Link>
           </Button>

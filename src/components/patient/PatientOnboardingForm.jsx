@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { generateUniqueCIN } from "@/lib/cin";
+import { completePatientRegistration, resumePatientRegistration, savePatientRegistration } from "@/lib/registrationRecovery";
 import QrCodeCard from "@/components/QrCodeCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,62 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
   const [photoUri, setPhotoUri] = useState("");
   // The one account AMedix administration exempted from document verification.
   const verificationExempt = isVerificationExempt(user?.email);
+  // Registration progress is kept on the server, so a closed browser, a lost
+  // connection or a return days later on another device costs nothing.
+  const [resuming, setResuming] = useState(true);
+  const [resumedNotice, setResumedNotice] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resumed = await resumePatientRegistration();
+        if (cancelled || !resumed?.saved) return;
+        const saved = resumed.saved;
+        if (saved.form && Object.keys(saved.form).length) setForm((f) => ({ ...f, ...saved.form }));
+        if (saved.medical && Object.keys(saved.medical).length) setMedical((m) => ({ ...m, ...saved.medical }));
+        if (saved.lifestyle && Object.keys(saved.lifestyle).length) setLifestyle((l) => ({ ...l, ...saved.lifestyle }));
+        if (saved.gynae && Object.keys(saved.gynae).length) setGynae((g) => ({ ...g, ...saved.gynae }));
+        if (saved.allergy_record) setAllergyRecord(saved.allergy_record);
+        if (saved.none_flags && Object.keys(saved.none_flags).length) {
+          setNoneFlags((n) => ({ ...n, ...saved.none_flags }));
+        }
+        if (saved.photo_uri) setPhotoUri(saved.photo_uri);
+        // Identity verification is never restored from the draft: its own
+        // persisted job reports whether the document was actually verified.
+        if (Number.isInteger(resumed.step) && resumed.step > 0) {
+          setStep(Math.min(resumed.step, 3));
+          setResumedNotice(true);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setResuming(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Autosave after a short pause on every change.
+  useEffect(() => {
+    if (resuming || submitting || cin) return;
+    const timer = setTimeout(() => {
+      savePatientRegistration({
+        step,
+        form,
+        medical,
+        lifestyle,
+        gynae,
+        allergy_record: allergyRecord,
+        none_flags: noneFlags,
+        photo_uri: photoUri,
+        identity_verification_id: verification?.verification_id || "",
+      }).catch(() => null);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [resuming, submitting, cin, step, form, medical, lifestyle, gynae, allergyRecord, noneFlags, photoUri, verification]);
   const set = (field) => (e) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
     // A verified document stays verified — editing a detail never erases it.
@@ -341,6 +398,9 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
       }
       setCin(newCin);
       setStep(4);
+      // The draft is closed once the profile exists, so a late autosave can
+      // never reopen a finished registration.
+      completePatientRegistration().catch(() => null);
     } catch (err) {
       console.error(err);
       setError(t("Something went wrong while creating your profile. Please try again."));
@@ -351,10 +411,26 @@ export default function PatientOnboardingForm({ user, onComplete, onClose }) {
 
   const stepValid = step === 1 ? step1Valid : step === 2 ? step2Valid : step3Valid;
 
+  if (resuming) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-card rounded-2xl shadow-xl border border-border px-6 py-5 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">{t("Restoring your saved registration...")}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 overflow-y-auto">
       <div className="flex items-start sm:items-center justify-center p-4 min-h-full">
         <div className="bg-card rounded-2xl shadow-xl border border-border w-full max-w-2xl my-4">
+          {resumedNotice && step < 4 && (
+            <div className="mx-6 mt-6 rounded-lg bg-accent px-4 py-3 text-sm text-accent-foreground">
+              {t("Welcome back. Your saved answers have been restored — continue where you stopped.")}
+            </div>
+          )}
           {step < 4 ? (
             <>
               <div className="flex items-start justify-between p-6 pb-0">
