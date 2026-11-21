@@ -39,7 +39,7 @@ export default function MedicalIdCardDownload() {
         disabled={busy}
         aria-label={t("Download card (PDF)")}
         title={t("Download card (PDF)")}
-        className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-info/10 text-info transition hover:bg-info/20 disabled:opacity-70"
+        className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-primary/50 bg-white text-primary transition hover:bg-primary/5 disabled:opacity-70"
       >
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

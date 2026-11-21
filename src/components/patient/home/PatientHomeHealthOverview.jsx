@@ -26,7 +26,7 @@ export default function PatientHomeHealthOverview({ appointment, onNavigate }) {
       <button
         type="button"
         onClick={() => onNavigate?.("appointments")}
-        className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-primary via-info to-info/70 px-3 py-3 text-start shadow-sm transition hover:brightness-110"
+        className="flex w-full items-center gap-3 rounded-2xl bg-primary px-3 py-3 text-start text-primary-foreground shadow-sm transition hover:bg-primary/90"
       >
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
           <CalendarDays className="h-4 w-4" aria-hidden="true" />

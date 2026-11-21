@@ -119,6 +119,10 @@
     --warning: 26 90% 37%;
     --critical: 4 76% 40%;
     --info: 218 80% 46%;
+    /* AMedix action-button navy — one colour for every primary button */
+    --navy: 216 86% 23%;
+    --navy-hover: 215 80% 31%;
+    --navy-active: 216 86% 17%;
     /* Portal identifying accents */
     --accent-patient: 210 54% 20%;
     --accent-doctor: 210 54% 20%;
