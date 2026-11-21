@@ -1,6 +1,7 @@
 import React from "react";
 import { Check, ChevronRight } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
+import { Image } from "@/components/ui/image";
 import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,6 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } 
 // The compact medical card summary on the patient's home screen. It shows
 // identification only — name, patient ID, card status and the verification
 // code — and opens the full card when the patient taps it.
+// Soft AMedix logo artwork that fills the whole card, replacing the old blue panel.
+const CARD_BACKDROP =
+  "https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/29efd9298_amedix-card-watermark.jpg";
+
 const PILL = {
   active: "bg-emerald-100 text-emerald-700",
   expired: "bg-amber-100 text-amber-800",
@@ -31,9 +36,15 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-3.5 shadow-[0_10px_30px_-20px_rgba(23,50,77,0.55)]">
-      <span aria-hidden="true" className="pointer-events-none absolute -bottom-8 -right-8 opacity-[0.06]">
-        <BrandLogo className="h-44 w-44 object-contain" />
-      </span>
+      <Image
+        src={CARD_BACKDROP}
+        alt=""
+        aria-hidden="true"
+        fittingType="fill"
+        quality={90}
+        className="pointer-events-none absolute inset-0 h-full w-full"
+      />
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-card/50" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -99,7 +110,7 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="relative mt-3 flex items-center gap-2">
         <button
           type="button"
           onClick={onViewCard}

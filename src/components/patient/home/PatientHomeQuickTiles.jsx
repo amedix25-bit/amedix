@@ -36,7 +36,7 @@ export default function PatientHomeQuickTiles({ onNavigate }) {
             onClick={() => onNavigate?.(key)}
             className="flex flex-col items-start gap-2 rounded-2xl border border-border/70 bg-card p-2.5 text-start shadow-sm transition hover:border-info/40 hover:shadow-md sm:p-3"
           >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600 sm:h-9 sm:w-9">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground sm:h-9 sm:w-9">
               <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" aria-hidden="true" />
             </span>
             <span className="text-[11px] font-bold leading-tight text-patient-ink sm:text-xs">{t(label)}</span>
