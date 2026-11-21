@@ -210,7 +210,7 @@ function PatientPortal() {
           )}
           {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
           {activeTab === "documents" && <PatientDocuments patient={profile} />}
-          {activeTab === "medicalcard" && <PatientMedicalCard />}
+          {activeTab === "medicalcard" && <PatientMedicalCard profile={profile} />}
           {activeTab === "access" && (
             <div className="space-y-10">
               <PatientAccessControl patientId={profile?.id} />

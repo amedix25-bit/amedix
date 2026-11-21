@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Activity, Calendar, CreditCard, Droplet, HeartPulse, Phone, Plus, UserRound } from "lucide-react";
+import { Activity, Calendar, CreditCard, Droplet, HeartPulse, Phone, Plus, ShieldCheck, UserRound } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import QrCodeCard from "@/components/QrCodeCard";
 import PatientCardPhoto from "@/components/patient/PatientCardPhoto";
@@ -7,6 +7,7 @@ import ChronicConditionPicker from "@/components/patient/ChronicConditionPicker"
 import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -52,12 +53,23 @@ function StripCell({ icon: Icon, label, value, sub, extra, action, onClick }) {
   );
 }
 
+// One labelled fact inside the QR pop-up.
+function CardFact({ label, value, wide }) {
+  return (
+    <div className={wide ? "col-span-2 min-w-0" : "min-w-0"}>
+      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="break-words text-sm font-semibold text-primary">{value || "—"}</dd>
+    </div>
+  );
+}
+
 // The patient's Medical ID card — every value comes from the patient's own
 // account. Only the emergency-relevant conditions listed on the card are
 // shown; anything else stays in the full clinical record.
-export default function PatientMedicalIdCard({ profile, conditions = [], allergyText, emergencyContact, onConditionsChanged }) {
+export default function PatientMedicalIdCard({ profile, card, conditions = [], allergyText, emergencyContact, onConditionsChanged }) {
   const { t, lang } = usePatientLanguage();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const allowedNames = useMemo(
     () => new Set(PATIENT_ID_CONDITIONS.map((c) => c.en.toLowerCase())),
@@ -73,10 +85,23 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
     .map((c) => (lang === "ar" ? c.name_ar || c.name : c.name))
     .filter(Boolean);
 
-  const cardNumber = profile?.id ? `P-${String(profile.id).replace(/[^a-zA-Z0-9]/g, "").slice(-8).toUpperCase()}` : "—";
+  const cardNumber = card?.card_number
+    || (profile?.id ? `P-${String(profile.id).replace(/[^a-zA-Z0-9]/g, "").slice(-8).toUpperCase()}` : "—");
   const genderLabel = profile?.gender
     ? t(profile.gender === "male" ? "Male" : profile.gender === "female" ? "Female" : "Other")
     : "—";
+  const name = (lang === "ar" ? profile?.full_name_ar : "") || profile?.full_name || "—";
+  const bloodGroup = profile?.blood_type && profile.blood_type !== "Unknown" ? profile.blood_type : "—";
+  const allergiesText = allergyText || profile?.allergies || "—";
+  const emergencyText = emergencyContact?.phone
+    ? `${emergencyContact.phone}${emergencyContact.relationship ? ` (${emergencyContact.relationship})` : ""}`
+    : "—";
+
+  // The QR always carries the secure verification link, so any phone camera
+  // opens the AMedix verification page without the app installed.
+  const qrValue = card?.verification_token
+    ? `${window.location.origin}/verify-card?token=${card.verification_token}`
+    : profile?.cin || "";
 
   return (
     <div className="relative rounded-3xl border border-border bg-card overflow-hidden shadow-sm">
@@ -126,7 +151,7 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
             <div>
               <p className="text-[10px] text-muted-foreground">{t("Patient Name")}</p>
               <p className="font-heading text-base sm:text-lg font-bold text-primary leading-tight break-words">
-                {(lang === "ar" ? profile?.full_name_ar : "") || profile?.full_name || "—"}
+                {name}
               </p>
             </div>
 
@@ -149,9 +174,57 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
 
           <div className="flex flex-wrap sm:flex-col items-center gap-3 shrink-0 justify-center">
             <div className="flex flex-col items-center gap-1">
-              <div className="rounded-xl bg-info/10 p-1.5">
-                <QrCodeCard cin={profile?.cin} size={116} />
-              </div>
+              <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t("Open card QR code")}
+                    className="rounded-xl bg-info/10 p-1.5 transition hover:bg-info/20"
+                  >
+                    <QrCodeCard cin={profile?.cin} value={qrValue} size={116} />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogTitle className="font-heading text-base font-bold text-primary">
+                    {t("AMedix Medical Card")}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    {t("Patient medical card information")}
+                  </DialogDescription>
+
+                  <div className="flex flex-col items-center gap-2">
+                    <QrCodeCard cin={profile?.cin} value={qrValue} size={220} />
+                    <p className="text-center text-[11px] text-muted-foreground">
+                      {t("Scan with any phone camera to open the secure verification page.")}
+                    </p>
+                  </div>
+
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-border bg-muted/40 p-3 text-start">
+                    <CardFact label={t("Patient Name")} value={name} wide />
+                    <CardFact label={t("Patient ID")} value={cardNumber} />
+                    <CardFact label={t("CIN (National ID)")} value={profile?.cin} />
+                    <CardFact label={t("Date of Birth")} value={formatDate(profile?.date_of_birth)} />
+                    <CardFact label={t("Gender")} value={genderLabel} />
+                    <CardFact label={t("Blood Group")} value={bloodGroup} />
+                    <CardFact label={t("Allergies")} value={allergiesText} />
+                    <CardFact label={t("Chronic Conditions")} value={conditionLabels.join(", ")} wide />
+                    <CardFact label={t("Emergency Contact")} value={emergencyText} wide />
+                  </dl>
+
+                  <p className="flex items-start gap-2 rounded-xl bg-muted/60 p-2.5 text-[11px] text-muted-foreground">
+                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span>{t("The scanned page confirms the card's status only. Clinical records need the patient's authorization.")}</span>
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setQrOpen(false)}
+                    className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+                  >
+                    {t("Close")}
+                  </button>
+                </DialogContent>
+              </Dialog>
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground">{t("AMedix Patient QR")}</p>
                 <span className="inline-block rounded-full bg-info/10 px-2 py-0.5 text-[11px] font-semibold text-primary tracking-wide">
@@ -163,12 +236,8 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
         </div>
 
         <div className="mt-4 flex flex-wrap sm:flex-nowrap divide-x divide-border rounded-xl border border-border bg-background/60 rtl:divide-x-reverse">
-          <StripCell
-            icon={Droplet}
-            label={t("Blood Group")}
-            value={profile?.blood_type && profile.blood_type !== "Unknown" ? profile.blood_type : "—"}
-          />
-          <StripCell icon={Activity} label={t("Allergies")} value={allergyText || profile?.allergies || "—"} />
+          <StripCell icon={Droplet} label={t("Blood Group")} value={bloodGroup} />
+          <StripCell icon={Activity} label={t("Allergies")} value={allergiesText} />
           {conditionLabels.length > 0 ? (
             <StripCell
               icon={HeartPulse}

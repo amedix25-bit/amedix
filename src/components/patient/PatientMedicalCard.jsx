@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CreditCard, Loader2, RefreshCw, ShieldOff } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import MedicalCardPreview from "@/components/patient/card/MedicalCardPreview";
+import PatientMedicalIdCard from "@/components/patient/PatientMedicalIdCard";
 import MedicalCardActions from "@/components/patient/card/MedicalCardActions";
 
 function day(value) {
@@ -13,9 +13,11 @@ function day(value) {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export default function PatientMedicalCard() {
+export default function PatientMedicalCard({ profile }) {
   const { t, lang } = usePatientLanguage();
   const [card, setCard] = useState(null);
+  const [conditions, setConditions] = useState([]);
+  const [allergies, setAllergies] = useState([]);
   const [walletConfigured, setWalletConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,6 +31,24 @@ export default function PatientMedicalCard() {
     setCard(data.card);
     setWalletConfigured(Boolean(data.walletConfigured));
   }, []);
+
+  const loadCardDetails = useCallback(async () => {
+    if (!profile?.id) return;
+    try {
+      const [conditionList, allergyList] = await Promise.all([
+        base44.entities.MedicalCondition.filter({ patient_id: profile.id }),
+        base44.entities.Allergy.filter({ patient_id: profile.id }),
+      ]);
+      setConditions(conditionList || []);
+      setAllergies(allergyList || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    loadCardDetails();
+  }, [loadCardDetails]);
 
   useEffect(() => {
     let alive = true;
@@ -91,7 +111,14 @@ export default function PatientMedicalCard() {
 
       {card && (
         <>
-          <MedicalCardPreview card={card} verifyUrl={card.verify_url} lang={lang} t={t} />
+          <PatientMedicalIdCard
+            profile={profile}
+            card={card}
+            conditions={conditions}
+            allergyText={allergies.map((a) => a.allergen).filter(Boolean).join(", ")}
+            emergencyContact={profile?.emergency_contacts?.[0]}
+            onConditionsChanged={loadCardDetails}
+          />
 
           <MedicalCardActions
             card={card}
