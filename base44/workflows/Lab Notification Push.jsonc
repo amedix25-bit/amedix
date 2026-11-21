@@ -1,0 +1,41 @@
+{
+  "description": "Sends a privacy-safe Web Push to a laboratory account's enabled devices when a new lab notification is created.",
+  "name": "Lab Notification Push",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "LabNotification"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "lab_notification_push",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_push": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "pushSend",
+            "args": {
+              "mode": "notification",
+              "entity": "LabNotification",
+              "id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send web push to laboratory devices"
+          }
+        }
+      }
+    ]
+  }
+}

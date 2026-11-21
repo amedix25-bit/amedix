@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LogOut, Menu, X } from "lucide-react";
+import { Bell, LogOut, Menu, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import { useAppLanguage } from "@/lib/appLanguage";
@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { getPortalAccent } from "@/lib/portalAccent";
+
+// Which portal the notification settings page should return to, per sidebar accent.
+const SETTINGS_PORTAL = {
+  patient: "patient",
+  doctor: "doctor",
+  lab: "laboratory",
+  radiology: "radiology",
+  pharmacy: "pharmacy",
+  hospital: "hospital",
+  insurance: "patient",
+};
 
 export default function DashboardLayout({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", sidebarTheme = "light", renderSidebar, sidebarWidth = "w-64", mainClassName = "", children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -143,6 +154,17 @@ function SidebarContent({ navItems, navGroups, activeKey, onNavClick, roleLabel,
         <div className="flex justify-center">
           <AppLanguageSwitcher />
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+          onClick={() => {
+            window.location.href = `/notification-settings?portal=${SETTINGS_PORTAL[accent] || "patient"}`;
+          }}
+        >
+          <Bell className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
+          {t("Notification settings")}
+        </Button>
         {navy ? (
           <Button
             size="sm"

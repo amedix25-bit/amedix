@@ -4,7 +4,7 @@ import AppLanguageSwitcher from "@/components/AppLanguageSwitcher";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
 import DoctorSignatureSettings from "@/components/doctor/signature/DoctorSignatureSettings";
-import { Building2, Languages, PenLine, ShieldCheck, Stethoscope, User } from "lucide-react";
+import { Bell, Building2, Languages, PenLine, ShieldCheck, Stethoscope, User } from "lucide-react";
 
 // Doctor Portal → Settings. Account, professional and language settings, all
 // writing through the existing profile components — no parallel settings store.
@@ -42,6 +42,19 @@ export default function DoctorSettingsSection({ profile, onProfileUpdated, user,
           {profile?.specialization || "Not set"}
         </p>
         {profile ? <DoctorSpecialtySelect profile={profile} onSelected={onProfileUpdated} /> : null}
+      </Card>
+
+      <Card icon={Bell} title="Notifications" description="Which devices receive alerts, and what they may alert you about.">
+        <p className="text-sm text-muted-foreground">
+          Alerts never include a patient name, diagnosis or result on the lock screen.
+        </p>
+        <Button
+          className="mt-3"
+          variant="outline"
+          onClick={() => { window.location.href = "/notification-settings?portal=doctor"; }}
+        >
+          <Bell className="h-4 w-4" /> Manage notifications
+        </Button>
       </Card>
 
       <Card icon={Building2} title="Hospital affiliation" description="Your AMedix hospital is verified for each portal session.">

@@ -35,6 +35,7 @@ import RadiologistDashboard from '@/pages/RadiologistDashboard';
 import RadiologyDepartmentPortal from '@/pages/RadiologyDepartmentPortal';
 import RadiologyPortal from '@/pages/RadiologyPortal';
 import ClinicalReferences from '@/pages/ClinicalReferences';
+import NotificationSettings from '@/pages/NotificationSettings';
 import ProfessionalAccess from '@/pages/ProfessionalAccess';
 import PortalRouteGuard from '@/components/PortalRouteGuard';
 import { AppLanguageProvider } from '@/lib/appLanguage';
@@ -91,6 +92,7 @@ const AuthenticatedApp = () => {
         <Route path="/pharmacy-portal" element={<PortalRouteGuard portal="pharmacy"><PharmacyPortal /></PortalRouteGuard>} />
         <Route path="/hospital-portal" element={<PortalRouteGuard portal="hospital"><HospitalPortal /></PortalRouteGuard>} />
         <Route path="/clinical-references" element={<ClinicalReferences />} />
+        <Route path="/notification-settings" element={<NotificationSettings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

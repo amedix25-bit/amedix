@@ -1,0 +1,53 @@
+{
+  "name": "PushConfig",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Configuration key \u2014 'vapid' for the app's Web Push signing key pair"
+    },
+    "public_key": {
+      "type": "string",
+      "description": "VAPID public key (base64url, uncompressed P-256 point). Safe to hand to browsers: it is what the browser subscribes with."
+    },
+    "private_key": {
+      "type": "string",
+      "description": "VAPID private key (base64url, 32-byte scalar). Server-side signing secret: never returned to a browser, never logged, never included in any API response."
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the key pair was generated (ISO datetime)"
+    },
+    "rotated_datetime": {
+      "type": "string",
+      "description": "Date and time the key pair was last rotated. Rotating invalidates every existing subscription (they must re-subscribe)."
+    }
+  },
+  "required": [
+    "key",
+    "public_key",
+    "private_key"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

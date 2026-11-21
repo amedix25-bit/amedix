@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, UserRound, User, ShieldCheck, LogOut } from "lucide-react";
+import { ChevronDown, UserRound, User, ShieldCheck, LogOut, Bell } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -19,6 +19,7 @@ export default function PatientProfileMenu({ name, onOpenProfile, onNavigate }) 
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={onOpenProfile}><User className="mr-2 h-4 w-4" />{t("Personal Information")}</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onNavigate?.("access")}><ShieldCheck className="mr-2 h-4 w-4" />{t("Access & Privacy")}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => { window.location.href = "/notification-settings?portal=patient"; }}><Bell className="mr-2 h-4 w-4" />{t("Notifications")}</DropdownMenuItem>
         {user && <ProfessionalPortalSwitch user={user} />}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={logout}><LogOut className="mr-2 h-4 w-4" />{t("Log Out")}</DropdownMenuItem>

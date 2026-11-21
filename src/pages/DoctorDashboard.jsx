@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { DOCTOR_TABS } from "@/lib/notificationDestinations";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppLanguage } from "@/lib/appLanguage";
 import DoctorOverview from "@/components/doctor/DoctorOverview";
@@ -93,6 +94,21 @@ export default function DoctorDashboard() {
   // current portal session, opened via the AMedix Hospital Code gate. All
   // hospital-specific information and clinical actions apply to this hospital.
   const [hospitalSession, setHospitalSession] = useState(null);
+
+  // A push notification opens an exact place in the portal: ?tab= is the tab and
+  // ?cin= prefills Find Patient. The patient record itself is still authorised
+  // server-side when the doctor opens it — a link never grants access.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("tab");
+    const cin = params.get("cin");
+    if (cin) {
+      setActiveTab("search");
+      setSearchPrefill({ cin, ts: Date.now() });
+      return;
+    }
+    if (requested && DOCTOR_TABS.includes(requested)) setActiveTab(requested);
+  }, []);
   // Unread messaging notifications, shown on the Messages navigation item so an
   // incoming message is visible from anywhere in the portal.
   const { unread: messagingUnread } = useMessagingNotifications({ enabled: !!user });

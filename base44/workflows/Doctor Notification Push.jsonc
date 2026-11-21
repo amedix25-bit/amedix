@@ -1,0 +1,41 @@
+{
+  "description": "Sends a privacy-safe Web Push to a doctor's enabled devices when a new doctor notification is created.",
+  "name": "Doctor Notification Push",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "DoctorNotification"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "doctor_notification_push",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_push": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "pushSend",
+            "args": {
+              "mode": "notification",
+              "entity": "DoctorNotification",
+              "id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send web push to doctor devices"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "description": "Sends a privacy-safe Web Push to a patient's enabled devices when a new patient notification is created. The pushSend function deduplicates per notification and never includes clinical detail.",
+  "name": "Patient Notification Push",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "PatientNotification"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "patient_notification_push",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_push": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "pushSend",
+            "args": {
+              "mode": "notification",
+              "entity": "PatientNotification",
+              "id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send web push to patient devices"
+          }
+        }
+      }
+    ]
+  }
+}

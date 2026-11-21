@@ -1,0 +1,41 @@
+{
+  "description": "Sends a privacy-safe Web Push to a pharmacy account's enabled devices when a new pharmacy notification is created.",
+  "name": "Pharmacy Notification Push",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "PharmacyNotification"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "pharmacy_notification_push",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_push": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "pushSend",
+            "args": {
+              "mode": "notification",
+              "entity": "PharmacyNotification",
+              "id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send web push to pharmacy devices"
+          }
+        }
+      }
+    ]
+  }
+}

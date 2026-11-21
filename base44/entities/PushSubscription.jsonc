@@ -1,0 +1,161 @@
+{
+  "name": "PushSubscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User id of the account that owns this device subscription \u2014 used for Row Level Security. A device can only ever receive notifications for its own owner."
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Account email of the owner, recorded for support and never shown to other users"
+    },
+    "portal": {
+      "type": "string",
+      "description": "Portal the subscription was created from: patient, doctor, hospital, laboratory, pharmacy, radiology, admin"
+    },
+    "endpoint": {
+      "type": "string",
+      "description": "Push service endpoint URL issued by the browser's push service. Unique per device + browser + service-worker registration; the delivery address of this device."
+    },
+    "p256dh": {
+      "type": "string",
+      "description": "The device's public key (base64url) used to encrypt the payload \u2014 a subscription record is useless to anyone else without the matching private key, which never leaves the device"
+    },
+    "auth": {
+      "type": "string",
+      "description": "The device's authentication secret (base64url) used in the payload key derivation"
+    },
+    "device_label": {
+      "type": "string",
+      "description": "Human-readable device name the user can recognise in their device list, e.g. 'Android Chrome' or 'iPhone (Home Screen)'"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser user agent recorded at subscription time, for support and delivery diagnostics"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "android",
+        "ios",
+        "desktop",
+        "other"
+      ],
+      "enumColors": [
+        "green",
+        "blue",
+        "purple",
+        "gray"
+      ],
+      "default": "other",
+      "description": "Platform family detected at subscription time \u2014 used to explain platform limitations accurately (iOS requires the site to be added to the Home Screen)"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this device should receive push notifications at all \u2014 the user's master switch for this device"
+    },
+    "categories": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Per-device category preferences: { medication, laboratory, imaging, appointment, message, access, general }. A category set to false is never delivered to this device. Missing keys fall back to the portal defaults."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "failed"
+      ],
+      "enumColors": [
+        "green",
+        "gray",
+        "red"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the push service accepted the last delivery. EXPIRED: the push service reported the subscription is gone (404/410) \u2014 the device is never retried until it subscribes again. FAILED: repeated delivery failures after all retries."
+    },
+    "failure_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Consecutive delivery failures \u2014 reset to 0 on a successful delivery"
+    },
+    "last_error": {
+      "type": "string",
+      "description": "Machine-readable reason for the last delivery failure, e.g. push_expired, push_unreachable, push_rejected. Never contains notification content."
+    },
+    "last_success_datetime": {
+      "type": "string",
+      "description": "Date and time the push service last accepted a delivery for this device (ISO datetime)"
+    },
+    "last_seen_datetime": {
+      "type": "string",
+      "description": "Date and time this device last refreshed its subscription (ISO datetime)"
+    },
+    "pending_payload": {
+      "type": "string",
+      "description": "JSON payload waiting to be retried after a temporary delivery failure. Cleared once delivered or abandoned. Never contains clinical detail \u2014 only the generic preview text."
+    },
+    "pending_attempts": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many delivery attempts the pending payload has had"
+    },
+    "next_retry_datetime": {
+      "type": "string",
+      "description": "Date and time the pending payload may be attempted again (ISO datetime)"
+    },
+    "created_datetime": {
+      "type": "string",
+      "description": "Date and time the device subscribed (ISO datetime)"
+    }
+  },
+  "required": [
+    "user_id",
+    "endpoint",
+    "p256dh",
+    "auth"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "name": "PushDelivery",
+  "type": "object",
+  "properties": {
+    "notification_entity": {
+      "type": "string",
+      "description": "Entity the notification record belongs to, e.g. PatientNotification \u2014 with notification_id this is the deduplication key, so one notification is never pushed twice"
+    },
+    "notification_id": {
+      "type": "string",
+      "description": "Id of the notification record this delivery belongs to"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User id whose devices were targeted"
+    },
+    "category": {
+      "type": "string",
+      "description": "Privacy category the push was sent under (medication, laboratory, imaging, appointment, message, access, general)"
+    },
+    "devices": {
+      "type": "integer",
+      "description": "How many active device subscriptions the delivery was attempted against"
+    },
+    "sent": {
+      "type": "integer",
+      "description": "Devices the push service accepted"
+    },
+    "expired": {
+      "type": "integer",
+      "description": "Devices whose subscription was reported gone (404/410) and marked expired"
+    },
+    "retry": {
+      "type": "integer",
+      "description": "Devices queued for a retry after a temporary failure"
+    },
+    "failed": {
+      "type": "integer",
+      "description": "Devices that failed permanently on this attempt"
+    },
+    "skipped": {
+      "type": "integer",
+      "description": "Devices skipped because the user turned that category off for the device"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "delivered",
+        "partial",
+        "retrying",
+        "failed",
+        "no_devices"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "yellow",
+        "red",
+        "gray"
+      ],
+      "description": "Outcome of the delivery attempt, derived from the per-device results"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Short server-written note for support \u2014 never contains notification content"
+    },
+    "sent_datetime": {
+      "type": "string",
+      "description": "Date and time the delivery was attempted (ISO datetime)"
+    }
+  },
+  "required": [
+    "notification_entity",
+    "notification_id",
+    "user_id",
+    "sent_datetime"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

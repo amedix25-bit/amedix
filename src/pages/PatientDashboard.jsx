@@ -45,10 +45,16 @@ function PatientPortal() {
   const { user } = useAuth();
   const { t } = usePatientLanguage();
   const navigate = useNavigate();
-  const [activeTab, setActiveTabRaw] = useState("overview");
+  // A push notification opens an exact place in the portal: ?tab= is the tab,
+  // ?focus= is the record it concerns. Only a tab this portal really renders is
+  // accepted — anything else falls back to the overview.
+  const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  const [activeTab, setActiveTabRaw] = useState(
+    PATIENT_TABS.includes(requestedTab) ? requestedTab : "overview"
+  );
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [labsView, setLabsView] = useState("choose"); // "choose" | "requests" | "results"
-  const [drugsView, setDrugsView] = useState("choose"); // "choose" | "medications" | "prescriptions" | "advertisement"
+  const [drugsView, setDrugsView] = useState(requestedTab === "drugs" ? "medications" : "choose"); // "choose" | "medications" | "prescriptions" | "advertisement"
   const setActiveTab = (tab) => {
     window.scrollTo({ top: 0, behavior: "auto" });
     // The portal content area scrolls on its own, so reset it too — otherwise a
