@@ -31,6 +31,7 @@ import DrugsEntry from "@/components/patient/DrugsEntry";
 import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
 import UnavailableSection from "@/components/common/UnavailableSection";
 import { PATIENT_TABS } from "@/lib/notificationDestinations";
+import PatientMedicalCard from "@/components/patient/PatientMedicalCard";
 import MedicationAlarmCenter from "@/components/patient/medications/MedicationAlarmCenter";
 
 export default function PatientDashboard() {
@@ -209,6 +210,7 @@ function PatientPortal() {
           )}
           {activeTab === "imaging" && <PatientImaging patientId={profile?.id} />}
           {activeTab === "documents" && <PatientDocuments patient={profile} />}
+          {activeTab === "medicalcard" && <PatientMedicalCard />}
           {activeTab === "access" && (
             <div className="space-y-10">
               <PatientAccessControl patientId={profile?.id} />

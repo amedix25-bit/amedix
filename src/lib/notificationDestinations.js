@@ -9,7 +9,7 @@
 export const PATIENT_TABS = [
   "overview", "appointments", "messages", "directory", "health", "vaccinations",
   "doctorvisits", "documents", "labs", "imaging", "drugs", "profile", "access",
-  "conditions", "allergies", "surgeries",
+  "conditions", "allergies", "surgeries", "medicalcard",
 ];
 
 export const DOCTOR_TABS = [

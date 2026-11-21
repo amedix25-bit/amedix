@@ -37,6 +37,7 @@ import RadiologyPortal from '@/pages/RadiologyPortal';
 import ClinicalReferences from '@/pages/ClinicalReferences';
 import NotificationSettings from '@/pages/NotificationSettings';
 import ProfessionalAccess from '@/pages/ProfessionalAccess';
+import VerifyMedicalCard from '@/pages/VerifyMedicalCard';
 import PortalRouteGuard from '@/components/PortalRouteGuard';
 import { AppLanguageProvider } from '@/lib/appLanguage';
 
@@ -78,6 +79,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Welcome />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/professional-access" element={<ProfessionalAccess />} />
+      <Route path="/verify-card" element={<VerifyMedicalCard />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/home" element={<Home />} />
         <Route path="/patient" element={<PortalRouteGuard portal="patient"><PatientDashboard /></PortalRouteGuard>} />

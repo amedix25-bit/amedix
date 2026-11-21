@@ -1,0 +1,158 @@
+{
+  "name": "MedicalCard",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "PatientProfile id the card is issued to \u2014 the card always belongs to exactly one patient"
+    },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account \u2014 used for Row Level Security and for every ownership check before a card or pass is produced"
+    },
+    "patient_cin": {
+      "type": "string",
+      "description": "Clinical Identification Number printed on the card, copied from the patient profile at issue time. The CIN itself is never created, changed or re-issued by this feature."
+    },
+    "patient_name": {
+      "type": "string",
+      "description": "Registered full name in English, exactly as stored on the patient profile \u2014 never shortened, translated or re-ordered"
+    },
+    "patient_name_ar": {
+      "type": "string",
+      "description": "Registered full name in Arabic, exactly as stored on the patient profile \u2014 never translated or transliterated. Empty when the patient registered no Arabic name."
+    },
+    "card_number": {
+      "type": "string",
+      "description": "Printed card number, e.g. AMX-2026-4F9A1C. Identifies this card, never the patient, and changes when a card is reissued."
+    },
+    "verification_token": {
+      "type": "string",
+      "description": "Cryptographically random 32-byte token (hex) carried by the card's QR code. It contains no CIN and no clinical data, and is unguessable. Readable only by the patient who owns the card and by administrators."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "revoked"
+      ],
+      "enumColors": [
+        "green",
+        "gray",
+        "red"
+      ],
+      "default": "active",
+      "description": "ACTIVE: the card verifies as valid. EXPIRED: past its expiry date. REVOKED: withdrawn \u2014 every scan of an already downloaded PDF or Wallet pass immediately reports it as revoked."
+    },
+    "issued_datetime": {
+      "type": "string",
+      "description": "Date and time the card was issued (ISO datetime)"
+    },
+    "expires_datetime": {
+      "type": "string",
+      "description": "Date and time the card stops being valid (ISO datetime)"
+    },
+    "revoked_datetime": {
+      "type": "string",
+      "description": "Date and time the card was revoked (ISO datetime)"
+    },
+    "revoked_reason": {
+      "type": "string",
+      "description": "Why the card was revoked or replaced, in the words of whoever revoked it"
+    },
+    "revoked_by_name": {
+      "type": "string",
+      "description": "Name of the patient or administrator who revoked the card"
+    },
+    "replaced_card_number": {
+      "type": "string",
+      "description": "Card number this card replaced, when it was issued as a reissue"
+    },
+    "reissue_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many times the patient's card has been reissued"
+    },
+    "verify_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "How many times the card's QR has been scanned against the verification page"
+    },
+    "last_verified_datetime": {
+      "type": "string",
+      "description": "Date and time the card was last scanned (ISO datetime)"
+    },
+    "audit": {
+      "type": "array",
+      "description": "Append-only history of the card: issued, reissued, revoked, scanned. Written server-side only.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datetime": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "issued / reissued / revoked / scanned"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "actor_role": {
+            "type": "string",
+            "description": "patient / administrator / system"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_user_id",
+    "card_number",
+    "verification_token",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.patient_user_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.patient_user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
