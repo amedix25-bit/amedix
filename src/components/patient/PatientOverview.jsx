@@ -15,11 +15,11 @@ export default function PatientOverview({ profile, loading, onNavigate }) {
   const load = useCallback(async () => {
     if (!profile?.id) return;
     try {
-      const page = await base44.entities.MedicalCard.filter(
-        { patient_user_id: profile.user_id },
-        { sort: "-created_date", limit: 1 },
-      );
-      setCard((page?.items || page || [])[0] || null);
+      // The card is issued server-side on the patient's first visit, so the
+      // home card's QR always carries this patient's own card token — never a
+      // bare identifier that no scanner could resolve.
+      const response = await base44.functions.invoke("medicalCard", { action: "get" });
+      setCard(response.data?.card || null);
     } catch (err) {
       console.error(err);
     }

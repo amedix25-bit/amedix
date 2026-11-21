@@ -1,33 +1,54 @@
 import React, { useState } from "react";
 import QrScanner from "@/components/lab/technician/QrScanner";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, QrCode, X } from "lucide-react";
-
-// Matches the unique CIN format (e.g. 7F3-829-461) that patient QR codes encode.
-const CIN_PATTERN = /[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}/;
+import { AlertTriangle, CheckCircle2, Loader2, QrCode, X } from "lucide-react";
 
 /**
  * Dedicated patient QR-code scanner for the doctor portal.
- * The patient's QR code (Patient Home Page) encodes only their unique CIN,
- * so scanning resolves to the exact same account and medical record as
- * searching the CIN manually — it never creates a new profile or duplicate.
- * Gives clear feedback when a code is detected, invalid, or unreadable.
+ *
+ * The card's QR carries the card's own verification token (never a name or a
+ * diagnosis), so the scanned value is resolved on the server to the exact
+ * patient it belongs to — the same account, record and access permissions as
+ * searching the CIN manually. A scan identifies the patient only: clinical
+ * data still requires the patient's authorization.
  */
 export default function DoctorScanPatientQr({ onCinDetected, onCancel }) {
   const [attempt, setAttempt] = useState(0);
   const [feedback, setFeedback] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [resolved, setResolved] = useState(null);
 
-  const handleScan = (value) => {
-    const raw = String(value || "").trim().toUpperCase();
-    const match = raw.match(CIN_PATTERN);
-    if (!match) {
+  const retry = () => {
+    setFeedback(null);
+    setAttempt((a) => a + 1);
+  };
+
+  const handleScan = async (value) => {
+    if (busy) return;
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const response = await base44.functions.invoke("patientQrResolve", { value: String(value || "") });
+      const data = response.data || {};
+      if (data.ok && data.patient_cin) {
+        setResolved(data);
+        onCinDetected(data.patient_cin, { patientName: data.patient_name, source: data.source });
+        return;
+      }
+      setFeedback(data.message || "This QR code could not be read as an AMedix patient code.");
+    } catch (err) {
+      const serverMessage = err?.response?.data?.message;
       setFeedback(
-        "This QR code is not a valid patient code. Ask the patient to open their Patient Home Page and show their personal QR code, then scan again."
+        serverMessage ||
+          (err?.response?.status === 403
+            ? "Only a verified doctor or radiologist can scan patient cards."
+            : "The QR code could not be verified. Please try again.")
       );
+    } finally {
+      setBusy(false);
       setAttempt((a) => a + 1);
-      return;
     }
-    onCinDetected(match[0]);
   };
 
   return (
@@ -45,7 +66,28 @@ export default function DoctorScanPatientQr({ onCinDetected, onCancel }) {
       {feedback && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-sm text-amber-700">{feedback}</p>
+          <div className="space-y-2">
+            <p className="text-sm text-amber-800">{feedback}</p>
+            <Button size="sm" variant="outline" onClick={retry}>
+              Try scanning again
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {resolved && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+          <p className="text-sm text-emerald-800">
+            Card verified for <span className="font-semibold">{resolved.patient_name}</span> ({resolved.patient_cin}).
+          </p>
+        </div>
+      )}
+
+      {busy && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+          Verifying this card...
         </div>
       )}
 
@@ -57,8 +99,8 @@ export default function DoctorScanPatientQr({ onCinDetected, onCancel }) {
       />
 
       <p className="text-xs text-muted-foreground">
-        Scanning simply identifies the patient's existing account by CIN — the same record, access and
-        permissions as a CIN search. No new profile is ever created.
+        Scanning identifies the patient's existing account only. Their medical record opens only with the
+        access the patient has granted you.
       </p>
     </div>
   );

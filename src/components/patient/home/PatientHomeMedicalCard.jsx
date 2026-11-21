@@ -24,11 +24,12 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
   const name = (lang === "ar" ? profile?.full_name_ar : "") || profile?.full_name || "—";
   const status = card?.status || null;
 
-  const qrValue = card?.verification_token
-    ? `${window.location.origin}/verify-card?token=${card.verification_token}`
-    : profile?.cin || "";
+  // The card's own verification link — the canonical one issued by the server,
+  // so the code keeps working wherever the card is viewed or printed.
+  const qrValue = card?.verify_url
+    || (card?.verification_token ? `${window.location.origin}/verify-card?token=${card.verification_token}` : profile?.cin || "");
   const qrSrc = qrValue
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&qzone=1&data=${encodeURIComponent(qrValue)}`
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=320x320&qzone=1&data=${encodeURIComponent(qrValue)}`
     : null;
   const largeQrSrc = qrValue
     ? `https://api.qrserver.com/v1/create-qr-code/?size=600x600&qzone=1&data=${encodeURIComponent(qrValue)}`
@@ -71,7 +72,7 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
                 aria-label={t("Open card QR code")}
                 className="shrink-0 rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-border/60 transition hover:bg-white"
               >
-                <img src={qrSrc} alt={t("Card verification QR code")} className="h-[68px] w-[68px]" />
+                <img src={qrSrc} alt={t("Card verification QR code")} className="h-[88px] w-[88px]" />
               </button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">

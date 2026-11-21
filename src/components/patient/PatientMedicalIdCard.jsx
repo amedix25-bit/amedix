@@ -99,9 +99,8 @@ export default function PatientMedicalIdCard({ profile, card, conditions = [], a
 
   // The QR always carries the secure verification link, so any phone camera
   // opens the AMedix verification page without the app installed.
-  const qrValue = card?.verification_token
-    ? `${window.location.origin}/verify-card?token=${card.verification_token}`
-    : profile?.cin || "";
+  const qrValue = card?.verify_url
+    || (card?.verification_token ? `${window.location.origin}/verify-card?token=${card.verification_token}` : profile?.cin || "");
 
   return (
     <div className="pp-print-card relative rounded-3xl border border-border bg-card overflow-hidden shadow-sm">
