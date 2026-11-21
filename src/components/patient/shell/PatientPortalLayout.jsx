@@ -22,10 +22,10 @@ export default function PatientPortalLayout({ renderSidebar, children, singleCol
 
   return (
     <div className={`pp-page${singleColumn ? " pp-page-single" : ""}`}>
+      <PatientHeaderArt />
       <div className="pp-frame">
         {!singleColumn && <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>}
         <main className="pp-main">
-          <PatientHeaderArt />
           {(narrow || singleColumn) && <div className="pp-mobile-header">
             <button type="button" className="pp-menu-button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={t("Patient Portal")}><Menu /></button>
             <span className="pp-mobile-brand">

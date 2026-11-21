@@ -352,5 +352,11 @@
 .pp-mobile-brand>span:last-child { font-size:11px; font-weight:600; color:hsl(var(--pp-muted)); white-space:nowrap; }
 
 /* Decorative medical cross and ECG trace behind the patient header. */
-.pp-header-art { position:absolute; top:0; inset-inline-end:0; width:min(72%,420px); height:auto; color:hsl(var(--pp-accent)); pointer-events:none; z-index:0; }
+.pp-header-art { position:absolute; top:0; inset-inline:0; width:100%; height:230px; pointer-events:none; z-index:0; }
 .pp-mobile-header,.pp-topbar { z-index:1; }
+
+/* Header copy sits over the pale part of the waves — kept dark and legible. */
+.pp-greeting { color:hsl(var(--pp-ink)); font-weight:700; }
+.pp-welcome h1 { color:hsl(var(--pp-ink)); }
+.pp-welcome p { color:hsl(var(--pp-ink)/.92); }
+.pp-mobile-brand>span:last-child { color:hsl(var(--pp-ink)/.9); font-weight:700; }

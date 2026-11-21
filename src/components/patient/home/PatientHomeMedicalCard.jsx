@@ -42,9 +42,9 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
         aria-hidden="true"
         fittingType="fill"
         quality={90}
-        className="pointer-events-none absolute inset-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-40"
       />
-      <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-card/40" />
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-card/45" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
             <span className="font-heading text-sm font-bold leading-none text-patient-ink">AMedix</span>
           </div>
           <p className="mt-2.5 break-words text-sm font-bold leading-tight text-patient-ink">{name}</p>
-          <p className="mt-0.5 text-[11px] text-patient-muted">
+          <p className="mt-0.5 text-[11px] font-medium text-patient-ink/80">
             {t("Patient ID")}: <span className="font-mono tracking-wide">{profile?.cin || "—"}</span>
           </p>
           {status && (
