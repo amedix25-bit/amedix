@@ -3,6 +3,7 @@ import { Check, ChevronRight } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // The card at the top of the patient's home screen. Identification only —
 // name, patient ID, card status and the verification code. Never a diagnosis,
@@ -31,6 +32,9 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
     : profile?.cin || "";
   const qrSrc = qrValue
     ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&qzone=1&data=${encodeURIComponent(qrValue)}`
+    : null;
+  const largeQrSrc = qrValue
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=600x600&qzone=1&data=${encodeURIComponent(qrValue)}`
     : null;
 
   return (
@@ -62,15 +66,49 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
         </div>
 
         {qrSrc && (
-          <a
-            href={qrValue}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t("Open card verification")}
-            className="shrink-0 rounded-xl bg-white p-1.5 shadow-lg transition hover:bg-white/90"
-          >
-            <img src={qrSrc} alt={t("Card verification QR code")} className="h-[74px] w-[74px] sm:h-20 sm:w-20" />
-          </a>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                aria-label={t("Open card QR code")}
+                className="shrink-0 rounded-xl bg-white p-1.5 shadow-lg transition hover:bg-white/90"
+              >
+                <img src={qrSrc} alt={t("Card verification QR code")} className="h-[74px] w-[74px] sm:h-20 sm:w-20" />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogTitle className="text-center font-heading text-base font-bold text-primary">
+                {t("AMedix Medical Card")}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {t("Scan this code with any phone camera to verify the card.")}
+              </DialogDescription>
+              <div className="flex flex-col items-center gap-3">
+                <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-border">
+                  <img src={largeQrSrc} alt={t("Card verification QR code")} className="h-56 w-56" />
+                </div>
+                <p className="text-center text-xs text-muted-foreground">
+                  {t("Scan this code with any phone camera to verify the card.")}
+                </p>
+                <dl className="w-full space-y-2 rounded-xl border border-border bg-muted/40 p-3 text-start">
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("Patient")}</dt>
+                    <dd className="break-words text-sm font-semibold text-primary">{name}</dd>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("Patient ID")}</dt>
+                      <dd className="break-all font-mono text-sm font-medium text-primary">{profile?.cin || "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("Card number")}</dt>
+                      <dd className="break-all font-mono text-sm font-medium text-primary">{card?.card_number || "—"}</dd>
+                    </div>
+                  </div>
+                </dl>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
