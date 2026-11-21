@@ -3,7 +3,7 @@ import { Menu, X } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import "@/components/patient/shell/patientPortal.css";
 
-export default function PatientPortalLayout({ renderSidebar, children }) {
+export default function PatientPortalLayout({ renderSidebar, children, singleColumn = false }) {
   const [open, setOpen] = useState(false);
   const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width:1023px)").matches);
   const { t } = usePatientLanguage();
@@ -19,11 +19,11 @@ export default function PatientPortalLayout({ renderSidebar, children }) {
   }, []);
 
   return (
-    <div className="pp-page">
+    <div className={`pp-page${singleColumn ? " pp-page-single" : ""}`}>
       <div className="pp-frame">
-        <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>
+        {!singleColumn && <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>}
         <main className="pp-main">
-          {narrow && <div className="pp-mobile-header">
+          {(narrow || singleColumn) && <div className="pp-mobile-header">
             <button type="button" className="pp-menu-button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={t("Patient Portal")}><Menu /></button>
             <span className="pp-mobile-brand"><strong>AMedix</strong><span>{t("Patient Portal")}</span></span>
           </div>}

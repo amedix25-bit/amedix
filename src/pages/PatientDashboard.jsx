@@ -140,6 +140,7 @@ function PatientPortal() {
   return (
     <>
       <PatientPortalLayout
+        singleColumn={activeTab === "overview"}
         renderSidebar={({ close }) => (
           <PatientSidebar activeKey={activeTab} onNavClick={setActiveTab} close={close} />
         )}

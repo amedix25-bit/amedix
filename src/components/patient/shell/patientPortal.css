@@ -306,3 +306,40 @@
  .pp-action-art { width:43%; }
 }
 @media(prefers-reduced-motion:reduce) { .pp-frame * { scroll-behavior:auto!important; } }
+
+/* Single-column home — the patient home screen keeps the AMedix home layout at
+   every screen width: one centred column, the app-style header with the menu
+   button, then the greeting, the card and the home sections. */
+.pp-page-single { height:auto; overflow:visible; }
+.pp-page-single .pp-frame { display:block; width:100%; min-height:100dvh; }
+.pp-page-single .pp-main { display:block; width:100%; max-width:640px; margin:0 auto; padding:0 16px 24px; font-size:13px; overflow:visible; }
+.pp-page-single .pp-main>div { display:block; }
+.pp-page-single .pp-overview { display:grid; flex:none; grid-template-rows:none; }
+.pp-page-single .pp-mobile-header { display:flex; align-items:center; gap:12px; min-height:44px; height:44px; }
+.pp-page-single .pp-menu-button { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:9px; color:hsl(var(--pp-ink)); }
+.pp-page-single .pp-mobile-header>button svg { width:20px; height:20px; }
+.pp-page-single .pp-mobile-brand { display:flex; gap:6px; align-items:baseline; min-width:0; font-size:13px; }
+.pp-page-single .pp-mobile-brand strong { font-size:13px; font-weight:800; letter-spacing:-.2px; }
+.pp-page-single .pp-mobile-brand>span { font-size:10px; font-weight:500; color:hsl(var(--pp-muted)); }
+.pp-page-single .pp-topbar { min-height:88px; padding:14px 0; gap:10px; align-items:center; }
+.pp-page-single .pp-welcome h1 { font-size:22px; gap:4px; letter-spacing:-.5px; }
+.pp-page-single .pp-welcome-ar { font-size:18px; }
+.pp-page-single .pp-welcome p { font-size:11px; gap:5px; margin-top:6px; }
+.pp-page-single .pp-welcome p svg { width:16px; height:16px; }
+.pp-page-single .pp-greeting { font-size:11px; margin-bottom:2px; }
+.pp-page-single .pp-header-controls { gap:7px; padding:0; flex-wrap:wrap; justify-content:flex-end; max-width:100%; }
+.pp-page-single .pp-language { padding:3px; gap:2px; }
+.pp-page-single .pp-language button { font-size:11px; padding:8px 11px; }
+.pp-page-single .pp-notification-trigger { width:38px; height:38px; }
+.pp-page-single .pp-notification-trigger svg { width:19px; height:19px; }
+.pp-page-single .pp-notification-badge { top:-3px; inset-inline-end:-2px; min-width:16px; height:16px; font-size:9px; }
+.pp-page-single .pp-profile-select { font-size:11px; gap:7px; padding:9px 12px; }
+.pp-page-single .pp-profile-select svg:first-child { width:17px; height:17px; }
+.pp-page-single .pp-profile-select svg:last-child { width:11px; height:11px; }
+.pp-page-single .pp-profile-select span { max-width:80px; }
+.pp-page-single .pp-logout { font-size:11px; padding:10px 14px; gap:6px; }
+.pp-page-single .pp-logout svg { width:15px; height:15px; }
+.pp-page-single .pp-drawer .pp-sidebar { min-height:100%; }
+@media(min-width:1024px) {
+ .pp-page-single .pp-main { height:auto; min-height:0; overflow:visible; }
+}
