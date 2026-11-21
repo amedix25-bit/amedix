@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Home, FolderOpen, Building2, MessageSquareMore, Settings, CalendarDays, MessageSquare, Pill, FlaskConical, ScanLine, Heart, Syringe, Stethoscope, Files, User, ShieldCheck, CreditCard } from "lucide-react";
+import { Home, FolderOpen, Building2, MessageSquareMore, Settings, CalendarDays, MessageSquare, Pill, FlaskConical, ScanLine, Heart, Syringe, Stethoscope, Files, ShieldCheck, CreditCard } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -26,8 +26,6 @@ const COMMUNICATION = [
 ];
 
 const SETTINGS = [
-  { key: "profile", label: "Profile", icon: User },
-  { key: "profile", label: "Personal Info", icon: User },
   { key: "access", label: "Access & Privacy", icon: ShieldCheck },
   { key: "medicalcard", label: "Medical Card", icon: CreditCard },
   { key: "logout", label: "Log out" },
@@ -84,11 +82,12 @@ export default function PatientBottomNav({ activeKey, onNavigate }) {
             key={key}
             type="button"
             onClick={() => (items ? setSheet(key) : onNavigate?.("overview"))}
+            aria-label={t(label)}
+            title={t(label)}
             aria-current={activeTab === key ? "page" : undefined}
             className={activeTab === key ? "is-active" : ""}
           >
             <Icon aria-hidden="true" />
-            <span>{t(label)}</span>
           </button>
         ))}
       </nav>

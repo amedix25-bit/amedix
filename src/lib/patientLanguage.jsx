@@ -1509,6 +1509,169 @@ const AR = {
   "Previous screening tests with dates and results, and other preventive care. Your vaccinations are recorded in the checklist below.":
     "الفحوصات السابقة مع تواريخها ونتائجها، وغيرها من الرعاية الوقائية. تُسجَّل تطعيماتك في القائمة أدناه.",
   "e.g. Mammography, Colonoscopy screening": "مثال: تصوير الثدي، فحص القولون",
+
+  // ─── Patient Portal navigation & shell ───
+  "Medical Records": "السجلات الطبية",
+  "Facilities": "الجهات الطبية",
+  "Communication": "التواصل",
+  "Settings": "الإعدادات",
+  "Medical Card": "البطاقة الطبية",
+  "My Medical Card": "بطاقتي الطبية",
+  "Good morning,": "صباح الخير،",
+  "Good afternoon,": "مساء الخير،",
+  "Good evening,": "مساء الخير،",
+  "Your health, connected and organized.": "صحتك، متصلة ومنظمة.",
+  "Your Health Overview": "ملخصك الصحي",
+  "Your Healthcare": "رعايتك الصحية",
+  "AMedix Medical Card": "بطاقة AMedix الطبية",
+  "View your printable medical card": "عرض بطاقتك الطبية القابلة للطباعة",
+  "Urgent": "عاجل",
+  "Encounter": "الزيارة",
+  "Granted automatically by hospital reception at check-in": "مُنح تلقائياً من استقبال المستشفى عند تسجيل الدخول",
+  "Access ends": "ينتهي الوصول",
+  "Remove Access": "إزالة الوصول",
+  "Marital status": "الحالة الزوجية",
+  "Phone numbers": "أرقام الهاتف",
+  "Emergency contacts": "جهات اتصال الطوارئ",
+  "Vaccination status": "حالة التطعيم",
+  "This section is not available": "هذا القسم غير متاح",
+  "The item this link points to may have been removed, or it is no longer available to your account.":
+    "قد يكون العنصر الذي يشير إليه هذا الرابط قد حُذف، أو لم يعد متاحاً لحسابك.",
+  "Go to Home": "الذهاب إلى الرئيسية",
+
+  // ─── Medical card ───
+  "Patient Card": "بطاقة المريض",
+  "Medical ID": "هوية طبية",
+  "Patient Name": "اسم المريض",
+  "CIN (National ID)": "الـ CIN (الرقم الوطني)",
+  "Gender": "الجنس",
+  "Open card QR code": "عرض رمز QR للبطاقة",
+  "Patient medical card information": "معلومات بطاقة المريض الطبية",
+  "Scan with any phone camera to open the secure verification page.":
+    "امسح الرمز بأي كاميرا هاتف لفتح صفحة التحقق الآمنة.",
+  "Patient ID": "رقم المريض",
+  "Blood Group": "فصيلة الدم",
+  "Chronic Conditions": "الأمراض المزمنة",
+  "The scanned page confirms the card's status only. Clinical records need the patient's authorization.":
+    "تؤكد الصفحة الممسوحة حالة البطاقة فقط. السجلات السريرية تتطلب تفويض المريض.",
+  "AMedix Patient QR": "رمز QR لمريض AMedix",
+  "Optional": "اختياري",
+  "Print card": "طباعة البطاقة",
+  "Your Health. Connected.": "صحتك. متصلة.",
+  "Your medical card could not be loaded. Please try again.": "تعذّر تحميل بطاقتك الطبية. يرجى المحاولة مرة أخرى.",
+  "The card could not be updated. Please try again.": "تعذّر تحديث البطاقة. يرجى المحاولة مرة أخرى.",
+  "Loading your medical card...": "جارٍ تحميل بطاقتك الطبية...",
+  "Your AMedix digital medical card identifies you at hospitals, laboratories and pharmacies. It shows identification only — never your clinical record.":
+    "بطاقتك الطبية الرقمية من AMedix تعرّف بك في المستشفيات والمختبرات والصيدليات. تُظهر بيانات التعريف فقط — ولا تُظهر سجلك السريري أبداً.",
+  "Card details": "تفاصيل البطاقة",
+  "Issued": "تاريخ الإصدار",
+  "Valid until": "صالحة حتى",
+  "Card number": "رقم البطاقة",
+  "Revocation reason": "سبب الإلغاء",
+  "Confirm reissue": "تأكيد إعادة الإصدار",
+  "Reissue card": "إعادة إصدار البطاقة",
+  "Confirm revoke": "تأكيد الإلغاء",
+  "Revoke card": "إلغاء البطاقة",
+  "Reissuing makes the previous card stop verifying immediately. A PDF or Wallet card already saved on a phone is checked against the current status every time its code is scanned.":
+    "إعادة الإصدار توقف التحقق بالبطاقة السابقة فوراً. تُفحص أي نسخة PDF أو بطاقة محفوظة في المحفظة مقابل الحالة الحالية في كل مرة يُمسح رمزها.",
+  "Card history": "سجل البطاقة",
+  "Card language": "لغة البطاقة",
+  "Download Medical Card (PDF)": "تنزيل البطاقة الطبية (PDF)",
+  "Download card (PDF)": "تنزيل البطاقة (PDF)",
+  "The card could not be downloaded. Please try again.": "تعذّر تنزيل البطاقة. يرجى المحاولة مرة أخرى.",
+  "The PDF could not be created. Please try again.": "تعذّر إنشاء ملف PDF. يرجى المحاولة مرة أخرى.",
+  "The Wallet card could not be created. Please try the PDF.": "تعذّر إنشاء بطاقة المحفظة. يرجى استخدام ملف PDF.",
+  "Add to Apple Wallet": "إضافة إلى Apple Wallet",
+  "Apple Wallet is not set up for AMedix yet. Download the PDF card meanwhile — it works on iPhone too.":
+    "لم يتم إعداد Apple Wallet في AMedix بعد. نزّل البطاقة بصيغة PDF في الوقت الحالي — فهي تعمل على iPhone أيضاً.",
+  "On iPhone you can add the card to Apple Wallet or download the PDF. On Android and desktop, the PDF works everywhere and can be saved, printed or shared.":
+    "على iPhone يمكنك إضافة البطاقة إلى Apple Wallet أو تنزيل ملف PDF. على Android والحاسوب يعمل ملف PDF في كل مكان ويمكن حفظه أو طباعته أو مشاركته.",
+  "The PDF works on Android, iPhone and desktop — save it to your phone, print it or share it. Apple Wallet is available on iPhone.":
+    "يعمل ملف PDF على Android وiPhone والحاسوب — احفظه على هاتفك أو اطبعه أو شاركه. Apple Wallet متاح على iPhone.",
+
+  // ─── Remaining patient-portal strings ───
+  "Your medical history is shown to your treating doctors. You can add or update your own conditions, past medical history, surgeries, family history and Gynaecological & Obstetric History at any time — earlier entries are kept and every update is recorded.":
+    "يظهر تاريخك الطبي لأطبائك المعالجين. يمكنك إضافة أو تحديث حالاتك وتاريخك الطبي السابق وعملياتك وتاريخك العائلي وتاريخك النسائي والتوليدي في أي وقت — تُحفظ الإدخالات السابقة ويُسجَّل كل تحديث.",
+  "Your medical history (conditions, medications, allergies and surgeries) was recorded at registration and is locked. Contact your doctor or an administrator for any corrections. Your diet, sleep, living situation and vaccination answers can be updated here.":
+    "تم تسجيل تاريخك الطبي (الأمراض والأدوية والحساسية والعمليات) عند التسجيل وهو مُقفل. تواصل مع طبيبك أو مع مسؤول لأي تصحيحات. يمكن تحديث إجابات التغذية والنوم والوضع المعيشي والتطعيمات هنا.",
+  "Could not save. Please try again.": "تعذّر الحفظ. يرجى المحاولة مرة أخرى.",
+  "Add a chronic condition": "إضافة حالة مزمنة",
+  "Search conditions": "ابحث عن حالة",
+  "No matching condition.": "لا توجد حالة مطابقة.",
+  "This document could not be opened": "تعذّر فتح هذا المستند",
+  "Your access could not be verified. Please try again.": "تعذّر التحقق من وصولك. يرجى المحاولة مرة أخرى.",
+  "Photo upload is disabled in preview — no file is stored.": "رفع الصور معطّل في المعاينة — لا يتم تخزين أي ملف.",
+  "Schedule options": "خيارات الجدول",
+  "Dose shown in the reminder": "الجرعة المعروضة في التذكير",
+  "e.g. 1 tablet": "مثال: قرص واحد",
+  "Stop date": "تاريخ الإيقاف",
+  "Days (leave empty for every day)": "الأيام (اتركها فارغة لكل يوم)",
+  "e.g. take with food": "مثال: تناوله مع الطعام",
+  "Save schedule": "حفظ الجدول",
+  "Reminders never change your prescribed medication or dose. The alarm sounds while AMedix is open; when it is closed your reminder still appears in your notifications.":
+    "لا تغيّر التذكيرات دواءك الموصوف أو جرعته. يعمل التنبيه أثناء فتح AMedix؛ وعند إغلاقه يبقى تذكيرك ظاهراً في إشعاراتك.",
+  "Medication reminder": "تذكير بالدواء",
+  "Saving...": "جارٍ الحفظ...",
+  "Snooze 10 min": "تأجيل 10 دقائق",
+  "Skip this dose": "تخطي هذه الجرعة",
+  "This alarm runs while AMedix is open in your browser. A closed browser or an offline device cannot sound an alarm — your reminder stays saved and appears in your notifications.":
+    "يعمل هذا التنبيه أثناء فتح AMedix في متصفحك. المتصفح المغلق أو الجهاز غير المتصل لا يمكنه إصدار تنبيه — يبقى تذكيرك محفوظاً ويظهر في إشعاراتك.",
+  "Turn on browser alerts for reminders": "تشغيل تنبيهات المتصفح للتذكيرات",
+
+  // ─── Registration preview (administrator) ───
+  "Please select your date of birth.": "يرجى اختيار تاريخ ميلادك.",
+  "Verify your identity document to continue — the number on it must match the number you entered.":
+    "تحقق من وثيقة هويتك للمتابعة — يجب أن يطابق الرقم المطبوع عليها الرقم الذي أدخلته.",
+  "Restoring your saved registration...": "جارٍ استعادة تسجيلك المحفوظ...",
+  "Demo / test data — nothing is saved": "بيانات تجريبية — لا يتم حفظ أي شيء",
+  "No account, patient profile, CIN, verification email, document or clinical record is created.":
+    "لا يتم إنشاء حساب أو ملف مريض أو CIN أو بريد تحقق أو مستند أو سجل سريري.",
+  "Fill sample data": "تعبئة بيانات نموذجية",
+  "Reset": "إعادة تعيين",
+  "Welcome back. Your saved answers have been restored — continue where you stopped.":
+    "أهلاً بعودتك. تمت استعادة إجاباتك المحفوظة — تابع من حيث توقفت.",
+  "Before an account is created the patient photographs or uploads one identity document — national ID, passport, driver's licence, birth certificate or personal card — and the number printed on it must match the identification number entered above. Document verification is switched off in this preview: no document is uploaded, checked, reviewed or stored.":
+    "قبل إنشاء الحساب يقوم المريض بتصوير أو رفع وثيقة هوية واحدة — الرقم الوطني أو جواز السفر أو رخصة القيادة أو شهادة الميلاد أو البطاقة الشخصية — ويجب أن يطابق الرقم المطبوع عليها رقم الهوية المُدخل أعلاه. التحقق من الوثائق معطّل في هذه المعاينة: لا يتم رفع أي مستند أو فحصه أو مراجعته أو تخزينه.",
+  "Accepted: a PDF or a photo of the document, both sides where the document has two.":
+    "المقبول: ملف PDF أو صورة للوثيقة، والوجهان إذا كانت الوثيقة ذات وجهين.",
+  "Checked automatically: the number on the document against the number entered.":
+    "يُفحص تلقائياً: الرقم المطبوع في الوثيقة مقابل الرقم المُدخل.",
+  "Stored privately — readable only by the patient and AMedix administrators.":
+    "يُحفظ بشكل خاص — لا يقرأه إلا المريض ومسؤولو AMedix.",
+  "Your account is authorized by AMedix — no document upload is needed to create your account.":
+    "حسابك معتمد من AMedix — لا حاجة لرفع وثيقة لإنشاء حسابك.",
+  "Complete Preview": "إكمال المعاينة",
+  "Preview Complete — DEMO": "اكتملت المعاينة — تجريبي",
+  "This is the screen a patient sees when registration finishes. Nothing was created: no account, no patient profile, no CIN, no clinical records and no audit events.":
+    "هذه هي الشاشة التي يراها المريض عند إنهاء التسجيل. لم يتم إنشاء أي شيء: لا حساب ولا ملف مريض ولا CIN ولا سجلات سريرية ولا أحداث تدقيق.",
+  "Clinical Identification Number — not generated in preview": "رقم التعريف السريري — لا يُنشأ في المعاينة",
+  "Restart preview": "إعادة بدء المعاينة",
+  "Close preview": "إغلاق المعاينة",
+
+  // ─── Home tiles, activity and notifications ───
+  "View your records": "عرض سجلاتك",
+  "Book or manage": "احجز أو أدر",
+  "View your meds": "عرض أدويتك",
+  "Check your results": "تحقق من نتائجك",
+  "Radiology & Imaging": "الأشعة والتصوير",
+  "View your images": "عرض صورك",
+  "Access your reports": "الوصول إلى تقاريرك",
+  "New medical report": "تقرير طبي جديد",
+  "Available": "متاح",
+  "Open Medications": "فتح الأدوية",
+  "Read Message": "قراءة الرسالة",
+  "Open Documents": "فتح المستندات",
+  "Open Health Summary": "فتح الملخص الصحي",
+  "Open Home": "فتح الرئيسية",
+  "I received this vaccine": "تلقيت هذا التطعيم",
+  "The type of oral contraception you are using": "نوع حبوب منع الحمل التي تستخدمينها",
+  "Could not save the pregnancy information. Please try again.":
+    "تعذّر حفظ معلومات الحمل. يرجى المحاولة مرة أخرى.",
+  "Other – specify": "أخرى – يرجى التحديد",
+  "AMedix reminder": "تذكير AMedix",
+  "Open AMedix to view your scheduled reminder.": "افتح AMedix لعرض تذكيرك المجدول.",
+  "In stock": "متوفر",
+  "Not in stock": "غير متوفر",
 };
 
 // Dynamic notification messages are generated by backend functions with the

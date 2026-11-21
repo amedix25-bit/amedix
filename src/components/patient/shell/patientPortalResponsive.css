@@ -402,6 +402,8 @@
 .pp-logout svg { width: 15px; height: 15px; }
 
 /* Phone bottom navigation */
+/* Phone navigation bar — five icon-only tabs that always fit the screen
+   width of the phone in use, with no labels underneath. */
 .pp-bottom-nav {
   position: fixed;
   inset-inline: 0;
@@ -409,9 +411,11 @@
   z-index: 50;
   display: flex;
   align-items: stretch;
-  justify-content: space-around;
-  gap: 2px;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  justify-content: space-between;
+  gap: 0;
+  width: 100%;
+  max-width: 100vw;
+  padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
   border-top: 1px solid hsl(var(--border));
   background: hsl(var(--card) / 0.97);
   box-shadow: 0 -12px 30px -24px hsl(var(--primary) / 0.9);
@@ -421,28 +425,25 @@
 .pp-bottom-nav button {
   display: flex;
   flex: 1 1 0;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
   min-width: 0;
-  padding: 6px 2px;
+  max-width: 20%;
+  padding: 9px 0;
   border-radius: 12px;
-  font-size: 10.5px;
-  font-weight: 700;
-  line-height: 1.15;
   color: hsl(var(--muted-foreground));
 }
 
-.pp-bottom-nav button svg { width: 21px; height: 21px; stroke-width: 1.9; }
-.pp-bottom-nav button span { max-width: 100%; text-align: center; overflow-wrap: anywhere; }
+.pp-bottom-nav button svg {
+  width: clamp(19px, 6.2vw, 26px);
+  height: clamp(19px, 6.2vw, 26px);
+  stroke-width: 1.9;
+}
 
 .pp-bottom-nav button.is-active {
   color: hsl(var(--navy));
   background: hsl(var(--navy-light));
 }
-
-.pp-bottom-nav button span { font-size: 9.5px; line-height: 1.1; }
 
 /* Slide-up submenu opened from the phone navigation bar. */
 .pp-sheet {
