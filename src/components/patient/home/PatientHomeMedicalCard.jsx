@@ -62,9 +62,15 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
         </div>
 
         {qrSrc && (
-          <div className="shrink-0 rounded-xl bg-white p-1.5 shadow-lg">
+          <a
+            href={qrValue}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t("Open card verification")}
+            className="shrink-0 rounded-xl bg-white p-1.5 shadow-lg transition hover:bg-white/90"
+          >
             <img src={qrSrc} alt={t("Card verification QR code")} className="h-[74px] w-[74px] sm:h-20 sm:w-20" />
-          </div>
+          </a>
         )}
       </div>
 

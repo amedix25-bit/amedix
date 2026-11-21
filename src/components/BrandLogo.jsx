@@ -13,6 +13,8 @@ export default function BrandLogo({ className }) {
       src={AMEDIX_LOGO_URL}
       alt="AMedix logo"
       fittingType="fit"
+      quality={100}
+      loading="eager"
       className={cn("bg-transparent object-contain", className)}
     />
   );
