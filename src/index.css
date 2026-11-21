@@ -123,6 +123,8 @@
     --navy: 216 86% 23%;
     --navy-hover: 215 80% 31%;
     --navy-active: 216 86% 17%;
+    --navy-light: 214 100% 96%;
+    --navy-light-deep: 214 100% 92%;
     /* Portal identifying accents */
     --accent-patient: 210 54% 20%;
     --accent-doctor: 210 54% 20%;

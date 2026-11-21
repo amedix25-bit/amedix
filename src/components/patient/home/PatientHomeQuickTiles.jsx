@@ -28,20 +28,20 @@ export default function PatientHomeQuickTiles({ onNavigate }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
         {TILES.map(({ key, label, hint, Icon }) => (
           <button
             key={key}
             type="button"
             onClick={() => onNavigate?.(key)}
-            className="relative flex flex-col items-start gap-2.5 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 p-3 text-start shadow-sm transition hover:brightness-105 sm:p-3.5"
+            className="relative flex flex-col items-start gap-2 rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-2.5 text-start shadow-sm transition hover:brightness-110 sm:p-3"
           >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/25 text-white sm:h-10 sm:w-10">
-              <Icon className="h-[18px] w-[18px] sm:h-5 sm:w-5" aria-hidden="true" />
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 text-white sm:h-9 sm:w-9">
+              <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" aria-hidden="true" />
             </span>
-            <span className="text-xs font-bold leading-snug text-white sm:text-[13px]">{t(label)}</span>
-            <span className="pe-4 text-[10px] leading-snug text-white/85 sm:text-[11px]">{t(hint)}</span>
-            <ChevronRight className="absolute bottom-3 end-2.5 h-4 w-4 text-white/80" aria-hidden="true" />
+            <span className="text-[11px] font-bold leading-tight text-white sm:text-xs">{t(label)}</span>
+            <span className="pe-4 text-[9px] leading-tight text-white/80 sm:text-[10px]">{t(hint)}</span>
+            <ChevronRight className="absolute bottom-2.5 end-2 h-3.5 w-3.5 text-white/80" aria-hidden="true" />
           </button>
         ))}
       </div>
