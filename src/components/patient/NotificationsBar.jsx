@@ -104,7 +104,7 @@ export default function NotificationsBar({ patientId, onNavigate, compact = fals
         <button type="button" aria-label={`${t("Notifications")}${unread ? ` (${unread})` : ""}`} className={compact ? "pp-notification-trigger" : "relative inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"}>
           <Bell className="w-4 h-4" />
           {!compact && <span className="hidden sm:inline">{t("Notifications")}</span>}
-          {compact && unread > 0 && <span className="pp-notification-dot" aria-hidden="true" />}
+          {compact && unread > 0 && <span className="pp-notification-badge" aria-hidden="true">{unread > 9 ? "9+" : unread}</span>}
           {!compact && unread > 0 && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
               {unread}
