@@ -139,7 +139,7 @@
     /* #B91C1C */
     --doctor-danger-deep: 0 74% 42%;
     /* Patient Portal reference palette; isolated from professional portals. */
-    --pp-canvas: 207 100% 97%;
+    --pp-canvas: 213 43% 96%;
     --pp-ink: 232 68% 13%;
     --pp-muted: 219 23% 43%;
     --pp-accent: 199 100% 44%;
@@ -191,7 +191,7 @@
   }
 
   .dark {
-    --pp-canvas: 207 100% 97%;
+    --pp-canvas: 213 43% 96%;
     --pp-ink: 232 68% 13%;
     --pp-muted: 219 23% 43%;
     --pp-accent: 199 100% 44%;

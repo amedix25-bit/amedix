@@ -2,7 +2,6 @@ import React from "react";
 import { Heart, LogOut } from "lucide-react";
 import NotificationsBar from "@/components/patient/NotificationsBar";
 import PatientProfileMenu from "@/components/patient/shell/PatientProfileMenu";
-import PatientReferenceArt from "@/components/patient/overview/PatientReferenceArt";
 import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -17,7 +16,6 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
     ? hour < 12 ? "صباح الخير،" : "مساء الخير،"
     : hour < 12 ? t("Good morning,") : hour < 18 ? t("Good afternoon,") : t("Good evening,");
   return <header className="pp-topbar">
-    <PatientReferenceArt kind="headerWave" className="pp-header-wave" />
     <div className="pp-welcome">
       {!title && <div className="pp-greeting" lang={isArabic ? "ar" : "en"}>{greeting}</div>}
       <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{arabicName || firstName}</span> : <span dir="ltr">{firstName}</span>)}</h1>
