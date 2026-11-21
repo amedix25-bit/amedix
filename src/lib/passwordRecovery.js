@@ -9,16 +9,36 @@
 //    platform's shared per-IP auth allowance with rapid repeats;
 //  - nothing here ever stores a reset token or a password.
 
+// The one place to change the resend window. Kept short on purpose: the backend
+// rate limit (shared per IP across registration, OTP, login and reset) is the
+// real guard, and this cooldown only stops accidental double-taps.
 export const RESEND_COOLDOWN_SECONDS = 60;
 
 const EMAIL_KEY = "amedix_reset_email";
-const REQUESTED_AT_KEY = "amedix_reset_requested_at";
+const REQUESTS_KEY = "amedix_reset_requests";
 
 function safeSession() {
   try {
     return window.sessionStorage;
   } catch (error) {
     return null;
+  }
+}
+
+function normalise(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+// Requests are tracked per address, so asking for a second address is never
+// blocked by the first one's cooldown.
+function readRequests() {
+  const store = safeSession();
+  if (!store) return {};
+  try {
+    const parsed = JSON.parse(store.getItem(REQUESTS_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    return {};
   }
 }
 
@@ -39,16 +59,21 @@ export function forgetResetEmail() {
   safeSession()?.removeItem(EMAIL_KEY);
 }
 
-export function markRequested() {
+export function markRequested(email) {
   const store = safeSession();
-  if (store) store.setItem(REQUESTED_AT_KEY, String(Date.now()));
+  if (!store) return;
+  const requests = readRequests();
+  requests[normalise(email)] = Date.now();
+  store.setItem(REQUESTS_KEY, JSON.stringify(requests));
 }
 
-// Seconds left before another request may be sent from this browser.
-export function cooldownRemaining(now = Date.now()) {
-  const store = safeSession();
-  if (!store) return 0;
-  const at = Number(store.getItem(REQUESTED_AT_KEY) || 0);
+// Seconds left before another request for THIS address may be sent.
+//
+// Always derived from the stored timestamp rather than counted down in memory:
+// a background or mobile tab throttles timers, and a decremented counter would
+// then stay stuck and leave the resend button disabled long after the window.
+export function cooldownRemaining(email, now = Date.now()) {
+  const at = Number(readRequests()[normalise(email)] || 0);
   if (!at) return 0;
   const left = Math.ceil((at + RESEND_COOLDOWN_SECONDS * 1000 - now) / 1000);
   return left > 0 ? left : 0;
