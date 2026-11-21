@@ -7,7 +7,6 @@ import ChronicConditionPicker from "@/components/patient/ChronicConditionPicker"
 import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -150,27 +149,9 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
 
           <div className="flex flex-wrap sm:flex-col items-center gap-3 shrink-0 justify-center">
             <div className="flex flex-col items-center gap-1">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={t("Enlarge QR code")}
-                    className="rounded-xl bg-info/10 p-1.5 transition hover:bg-info/20"
-                  >
-                    <QrCodeCard cin={profile?.cin} size={116} />
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-sm">
-                  <DialogTitle className="sr-only">{t("AMedix Patient QR")}</DialogTitle>
-                  <div className="flex flex-col items-center gap-3 pt-2">
-                    <QrCodeCard cin={profile?.cin} size={260} />
-                    <p className="text-sm font-semibold text-primary tracking-wide">{cardNumber}</p>
-                    <p className="text-center text-xs text-muted-foreground">
-                      {t("Show this code at a hospital or laboratory to identify the patient.")}
-                    </p>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <div className="rounded-xl bg-info/10 p-1.5">
+                <QrCodeCard cin={profile?.cin} size={116} />
+              </div>
               <div className="text-center">
                 <p className="text-[10px] text-muted-foreground">{t("AMedix Patient QR")}</p>
                 <span className="inline-block rounded-full bg-info/10 px-2 py-0.5 text-[11px] font-semibold text-primary tracking-wide">

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import PatientMedicalIdCard from "@/components/patient/PatientMedicalIdCard";
+import PatientHomeMedicalCard from "@/components/patient/home/PatientHomeMedicalCard";
 import PatientHomeQuickTiles from "@/components/patient/home/PatientHomeQuickTiles";
 import PatientHomeHealthOverview from "@/components/patient/home/PatientHomeHealthOverview";
 import PatientHomeRecentActivity from "@/components/patient/home/PatientHomeRecentActivity";
@@ -10,20 +10,18 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export default function PatientOverview({ profile, loading, onNavigate, onViewActivity }) {
   const { t } = usePatientLanguage();
-  const [conditions, setConditions] = useState([]);
-  const [allergies, setAllergies] = useState([]);
+  const [card, setCard] = useState(null);
   const [appointment, setAppointment] = useState(null);
   const [activity, setActivity] = useState([]);
 
   const load = useCallback(async () => {
     if (!profile?.id) return;
     try {
-      const [conditionList, allergyList] = await Promise.all([
-        base44.entities.MedicalCondition.filter({ patient_id: profile.id }),
-        base44.entities.Allergy.filter({ patient_id: profile.id }),
-      ]);
-      setConditions(conditionList || []);
-      setAllergies(allergyList || []);
+      const page = await base44.entities.MedicalCard.filter(
+        { patient_user_id: profile.user_id },
+        { sort: "-created_date", limit: 1 },
+      );
+      setCard((page?.items || page || [])[0] || null);
     } catch (err) {
       console.error(err);
     }
@@ -58,13 +56,7 @@ export default function PatientOverview({ profile, loading, onNavigate, onViewAc
 
   return (
     <div className="space-y-4 pb-2">
-      <PatientMedicalIdCard
-        profile={profile}
-        conditions={conditions}
-        allergyText={allergies.map((a) => a.allergen).filter(Boolean).join(", ")}
-        emergencyContact={profile?.emergency_contacts?.[0]}
-        onConditionsChanged={load}
-      />
+      <PatientHomeMedicalCard profile={profile} card={card} onViewCard={() => onNavigate("medicalcard")} />
       <PatientHomeQuickTiles onNavigate={onNavigate} />
       <PatientHomeHealthOverview appointment={appointment} onNavigate={onNavigate} />
       <PatientHomeRecentActivity items={activity} onNavigate={onNavigate} onViewAll={onViewActivity} />
