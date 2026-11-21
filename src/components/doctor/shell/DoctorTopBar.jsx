@@ -4,6 +4,7 @@ import { Image } from "@/components/ui/image";
 import HospitalSwitcher from "@/components/doctor/overview/HospitalSwitcher";
 import DoctorNotificationsBell from "@/components/doctor/DoctorNotificationsBell";
 import DoctorProfilePicture from "@/components/doctor/DoctorProfilePicture";
+import { useAppLanguage } from "@/lib/appLanguage";
 
 // Doctor Portal top bar — the working hospital, patient search, and the
 // doctor's alerts, messages and profile. The hospital name opens the verified
@@ -21,6 +22,7 @@ export default function DoctorTopBar({
   onOpenReferrals,
   onOpenDestination,
 }) {
+  const { t } = useAppLanguage();
   const [query, setQuery] = useState("");
 
   const submitSearch = (e) => {
@@ -30,7 +32,7 @@ export default function DoctorTopBar({
   };
 
   return (
-    <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-card px-4 py-2 lg:px-6">
+    <div className="static z-30 flex items-center gap-3 border-b border-border bg-card px-4 py-2 lg:sticky lg:top-0 lg:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background">
           {hospitalSession?.hospital_photo_url ? (
@@ -47,7 +49,7 @@ export default function DoctorTopBar({
         <div className="hidden min-w-0 sm:block">
           <HospitalSwitcher current={hospitalSession} onSwitched={onSwitchHospital} />
           <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-            {hospitalSession?.hospital_location || "Connected Care. Better Health."}
+            {hospitalSession?.hospital_location || t("Connected Care. Better Health.")}
           </p>
         </div>
       </div>
@@ -58,8 +60,8 @@ export default function DoctorTopBar({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search patient (CIN)"
-            aria-label="Search patient by CIN"
+            placeholder={t("Search patient (CIN)")}
+            aria-label={t("Search patient by CIN")}
             className="h-10 w-full rounded-full border border-sky-200 bg-sky-50/70 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-doctor-blue/30"
           />
         </div>
@@ -69,7 +71,7 @@ export default function DoctorTopBar({
         <button
           type="button"
           onClick={() => onNavigate("search")}
-          aria-label="Search patient"
+          aria-label={t("Search patient")}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-accent md:hidden"
         >
           <Search className="h-4 w-4 text-muted-foreground" />
@@ -77,7 +79,7 @@ export default function DoctorTopBar({
         <button
           type="button"
           onClick={() => onNavigate("search")}
-          title="Scan patient QR code"
+          title={t("Scan patient QR code")}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-accent"
         >
           <QrCode className="h-4 w-4 text-muted-foreground" />
@@ -85,7 +87,7 @@ export default function DoctorTopBar({
         <button
           type="button"
           onClick={() => onNavigate("messages")}
-          title="Messages"
+          title={t("Messages")}
           className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-accent"
         >
           <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -114,7 +116,7 @@ export default function DoctorTopBar({
                 Dr. {(profile.full_name || "").replace(/^Dr\.?\s*/i, "").trim() || "Doctor"}
               </p>
               <p className="max-w-[170px] truncate text-[11px] text-muted-foreground">
-                {profile.specialization || "Specialty not set"}
+                {profile.specialization || t("Specialty not set")}
               </p>
             </div>
           </div>

@@ -53,7 +53,7 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-[100dvh] bg-background">
       <aside className={`hidden lg:flex ${sidebarWidth} flex-col border-r rtl:border-l rtl:border-r-0 ${navy ? "bg-doctor-rail border-primary/10" : "bg-sidebar border-border"}`}>
         {renderSidebarContent()}
       </aside>
@@ -86,7 +86,7 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
           </header>
         )}
 
-        <main className={`flex-1 overflow-y-auto ${navy ? "bg-doctor-surface" : ""} ${mobileNav ? "pb-24 lg:pb-0" : ""} ${mainClassName}`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden ${navy ? "bg-doctor-surface" : ""} ${mobileNav ? "pb-32 lg:pb-0" : ""} ${mainClassName}`}>
           {children}
         </main>
       </div>

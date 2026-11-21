@@ -55,7 +55,7 @@ const TAB_FOR_KEY = {
 };
 
 const TABS = [
-  { key: "overview", label: "Overview", Icon: LayoutDashboard },
+  { key: "overview", label: "Home", Icon: LayoutDashboard },
   { key: "patients", label: "Patients", Icon: Users, sheet: "patients", title: "Patients" },
   { key: "clinical", label: "Clinical", Icon: Stethoscope, sheet: "clinical", title: "Clinical" },
   { key: "communication", label: "Communication", Icon: MessageSquare },
@@ -155,10 +155,10 @@ export default function DoctorMobileNav({ activeKey, onNavigate, onLogout, user 
       </Sheet>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-primary/10 bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="fixed inset-x-2 bottom-[calc(10px+env(safe-area-inset-bottom))] z-40 rounded-2xl border border-primary/10 bg-card shadow-[0_14px_32px_-20px_rgba(23,50,77,0.65)] lg:hidden"
         aria-label={t("Doctor Portal")}
       >
-        <div className="flex items-stretch justify-between">
+        <div className="flex items-stretch justify-between px-1 py-1">
           {TABS.map(({ key, label, Icon, sheet: tabSheet }) => {
             const isActive = activeTab === key;
             return (
@@ -167,12 +167,14 @@ export default function DoctorMobileNav({ activeKey, onNavigate, onLogout, user 
                 type="button"
                 onClick={() => (tabSheet ? setSheet(tabSheet) : onNavigate({ key }))}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] font-semibold transition-colors ${
+                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 text-[10px] font-semibold leading-[1.15] transition-colors ${
                   isActive ? "text-doctor-blue" : "text-primary/60"
                 }`}
               >
-                <Icon className="h-5 w-5" aria-hidden="true" />
-                <span className="w-full truncate text-center">{t(label)}</span>
+                <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span className="flex min-h-[24px] w-full items-center justify-center break-words text-center">
+                  {t(label)}
+                </span>
               </button>
             );
           })}

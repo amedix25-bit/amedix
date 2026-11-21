@@ -37,7 +37,7 @@ import useMessagingNotifications from "@/hooks/useMessagingNotifications";
 // exists in the portal; grouped sections expand to the exact workflow the
 // doctor needs rather than repeating a link.
 const navItems = [
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "overview", label: "Home", icon: LayoutDashboard },
   { key: "search", label: "Find Patient", icon: Search },
   { key: "emergency", label: "Emergency Access", icon: ShieldAlert },
   { key: "notes", label: "Consult", icon: Link2 },
