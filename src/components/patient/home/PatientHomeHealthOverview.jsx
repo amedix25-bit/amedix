@@ -26,16 +26,16 @@ export default function PatientHomeHealthOverview({ appointment, onNavigate }) {
       <button
         type="button"
         onClick={() => onNavigate?.("appointments")}
-        className="flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-card px-3 py-3 text-start shadow-sm transition hover:shadow-md"
+        className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-primary via-info to-info/70 px-3 py-3 text-start shadow-sm transition hover:brightness-110"
       >
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
           <CalendarDays className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] text-patient-muted">{t("Upcoming Appointment")}</span>
-          <span className="block truncate text-xs font-semibold text-patient-ink">{summary}</span>
+          <span className="block text-[11px] text-white/80">{t("Upcoming Appointment")}</span>
+          <span className="block truncate text-xs font-semibold text-white">{summary}</span>
         </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-patient-muted" aria-hidden="true" />
+        <ChevronRight className="h-4 w-4 shrink-0 text-white" aria-hidden="true" />
       </button>
     </section>
   );

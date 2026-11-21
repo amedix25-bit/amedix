@@ -34,13 +34,14 @@ export default function PatientHomeQuickTiles({ onNavigate }) {
             key={key}
             type="button"
             onClick={() => onNavigate?.(key)}
-            className="flex flex-col items-start gap-2 rounded-2xl border border-border/70 bg-card p-2.5 text-start shadow-sm transition hover:border-info/40 hover:shadow-md sm:p-3"
+            className="relative flex flex-col items-start gap-2 rounded-2xl bg-gradient-to-br from-info to-primary p-2.5 text-start shadow-sm transition hover:brightness-110 sm:p-3"
           >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground sm:h-9 sm:w-9">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 text-white sm:h-9 sm:w-9">
               <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" aria-hidden="true" />
             </span>
-            <span className="text-[11px] font-bold leading-tight text-patient-ink sm:text-xs">{t(label)}</span>
-            <span className="text-[9px] leading-tight text-patient-muted sm:text-[10px]">{t(hint)}</span>
+            <span className="text-[11px] font-bold leading-tight text-white sm:text-xs">{t(label)}</span>
+            <span className="pe-4 text-[9px] leading-tight text-white/80 sm:text-[10px]">{t(hint)}</span>
+            <ChevronRight className="absolute bottom-2.5 end-2 h-3.5 w-3.5 text-white/80" aria-hidden="true" />
           </button>
         ))}
       </div>

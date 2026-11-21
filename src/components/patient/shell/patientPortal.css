@@ -1,6 +1,6 @@
 /* The AMedix home backdrop — the soft blue-and-white medical artwork, with a
    light wash on top so every label stays readable. */
-.pp-page { --pp-header-ink:#131e3d; --pp-header-blue-1:#005a8d; --pp-header-blue-2:#00335c; --pp-header-red:#d32f2f; position:relative; min-height:100dvh; padding:0; color:hsl(var(--pp-ink)); background:hsl(var(--card)); font-family:var(--font-patient); }
+.pp-page { --pp-header-ink:#131e3d; --pp-header-blue-1:#005a8d; --pp-header-blue-2:#00335c; --pp-header-red:#d32f2f; position:relative; min-height:100dvh; padding:0; color:hsl(var(--pp-ink)); background:linear-gradient(180deg,hsl(var(--pp-blue-top)) 0%,hsl(213 93% 92%) 55%,hsl(var(--pp-blue-bottom)) 100%); background-attachment:fixed; font-family:var(--font-patient); }
 .pp-frame { z-index:1; container-type:inline-size; position:relative; display:grid; grid-template-columns:16.67% minmax(0,1fr); width:100%; min-height:100dvh; margin:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
 .pp-frame h1,.pp-frame h2,.pp-frame h3 { font-family:var(--font-patient); }
 .pp-desktop-sidebar { min-width:0; align-self:stretch; }

@@ -44,7 +44,7 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
         quality={90}
         className="pointer-events-none absolute inset-0 h-full w-full"
       />
-      <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-card/50" />
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-card/40" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
