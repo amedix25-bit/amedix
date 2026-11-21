@@ -1,0 +1,504 @@
+/* ==========================================================================
+   AMedix Patient Portal — responsive shell
+   Loaded after patientPortal.css so these rules win. One unified portal:
+   spacious dashboard on laptops/desktops, balanced layout on tablets,
+   mobile-first layout with bottom navigation on phones.
+   Palette: deep navy, medical blue, light blue, clean white.
+   ========================================================================== */
+
+.pp-page {
+  --pp-shell-gap: 16px;
+  position: relative;
+  height: auto;
+  min-height: 100dvh;
+  padding: 0;
+  overflow: visible;
+  color: hsl(var(--foreground));
+  background: linear-gradient(180deg, hsl(var(--pp-blue-top)) 0%, hsl(var(--pp-blue-bottom)) 100%);
+  background-attachment: fixed;
+  font-family: var(--font-body);
+}
+
+.pp-frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  height: auto;
+  min-height: 100dvh;
+}
+
+.pp-desktop-sidebar { display: none; }
+
+.pp-main {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 100dvh;
+  padding: 0 var(--pp-shell-gap) 104px;
+  font-size: 15px;
+  overflow: visible;
+  overflow-wrap: break-word;
+}
+
+.pp-main-inner {
+  display: block;
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+/* Brand + navigation — shared by the sidebar and the mobile drawer. */
+.pp-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: auto;
+  padding: 4px 4px 14px;
+}
+
+.pp-brand-mark {
+  width: 46px;
+  height: 46px;
+  max-width: 46px;
+  max-height: 46px;
+  flex-shrink: 0;
+}
+
+.pp-brand strong {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+  color: hsl(var(--primary));
+}
+
+.pp-brand small {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: hsl(var(--muted-foreground));
+}
+
+.pp-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 24px);
+  min-height: 0;
+  padding: 14px 12px 18px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 22px;
+  background: hsl(var(--card));
+  box-shadow: 0 24px 48px -40px hsl(var(--primary) / 0.6);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.pp-sidebar-wave { display: none; }
+
+.pp-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+}
+
+.pp-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 0;
+  padding: 9px 10px;
+  margin: 0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: start;
+  color: hsl(var(--foreground));
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.pp-nav-item > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke-width: 1.9;
+  color: hsl(var(--pp-accent));
+}
+
+.pp-nav-item > span {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.pp-nav-item.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--info)) 100%);
+  box-shadow: 0 12px 22px -16px hsl(var(--primary) / 0.9);
+}
+
+.pp-nav-item.is-active > svg { color: #fff; }
+
+.pp-nav-item:not(.is-active):hover { background: hsl(var(--pp-blue-bottom) / 0.4); }
+
+.pp-nav-group-trigger > svg:last-child {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--muted-foreground));
+}
+
+.pp-nav-subitems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 6px;
+  padding-inline-start: 14px;
+}
+
+.pp-nav-nested { font-size: 12.5px; padding: 7px 10px; gap: 9px; }
+
+.pp-nav-nested > svg { width: 15px; height: 15px; }
+
+/* Phone header — the original AMedix logo, untouched, beside the menu button. */
+.pp-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  height: auto;
+  min-height: 0;
+  padding: 14px 0 6px;
+  border: 0;
+}
+
+.pp-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: hsl(var(--card));
+  color: hsl(var(--primary));
+  box-shadow: 0 10px 24px -18px hsl(var(--primary) / 0.8);
+}
+
+.pp-menu-button svg { width: 21px; height: 21px; }
+
+.pp-mobile-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.pp-mobile-logo { height: 40px; width: auto; max-width: 180px; }
+
+.pp-mobile-divider {
+  width: 1px;
+  height: 22px;
+  flex-shrink: 0;
+  background: hsl(var(--border));
+}
+
+.pp-mobile-brand > span:last-child {
+  font-size: 12px;
+  font-weight: 700;
+  color: hsl(var(--primary));
+  white-space: nowrap;
+}
+
+/* Welcome header */
+.pp-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 0;
+  padding: 14px 0 16px;
+}
+
+.pp-welcome { flex: 1 1 240px; min-width: 0; }
+
+.pp-welcome h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.7px;
+  color: hsl(var(--pp-ink));
+}
+
+.pp-welcome-ar { font-size: clamp(20px, 3.4vw, 30px); letter-spacing: 0; }
+
+.pp-greeting {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: hsl(var(--pp-ink) / 0.85);
+}
+
+.pp-welcome p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: hsl(var(--pp-ink) / 0.85);
+}
+
+.pp-welcome p svg { width: 15px; height: 15px; stroke-width: 2.1; color: hsl(var(--muted-foreground)); }
+
+.pp-header-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 0;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.pp-language {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: hsl(var(--card));
+  box-shadow: 0 10px 24px -20px hsl(var(--primary) / 0.8);
+}
+
+.pp-language button {
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: hsl(var(--primary));
+}
+
+.pp-language button[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(160deg, hsl(var(--info)), hsl(var(--primary)));
+  box-shadow: 0 6px 14px -10px hsl(var(--primary) / 0.9);
+}
+
+.pp-notification-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: hsl(var(--card));
+  box-shadow: 0 10px 24px -20px hsl(var(--primary) / 0.8);
+}
+
+.pp-notification-trigger svg { width: 19px; height: 19px; stroke-width: 1.9; color: hsl(var(--primary)); }
+
+.pp-notification-badge {
+  top: -2px;
+  inset-inline-end: -2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1.5px solid hsl(var(--card));
+  border-radius: 999px;
+  background: hsl(var(--critical));
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pp-profile-select {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: hsl(var(--card));
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--primary));
+  box-shadow: 0 10px 24px -20px hsl(var(--primary) / 0.8);
+}
+
+.pp-profile-select svg:first-child { width: 18px; height: 18px; }
+.pp-profile-select svg:last-child { width: 12px; height: 12px; }
+.pp-profile-select span { max-width: 130px; }
+
+.pp-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 15px;
+  border-radius: 999px;
+  background: hsl(var(--critical));
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.1;
+  box-shadow: 0 12px 22px -18px hsl(var(--critical) / 0.9);
+}
+
+.pp-logout svg { width: 15px; height: 15px; }
+
+/* Phone bottom navigation */
+.pp-bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.97);
+  box-shadow: 0 -12px 30px -24px hsl(var(--primary) / 0.9);
+  backdrop-filter: blur(12px);
+}
+
+.pp-bottom-nav button {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px 2px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: hsl(var(--muted-foreground));
+}
+
+.pp-bottom-nav button svg { width: 21px; height: 21px; stroke-width: 1.9; }
+.pp-bottom-nav button span { max-width: 100%; text-align: center; overflow-wrap: anywhere; }
+
+.pp-bottom-nav button.is-active {
+  color: hsl(var(--info));
+  background: hsl(var(--pp-blue-bottom) / 0.5);
+}
+
+/* Slide-in menu */
+.pp-drawer { position: fixed; inset: 0; z-index: 70; display: flex; }
+
+.pp-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--primary) / 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.pp-drawer > aside {
+  position: relative;
+  z-index: 1;
+  width: min(86vw, 320px);
+  height: 100dvh;
+  padding: 10px;
+  background: hsl(var(--pp-blue-top));
+  overflow-y: auto;
+}
+
+.pp-drawer .pp-sidebar {
+  height: auto;
+  min-height: calc(100dvh - 20px);
+  border-radius: 20px;
+}
+
+.pp-drawer .pp-brand-mark { width: 52px; height: 52px; max-width: 52px; max-height: 52px; }
+.pp-drawer .pp-brand strong { font-size: 19px; }
+.pp-drawer .pp-brand small { font-size: 12px; }
+.pp-drawer .pp-nav-item { padding: 11px 12px; font-size: 14px; }
+.pp-drawer .pp-nav-item > svg { width: 20px; height: 20px; }
+.pp-drawer .pp-nav-nested { font-size: 13px; padding: 9px 12px; }
+.pp-drawer .pp-nav-nested > svg { width: 17px; height: 17px; }
+
+.pp-drawer-close {
+  position: absolute;
+  z-index: 2;
+  top: 18px;
+  inset-inline-end: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: hsl(var(--card));
+  color: hsl(var(--primary));
+  box-shadow: 0 10px 22px -16px hsl(var(--primary) / 0.8);
+}
+
+.pp-drawer-close svg { width: 18px; height: 18px; }
+
+@media (max-width: 767px) {
+  .pp-header-art { height: 180px; }
+}
+
+@media (max-width: 520px) {
+  .pp-logout { padding: 10px; }
+  .pp-logout span { display: none; }
+  .pp-profile-select { padding: 9px 11px; }
+  .pp-profile-select span { max-width: 84px; }
+}
+
+/* Tablets — balanced, compact layout with the navigation rail beside the content. */
+@media (min-width: 768px) {
+  .pp-desktop-sidebar {
+    display: block;
+    flex: 0 0 218px;
+    width: 218px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    padding: 12px 0 12px 12px;
+  }
+
+  .pp-main { padding: 0 20px 40px; font-size: 15px; }
+  .pp-mobile-header { display: none; }
+  .pp-bottom-nav { display: none; }
+  .pp-brand-mark { width: 42px; height: 42px; max-width: 42px; max-height: 42px; }
+  .pp-brand strong { font-size: 16px; }
+  .pp-nav-item { font-size: 12.5px; padding: 8px 9px; gap: 9px; }
+  .pp-nav-item > svg { width: 17px; height: 17px; }
+  .pp-nav-nested { font-size: 12px; padding: 7px 9px; }
+}
+
+/* Laptops and desktops — spacious dashboard. */
+@media (min-width: 1024px) {
+  .pp-desktop-sidebar { flex-basis: 268px; width: 268px; padding: 16px 0 16px 16px; }
+  .pp-main { padding: 0 28px 48px; font-size: 16px; }
+  .pp-brand-mark { width: 48px; height: 48px; max-width: 48px; max-height: 48px; }
+  .pp-brand strong { font-size: 18px; }
+  .pp-brand small { font-size: 11.5px; }
+  .pp-nav-item { font-size: 13.5px; padding: 9px 11px; }
+  .pp-nav-item > svg { width: 18px; height: 18px; }
+  .pp-topbar { padding: 18px 0 20px; }
+  .pp-welcome p { font-size: 14px; }
+  .pp-profile-select span { max-width: 160px; }
+}
+
+@media (min-width: 1440px) {
+  .pp-desktop-sidebar { flex-basis: 292px; width: 292px; padding: 20px 0 20px 20px; }
+  .pp-main { padding: 0 36px 56px; }
+  .pp-main-inner { max-width: 1240px; }
+}

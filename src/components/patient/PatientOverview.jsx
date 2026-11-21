@@ -44,10 +44,12 @@ export default function PatientOverview({ profile, loading, onNavigate }) {
   }
 
   return (
-    <div className="space-y-5 pb-4 sm:space-y-6">
+    <div className="space-y-5 pb-4 sm:space-y-6 lg:grid lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
       <PatientHomeMedicalCard profile={profile} card={card} onViewCard={() => onNavigate("medicalcard")} />
-      <PatientHomeQuickTiles onNavigate={onNavigate} />
-      <PatientHomeHealthOverview appointment={appointment} onNavigate={onNavigate} />
+      <div className="space-y-5 sm:space-y-6">
+        <PatientHomeQuickTiles onNavigate={onNavigate} />
+        <PatientHomeHealthOverview appointment={appointment} onNavigate={onNavigate} />
+      </div>
     </div>
   );
 }

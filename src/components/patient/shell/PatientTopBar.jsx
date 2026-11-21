@@ -11,6 +11,9 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
   const logout = () => { clearDoctorHospitalSession(); base44.auth.logout(window.location.origin); };
   const firstName = profile?.first_name || profile?.full_name?.split(" ")[0] || "";
   const arabicName = profile?.first_name_ar || profile?.full_name_ar?.split(" ")[0] || "";
+  // The patient's full registered name stays large and readable on every screen.
+  const fullName = profile?.full_name || firstName;
+  const fullNameAr = profile?.full_name_ar || arabicName;
   const hour = new Date().getHours();
   const greeting = isArabic
     ? hour < 12 ? "صباح الخير،" : "مساء الخير،"
@@ -18,7 +21,7 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
   return <header className="pp-topbar">
     <div className="pp-welcome">
       {!title && <div className="pp-greeting" lang={isArabic ? "ar" : "en"}>{greeting}</div>}
-      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{arabicName || firstName}</span> : <span dir="ltr">{firstName}</span>)}
+      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{fullNameAr}</span> : <span dir="ltr">{fullName}</span>)}
         {!title && <span aria-hidden="true">👋</span>}
       </h1>
       <p><Heart />{t("Your health, connected and organized.")}</p>
