@@ -55,6 +55,17 @@ export default function Login({ portal = null, embedded = false, onRegister = nu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rejectedParam]);
 
+  // Arriving from a completed password reset: say plainly that the new
+  // password is active, so a failure here reads as a failure, not as silence.
+  const [resetNotice, setResetNotice] = useState("");
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "1") {
+      setResetNotice(t("Your password was changed. Sign in with your new password."));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   const reject = (role) => logoutWithRejection(role, "/login", selectedPortal ? { portal: selectedPortal } : {});
 
   // After authentication the backend decides which portals the account is
@@ -174,6 +185,12 @@ export default function Login({ portal = null, embedded = false, onRegister = nu
           <span className="bg-card px-3 text-muted-foreground">{t("or")}</span>
         </div>
       </div>
+
+      {resetNotice && !error && (
+        <div className="mb-4 p-3 rounded-lg bg-success/10 text-sm text-foreground">
+          {resetNotice}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">

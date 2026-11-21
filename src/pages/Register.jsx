@@ -12,6 +12,7 @@ import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { useAppLanguage } from "@/lib/appLanguage";
 import { logRegistrationStep, lookupRegistrationState } from "@/lib/registrationRecovery";
+import { passwordPolicyError } from "@/lib/passwordPolicy";
 
 // A resend is held back on the client too: several codes in flight at once is
 // exactly what makes a valid code look wrong.
@@ -43,8 +44,9 @@ export default function Register({ embedded = false, onLogin = null }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) {
-      setError(t("Passwords do not match"));
+    const policyError = passwordPolicyError(password, confirmPassword);
+    if (policyError) {
+      setError(t(policyError));
       return;
     }
     setLoading(true);
