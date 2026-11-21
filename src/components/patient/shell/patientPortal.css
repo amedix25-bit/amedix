@@ -1,6 +1,6 @@
 /* The AMedix home backdrop — the soft blue-and-white medical artwork, with a
    light wash on top so every label stays readable. */
-.pp-page { --pp-header-ink:#131e3d; --pp-header-blue-1:#005a8d; --pp-header-blue-2:#00335c; --pp-header-red:#d32f2f; position:relative; min-height:100dvh; padding:0; color:hsl(var(--pp-ink)); background:linear-gradient(180deg,hsl(var(--pp-blue-top)) 0%,hsl(213 93% 92%) 55%,hsl(var(--pp-blue-bottom)) 100%); background-attachment:fixed; font-family:var(--font-patient); }
+.pp-page { --pp-header-ink:#131e3d; --pp-header-blue-1:#005a8d; --pp-header-blue-2:#00335c; --pp-header-red:#d32f2f; position:relative; min-height:100dvh; padding:0; color:hsl(var(--pp-ink)); background:linear-gradient(180deg,hsl(205 100% 97%) 0%,hsl(199 100% 93%) 50%,hsl(196 100% 88%) 100%); background-attachment:fixed; font-family:var(--font-patient); }
 .pp-frame { z-index:1; container-type:inline-size; position:relative; display:grid; grid-template-columns:16.67% minmax(0,1fr); width:100%; min-height:100dvh; margin:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
 .pp-frame h1,.pp-frame h2,.pp-frame h3 { font-family:var(--font-patient); }
 .pp-desktop-sidebar { min-width:0; align-self:stretch; }
@@ -178,7 +178,6 @@
  .pp-mobile-brand { display:flex; gap:6px; align-items:baseline; min-width:0; font-size:13px; }
  .pp-mobile-brand strong { font-size:13px; font-weight:800; letter-spacing:-.2px; }
  .pp-mobile-brand>span { font-size:10px; font-weight:500; color:hsl(var(--pp-muted)); }
- .pp-mobile-header img { display:none !important; }
  .pp-topbar { min-height:88px; padding:14px 0; gap:10px; align-items:center; }
  .pp-welcome h1 { font-size:22px; gap:4px; letter-spacing:-.5px; }
  .pp-welcome-ar { font-size:18px; }
@@ -345,3 +344,13 @@
 @media(min-width:1024px) {
  .pp-page-single .pp-main { height:auto; min-height:0; overflow:visible; }
 }
+
+/* Header branding — the original AMedix mark, a separator, then the portal name. */
+.pp-mobile-brand { align-items:center; gap:8px; }
+.pp-mobile-logo { height:26px; width:auto; max-width:120px; }
+.pp-mobile-divider { width:1px; height:18px; flex-shrink:0; background:hsl(var(--pp-edge)); }
+.pp-mobile-brand>span:last-child { font-size:11px; font-weight:600; color:hsl(var(--pp-muted)); white-space:nowrap; }
+
+/* Decorative medical cross and ECG trace behind the patient header. */
+.pp-header-art { position:absolute; top:0; inset-inline-end:0; width:min(72%,420px); height:auto; color:hsl(var(--pp-accent)); pointer-events:none; z-index:0; }
+.pp-mobile-header,.pp-topbar { z-index:1; }

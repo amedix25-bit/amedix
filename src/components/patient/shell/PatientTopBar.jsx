@@ -18,7 +18,9 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
   return <header className="pp-topbar">
     <div className="pp-welcome">
       {!title && <div className="pp-greeting" lang={isArabic ? "ar" : "en"}>{greeting}</div>}
-      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{arabicName || firstName}</span> : <span dir="ltr">{firstName}</span>)}</h1>
+      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{arabicName || firstName}</span> : <span dir="ltr">{firstName}</span>)}
+        {!title && <span aria-hidden="true">👋</span>}
+      </h1>
       <p><Heart />{t("Your health, connected and organized.")}</p>
     </div>
     <div className="pp-header-controls">
