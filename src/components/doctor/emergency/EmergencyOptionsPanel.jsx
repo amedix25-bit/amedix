@@ -18,7 +18,7 @@ export default function EmergencyOptionsPanel({ scan, hospitalSession, onEmergen
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
       <div className="flex items-center gap-2">
         <IdCard className="w-5 h-5 text-primary" />
-        <p className="font-semibold">Patient identified by QR</p>
+        <p className="font-semibold">Patient identified</p>
       </div>
 
       <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-1">

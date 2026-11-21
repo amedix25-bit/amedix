@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Loader2, QrCode, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, QrCode, ShieldAlert, Siren } from "lucide-react";
 import EmergencyScanPanel from "./EmergencyScanPanel";
 import EmergencyOptionsPanel from "./EmergencyOptionsPanel";
 import EmergencyJustificationForm from "./EmergencyJustificationForm";
 import EmergencyRecordView from "./EmergencyRecordView";
+import EmergencyIdentifyPatient from "./EmergencyIdentifyPatient";
 import { scannedCin, scannedQrKind } from "@/lib/emergencyQr";
 
 const errorText = (err, fallback) =>
@@ -90,6 +91,21 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
     setScan(data);
     setScanner(null);
     setStage("options");
+  };
+
+  // Hospital pathway: the authorization is already granted, so this step only
+  // establishes WHICH patient it belongs to — the patient's medical card QR or
+  // their CIN. Both resolve to the same one patient record on the server.
+  const identifyPatient = async ({ token = "", cin = "" }) => {
+    setBusy(true);
+    setError("");
+    try {
+      await scanPatient(token, cin);
+    } catch (err) {
+      setError(errorText(err, "The patient could not be identified. Check the CIN or scan the card again."));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const scanHospital = async (raw) => {
@@ -221,14 +237,26 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
                   out
                 </p>
                 <p className="text-xs text-emerald-800 mt-1">
-                  You may now initiate patient-specific emergency access. Each patient still needs their own Emergency QR
-                  scan and justification.
+                  Select Gain Emergency Access to identify the patient — by scanning their medical card or entering their
+                  CIN — then record the emergency reason.
                 </p>
               </div>
             </div>
             <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-800 font-mono text-[10px]">
               {hospitalSession.session_ref}
             </Badge>
+            <Button
+              className="w-full bg-red-600 hover:bg-red-700"
+              size="lg"
+              disabled={busy}
+              onClick={() => {
+                setError("");
+                setScan(null);
+                setStage("identify");
+              }}
+            >
+              <Siren className="w-5 h-5" /> Gain Emergency Access
+            </Button>
           </div>
         )}
 
@@ -277,6 +305,19 @@ export default function EmergencyAccessSection({ onOpenPatientSearch, doctorProf
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin" /> Checking your authorization…
         </div>
+      )}
+
+      {stage === "identify" && (
+        <EmergencyIdentifyPatient
+          hospitalSession={hospitalSession}
+          onIdentify={identifyPatient}
+          onBack={() => {
+            setError("");
+            setStage("scan");
+          }}
+          busy={busy}
+          error={error}
+        />
       )}
 
       {stage === "options" && (
