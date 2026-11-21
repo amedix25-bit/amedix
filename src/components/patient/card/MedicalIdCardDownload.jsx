@@ -7,7 +7,7 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 // Download the official AMedix medical card as a PDF from the card on the
 // patient's home screen. The card record is fetched when the patient asks for
 // it, so nothing is issued merely by opening the page.
-export default function MedicalIdCardDownload() {
+export default function MedicalIdCardDownload({ variant = "icon" }) {
   const { t, lang } = usePatientLanguage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -31,24 +31,33 @@ export default function MedicalIdCardDownload() {
     }
   };
 
+  // `button` renders the same one-tap download as a labelled action; `icon` is
+  // the compact control that sits beside the card itself.
+  const labelled = variant === "button";
+
   return (
-    <div className="shrink-0">
+    <div className={labelled ? "w-full" : "shrink-0"}>
       <button
         type="button"
         onClick={download}
         disabled={busy}
         aria-label={t("Download card (PDF)")}
         title={t("Download card (PDF)")}
-        className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-primary/50 bg-white text-primary transition hover:bg-primary/5 disabled:opacity-70"
+        className={
+          labelled
+            ? "inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-70"
+            : "inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-primary/50 bg-white text-primary transition hover:bg-primary/5 disabled:opacity-70"
+        }
       >
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         ) : (
           <Download className="h-4 w-4" aria-hidden="true" />
         )}
+        {labelled && <span>{t("Download Medical Card (PDF)")}</span>}
       </button>
       {error && (
-        <p className="mt-1 flex w-[120px] items-start gap-1 text-[10px] leading-tight text-white/90">
+        <p className={`mt-1 flex items-start gap-1 text-[10px] leading-tight ${labelled ? "text-destructive" : "w-[120px] text-white/90"}`}>
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </p>

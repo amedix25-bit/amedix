@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, CreditCard, Loader2, RefreshCw, ShieldOff } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import PatientMedicalIdCard from "@/components/patient/PatientMedicalIdCard";
-import MedicalCardActions from "@/components/patient/card/MedicalCardActions";
+import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
 
 function day(value) {
   if (!value) return "—";
@@ -14,11 +14,10 @@ function day(value) {
 }
 
 export default function PatientMedicalCard({ profile }) {
-  const { t, lang } = usePatientLanguage();
+  const { t } = usePatientLanguage();
   const [card, setCard] = useState(null);
   const [conditions, setConditions] = useState([]);
   const [allergies, setAllergies] = useState([]);
-  const [walletConfigured, setWalletConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
@@ -29,7 +28,6 @@ export default function PatientMedicalCard({ profile }) {
     const data = response.data || {};
     if (data.error) throw new Error(data.error);
     setCard(data.card);
-    setWalletConfigured(Boolean(data.walletConfigured));
   }, []);
 
   const loadCardDetails = useCallback(async () => {
@@ -120,13 +118,7 @@ export default function PatientMedicalCard({ profile }) {
             onConditionsChanged={loadCardDetails}
           />
 
-          <MedicalCardActions
-            card={card}
-            verifyUrl={card.verify_url}
-            walletConfigured={walletConfigured}
-            lang={lang}
-            t={t}
-          />
+          <MedicalIdCardDownload variant="button" />
 
           {error && (
             <p className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
