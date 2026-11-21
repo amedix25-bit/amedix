@@ -17,18 +17,18 @@ export default function PatientHomeHealthOverview({ appointment, onNavigate }) {
     : t("Not available");
 
   return (
-    <section className="rounded-2xl bg-patient-canvas p-3 sm:p-4">
-      <h2 className="flex items-center gap-2 font-heading text-sm font-bold text-patient-ink sm:text-base">
-        <Heart className="h-4 w-4 text-primary" aria-hidden="true" />
+    <section>
+      <h2 className="mb-2.5 flex items-center gap-2 font-heading text-base font-bold text-patient-ink sm:text-lg">
+        <Heart className="h-4 w-4 text-info" aria-hidden="true" />
         {t("Your Health Overview")}
       </h2>
 
       <button
         type="button"
         onClick={() => onNavigate?.("appointments")}
-        className="mt-2.5 flex w-full items-center gap-3 rounded-xl bg-card px-3 py-2.5 text-start shadow-sm transition hover:shadow-md"
+        className="flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-card px-3 py-3 text-start shadow-sm transition hover:shadow-md"
       >
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-primary">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
           <CalendarDays className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">

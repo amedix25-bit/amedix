@@ -5,22 +5,14 @@ import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownlo
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-// The card at the top of the patient's home screen. Identification only —
-// name, patient ID, card status and the verification code. Never a diagnosis,
-// an allergy or any other clinical value.
+// The compact medical card summary on the patient's home screen. It shows
+// identification only — name, patient ID, card status and the verification
+// code — and opens the full card when the patient taps it.
 const PILL = {
-  active: "bg-emerald-400 text-emerald-950",
-  expired: "bg-white/85 text-slate-700",
-  revoked: "bg-red-400 text-red-950",
+  active: "bg-emerald-100 text-emerald-700",
+  expired: "bg-amber-100 text-amber-800",
+  revoked: "bg-red-100 text-red-700",
 };
-
-const PLUSES = [
-  "left-[42%] top-4 text-[15px]",
-  "left-[63%] top-2 text-[11px]",
-  "left-[55%] top-16 text-[13px]",
-  "left-[30%] top-24 text-[10px]",
-  "left-[72%] top-20 text-[10px]",
-];
 
 export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
   const { t, lang } = usePatientLanguage();
@@ -38,27 +30,19 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
     : null;
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-[#1c3e5e] to-[#24506f] p-4 text-primary-foreground shadow-[0_16px_36px_-20px_rgba(23,50,77,0.85)] sm:p-5">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 select-none font-bold text-white/10">
-        {PLUSES.map((position) => (
-          <span key={position} className={`absolute ${position}`}>+</span>
-        ))}
-        <span className="absolute -right-14 -top-16 h-44 w-44 rounded-full bg-white/5" />
-        <span className="absolute -bottom-20 -left-12 h-40 w-40 rounded-full bg-sky-400/10" />
-      </div>
-
-      <div className="relative flex items-start justify-between gap-3">
+    <section className="rounded-2xl border border-white/70 bg-white/65 p-3.5 shadow-[0_10px_30px_-20px_rgba(23,50,77,0.55)] backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <BrandLogo className="h-9 w-9 shrink-0 object-contain" />
-            <span className="font-heading text-base font-bold leading-none">AMedix</span>
+            <BrandLogo className="h-8 w-8 shrink-0 object-contain" />
+            <span className="font-heading text-sm font-bold leading-none text-patient-ink">AMedix</span>
           </div>
-          <p className="mt-3 break-words text-[15px] font-semibold leading-tight sm:text-base">{name}</p>
-          <p className="mt-1 text-[11px] text-white/70">
-            {t("Patient ID")}: <span className="font-mono tracking-wide text-white/90">{profile?.cin || "—"}</span>
+          <p className="mt-2.5 break-words text-sm font-bold leading-tight text-patient-ink">{name}</p>
+          <p className="mt-0.5 text-[11px] text-patient-muted">
+            {t("Patient ID")}: <span className="font-mono tracking-wide">{profile?.cin || "—"}</span>
           </p>
           {status && (
-            <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${PILL[status] || PILL.expired}`}>
+            <span className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${PILL[status] || PILL.expired}`}>
               {status === "active" && <Check className="h-3 w-3" aria-hidden="true" />}
               {t(status)}
             </span>
@@ -71,13 +55,13 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
               <button
                 type="button"
                 aria-label={t("Open card QR code")}
-                className="shrink-0 rounded-xl bg-white p-1.5 shadow-lg transition hover:bg-white/90"
+                className="shrink-0 rounded-lg bg-white p-1.5 shadow-sm ring-1 ring-border/60 transition hover:bg-white"
               >
-                <img src={qrSrc} alt={t("Card verification QR code")} className="h-[74px] w-[74px] sm:h-20 sm:w-20" />
+                <img src={qrSrc} alt={t("Card verification QR code")} className="h-[68px] w-[68px]" />
               </button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
-              <DialogTitle className="text-center font-heading text-base font-bold text-primary">
+              <DialogTitle className="text-center font-heading text-base font-bold text-patient-ink">
                 {t("AMedix Medical Card")}
               </DialogTitle>
               <DialogDescription className="sr-only">
@@ -87,22 +71,22 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
                 <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-border">
                   <img src={largeQrSrc} alt={t("Card verification QR code")} className="h-56 w-56" />
                 </div>
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs text-patient-muted">
                   {t("Scan this code with any phone camera to verify the card.")}
                 </p>
                 <dl className="w-full space-y-2 rounded-xl border border-border bg-muted/40 p-3 text-start">
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("Patient")}</dt>
-                    <dd className="break-words text-sm font-semibold text-primary">{name}</dd>
+                    <dt className="text-[10px] uppercase tracking-wide text-patient-muted">{t("Patient")}</dt>
+                    <dd className="break-words text-sm font-semibold text-patient-ink">{name}</dd>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("Patient ID")}</dt>
-                      <dd className="break-all font-mono text-sm font-medium text-primary">{profile?.cin || "—"}</dd>
+                      <dt className="text-[10px] uppercase tracking-wide text-patient-muted">{t("Patient ID")}</dt>
+                      <dd className="break-all font-mono text-sm font-medium text-patient-ink">{profile?.cin || "—"}</dd>
                     </div>
                     <div>
-                      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("Card number")}</dt>
-                      <dd className="break-all font-mono text-sm font-medium text-primary">{card?.card_number || "—"}</dd>
+                      <dt className="text-[10px] uppercase tracking-wide text-patient-muted">{t("Card number")}</dt>
+                      <dd className="break-all font-mono text-sm font-medium text-patient-ink">{card?.card_number || "—"}</dd>
                     </div>
                   </div>
                 </dl>
@@ -112,11 +96,11 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
         )}
       </div>
 
-      <div className="relative mt-4 flex items-start gap-2">
+      <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
           onClick={onViewCard}
-          className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-white/90"
+          className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-white px-3.5 py-2.5 text-xs font-semibold text-patient-ink shadow-sm ring-1 ring-border/60 transition hover:bg-white"
         >
           {t("View Medical Card")}
           <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />

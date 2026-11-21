@@ -1,5 +1,5 @@
 import React from "react";
-import { LogOut } from "lucide-react";
+import { Heart, LogOut } from "lucide-react";
 import NotificationsBar from "@/components/patient/NotificationsBar";
 import PatientProfileMenu from "@/components/patient/shell/PatientProfileMenu";
 import { base44 } from "@/api/base44Client";
@@ -19,7 +19,7 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
     <div className="pp-welcome">
       {!title && <div className="pp-greeting" lang={isArabic ? "ar" : "en"}>{greeting}</div>}
       <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{arabicName || firstName}</span> : <span dir="ltr">{firstName}</span>)}</h1>
-      <p>{t("Your health, connected and organized.")}</p>
+      <p><Heart />{t("Your health, connected and organized.")}</p>
     </div>
     <div className="pp-header-controls">
       <div className="pp-language" role="group" aria-label={t("Choose Your Language")}>
