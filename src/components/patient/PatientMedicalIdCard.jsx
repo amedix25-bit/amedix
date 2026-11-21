@@ -6,6 +6,7 @@ import PatientCardPhoto from "@/components/patient/PatientCardPhoto";
 import ChronicConditionPicker from "@/components/patient/ChronicConditionPicker";
 import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -191,6 +192,10 @@ export default function PatientMedicalIdCard({ profile, conditions = [], allergy
             value={emergencyContact?.phone}
             sub={emergencyContact?.relationship ? `(${emergencyContact.relationship})` : emergencyContact?.name}
           />
+        </div>
+
+        <div className="mt-3 flex justify-end">
+          <MedicalIdCardDownload />
         </div>
       </div>
 
