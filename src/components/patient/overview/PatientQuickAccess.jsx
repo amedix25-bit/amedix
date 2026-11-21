@@ -5,7 +5,7 @@ import { usePatientLanguage } from "@/lib/patientLanguage";
 export default function PatientQuickAccess({ onNavigate }) {
   const { t } = usePatientLanguage();
   const items = [
-    { key: "appointments", label: "Book Appointment", icon: CalendarDays, tone: "pp-tone-blue" },
+    { key: "appointments", label: "View Appointment", icon: CalendarDays, tone: "pp-tone-blue" },
     { key: "mylabresults", label: "View Lab Results", icon: FlaskConical, tone: "pp-tone-violet" },
     { key: "imaging", label: "View Imaging", icon: ImageIcon, tone: "pp-tone-mint" },
     { key: "medications", label: "Manage Medications", icon: Pill, tone: "pp-tone-coral" },

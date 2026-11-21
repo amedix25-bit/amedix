@@ -1676,6 +1676,7 @@ const AR = {
   "Scan this code with any phone camera to verify the card.":
     "امسح هذا الرمز بأي كاميرا هاتف للتحقق من البطاقة.",
   "View Medical Card": "عرض البطاقة الطبية",
+  "View Appointment": "عرض الموعد",
   "active": "نشطة",
   "expired": "منتهية",
   "revoked": "ملغاة",

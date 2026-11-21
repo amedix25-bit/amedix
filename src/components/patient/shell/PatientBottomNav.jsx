@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Home, FolderOpen, Building2, MessageSquareMore, Settings, CalendarDays, MessageSquare, Pill, FlaskConical, ScanLine, Heart, Syringe, Stethoscope, Files, ShieldCheck, CreditCard } from "lucide-react";
+import { Home, FolderOpen, Building2, MessageSquareMore, Settings, CalendarDays, MessageSquare, Pill, FlaskConical, ScanLine, Heart, Syringe, Stethoscope, Files, ShieldCheck, CreditCard, User } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { usePatientLanguage } from "@/lib/patientLanguage";
@@ -26,6 +26,7 @@ const COMMUNICATION = [
 ];
 
 const SETTINGS = [
+  { key: "profile", label: "Personal Information", icon: User },
   { key: "access", label: "Access & Privacy", icon: ShieldCheck },
   { key: "medicalcard", label: "Medical Card", icon: CreditCard },
   { key: "logout", label: "Log out" },
