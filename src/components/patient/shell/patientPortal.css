@@ -1,8 +1,6 @@
-.pp-page { --pp-header-ink:#131e3d; --pp-header-blue-1:#005a8d; --pp-header-blue-2:#00335c; --pp-header-red:#d32f2f; position:relative; min-height:100dvh; padding:0; color:hsl(var(--pp-ink)); background:linear-gradient(165deg,#e0f0f8 0%,#ecf6fb 45%,#f0f7fb 100%); font-family:var(--font-patient); }
-/* The AMedix home backdrop — the soft-focus blue-and-white medical artwork,
-   kept behind a light wash so every label stays readable. */
-.pp-page::before { content:""; position:fixed; inset:0; z-index:0; background-image:url("https://base44.app/api/apps/6a9ea24b809f9bb40f0d02bf/files/mp/public/6a9ea24b809f9bb40f0d02bf/f771d5eeb_amedix-home-background.png"); background-size:cover; background-position:center; filter:blur(26px) saturate(1.08); transform:scale(1.12); opacity:.9; pointer-events:none; }
-.pp-page::after { content:""; position:fixed; inset:0; z-index:0; background:hsl(200 65% 97% / .5); pointer-events:none; }
+/* The AMedix home backdrop — the soft blue-and-white medical artwork, with a
+   light wash on top so every label stays readable. */
+.pp-page { --pp-header-ink:#131e3d; --pp-header-blue-1:#005a8d; --pp-header-blue-2:#00335c; --pp-header-red:#d32f2f; position:relative; min-height:100dvh; padding:0; color:hsl(var(--pp-ink)); background-color:hsl(200 65% 97%); background-image:linear-gradient(hsl(200 70% 98% / .18),hsl(200 70% 98% / .18)),url("https://media.base44.com/images/public/6a9ea24b809f9bb40f0d02bf/f771d5eeb_amedix-home-background.png"); background-size:cover; background-position:center; background-repeat:no-repeat; background-attachment:fixed; font-family:var(--font-patient); }
 .pp-frame { z-index:1; container-type:inline-size; position:relative; display:grid; grid-template-columns:16.67% minmax(0,1fr); width:100%; min-height:100dvh; margin:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
 .pp-frame h1,.pp-frame h2,.pp-frame h3 { font-family:var(--font-patient); }
 .pp-desktop-sidebar { min-width:0; align-self:stretch; }
