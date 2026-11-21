@@ -8,6 +8,9 @@ import "@/components/patient/shell/patientPortal.css";
 export default function PatientPortalLayout({ renderSidebar, children, singleColumn = false }) {
   const [open, setOpen] = useState(false);
   const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width:1023px)").matches);
+  // The single-column home is a phone layout only — on a computer the sidebar
+  // stays beside the content, exactly as it does on every other tab.
+  const single = singleColumn && narrow;
   const { t } = usePatientLanguage();
 
   useEffect(() => {
@@ -21,12 +24,12 @@ export default function PatientPortalLayout({ renderSidebar, children, singleCol
   }, []);
 
   return (
-    <div className={`pp-page${singleColumn ? " pp-page-single" : ""}`}>
+    <div className={`pp-page${single ? " pp-page-single" : ""}`}>
       <PatientHeaderArt />
       <div className="pp-frame">
-        {!singleColumn && <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>}
+        {!single && <aside className="pp-desktop-sidebar">{renderSidebar({})}</aside>}
         <main className="pp-main">
-          {(narrow || singleColumn) && <div className="pp-mobile-header">
+          {narrow && <div className="pp-mobile-header">
             <button type="button" className="pp-menu-button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={t("Patient Portal")}><Menu /></button>
             <span className="pp-mobile-brand">
               <BrandLogo className="pp-mobile-logo" />

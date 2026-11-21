@@ -44,7 +44,7 @@ export default function PatientOverview({ profile, loading, onNavigate }) {
   }
 
   return (
-    <div className="space-y-4 pb-2">
+    <div className="space-y-5 pb-4 sm:space-y-6">
       <PatientHomeMedicalCard profile={profile} card={card} onViewCard={() => onNavigate("medicalcard")} />
       <PatientHomeQuickTiles onNavigate={onNavigate} />
       <PatientHomeHealthOverview appointment={appointment} onNavigate={onNavigate} />
