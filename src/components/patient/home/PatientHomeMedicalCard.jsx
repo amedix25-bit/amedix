@@ -30,8 +30,11 @@ export default function PatientHomeMedicalCard({ profile, card, onViewCard }) {
     : null;
 
   return (
-    <section className="rounded-2xl border border-white/70 bg-white/65 p-3.5 shadow-[0_10px_30px_-20px_rgba(23,50,77,0.55)] backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-3">
+    <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-card p-3.5 shadow-[0_10px_30px_-20px_rgba(23,50,77,0.55)]">
+      <span aria-hidden="true" className="pointer-events-none absolute -bottom-8 -right-8 opacity-[0.06]">
+        <BrandLogo className="h-44 w-44 object-contain" />
+      </span>
+      <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <BrandLogo className="h-8 w-8 shrink-0 object-contain" />
