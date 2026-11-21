@@ -92,32 +92,36 @@
 .pp-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   height: auto;
-  padding: 4px 4px 14px;
+  padding: 6px 6px 18px;
 }
 
+/* The brand lockup inside the phone header sits in the top bar itself. */
+.pp-brand-inline { display: none; }
+
 .pp-brand-mark {
-  width: 46px;
-  height: 46px;
-  max-width: 46px;
-  max-height: 46px;
+  width: 52px;
+  height: 52px;
+  max-width: 52px;
+  max-height: 52px;
   flex-shrink: 0;
 }
 
 .pp-brand strong {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
   line-height: 1.1;
-  color: hsl(var(--primary));
+  color: hsl(var(--navy));
 }
 
 .pp-brand small {
   margin-top: 2px;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.2;
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--navy) / 0.7);
 }
 
 .pp-sidebar {
@@ -260,7 +264,11 @@
   padding: 14px 0 16px;
 }
 
-.pp-welcome { flex: 1 1 240px; min-width: 0; }
+/* The header row: on laptops the greeting comes first, on phones the brand
+   lockup and the bell/language controls share the first row. */
+.pp-topbar-bar { display: contents; }
+.pp-welcome { order: 1; flex: 1 1 240px; min-width: 0; }
+.pp-header-controls { order: 2; }
 
 .pp-welcome h1 {
   display: flex;
@@ -430,9 +438,57 @@
 .pp-bottom-nav button span { max-width: 100%; text-align: center; overflow-wrap: anywhere; }
 
 .pp-bottom-nav button.is-active {
-  color: hsl(var(--info));
-  background: hsl(var(--pp-blue-bottom) / 0.5);
+  color: hsl(var(--navy));
+  background: hsl(var(--navy-light));
 }
+
+.pp-bottom-nav button span { font-size: 9.5px; line-height: 1.1; }
+
+/* Slide-up submenu opened from the phone navigation bar. */
+.pp-sheet {
+  max-height: 82dvh;
+  overflow-y: auto;
+}
+
+.pp-sheet-grip {
+  width: 42px;
+  height: 4px;
+  margin: 2px auto 14px;
+  border-radius: 999px;
+  background: hsl(var(--border));
+}
+
+.pp-sheet-title {
+  margin-bottom: 10px;
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  text-align: start;
+  color: hsl(var(--navy));
+}
+
+.pp-sheet-list { display: flex; flex-direction: column; gap: 6px; }
+
+.pp-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 12px;
+  border-radius: 14px;
+  background: hsl(var(--navy-light));
+  color: hsl(var(--navy));
+  font-size: 14px;
+  font-weight: 650;
+  text-align: start;
+}
+
+.pp-sheet-item > svg:first-child { width: 18px; height: 18px; flex-shrink: 0; }
+.pp-sheet-item > span { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.pp-sheet-item > svg:last-child { width: 15px; height: 15px; flex-shrink: 0; color: hsl(var(--navy) / 0.55); }
+.pp-sheet-item.is-danger { background: hsl(var(--critical) / 0.1); color: hsl(var(--critical)); }
+.pp-sheet-item.is-danger > svg { color: hsl(var(--critical)); }
 
 /* Slide-in menu */
 .pp-drawer { position: fixed; inset: 0; z-index: 70; display: flex; }
@@ -488,6 +544,29 @@
 
 @media (max-width: 767px) {
   .pp-header-art { height: 180px; }
+
+  /* Phone header: the original logo and brand lockup on the left, the
+     notification bell and language switcher on the right. */
+  .pp-topbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 10px 0 14px; }
+  .pp-topbar-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    order: 1;
+  }
+  .pp-brand-inline { display: flex; flex: 1 1 auto; gap: 9px; padding: 0; }
+  .pp-brand-inline .pp-brand-mark { width: 44px; height: 44px; max-width: 44px; max-height: 44px; }
+  .pp-brand-inline strong { font-size: 17px; }
+  .pp-brand-inline small { font-size: 11px; }
+  .pp-welcome { order: 2; flex: none; width: 100%; }
+  .pp-header-controls { order: 1; flex-wrap: nowrap; gap: 8px; }
+  .pp-language button { padding: 7px 9px; font-size: 11px; }
+  .pp-notification-trigger { width: 36px; height: 36px; }
+  .pp-notification-trigger svg { width: 18px; height: 18px; }
+  .pp-profile-select, .pp-logout { display: none; }
 }
 
 @media (max-width: 520px) {
@@ -512,8 +591,8 @@
   .pp-main { padding: 0 20px 40px; font-size: 15px; }
   .pp-mobile-header { display: none; }
   .pp-bottom-nav { display: none; }
-  .pp-brand-mark { width: 42px; height: 42px; max-width: 42px; max-height: 42px; }
-  .pp-brand strong { font-size: 16px; }
+  .pp-brand-mark { width: 46px; height: 46px; max-width: 46px; max-height: 46px; }
+  .pp-brand strong { font-size: 17px; }
   .pp-nav-item { font-size: 12.5px; padding: 8px 9px; gap: 9px; }
   .pp-nav-item > svg { width: 17px; height: 17px; }
   .pp-nav-nested { font-size: 12px; padding: 7px 9px; }
@@ -523,9 +602,10 @@
 @media (min-width: 1024px) {
   .pp-desktop-sidebar { flex-basis: 268px; width: 268px; padding: 16px 0 16px 16px; }
   .pp-main { padding: 0 28px 48px; font-size: 16px; }
-  .pp-brand-mark { width: 48px; height: 48px; max-width: 48px; max-height: 48px; }
-  .pp-brand strong { font-size: 18px; }
-  .pp-brand small { font-size: 11.5px; }
+  .pp-brand { gap: 14px; padding: 8px 8px 20px; }
+  .pp-brand-mark { width: 62px; height: 62px; max-width: 62px; max-height: 62px; }
+  .pp-brand strong { font-size: 24px; letter-spacing: -0.5px; }
+  .pp-brand small { font-size: 13px; }
   .pp-nav-item { font-size: 13.5px; padding: 9px 11px; }
   .pp-nav-item > svg { width: 18px; height: 18px; }
   .pp-topbar { padding: 18px 0 20px; }

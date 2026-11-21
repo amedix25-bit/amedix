@@ -1,35 +1,108 @@
-import React from "react";
-import { Home, CreditCard, CalendarDays, FolderOpen, Menu } from "lucide-react";
+import React, { useState } from "react";
+import { Home, FolderOpen, Building2, MessageSquareMore, Settings, CalendarDays, MessageSquare, Pill, FlaskConical, ScanLine, Heart, Syringe, Stethoscope, Files, User, ShieldCheck, CreditCard } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import PatientNavSheet from "@/components/patient/shell/PatientNavSheet";
 
-// Phone-only navigation: the four places a patient opens most, plus the full menu.
-const ITEMS = [
-  { key: "overview", label: "Home", Icon: Home },
-  { key: "medicalcard", label: "Medical Card", Icon: CreditCard },
-  { key: "appointments", label: "Appointments", Icon: CalendarDays },
-  { key: "health", label: "Records", Icon: FolderOpen },
+// Phone-only navigation: five fixed tabs, three of which open a slide-up submenu.
+const RECORDS = [
+  { key: "health", label: "Health Summary", icon: Heart },
+  { key: "vaccinations", label: "Vaccinations", icon: Syringe },
+  { key: "doctorvisits", label: "Visit Summaries", icon: Stethoscope },
+  { key: "documents", label: "Reports & Documents", icon: Files },
 ];
 
-export default function PatientBottomNav({ activeKey, onNavigate, onMenu }) {
+const FACILITIES = [
+  { key: "directory", label: "Hospitals & Doctors", icon: Building2 },
+  { key: "labs", label: "Lab Tests & Results", icon: FlaskConical },
+  { key: "imaging", label: "Imaging & Scans", icon: ScanLine },
+  { key: "drugs", label: "Medications & Prescriptions", icon: Pill },
+];
+
+const COMMUNICATION = [
+  { key: "appointments", label: "Appointments", icon: CalendarDays },
+  { key: "messages", label: "Messages from Doctors", icon: MessageSquare },
+];
+
+const SETTINGS = [
+  { key: "profile", label: "Profile", icon: User },
+  { key: "profile", label: "Personal Info", icon: User },
+  { key: "access", label: "Access & Privacy", icon: ShieldCheck },
+  { key: "medicalcard", label: "Medical Card", icon: CreditCard },
+  { key: "logout", label: "Log out" },
+];
+
+const TABS = [
+  { key: "home", label: "Home", Icon: Home },
+  { key: "records", label: "Medical Records", Icon: FolderOpen, title: "My Medical Record", items: RECORDS },
+  { key: "facilities", label: "Facilities", Icon: Building2, title: "Facilities", items: FACILITIES },
+  { key: "communication", label: "Communication", Icon: MessageSquareMore, title: "Communication", items: COMMUNICATION },
+  { key: "settings", label: "Settings", Icon: Settings, title: "Settings", items: SETTINGS },
+];
+
+const TAB_FOR_PAGE = {
+  overview: "home",
+  health: "records",
+  vaccinations: "records",
+  doctorvisits: "records",
+  documents: "records",
+  directory: "facilities",
+  labs: "facilities",
+  mylabresults: "facilities",
+  imaging: "facilities",
+  drugs: "facilities",
+  medications: "facilities",
+  prescriptions: "facilities",
+  appointments: "communication",
+  messages: "communication",
+  profile: "settings",
+  access: "settings",
+  medicalcard: "settings",
+};
+
+export default function PatientBottomNav({ activeKey, onNavigate }) {
   const { t } = usePatientLanguage();
+  const [sheet, setSheet] = useState(null);
+  const activeTab = TAB_FOR_PAGE[activeKey] || null;
+
+  const select = (key) => {
+    setSheet(null);
+    if (key === "logout") {
+      clearDoctorHospitalSession();
+      base44.auth.logout(window.location.origin);
+      return;
+    }
+    onNavigate?.(key);
+  };
+
   return (
-    <nav className="pp-bottom-nav" aria-label={t("Patient Portal")}>
-      {ITEMS.map(({ key, label, Icon }) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => onNavigate?.(key)}
-          aria-current={activeKey === key ? "page" : undefined}
-          className={activeKey === key ? "is-active" : ""}
-        >
-          <Icon aria-hidden="true" />
-          <span>{t(label)}</span>
-        </button>
+    <>
+      <nav className="pp-bottom-nav" aria-label={t("Patient Portal")}>
+        {TABS.map(({ key, label, Icon, items }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => (items ? setSheet(key) : onNavigate?.("overview"))}
+            aria-current={activeTab === key ? "page" : undefined}
+            className={activeTab === key ? "is-active" : ""}
+          >
+            <Icon aria-hidden="true" />
+            <span>{t(label)}</span>
+          </button>
+        ))}
+      </nav>
+
+      {TABS.filter((tab) => tab.items).map((tab) => (
+        <PatientNavSheet
+          key={tab.key}
+          open={sheet === tab.key}
+          onOpenChange={(open) => setSheet(open ? tab.key : null)}
+          title={tab.title}
+          items={tab.items}
+          onSelect={select}
+        />
       ))}
-      <button type="button" onClick={onMenu}>
-        <Menu aria-hidden="true" />
-        <span>{t("Menu")}</span>
-      </button>
-    </nav>
+    </>
   );
 }

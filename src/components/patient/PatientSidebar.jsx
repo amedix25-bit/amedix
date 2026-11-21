@@ -1,6 +1,6 @@
 import React from "react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import BrandLogo from "@/components/BrandLogo";
+import PatientBrandLockup from "@/components/patient/shell/PatientBrandLockup";
 import PatientNavItem from "@/components/patient/shell/PatientNavItem";
 import PatientSidebarGroup from "@/components/patient/shell/PatientSidebarGroup";
 import { NAV_SECTIONS } from "@/components/patient/shell/patientNavigation";
@@ -10,7 +10,7 @@ export default function PatientSidebar({ activeKey, onNavClick, close }) {
   const { t } = usePatientLanguage();
   const go = (key) => { onNavClick(key); close?.(); };
   return <div className="pp-sidebar">
-    <div className="pp-brand"><BrandLogo className="pp-brand-mark" /><div><strong>AMedix</strong><small>{t("Patient Portal")}</small></div></div>
+    <PatientBrandLockup />
     <nav aria-label={t("Patient Portal")}>
       {NAV_SECTIONS.map((section) => section.type === "group"
         ? <PatientSidebarGroup key={section.key} group={section} activeKey={activeKey} onClick={go} />
