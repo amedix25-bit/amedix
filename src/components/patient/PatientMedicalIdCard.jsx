@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { Activity, Calendar, CreditCard, Droplet, HeartPulse, Phone, Plus, ShieldCheck, UserRound } from "lucide-react";
+import { Activity, Calendar, CreditCard, Droplet, HeartPulse, Phone, Plus, Printer, ShieldCheck, UserRound } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import QrCodeCard from "@/components/QrCodeCard";
-import PatientCardPhoto from "@/components/patient/PatientCardPhoto";
 import ChronicConditionPicker from "@/components/patient/ChronicConditionPicker";
 import { PATIENT_ID_CONDITIONS } from "@/lib/patientIdConditions";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 import MedicalIdCardDownload from "@/components/patient/card/MedicalIdCardDownload";
+import "@/components/patient/card/medicalCardPrint.css";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function formatDate(value) {
@@ -104,7 +104,7 @@ export default function PatientMedicalIdCard({ profile, card, conditions = [], a
     : profile?.cin || "";
 
   return (
-    <div className="relative rounded-3xl border border-border bg-card overflow-hidden shadow-sm">
+    <div className="pp-print-card relative rounded-3xl border border-border bg-card overflow-hidden shadow-sm">
       {/* Soft brand waves, decorative only */}
       <svg
         aria-hidden="true"
@@ -145,8 +145,6 @@ export default function PatientMedicalIdCard({ profile, card, conditions = [], a
         </div>
 
         <div className="mt-4 flex flex-col sm:flex-row items-start gap-4">
-          <PatientCardPhoto profile={profile} />
-
           <div className="flex-1 min-w-0 space-y-3">
             <div>
               <p className="text-[10px] text-muted-foreground">{t("Patient Name")}</p>
@@ -263,7 +261,15 @@ export default function PatientMedicalIdCard({ profile, card, conditions = [], a
           />
         </div>
 
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex h-[42px] items-center gap-2 rounded-xl border border-primary/50 bg-white px-3 text-xs font-semibold text-primary transition hover:bg-primary/5"
+          >
+            <Printer className="h-4 w-4" aria-hidden="true" />
+            {t("Print card")}
+          </button>
           <MedicalIdCardDownload />
         </div>
       </div>

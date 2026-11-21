@@ -1,0 +1,31 @@
+/* Printing the AMedix medical card: the card alone, on one tall page. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .pp-print-card,
+  .pp-print-card * {
+    visibility: visible;
+  }
+
+  .pp-print-card {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #d0d5dd;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
