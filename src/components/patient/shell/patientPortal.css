@@ -34,6 +34,7 @@
 .pp-welcome-ar { font-size:1.85cqw; letter-spacing:0; font-weight:700; }
 .pp-welcome p { display:flex; align-items:center; gap:.55cqw; font-size:1.16cqw; margin-top:.7cqw; }
 .pp-welcome p svg { width:1.65cqw; height:1.65cqw; color:hsl(var(--pp-purple)); stroke-width:2.3; }
+.pp-greeting { font-size:1.12cqw; font-weight:600; color:hsl(var(--pp-muted)); margin-bottom:.25cqw; }
 .pp-header-controls { display:flex; align-items:center; gap:1.15cqw; padding-top:.5cqw; flex-shrink:0; }
 .pp-language { display:flex; padding:.18cqw; border:1px solid hsl(var(--pp-edge)/.7); border-radius:3cqw; background:hsl(var(--card)/.66); box-shadow:0 2px 4px hsl(var(--pp-shadow)/.22); }
 .pp-language button { border-radius:3cqw; padding:.62cqw .85cqw; font-size:.91cqw; line-height:1.1; }
@@ -175,6 +176,7 @@
  .pp-welcome h1 { font-size:22px; gap:4px; letter-spacing:-.5px; }
  .pp-welcome-ar { font-size:18px; }
  .pp-welcome p { font-size:11px; gap:5px; margin-top:6px; }
+ .pp-greeting { font-size:11px; margin-bottom:2px; }
  .pp-welcome p svg { width:16px; height:16px; }
  .pp-header-controls { gap:8px; padding:0; }
  .pp-language { padding:2px; }

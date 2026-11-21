@@ -12,11 +12,16 @@ export default function PatientTopBar({ profile, patientId, title, onOpenProfile
   const logout = () => { clearDoctorHospitalSession(); base44.auth.logout(window.location.origin); };
   const firstName = profile?.first_name || profile?.full_name?.split(" ")[0] || "";
   const arabicName = profile?.first_name_ar || profile?.full_name_ar?.split(" ")[0] || "";
+  const hour = new Date().getHours();
+  const greeting = isArabic
+    ? hour < 12 ? "صباح الخير،" : "مساء الخير،"
+    : hour < 12 ? t("Good morning,") : hour < 18 ? t("Good afternoon,") : t("Good evening,");
   return <header className="pp-topbar">
     <PatientReferenceArt kind="headerWave" className="pp-header-wave" />
     <div className="pp-welcome">
-      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">مرحبا {arabicName || firstName} <span aria-hidden="true">👋</span></span> : <span dir="ltr">Welcome, {firstName} <span aria-hidden="true">👋</span></span>)}</h1>
-      <p><Heart />{t("Your personal health portal with AMedix")}</p>
+      {!title && <div className="pp-greeting" lang={isArabic ? "ar" : "en"}>{greeting}</div>}
+      <h1>{title || (isArabic ? <span lang="ar" dir="rtl">{arabicName || firstName}</span> : <span dir="ltr">{firstName}</span>)}</h1>
+      <p><Heart />{t("Your health, connected and organized.")}</p>
     </div>
     <div className="pp-header-controls">
       <div className="pp-language" role="group" aria-label={t("Choose Your Language")}>

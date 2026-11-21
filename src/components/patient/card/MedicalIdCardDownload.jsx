@@ -4,9 +4,9 @@ import { AlertTriangle, Download, Loader2 } from "lucide-react";
 import { downloadMedicalCardPdf } from "@/lib/medicalCardPdf";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
-// Download the official AMedix medical card as a PDF straight from the card on
-// the patient's home screen. The card record is fetched when the patient asks
-// for it, so nothing is issued merely by opening the page.
+// Download the official AMedix medical card as a PDF from the card on the
+// patient's home screen. The card record is fetched when the patient asks for
+// it, so nothing is issued merely by opening the page.
 export default function MedicalIdCardDownload() {
   const { t, lang } = usePatientLanguage();
   const [busy, setBusy] = useState(false);
@@ -32,23 +32,24 @@ export default function MedicalIdCardDownload() {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="shrink-0">
       <button
         type="button"
         onClick={download}
         disabled={busy}
-        className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-primary transition hover:bg-accent/60 disabled:opacity-60"
+        aria-label={t("Download card (PDF)")}
+        title={t("Download card (PDF)")}
+        className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-white text-primary transition hover:bg-white/90 disabled:opacity-70"
       >
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
         ) : (
           <Download className="h-4 w-4" aria-hidden="true" />
         )}
-        {t("Download card (PDF)")}
       </button>
       {error && (
-        <p className="flex items-start gap-2 text-xs text-destructive">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <p className="mt-1 flex w-[120px] items-start gap-1 text-[10px] leading-tight text-white/90">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </p>
       )}
