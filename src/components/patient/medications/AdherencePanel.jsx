@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { CheckCircle2, Bell, BellOff, Loader2, Plus, Trash2, CircleAlert } from "lucide-react";
 import MedicationFeedbackDialog from "@/components/patient/medications/MedicationFeedbackDialog";
 import { doseTimesFromFrequency } from "@/lib/doseSchedule";
+import DateField from "@/components/ui/date-field";
 import { todayStr } from "@/lib/medicationUtils";
 import { usePatientLanguage } from "@/lib/patientLanguage";
 
@@ -25,6 +26,11 @@ export default function AdherencePanel({ med, patient, onChanged }) {
   const [logging, setLogging] = useState("");
   const [guidance, setGuidance] = useState(null);
   const [logs, setLogs] = useState(null);
+  const [dosage, setDosage] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [days, setDays] = useState([]);
 
   const load = async () => {
     if (!patient?.user_id) return;
@@ -41,9 +47,19 @@ export default function AdherencePanel({ med, patient, onChanged }) {
       if (rem) {
         setTimes(rem.times || []);
         setEnabled(rem.enabled !== false);
+        setDosage(rem.dosage || "");
+        setInstructions(rem.instructions || "");
+        setStartDate(rem.start_date || "");
+        setEndDate(rem.end_date || "");
+        setDays(Array.isArray(rem.days_of_week) ? rem.days_of_week : []);
       } else {
         setTimes(doseTimesFromFrequency(med.frequency, med.prn));
         setEnabled(true);
+        setDosage(med.dosage || "");
+        setInstructions("");
+        setStartDate("");
+        setEndDate("");
+        setDays([]);
       }
       setLogs(logPage.items || logPage);
     } catch (err) {
@@ -68,6 +84,12 @@ export default function AdherencePanel({ med, patient, onChanged }) {
         medication_name: med.name,
         times: nextTimes.filter(TIME_RE.test.bind(TIME_RE)),
         enabled: nextEnabled,
+        dosage,
+        instructions,
+        start_date: startDate || "",
+        end_date: endDate || "",
+        days_of_week: days,
+        timezone: "Africa/Tripoli",
       };
       let saved;
       if (reminder) {
@@ -169,6 +191,83 @@ export default function AdherencePanel({ med, patient, onChanged }) {
             {savingReminder && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
             {t("Save Reminder Times")}
           </Button>
+
+          <details className="rounded-lg border border-border/70 bg-card/60 px-2.5 py-2">
+            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+              {t("Schedule options")}
+            </summary>
+            <div className="mt-2 space-y-2">
+              <label className="block text-[11px] font-medium text-muted-foreground">
+                {t("Dose shown in the reminder")}
+                <Input
+                  value={dosage}
+                  onChange={(e) => setDosage(e.target.value)}
+                  placeholder={t("e.g. 1 tablet")}
+                  className="mt-1 h-8"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block text-[11px] font-medium text-muted-foreground">
+                  {t("Start date")}
+                  <DateField value={startDate} onChange={setStartDate} className="mt-1" />
+                </label>
+                <label className="block text-[11px] font-medium text-muted-foreground">
+                  {t("Stop date")}
+                  <DateField value={endDate} onChange={setEndDate} className="mt-1" />
+                </label>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  {t("Days (leave empty for every day)")}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label, idx) => {
+                    const active = days.includes(idx);
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() =>
+                          setDays(active ? days.filter((d) => d !== idx) : [...days, idx].sort())
+                        }
+                        className={`h-7 rounded-md border px-2 text-[11px] font-medium transition-colors ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-muted-foreground"
+                        }`}
+                      >
+                        {t(label)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <label className="block text-[11px] font-medium text-muted-foreground">
+                {t("Instructions")}
+                <Input
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder={t("e.g. take with food")}
+                  className="mt-1 h-8"
+                />
+              </label>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7"
+                disabled={savingReminder}
+                onClick={() => saveReminder(enabled, times)}
+              >
+                {savingReminder && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
+                {t("Save schedule")}
+              </Button>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {t(
+                  "Reminders never change your prescribed medication or dose. The alarm sounds while AMedix is open; when it is closed your reminder still appears in your notifications."
+                )}
+              </p>
+            </div>
+          </details>
         </div>
       )}
       {isPRN && (

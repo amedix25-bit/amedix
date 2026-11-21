@@ -19,6 +19,7 @@ export default function DoctorTopBar({
   onSearchPatient,
   onOpenNotification,
   onOpenReferrals,
+  onOpenDestination,
 }) {
   const [query, setQuery] = useState("");
 
@@ -99,6 +100,7 @@ export default function DoctorTopBar({
             userId={user.id}
             onNavigate={onOpenNotification}
             onOpenReferrals={onOpenReferrals}
+            onOpenDestination={onOpenDestination}
           />
         )}
 

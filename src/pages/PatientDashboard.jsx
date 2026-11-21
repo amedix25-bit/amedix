@@ -29,6 +29,9 @@ import PatientSidebar, { patientNavLabel } from "@/components/patient/PatientSid
 import { ChevronLeft } from "lucide-react";
 import DrugsEntry from "@/components/patient/DrugsEntry";
 import PartnerAdStrip from "@/components/partner/PartnerAdStrip";
+import UnavailableSection from "@/components/common/UnavailableSection";
+import { PATIENT_TABS } from "@/lib/notificationDestinations";
+import MedicationAlarmCenter from "@/components/patient/medications/MedicationAlarmCenter";
 
 export default function PatientDashboard() {
   return (
@@ -60,6 +63,13 @@ function PatientPortal() {
     // Notifications may still point at the old Medications / Prescriptions tabs.
     if (tab === "medications" || tab === "prescriptions") {
       setDrugsView(tab);
+      setActiveTabRaw("drugs");
+      return;
+    }
+    // Medication-reminder notifications carried a "reminders" target that was
+    // never a tab; they belong with the medications.
+    if (tab === "reminders") {
+      setDrugsView("medications");
       setActiveTabRaw("drugs");
       return;
     }
@@ -138,6 +148,8 @@ function PatientPortal() {
             onNotificationOpenChange={setNotificationOpen}
           />
 
+          {profile && <MedicationAlarmCenter patient={profile} />}
+
           {(activeTab === "drugs" || activeTab === "labs") && (
             <div className="mb-4">
               <PartnerAdStrip key={activeTab} section={activeTab === "drugs" ? "pharmacy" : "laboratory"} />
@@ -198,6 +210,16 @@ function PatientPortal() {
               {profile && <PatientRadiologyRequests profile={profile} />}
               {profile && <PatientAccessLog patientId={profile.id} />}
             </div>
+          )}
+          {!PATIENT_TABS.includes(activeTab) && (
+            <UnavailableSection
+              title={t("This section is not available")}
+              message={t(
+                "The item this link points to may have been removed, or it is no longer available to your account."
+              )}
+              actionLabel={t("Go to Home")}
+              onAction={() => setActiveTab("overview")}
+            />
           )}
         </div>
       </PatientPortalLayout>

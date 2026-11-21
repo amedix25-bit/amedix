@@ -3,6 +3,20 @@ import { base44 } from "@/api/base44Client";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Bell, Calendar, RefreshCw, FlaskConical, Microscope, Info, Pill, MessageSquare } from "lucide-react";
 import { usePatientLanguage } from "@/lib/patientLanguage";
+import { resolvePatientTarget, notificationMeta } from "@/lib/notificationDestinations";
+
+// What the click actually opens — always a tab that exists in this portal.
+const DESTINATION_LABEL = {
+  appointments: "View Appointment",
+  drugs: "Open Medications",
+  labs: "View Request",
+  access: "Review & Authorize",
+  imaging: "View Imaging",
+  messages: "Read Message",
+  documents: "Open Documents",
+  health: "Open Health Summary",
+  overview: "Open Home",
+};
 
 const TYPE_ICONS = {
   appointment: Calendar,
@@ -73,7 +87,7 @@ export default function NotificationsBar({ patientId, onNavigate, compact = fals
 
   const handleClick = async (n) => {
     setOpen(false);
-    if (n.target && onNavigate) onNavigate(n.target === "radiology" ? "access" : n.target);
+    if (onNavigate) onNavigate(resolvePatientTarget(n));
     if (!n.is_read) {
       try {
         await base44.entities.PatientNotification.update(n.id, { is_read: true });
@@ -112,6 +126,7 @@ export default function NotificationsBar({ patientId, onNavigate, compact = fals
                 <p className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
                 {list.map((n) => {
                   const Icon = TYPE_ICONS[n.type] || Info;
+                  const meta = notificationMeta(n);
                   return (
                     <button
                       key={n.id}
@@ -120,21 +135,18 @@ export default function NotificationsBar({ patientId, onNavigate, compact = fals
                     >
                       <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${TYPE_COLORS[n.type] || ""}`} />
                       <span className="flex-1 min-w-0">
-                        <span className={`block text-sm ${n.is_read ? "text-foreground" : "font-semibold"}`}>{t(n.title)}</span>
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className={`block text-sm ${n.is_read ? "text-foreground" : "font-semibold"}`}>{t(n.title)}</span>
+                          {meta.urgent && (
+                            <span className="rounded-full bg-critical px-1.5 py-0.5 text-[10px] font-bold uppercase text-destructive-foreground">
+                              {t("Urgent")}
+                            </span>
+                          )}
+                        </span>
                         <span className="block text-xs text-muted-foreground mt-0.5 whitespace-pre-line">{t(n.message)}</span>
-                        {n.target && (
-                          <span className="block text-xs font-medium text-primary mt-1">
-                            {n.target === "appointments"
-                              ? t("View Appointment")
-                              : n.target === "medications"
-                                ? t("Add Medication Information")
-                                : n.target === "labs"
-                                  ? t("View Request")
-                                  : n.target === "radiology" || n.target === "access"
-                                    ? t("Review & Authorize")
-                                    : t("View")}
-                          </span>
-                        )}
+                        <span className="block text-xs font-medium text-primary mt-1">
+                          {t(DESTINATION_LABEL[resolvePatientTarget(n)] || "View")}
+                        </span>
                       </span>
                       {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary shrink-0" />}
                     </button>

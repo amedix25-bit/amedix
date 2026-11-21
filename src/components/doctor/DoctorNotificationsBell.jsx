@@ -3,12 +3,14 @@ import { base44 } from "@/api/base44Client";
 import { Bell, CheckCheck, FileText } from "lucide-react";
 import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 import { Button } from "@/components/ui/button";
+import { resolveDoctorDestination, notificationMeta } from "@/lib/notificationDestinations";
 
-// Doctor Portal → Notifications bell. When a patient shares an imaging
-// result ("Send to Doctor"), the doctor is alerted here. Clicking a
-// notification opens the patient in Find Patient; the PDF link opens the
-// shared report directly.
-export default function DoctorNotificationsBell({ userId, onNavigate, onOpenReferrals }) {
+// Doctor Portal → Notifications bell. Clicking a notification marks it read and
+// opens the destination the shared resolver returns — always a real Doctor
+// Portal tab (Find Patient with the CIN prefilled, Prescriptions, Imaging or
+// Referrals). The destination is never taken from the raw record, so a
+// notification cannot send the portal to a tab that does not exist.
+export default function DoctorNotificationsBell({ userId, onNavigate, onOpenReferrals, onOpenDestination }) {
   const [unread, setUnread] = useState(0);
   const [recent, setRecent] = useState([]);
   const [open, setOpen] = useState(false);
@@ -42,11 +44,16 @@ export default function DoctorNotificationsBell({ userId, onNavigate, onOpenRefe
         console.error(err);
       }
     }
-    if (n.target === "referrals" && onOpenReferrals) {
+    const destination = resolveDoctorDestination(n);
+    if (destination.view === "referrals" && onOpenReferrals) {
       onOpenReferrals();
       return;
     }
-    if (n.patient_cin) onNavigate(n.patient_cin);
+    if (onOpenDestination) {
+      onOpenDestination(destination);
+      return;
+    }
+    if (destination.cin) onNavigate(destination.cin);
   };
 
   const markAllRead = async () => {
@@ -106,37 +113,49 @@ export default function DoctorNotificationsBell({ userId, onNavigate, onOpenRefe
               {recent.length === 0 ? (
                 <p className="px-4 py-6 text-sm text-muted-foreground text-center">No notifications yet</p>
               ) : (
-                recent.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => handleClick(n)}
-                    className="w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex gap-2 cursor-pointer"
-                  >
-                    <span
-                      className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-                        n.is_read ? "bg-transparent" : "bg-primary"
-                      }`}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="text-sm font-medium block truncate">{n.title}</span>
-                      <span className="text-xs text-muted-foreground block truncate">{n.message}</span>
-                      <span className="text-[11px] text-muted-foreground mt-0.5 block">{timeAgo(n.datetime)}</span>
-                    </span>
-                    {n.report_pdf_url && (
-                      <ClinicalFileButton
-                        kind="imaging_result"
-                        id={n.related_id}
-                        fileRef={n.report_pdf_url}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Open the shared report (PDF)"
-                        className="self-center inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline shrink-0"
-                      >
-                        <FileText className="w-4 h-4" />
-                        PDF
-                      </ClinicalFileButton>
-                    )}
-                  </div>
-                ))
+                recent.map((n) => {
+                  const meta = notificationMeta(n);
+                  const destination = resolveDoctorDestination(n);
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => handleClick(n)}
+                      className="w-full text-left px-4 py-3 hover:bg-accent/40 transition-colors flex gap-2 cursor-pointer"
+                    >
+                      <span
+                        className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                          n.is_read ? "bg-transparent" : "bg-primary"
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-medium">{n.title}</span>
+                          {meta.urgent && (
+                            <span className="shrink-0 rounded-full bg-critical px-1.5 py-0.5 text-[9px] font-bold uppercase text-destructive-foreground">
+                              Urgent
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground block truncate">{n.message}</span>
+                        <span className="text-[11px] font-medium text-primary mt-0.5 block">{destination.label}</span>
+                        <span className="text-[11px] text-muted-foreground mt-0.5 block">{timeAgo(n.datetime)}</span>
+                      </span>
+                      {n.report_pdf_url && (
+                        <ClinicalFileButton
+                          kind="imaging_result"
+                          id={n.related_id}
+                          fileRef={n.report_pdf_url}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Open the shared report (PDF)"
+                          className="self-center inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline shrink-0"
+                        >
+                          <FileText className="w-4 h-4" />
+                          PDF
+                        </ClinicalFileButton>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

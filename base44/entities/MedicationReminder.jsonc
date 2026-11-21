@@ -22,12 +22,42 @@
       "type": "string",
       "description": "Medication name the reminder is for"
     },
+    "dosage": {
+      "type": "string",
+      "description": "How the patient takes this dose (e.g. 1 tablet) \u2014 display only. A reminder never changes the prescribed medication or dose."
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Optional patient note shown with the reminder (e.g. take with food)"
+    },
     "times": {
       "type": "array",
       "items": {
         "type": "string"
       },
       "description": "Reminder times each day (HH:MM, 24h) \u2014 patient-managed, pre-filled from the prescribed frequency"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "First day the reminder is active. Empty means it starts immediately."
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last day the reminder is active. Empty means it continues until the patient turns it off or the medication ends."
+    },
+    "days_of_week": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": "Days the reminder is active, Sunday = 0 \u2026 Saturday = 6. Empty means every day."
+    },
+    "timezone": {
+      "type": "string",
+      "default": "Africa/Tripoli",
+      "description": "Timezone the reminder times are expressed in \u2014 the patient's local clinical timezone, so a schedule keeps its meaning across daylight-saving changes"
     },
     "enabled": {
       "type": "boolean",
@@ -43,7 +73,19 @@
       "items": {
         "type": "string"
       },
-      "description": "Dose slots already notified as YYYY-MM-DDTHH:MM \u2014 deduplication key used by the reminder scheduler"
+      "description": "Dose slots already notified as YYYY-MM-DDTHH:MM \u2014 the deduplication key used by the reminder scheduler, so one slot is never alerted twice"
+    },
+    "snooze_slot": {
+      "type": "string",
+      "description": "Dose slot the patient snoozed, as YYYY-MM-DDTHH:MM. The scheduler re-alerts this slot once when snooze_until passes."
+    },
+    "snooze_until": {
+      "type": "string",
+      "description": "Date and time the snoozed dose should be alerted again (ISO datetime). Cleared once the follow-up alert is delivered."
+    },
+    "last_reminder_datetime": {
+      "type": "string",
+      "description": "Date and time the scheduler last delivered a reminder for this schedule (ISO datetime) \u2014 delivery trace for support"
     }
   },
   "required": [

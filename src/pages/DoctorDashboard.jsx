@@ -163,6 +163,20 @@ export default function DoctorDashboard() {
     if (cin) setSearchPrefill({ cin, ts: Date.now() });
   };
 
+  // Notification click -> the destination the shared resolver returned. It is
+  // always a tab this portal renders, so the content area cannot go blank.
+  const openDoctorNotification = (destination) => {
+    if (!destination?.tab) {
+      setActiveTab("overview");
+      return;
+    }
+    if (destination.tab === "search") {
+      openFromNotification(destination.cin || "");
+      return;
+    }
+    handleNavigateTab(destination.tab, { view: destination.view || null });
+  };
+
   const loadProfile = async () => {
     try {
       const profiles = await base44.entities.DoctorProfile.filter({ user_id: user.id });
@@ -275,6 +289,7 @@ export default function DoctorDashboard() {
         onSearchPatient={openPatientSearch}
         onOpenNotification={openFromNotification}
         onOpenReferrals={() => openCommunication("referrals")}
+        onOpenDestination={openDoctorNotification}
       />
 
       <div className="p-4 lg:p-6 max-w-7xl mx-auto">

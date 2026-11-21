@@ -88,7 +88,7 @@ export default function LabPortal() {
           />
         </div>
 
-        <LabNotificationsBar />
+        <LabNotificationsBar onOpen={() => setActiveTab("requests")} />
 
         {activeTab === "dashboard" && <LabDashboardSection profile={profile} onNavigate={setActiveTab} />}
         {activeTab === "requests" && <LabRequestsSection profile={profile} />}

@@ -6,7 +6,7 @@ import { ClinicalFileButton } from "@/components/common/ClinicalFile";
 
 // Top notification bar — new authorized laboratory requests.
 // Lab Portal: <LabNotificationsBar /> · Technician Portal: <LabNotificationsBar session={session} />
-export default function LabNotificationsBar({ session }) {
+export default function LabNotificationsBar({ session, onOpen }) {
   const { notifications, markRead } = useLabNotifications({ session });
 
   if (!notifications) return null;
@@ -15,6 +15,7 @@ export default function LabNotificationsBar({ session }) {
 
   const openRequest = (n) => {
     markRead(n.id);
+    onOpen?.(n);
   };
 
   return (
@@ -28,7 +29,16 @@ export default function LabNotificationsBar({ session }) {
       </div>
       <div className="divide-y divide-border">
         {items.map((n) => (
-          <div key={n.id} className="px-4 py-3 flex items-start justify-between gap-3 bg-primary/5">
+          <div
+            key={n.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => openRequest(n)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") openRequest(n);
+            }}
+            className="px-4 py-3 flex items-start justify-between gap-3 bg-primary/5 cursor-pointer hover:bg-primary/10"
+          >
             <div className="min-w-0">
               <p className="text-sm">
                 {n.patient_name ? (
