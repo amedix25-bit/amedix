@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { usePatientLanguage } from "@/lib/patientLanguage";
-import PatientMedicalIdCard from "@/components/patient/PatientMedicalIdCard";
+import PatientMedicalCardSection from "@/components/patient/home/PatientMedicalCardSection";
 import PatientHomeQuickTiles from "@/components/patient/home/PatientHomeQuickTiles";
 import PatientHomeHealthOverview from "@/components/patient/home/PatientHomeHealthOverview";
 import PatientHomeRecentActivity from "@/components/patient/home/PatientHomeRecentActivity";
@@ -64,7 +64,7 @@ export default function PatientOverview({ profile, loading, onNavigate, onViewAc
 
   return (
     <div className="space-y-4 pb-2">
-      <PatientMedicalIdCard
+      <PatientMedicalCardSection
         profile={profile}
         card={card}
         conditions={conditions}
