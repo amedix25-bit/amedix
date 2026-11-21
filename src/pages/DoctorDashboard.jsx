@@ -14,6 +14,8 @@ import DoctorImagingRequests from "@/components/doctor/DoctorImagingRequests";
 import DoctorNameEdit from "@/components/doctor/DoctorNameEdit";
 import DoctorTopBar from "@/components/doctor/shell/DoctorTopBar";
 import DoctorSidebar from "@/components/doctor/shell/DoctorSidebar";
+import DoctorMobileHeader from "@/components/doctor/shell/DoctorMobileHeader";
+import DoctorMobileNav from "@/components/doctor/shell/DoctorMobileNav";
 import DoctorCommunication from "@/components/doctor/communication/DoctorCommunication";
 import DoctorHospitalsSection from "@/components/doctor/hospital/DoctorHospitalsSection";
 import DoctorSpecialtySelect from "@/components/doctor/DoctorSpecialtySelect";
@@ -21,7 +23,7 @@ import { ensureRadiologistProfile, isRadiologySpecialty } from "@/lib/radiologyA
 import { isSurgicalSpecialty } from "@/lib/specialties";
 import SurgicalRecords from "@/components/doctor/surgical/SurgicalRecords";
 import DoctorHospitalGate from "@/components/doctor/hospital/DoctorHospitalGate";
-import { getDoctorHospitalSession, setDoctorHospitalSession } from "@/lib/doctorHospitalSession";
+import { getDoctorHospitalSession, setDoctorHospitalSession, clearDoctorHospitalSession } from "@/lib/doctorHospitalSession";
 import PatientPortalSwitchAction from "@/components/portal/PatientPortalSwitchAction";
 import { LayoutDashboard, Search, Building2, Pill, MessageSquare, Link2, Scale, BedDouble, BookOpen, Settings, HelpCircle, IdCard, ShieldAlert } from "lucide-react";
 import EmergencyAccessSection from "@/components/doctor/emergency/EmergencyAccessSection";
@@ -282,6 +284,27 @@ export default function DoctorDashboard() {
       activeKey={activeTab}
       onNavClick={handleNav}
       sidebarTheme="navy"
+      mobileHeader={
+        <DoctorMobileHeader
+          profile={profile}
+          user={user}
+          onProfileUpdated={setProfile}
+          onOpenNotification={openFromNotification}
+          onOpenReferrals={() => openCommunication("referrals")}
+          onOpenDestination={openDoctorNotification}
+        />
+      }
+      mobileNav={
+        <DoctorMobileNav
+          activeKey={activeTab}
+          onNavigate={handleNav}
+          user={user}
+          onLogout={() => {
+            clearDoctorHospitalSession();
+            base44.auth.logout(window.location.origin);
+          }}
+        />
+      }
       renderSidebar={({ close, onLogout }) => (
         <DoctorSidebar
           navItems={doctorNav}

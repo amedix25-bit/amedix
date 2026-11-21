@@ -96,16 +96,18 @@ export default function DoctorTopBar({
           )}
         </button>
         {user && (
-          <DoctorNotificationsBell
-            userId={user.id}
-            onNavigate={onOpenNotification}
-            onOpenReferrals={onOpenReferrals}
-            onOpenDestination={onOpenDestination}
-          />
+          <div className="hidden lg:block">
+            <DoctorNotificationsBell
+              userId={user.id}
+              onNavigate={onOpenNotification}
+              onOpenReferrals={onOpenReferrals}
+              onOpenDestination={onOpenDestination}
+            />
+          </div>
         )}
 
         {profile && (
-          <div className="ml-1 flex items-center gap-2.5 border-l border-border pl-3">
+          <div className="ml-1 hidden items-center gap-2.5 border-l border-border pl-3 lg:flex">
             <DoctorProfilePicture profile={profile} onUpdated={onProfileUpdated} />
             <div className="hidden min-w-0 lg:block">
               <p className="max-w-[170px] truncate text-sm font-semibold text-foreground">

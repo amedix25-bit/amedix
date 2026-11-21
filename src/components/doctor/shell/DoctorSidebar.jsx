@@ -100,12 +100,10 @@ export default function DoctorSidebar({ navItems = [], activeKey, activeView, on
 
   return (
     <div className="flex h-full flex-col bg-doctor-rail">
-      <div className="flex items-center gap-3 px-4 py-5">
-        <BrandLogo className="h-20 w-20 shrink-0" />
-        <div className="min-w-0">
-          <p className="truncate text-2xl font-bold leading-none tracking-tight text-primary">AMedix</p>
-          <p className="mt-1.5 truncate text-xs font-medium leading-none text-primary/60">{t(subtitle)}</p>
-        </div>
+      <div className="px-5 pb-5 pt-6">
+        <BrandLogo className="h-24 w-24 shrink-0" />
+        <p className="mt-3 truncate text-3xl font-bold leading-none tracking-tight text-primary">AMedix</p>
+        <p className="mt-2 truncate text-sm font-semibold leading-none text-primary/70">{t(subtitle)}</p>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">

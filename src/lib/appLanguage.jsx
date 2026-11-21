@@ -258,6 +258,7 @@ const AR = {
   "Pending Tests": "الاختبارات المعلقة",
   "Completed Payments/Results": "المدفوعات/النتائج المكتملة",
   "Patients": "المرضى",
+  "Clinical": "السريري",
   "Technicians/Staff": "الفنيون/الموظفون",
   "Profile": "الملف الشخصي",
   "Users": "المستخدمون",

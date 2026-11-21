@@ -19,7 +19,7 @@ const SETTINGS_PORTAL = {
   insurance: "patient",
 };
 
-export default function DashboardLayout({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", sidebarTheme = "light", renderSidebar, sidebarWidth = "w-64", mainClassName = "", children }) {
+export default function DashboardLayout({ navItems, navGroups, activeKey, onNavClick, roleLabel, logoutLabel, logo: Logo = BrandLogo, sidebarAction, accent = "patient", sidebarTheme = "light", renderSidebar, sidebarWidth = "w-64", mainClassName = "", mobileHeader, mobileNav, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navy = sidebarTheme === "navy";
 
@@ -58,7 +58,7 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
         {renderSidebarContent()}
       </aside>
 
-      {sidebarOpen && (
+      {!mobileHeader && sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className={`relative ${sidebarWidth} flex flex-col ${navy ? "bg-doctor-rail" : "bg-sidebar"}`}>
@@ -71,21 +71,26 @@ export default function DashboardLayout({ navItems, navGroups, activeKey, onNavC
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className={`lg:hidden flex items-center justify-between border-b px-4 py-3 ${navy ? "bg-doctor-rail border-primary/10" : "border-border"}`}>
-          <button onClick={() => setSidebarOpen(true)} className={navy ? "text-primary/80" : "text-muted-foreground"}>
-            <Menu className="w-6 h-6" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Logo fittingType="fill" className={navy ? "w-8 h-8 rounded-full" : "w-9 h-9 rounded-full"} />
-            <span className={`font-bold text-sm ${navy ? "text-primary" : ""}`}>AMedix</span>
-          </div>
-          <AppLanguageSwitcher />
-        </header>
+        {mobileHeader ? (
+          <div className="lg:hidden">{mobileHeader}</div>
+        ) : (
+          <header className={`lg:hidden flex items-center justify-between border-b px-4 py-3 ${navy ? "bg-doctor-rail border-primary/10" : "border-border"}`}>
+            <button onClick={() => setSidebarOpen(true)} className={navy ? "text-primary/80" : "text-muted-foreground"}>
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Logo fittingType="fill" className={navy ? "w-8 h-8 rounded-full" : "w-9 h-9 rounded-full"} />
+              <span className={`font-bold text-sm ${navy ? "text-primary" : ""}`}>AMedix</span>
+            </div>
+            <AppLanguageSwitcher />
+          </header>
+        )}
 
-        <main className={`flex-1 overflow-y-auto ${navy ? "bg-doctor-surface" : ""} ${mainClassName}`}>
+        <main className={`flex-1 overflow-y-auto ${navy ? "bg-doctor-surface" : ""} ${mobileNav ? "pb-24 lg:pb-0" : ""} ${mainClassName}`}>
           {children}
         </main>
       </div>
+      {mobileNav}
     </div>
   );
 }
