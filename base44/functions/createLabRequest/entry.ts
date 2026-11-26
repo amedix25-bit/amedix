@@ -79,10 +79,20 @@ export default async function(req) {
       : "saved_profile";
     const signatureReference = `SIG-V${signatureVersion}-${String(payload.request_id || signature.id).slice(-4).toUpperCase()}`;
 
+    // The patient's account id and the requesting doctor's account id are
+    // stored on the request itself, so the request's private fields (payment,
+    // demographics, result files) stay readable to that patient, that doctor
+    // and the laboratory the patient later authorizes — and to nobody else.
+    const patientProfile = await base44.asServiceRole.entities.PatientProfile
+      .get(payload.patient_id)
+      .catch(() => null);
+
     // Written with the service role — doctors cannot create lab requests
     // directly through the client API (Row Level Security blocks it).
     const lab_request = await base44.asServiceRole.entities.LabRequest.create({
       ...payload,
+      patient_user_id: patientProfile?.user_id || "",
+      doctor_user_id: user.id,
       signature_status: "signed",
       signature_record_id: signature.id,
       signature_version: signatureVersion,

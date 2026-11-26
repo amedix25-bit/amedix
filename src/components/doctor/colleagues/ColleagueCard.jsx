@@ -11,7 +11,7 @@ export default function ColleagueCard({ doctor, actions }) {
         <p className="font-medium truncate">{doctor.full_name}</p>
         <p className="text-sm text-muted-foreground truncate">{doctor.specialization || "—"}</p>
         <p className="text-xs text-muted-foreground truncate">
-          {doctor.hospital || "—"}{doctor.license_number ? ` · ID: ${doctor.license_number}` : ""}
+          {doctor.hospital || "—"}
         </p>
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}

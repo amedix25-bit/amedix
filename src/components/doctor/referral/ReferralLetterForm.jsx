@@ -83,6 +83,12 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
   const [colleagueQuery, setColleagueQuery] = useState("");
   const [selectedColleague, setSelectedColleague] = useState(null);
 
+  // Date of birth and phone are restricted on the patient record, so they are
+  // read from the doctor's authorized clinical payload (re-checked server-side).
+  const [identity, setIdentity] = useState({ date_of_birth: "", phone: "" });
+  const patientDob = patient.date_of_birth || identity.date_of_birth;
+  const patientPhone = patient.phone || identity.phone;
+
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   // Medical dictation mic for the referral letter's clinical fields.
@@ -100,6 +106,10 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
       try {
         const res = await base44.functions.invoke("doctorPatientMedicalData", { patient_id: patient.id });
         setPatientDocs((res.data.documents || []).filter((d) => d.file_url));
+        setIdentity({
+          date_of_birth: res.data?.patient?.date_of_birth || "",
+          phone: res.data?.patient?.phone || "",
+        });
         // Auto-fill the clinical fields that match the referral letter format
         // from the patient's My Health record — only fields the doctor has
         // not already typed in. Everything stays editable.
@@ -223,10 +233,10 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         patient_user_id: patient.user_id,
         patient_cin: patient.cin,
         patient_name: patient.full_name,
-        patient_dob: patient.date_of_birth || "",
-        patient_age: calcAge(patient.date_of_birth),
+        patient_dob: patientDob || "",
+        patient_age: calcAge(patientDob),
         patient_sex: patient.gender || "",
-        patient_contact: patient.phone || "",
+        patient_contact: patientPhone || "",
         doctor_id: doctorProfile.id,
         doctor_user_id: doctorProfile.user_id,
         doctor_name: doctorProfile.full_name,
@@ -358,10 +368,10 @@ export default function ReferralLetterForm({ doctorProfile, patient, onDone, onC
         <div className="grid sm:grid-cols-2 gap-4 text-sm">
           <div><span className="text-muted-foreground">Full Name: </span><span className="font-medium">{patient.full_name}</span></div>
           <div><span className="text-muted-foreground">CIN: </span><span className="font-medium">{patient.cin}</span></div>
-          <div><span className="text-muted-foreground">Date of Birth: </span><span className="font-medium">{patient.date_of_birth || "—"}</span></div>
-          <div><span className="text-muted-foreground">Age: </span><span className="font-medium">{calcAge(patient.date_of_birth) || "—"}</span></div>
+          <div><span className="text-muted-foreground">Date of Birth: </span><span className="font-medium">{patientDob || "—"}</span></div>
+          <div><span className="text-muted-foreground">Age: </span><span className="font-medium">{calcAge(patientDob) || "—"}</span></div>
           <div><span className="text-muted-foreground">Sex: </span><span className="font-medium">{patient.gender || "—"}</span></div>
-          <div><span className="text-muted-foreground">Contact: </span><span className="font-medium">{patient.phone || "—"}</span></div>
+          <div><span className="text-muted-foreground">Contact: </span><span className="font-medium">{patientPhone || "—"}</span></div>
         </div>
       </Section>
 

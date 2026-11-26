@@ -9,6 +9,10 @@
     "patient_id": {
       "type": "string"
     },
+    "patient_user_id": {
+      "type": "string",
+      "description": "User id of the patient account the request belongs to \u2014 set server-side, and the only patient who may see the request's private payment, demographic and result-file fields"
+    },
     "patient_cin": {
       "type": "string"
     },
@@ -17,16 +21,66 @@
     },
     "patient_dob": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "patient_gender": {
       "type": "string"
     },
     "patient_blood_type": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "doctor_id": {
       "type": "string"
+    },
+    "doctor_user_id": {
+      "type": "string",
+      "description": "User id of the requesting doctor's account \u2014 set server-side, so the doctor keeps access to the request's result files"
     },
     "doctor_name": {
       "type": "string"
@@ -177,6 +231,10 @@
       "type": "string",
       "description": "Id of the LaboratoryProfile the patient authorized to view this request \u2014 the laboratory only sees the request once this is set"
     },
+    "lab_user_id": {
+      "type": "string",
+      "description": "User id of the authorized laboratory's account \u2014 set server-side when the patient authorizes the laboratory, so only that laboratory keeps access to the request's private payment and demographic fields"
+    },
     "lab_name": {
       "type": "string",
       "description": "Laboratory the request is authorized to and sent to (set when the patient grants access)"
@@ -217,7 +275,30 @@
       "type": "string"
     },
     "result_file_url": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "result_file_name": {
       "type": "string",
@@ -262,7 +343,30 @@
     },
     "corrected_result_file_url": {
       "type": "string",
-      "description": "Corrected results PDF \u2014 corrected results NEVER overwrite the original released result; the original result and file always stay intact with complete audit history"
+      "description": "Corrected results PDF \u2014 corrected results NEVER overwrite the original released result; the original result and file always stay intact with complete audit history",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "corrected_result_file_name": {
       "type": "string",
@@ -282,19 +386,111 @@
     },
     "payment_amount": {
       "type": "string",
-      "description": "Payment amount collected from the patient for this laboratory request"
+      "description": "Payment amount collected from the patient for this laboratory request",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "payment_method": {
       "type": "string",
-      "description": "How the patient paid \u2014 e.g. Cash, Card, Bank Transfer, Insurance, Mobile Wallet, Other"
+      "description": "How the patient paid \u2014 e.g. Cash, Card, Bank Transfer, Insurance, Mobile Wallet, Other",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "payment_datetime": {
       "type": "string",
-      "description": "Date and time the payment was recorded"
+      "description": "Date and time the payment was recorded",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "pdf_url": {
       "type": "string",
-      "description": "Generated PDF Lab Request Form \u2014 for a signed request this is the final signed document and is never altered in place"
+      "description": "Generated PDF Lab Request Form \u2014 for a signed request this is the final signed document and is never altered in place",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "data.patient_user_id": "{{user.id}}"
+            },
+            {
+              "data.doctor_user_id": "{{user.id}}"
+            },
+            {
+              "data.lab_user_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "date_requested": {
       "type": "string",

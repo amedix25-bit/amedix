@@ -10,6 +10,7 @@ import LabRequestReview from "@/components/doctor/lab/LabRequestReview";
 import MedicalDictationButton from "@/components/doctor/dictation/MedicalDictationButton";
 import PatientLabListRow from "@/components/doctor/lab/PatientLabListRow";
 import LabHistoryList from "@/components/doctor/lab/LabHistoryList";
+import { loadAuthorizedPatientIdentity } from "@/lib/authorizedPatientIdentity";
 import DoctorLabHistory from "@/components/doctor/lab/DoctorLabHistory";
 import { entryById } from "@/lib/labTestCatalog";
 import { makeRequestId, generateLabRequestPdf, addRequestBarcode } from "@/lib/labRequestPdf";
@@ -217,12 +218,15 @@ export default function DoctorLabRequests({ doctorProfile, draftContext, onNavig
     try {
       const p = resolvedPatient;
       const today = new Date().toISOString().slice(0, 10);
+      // Date of birth is a restricted field on the patient record — it comes
+      // from the doctor's authorized clinical payload instead.
+      const identity = p.date_of_birth ? null : await loadAuthorizedPatientIdentity(p.id);
       const payload = {
         request_id: makeRequestId(),
         patient_id: p.id,
         patient_cin: p.cin,
         patient_name: p.full_name,
-        patient_dob: p.date_of_birth || "",
+        patient_dob: p.date_of_birth || identity?.date_of_birth || "",
         patient_gender: p.gender || "",
         patient_blood_type: p.blood_type || "",
         doctor_id: doctorProfile.id,

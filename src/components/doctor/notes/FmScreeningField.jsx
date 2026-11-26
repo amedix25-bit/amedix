@@ -5,6 +5,7 @@ import { ExternalLink, ShieldCheck, Syringe } from "lucide-react";
 import { buildFmScreeningItems, buildFmImmunizationItems, screeningContextFromNote } from "@/lib/fmScreening";
 import { fmReference } from "@/lib/fmReferences";
 import { asObject, ageFromDob } from "@/lib/fmFieldKit";
+import { loadAuthorizedPatientIdentity } from "@/lib/authorizedPatientIdentity";
 
 const asObjectSafe = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 
@@ -37,7 +38,13 @@ export default function FmScreeningField({ value, onChange, values, patientId })
         const profile = await base44.entities.PatientProfile.get(patientId);
         if (cancelled) return;
         const sex = profile?.gender === "female" ? "Female" : profile?.gender === "male" ? "Male" : "";
-        setPatient({ age: ageFromDob(profile?.date_of_birth), sex, unavailable: false });
+        // Date of birth is a restricted field on the patient record: when the
+        // record does not carry it, it is read through the doctor's authorized
+        // clinical payload instead of silently losing the age-based prompts.
+        const identity = profile?.date_of_birth ? null : await loadAuthorizedPatientIdentity(patientId);
+        const dob = profile?.date_of_birth || identity?.date_of_birth || "";
+        if (cancelled) return;
+        setPatient({ age: ageFromDob(dob), sex, unavailable: !dob });
       } catch {
         if (!cancelled) setPatient({ age: null, sex: "", unavailable: true });
       } finally {

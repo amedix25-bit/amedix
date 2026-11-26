@@ -127,6 +127,8 @@ export default async function (req) {
         full_name: patient.full_name,
         user_id: patient.user_id,
         allergy_record_status: patient.allergy_record_status || "",
+        date_of_birth: patient.date_of_birth || "",
+        phone: patient.phone || "",
       },
       clinical_documents,
     });

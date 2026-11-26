@@ -11,7 +11,21 @@
     },
     "photo_uri": {
       "type": "string",
-      "description": "Private storage URI of the patient's own picture shown on their Medical ID card. Uploaded by the patient from the Patient Portal; never a public URL \u2014 the card displays it through a short-lived signed link."
+      "description": "Private storage URI of the patient's own picture shown on their Medical ID card. Uploaded by the patient from the Patient Portal; never a public URL \u2014 the card displays it through a short-lived signed link. Visible only to the patient and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "full_name": {
       "type": "string",
@@ -59,7 +73,21 @@
     },
     "date_of_birth": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "gender": {
       "type": "string",
@@ -82,11 +110,39 @@
     },
     "phone": {
       "type": "string",
-      "description": "Legacy primary phone \u2014 kept in sync with the first entry of phone_numbers"
+      "description": "Legacy primary phone \u2014 kept in sync with the first entry of phone_numbers. Visible only to the patient and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "phone_numbers": {
       "type": "array",
-      "description": "Patient's phone numbers, each saved separately with a clear label",
+      "description": "Patient's phone numbers, each saved separately with a clear label. Visible only to the patient and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      },
       "items": {
         "type": "object",
         "properties": {
@@ -112,7 +168,21 @@
       }
     },
     "address": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "blood_type": {
       "type": "string",
@@ -130,27 +200,111 @@
       "default": "Unknown"
     },
     "allergies": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "identification_number": {
       "type": "string",
-      "description": "National ID, passport, or other required identification number"
+      "description": "National ID, passport, or other required identification number. Visible only to the patient and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "emergency_contact_name": {
       "type": "string",
-      "description": "Legacy first emergency contact name \u2014 kept in sync with the first entry of emergency_contacts"
+      "description": "Legacy first emergency contact name \u2014 kept in sync with the first entry of emergency_contacts",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "emergency_contact_phone": {
       "type": "string",
-      "description": "Legacy first emergency contact phone \u2014 kept in sync with the first entry of emergency_contacts"
+      "description": "Legacy first emergency contact phone \u2014 kept in sync with the first entry of emergency_contacts",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "emergency_contact_relationship": {
       "type": "string",
-      "description": "Legacy first emergency contact relationship \u2014 kept in sync with the first entry of emergency_contacts"
+      "description": "Legacy first emergency contact relationship \u2014 kept in sync with the first entry of emergency_contacts",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "emergency_contacts": {
       "type": "array",
-      "description": "Patient's emergency contacts \u2014 each has their own name, relationship to the patient and phone number, and can be edited or removed individually",
+      "description": "Patient's emergency contacts \u2014 each has their own name, relationship to the patient and phone number, and can be edited or removed individually. Visible only to the patient and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      },
       "items": {
         "type": "object",
         "properties": {
@@ -177,15 +331,57 @@
         "former",
         "current"
       ],
-      "default": "never"
+      "default": "never",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "tobacco_details": {
       "type": "string",
-      "description": "Tobacco type and quantity, if applicable \u2014 e.g. 'Cigarettes, 10/day'"
+      "description": "Tobacco type and quantity, if applicable \u2014 e.g. 'Cigarettes, 10/day'",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "vaping_history": {
       "type": "string",
-      "description": "Vaping history, voluntarily disclosed"
+      "description": "Vaping history, voluntarily disclosed",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "alcohol_use": {
       "type": "string",
@@ -195,11 +391,39 @@
         "regular",
         "former"
       ],
-      "default": "none"
+      "default": "none",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "substance_use": {
       "type": "string",
-      "description": "Recreational substance use \u2014 voluntarily disclosed, optional"
+      "description": "Recreational substance use \u2014 voluntarily disclosed, optional",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "occupation": {
       "type": "string",
@@ -247,11 +471,39 @@
     },
     "food_allergies_intolerances": {
       "type": "string",
-      "description": "Food allergies, intolerances and dietary restrictions reported by the patient \u2014 optional free text. Self-reported and never treated as clinically verified; allergy entries stay in the Allergy records."
+      "description": "Food allergies, intolerances and dietary restrictions reported by the patient \u2014 optional free text. Self-reported and never treated as clinically verified; allergy entries stay in the Allergy records.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "sleep_patterns": {
       "type": "array",
       "description": "Sleep patterns the patient reports \u2014 several may apply. Optional; 'other' pairs with sleep_pattern_other and further detail with sleep_concerns.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      },
       "items": {
         "type": "string",
         "enum": [
@@ -267,15 +519,57 @@
     },
     "sleep_pattern_other": {
       "type": "string",
-      "description": "The patient's specification of an 'other' sleep pattern \u2014 optional"
+      "description": "The patient's specification of an 'other' sleep pattern \u2014 optional",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "sleep_concerns": {
       "type": "string",
-      "description": "Any additional sleep-related concerns reported by the patient \u2014 optional"
+      "description": "Any additional sleep-related concerns reported by the patient \u2014 optional",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "mobility_limitations": {
       "type": "string",
-      "description": "Mobility and functional limitations, if any \u2014 optional"
+      "description": "Mobility and functional limitations, if any \u2014 optional",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "living_situation_type": {
       "type": "string",
@@ -380,7 +674,21 @@
         "not_established",
         "prefer_not_to_answer"
       ],
-      "description": "Section-level allergy state set at registration \u2014 NO_KNOWN_ALLERGIES: the patient reports no known allergies. NOT_ESTABLISHED: the patient is unsure / allergies not yet established. PREFER_NOT_TO_ANSWER: the patient declined to answer. Empty when allergy entries exist. A patient's answer is never treated as clinically verified"
+      "description": "Section-level allergy state set at registration \u2014 NO_KNOWN_ALLERGIES: the patient reports no known allergies. NOT_ESTABLISHED: the patient is unsure / allergies not yet established. PREFER_NOT_TO_ANSWER: the patient declined to answer. Empty when allergy entries exist. A patient's answer is never treated as clinically verified",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "marital_status": {
       "type": "string",
@@ -401,67 +709,291 @@
         "unknown"
       ],
       "default": "not_applicable",
-      "description": "Pregnancy status of a female patient \u2014 answered at registration, including Unknown when the patient is unsure. Kept in sync with gynae_obstetric_history.current_pregnancy"
+      "description": "Pregnancy status of a female patient \u2014 answered at registration, including Unknown when the patient is unsure. Kept in sync with gynae_obstetric_history.current_pregnancy",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "gestational_age": {
-      "type": "string"
+      "type": "string",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "estimated_due_date": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "gravida": {
       "type": "integer",
-      "description": "Number of pregnancies (Gravida) \u2014 collected at registration for female patients. Kept in sync with gynae_obstetric_history.obstetric"
+      "description": "Number of pregnancies (Gravida) \u2014 collected at registration for female patients. Kept in sync with gynae_obstetric_history.obstetric",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "para": {
       "type": "integer",
-      "description": "Number of births from 24 weeks onwards (Para) \u2014 collected at registration for female patients. Kept in sync with gynae_obstetric_history.obstetric"
+      "description": "Number of births from 24 weeks onwards (Para) \u2014 collected at registration for female patients. Kept in sync with gynae_obstetric_history.obstetric",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "living_children": {
       "type": "integer",
-      "description": "Number of living children \u2014 collected at registration for female patients"
+      "description": "Number of living children \u2014 collected at registration for female patients",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "miscarriages_abortions": {
       "type": "integer",
-      "description": "Number of pregnancies that ended before 24 weeks (miscarriage, induced abortion, ectopic) \u2014 never double-counted with para"
+      "description": "Number of pregnancies that ended before 24 weeks (miscarriage, induced abortion, ectopic) \u2014 never double-counted with para",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "stillbirths": {
       "type": "integer",
-      "description": "Number of stillbirths \u2014 collected at registration for female patients"
+      "description": "Number of stillbirths \u2014 collected at registration for female patients",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "pregnancy_history": {
       "type": "string",
-      "description": "Readable summary of the previous pregnancies (G/P/A and each pregnancy's outcome) generated from gynae_obstetric_history"
+      "description": "Readable summary of the previous pregnancies (G/P/A and each pregnancy's outcome) generated from gynae_obstetric_history",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "pregnancy_complications": {
       "type": "string",
-      "description": "Significant pregnancy complications, if any \u2014 access-controlled reproductive history"
+      "description": "Significant pregnancy complications, if any \u2014 access-controlled reproductive history",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "menstrual_history": {
       "type": "string",
-      "description": "Readable summary of the menstrual history generated from gynae_obstetric_history.menstrual"
+      "description": "Readable summary of the menstrual history generated from gynae_obstetric_history.menstrual",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "contraception_history": {
       "type": "string",
-      "description": "Relevant contraception history \u2014 access-controlled reproductive history"
+      "description": "Relevant contraception history \u2014 access-controlled reproductive history",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "fertility_history": {
       "type": "string",
-      "description": "Fertility-related history, if relevant \u2014 access-controlled reproductive history"
+      "description": "Fertility-related history, if relevant \u2014 access-controlled reproductive history",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "gynecological_history": {
       "type": "string",
-      "description": "Readable summary of the previous gynaecological conditions, operations, treatments and investigations generated from gynae_obstetric_history.past"
+      "description": "Readable summary of the previous gynaecological conditions, operations, treatments and investigations generated from gynae_obstetric_history.past",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "urological_history": {
       "type": "string",
-      "description": "Relevant urological or reproductive history \u2014 access-controlled reproductive history"
+      "description": "Relevant urological or reproductive history \u2014 access-controlled reproductive history",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "gynae_obstetric_history": {
       "type": "object",
       "additionalProperties": true,
-      "description": "The female patient's one Gynaecological & Obstetric History, recorded at registration and shown in her Past History for authorized treating doctors. Shape: { menstrual: { age_at_menarche, cycle_regularity, cycle_length, bleeding_duration, flow, dysmenorrhoea, abnormal_uterine_bleeding, lmp, details }, past: { conditions, condition_details, infections, surgeries, treatments, investigations, contraception, fertility, other_details }, obstetric: { gravida, para, abortions, term_deliveries, preterm_deliveries, miscarriages, induced_abortions, ectopic_pregnancies, stillbirths, living_children, pregnancies: [{ entry_id, year, outcome, gestational_age, mode_of_delivery, complications, delivery_complications, neonatal_outcome, neonatal_details, notes }] }, current_pregnancy: { status, lmp, gestational_age, edd }, menopause: { status, age_at_menopause, year_of_menopause, last_menstrual_period, postmenopausal_bleeding, symptoms, hrt, hrt_details, osteoporosis, fragility_fracture, other_details, surgical_menopause, surgical_menopause_reason, surgical_menopause_age }, recorded_datetime, recorded_by }. An unanswered question is stored as unknown, never as a negative history; a new pregnancy is added as its own entry and never overwrites an existing one; a pregnant patient is never recorded as postmenopausal."
+      "description": "The female patient's one Gynaecological & Obstetric History, recorded at registration and shown in her Past History for authorized treating doctors. Shape: { menstrual: { age_at_menarche, cycle_regularity, cycle_length, bleeding_duration, flow, dysmenorrhoea, abnormal_uterine_bleeding, lmp, details }, past: { conditions, condition_details, infections, surgeries, treatments, investigations, contraception, fertility, other_details }, obstetric: { gravida, para, abortions, term_deliveries, preterm_deliveries, miscarriages, induced_abortions, ectopic_pregnancies, stillbirths, living_children, pregnancies: [{ entry_id, year, outcome, gestational_age, mode_of_delivery, complications, delivery_complications, neonatal_outcome, neonatal_details, notes }] }, current_pregnancy: { status, lmp, gestational_age, edd }, menopause: { status, age_at_menopause, year_of_menopause, last_menstrual_period, postmenopausal_bleeding, symptoms, hrt, hrt_details, osteoporosis, fragility_fracture, other_details, surgical_menopause, surgical_menopause_reason, surgical_menopause_age }, recorded_datetime, recorded_by }. An unanswered question is stored as unknown, never as a negative history; a new pregnancy is added as its own entry and never overwrites an existing one; a pregnant patient is never recorded as postmenopausal.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "medication_info_completed": {
       "type": "boolean",

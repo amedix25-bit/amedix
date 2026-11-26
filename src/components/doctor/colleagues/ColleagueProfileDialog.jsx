@@ -33,14 +33,6 @@ export default function ColleagueProfileDialog({ doctor, open, onOpenChange, act
             <p className="font-medium truncate">{doctor.hospital || "—"}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Doctor ID / Reg. No</p>
-            <p className="font-medium truncate">{doctor.license_number || "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Contact</p>
-            <p className="font-medium truncate">{doctor.phone || "—"}</p>
-          </div>
-          <div>
             <p className="text-xs text-muted-foreground">Verification</p>
             <p className="font-medium flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Verified

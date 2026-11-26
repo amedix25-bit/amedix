@@ -16,7 +16,7 @@ export default function ColleagueSearch({ doctors, connectedIds, onSendRequest, 
         .filter(
           (d) =>
             !connectedIds.has(d.id) &&
-            [d.full_name, d.specialization, d.license_number, d.hospital].some(
+            [d.full_name, d.specialization, d.hospital].some(
               (v) => v && String(v).toLowerCase().includes(q)
             )
         )
@@ -27,7 +27,7 @@ export default function ColleagueSearch({ doctors, connectedIds, onSendRequest, 
     <div>
       <Input
         autoFocus
-        placeholder="Search by full name, specialty, doctor ID or hospital..."
+        placeholder="Search by full name, specialty or hospital..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />

@@ -38,14 +38,43 @@
     },
     "license_number": {
       "type": "string",
-      "description": "Professional licence / registration number. Required for every doctor who registers through the document-verification flow; empty only for an account AMedix administration has explicitly exempted from verification."
+      "description": "Professional licence / registration number. Required for every doctor who registers through the document-verification flow; empty only for an account AMedix administration has explicitly exempted from verification. Visible only to the doctor and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "hospital": {
       "type": "string",
       "description": "The hospital the doctor is currently working at \u2014 selected by the doctor from their verified hospital associations and used by the check-in security gate to match active check-ins. Clinical notes, lab requests and imaging requests are associated with this hospital."
     },
     "phone": {
-      "type": "string"
+      "type": "string",
+      "description": "Doctor's personal phone number. Visible only to the doctor and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "photo_url": {
       "type": "string",

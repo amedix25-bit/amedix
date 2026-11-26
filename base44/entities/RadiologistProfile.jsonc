@@ -67,10 +67,40 @@
       }
     },
     "license_number": {
-      "type": "string"
+      "type": "string",
+      "description": "Professional licence / registration number. Visible only to the radiologist and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "phone": {
-      "type": "string"
+      "type": "string",
+      "description": "Radiologist's personal phone number. Visible only to the radiologist and AMedix administrators.",
+      "rls": {
+        "read": {
+          "$or": [
+            {
+              "created_by_id": "{{user.id}}"
+            },
+            {
+              "user_condition": {
+                "role": "admin"
+              }
+            }
+          ]
+        }
+      }
     },
     "status": {
       "type": "string",

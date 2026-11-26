@@ -117,7 +117,7 @@ export default function DepartmentRadiologistMembers({ profile }) {
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  {m.specialization}{m.license_number ? ` · License ${m.license_number}` : ""}
+                  {m.specialization}
                 </p>
               </div>
               <Button
@@ -157,7 +157,7 @@ export default function DepartmentRadiologistMembers({ profile }) {
                 {candidate.full_name}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {candidate.specialization}{candidate.license_number ? ` · License ${candidate.license_number}` : ""}
+                {candidate.specialization}
               </p>
             </div>
             <Button size="sm" disabled={busy === candidate.user_id} onClick={() => add(candidate)} className="shrink-0">
